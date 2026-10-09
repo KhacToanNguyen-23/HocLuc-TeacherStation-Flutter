@@ -1,0 +1,12 @@
+HocLuc Teacher runtime bundle
+
+- Microsoft WebView2 SDK 1.0.4258.31 and Fixed Version Runtime 154.0.4258.62.
+  Official distribution and terms: https://developer.microsoft.com/microsoft-edge/webview2/
+  https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.4258.31
+- Eclipse Temurin / OpenJDK 17 runtime. Module licenses and notices: runtime/legal/.
+- Flutter / Dart and package licenses: resources/app/build/web/assets/NOTICES (or NOTICES.Z).
+- Manrope and Literata fonts: SIL Open Font License; included in Flutter asset notices.
+- Fastboard, window-manager, white-web-sdk and dependencies: as used by the Flat project.
+- Gson 2.14.0: Apache License 2.0, https://github.com/google/gson.
+
+Fixed browser runtime updates are shipped by rebuilding this app with an updated pinned version.
