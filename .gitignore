@@ -23,3 +23,7 @@ app/macos/Flutter/GeneratedPluginRegistrant.swift
 .DS_Store
 Thumbs.db
 __pycache__/
+
+# Local environment and SDK
+.sdk/
+setup_flutter.ps1
