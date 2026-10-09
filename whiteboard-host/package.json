@@ -1,0 +1,13 @@
+{
+  "name": "companion-flat-board-host",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": { "build": "node build.mjs" },
+  "dependencies": {
+    "@netless/fastboard": "1.0.0-canary.11",
+    "@netless/window-manager": "1.0.0-canary.79",
+    "white-web-sdk": "npm:white-web-sdk-esm@2.16.48"
+  },
+  "devDependencies": { "esbuild": "0.25.12" }
+}

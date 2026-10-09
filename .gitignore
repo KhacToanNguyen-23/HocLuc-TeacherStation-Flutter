@@ -1,0 +1,25 @@
+.run/
+.packaging/
+dist/
+service/target/
+service/data/
+whiteboard-host/node_modules/
+whiteboard-host/dist/
+app/build/
+app/.dart_tool/
+app/.flutter-plugins-dependencies
+app/windows/flutter/ephemeral/
+app/macos/Flutter/ephemeral/
+app/macos/Pods/
+app/macos/Flutter/GeneratedPluginRegistrant.swift
+*.log
+
+# Local credentials and editor/OS artifacts. Keep dependency lockfiles in Git.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
+Thumbs.db
+__pycache__/
