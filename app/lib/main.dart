@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'models/studio_state.dart';
-import 'widgets/flat_host.dart';
+import 'widgets/stroke_canvas.dart';
+import 'widgets/grid_painter.dart';
+import 'widgets/stage_container.dart';
 
 const pine = Color(0xff173e35);
 const muted = Color(0xff728078);
@@ -71,8 +73,9 @@ class _StudioScreenState extends State<StudioScreen> {
   final notes = TextEditingController();
   final question = TextEditingController();
   final endpoint = TextEditingController();
-  bool flat = false;
   bool initializedControllers = false;
+  bool showLessons = false;
+  bool showInspector = false;
   @override
   void initState() {
     super.initState();
@@ -114,12 +117,6 @@ class _StudioScreenState extends State<StudioScreen> {
   }
 
   void preview() {
-    if (flat) {
-      message(
-        'Preview khung Flutter hiện hỗ trợ bảng nháp và câu hỏi. Capture bảng Flat cần adapter tiếp theo.',
-      );
-      return;
-    }
     showDialog<void>(
       context: context,
       builder: (_) => Dialog.fullscreen(
@@ -210,103 +207,35 @@ class _StudioScreenState extends State<StudioScreen> {
       return Scaffold(
         body: LayoutBuilder(
           builder: (context, box) {
-            final wide = box.maxWidth >= 1250,
-                showLessons = box.maxWidth >= 1000;
-            return Row(
+            final hasInspector = showInspector && box.maxWidth >= 1250,
+                hasLessons = showLessons && box.maxWidth >= 1000;
+            return Column(
               children: [
-                rail(),
+                studioTopBar(box.maxWidth, hasLessons, hasInspector),
                 Expanded(
-                  child: Column(
+                  child: Row(
                     children: [
-                      header(box.maxWidth),
-                      if (studio.error != null && !studio.online)
-                        Container(
-                          color: const Color(0xffffeed9),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.info_outline, size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  studio.error!,
-                                  style: const TextStyle(fontSize: 11),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: studio.loading
-                                    ? null
-                                    : () {
-                                        initializedControllers = false;
-                                        studio.initialize();
-                                      },
-                                child: const Text('Kết nối lại'),
-                              ),
-                            ],
-                          ),
-                        ),
+                      if (hasLessons) SizedBox(width: 200, child: lessons()),
                       Expanded(
-                        child: Row(
+                        child: Column(
                           children: [
-                            if (showLessons)
-                              SizedBox(width: 220, child: lessons()),
                             Expanded(
-                              child: Column(
-                                children: [
-                                  canvasHeader(showLessons, wide),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        24,
-                                        4,
-                                        24,
-                                        12,
-                                      ),
-                                      child: Stack(
-                                        children: [
-                                          if (flat)
-                                            Positioned.fill(
-                                              child: Offstage(
-                                                offstage:
-                                                    studio.view != 'board',
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  child: FlatHost(
-                                                    key: const ValueKey(
-                                                      'flat-board',
-                                                    ),
-                                                    url:
-                                                        '${studio.service.base}/flat/',
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          Positioned.fill(
-                                            child: Offstage(
-                                              offstage:
-                                                  flat &&
-                                                  studio.view == 'board',
-                                              child: fittedStage(),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  if (!flat && studio.view == 'board')
-                                    drawingToolbar(),
-                                  footer(),
-                                ],
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  10,
+                                  6,
+                                  10,
+                                  4,
+                                ),
+                                child: fittedStage(),
                               ),
                             ),
-                            if (wide) SizedBox(width: 304, child: inspector()),
+                            if (studio.view == 'board') drawingToolbar(),
                           ],
                         ),
                       ),
+                      if (hasInspector)
+                        SizedBox(width: 304, child: inspector()),
                     ],
                   ),
                 ),
@@ -318,147 +247,229 @@ class _StudioScreenState extends State<StudioScreen> {
     },
   );
 
-  Widget rail() => Container(
-    width: 72,
-    color: pine,
-    child: Column(
-      children: [
-        const SizedBox(height: 24),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: lime,
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: const Center(
-            child: Text(
-              'm',
-              style: TextStyle(
-                fontFamily: 'Literata',
-                fontSize: 31,
-                fontWeight: FontWeight.bold,
-                color: pine,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 42),
-        railItem(Icons.dashboard_outlined, 'Bảng giảng', 'board'),
-        railItem(Icons.quiz_outlined, 'Câu hỏi', 'question'),
-        const Spacer(),
-        IconButton(
-          tooltip: 'Thiết bị và API AI',
-          onPressed: openInspector,
-          icon: const Icon(Icons.tune, color: Color(0xffb7cbc1)),
-        ),
-        const SizedBox(height: 16),
-        const CircleAvatar(
-          radius: 16,
-          backgroundColor: Color(0xff34574c),
-          child: Text(
-            'GV',
-            style: TextStyle(fontSize: 10, color: Colors.white),
-          ),
-        ),
-        const SizedBox(height: 22),
-      ],
-    ),
-  );
-  Widget railItem(IconData icon, String label, String mode) => Padding(
-    padding: const EdgeInsets.only(bottom: 14),
-    child: Tooltip(
-      message: label,
-      child: InkWell(
-        onTap: () => studio.setView(mode),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: studio.view == mode
-                ? const Color(0xff325a4b)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            icon,
-            color: studio.view == mode ? lime : const Color(0xffa1b7ac),
-            size: 23,
-          ),
-        ),
-      ),
-    ),
-  );
-
-  Widget header(double width) => Container(
-    height: 82,
-    padding: const EdgeInsets.symmetric(horizontal: 24),
+  Widget studioTopBar(
+    double width,
+    bool hasLessons,
+    bool hasInspector,
+  ) => Container(
+    height: 48,
+    padding: const EdgeInsets.symmetric(horizontal: 10),
     decoration: const BoxDecoration(
       color: Colors.white,
       border: Border(bottom: BorderSide(color: line)),
     ),
     child: Row(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'MỘC / TEACHING STUDIO',
-                style: TextStyle(
-                  fontSize: 10,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w700,
-                  color: muted,
-                ),
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: pine,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: Text(
+              'm',
+              style: TextStyle(
+                fontFamily: 'Literata',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: lime,
               ),
-              const SizedBox(height: 7),
-              Row(
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        IconButton(
+          tooltip: hasLessons ? 'Đóng mục bài giảng' : 'Mở mục bài giảng',
+          iconSize: 18,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+          onPressed: () {
+            if (width < 1000) {
+              openLessons();
+            } else {
+              setState(() => showLessons = !showLessons);
+            }
+          },
+          icon: Icon(
+            hasLessons ? Icons.view_sidebar : Icons.view_sidebar_outlined,
+            color: pine,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: InkWell(
+            onTap: rename,
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Flexible(
                     child: Text(
                       studio.title,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 19,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
+                        color: pine,
                       ),
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Đổi tên bài giảng',
-                    onPressed: rename,
-                    icon: const Icon(Icons.edit_outlined, size: 15),
-                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.edit_outlined, size: 13, color: muted),
                 ],
               ),
-            ],
+            ),
           ),
         ),
-        if (width > 1000) ...[
-          pill('BẢN KHUNG 0.1', const Color(0xffedf2e5), pine),
-          const SizedBox(width: 18),
-        ],
-        IconButton(
-          tooltip: 'Xem khung trình bày',
-          onPressed: preview,
-          icon: const Icon(Icons.slideshow_outlined),
-        ),
-        const SizedBox(width: 8),
-        if (width > 650)
-          FilledButton.icon(
-            onPressed: studio.saving || studio.loading ? null : save,
-            icon: const Icon(Icons.save_outlined, size: 17),
-            label: Text(studio.saving ? 'Đang lưu…' : 'Lưu bài'),
+        const SizedBox(width: 6),
+        if (!studio.online)
+          Tooltip(
+            message: studio.error ?? 'Chưa kết nối Java. Bấm để thử lại.',
+            child: InkWell(
+              onTap: studio.loading
+                  ? null
+                  : () {
+                      initializedControllers = false;
+                      studio.initialize();
+                    },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xffffeed9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xffffcc80)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.wifi_off, size: 11, color: Color(0xffe65100)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Thử lại',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xffe65100),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           )
         else
-          IconButton(
-            tooltip: 'Lưu bài',
-            onPressed: studio.saving ? null : save,
-            icon: const Icon(Icons.save_outlined),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xffedf6ec),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xffc8e6c9)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.circle, size: 6, color: Color(0xff43a047)),
+                const SizedBox(width: 4),
+                Text(
+                  studio.dirty ? 'Chưa lưu' : 'Java OK',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xff2e7d32),
+                  ),
+                ),
+              ],
+            ),
           ),
+        const Spacer(),
+        IconButton(
+          tooltip: 'Bảng giảng',
+          iconSize: 18,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          onPressed: () => studio.setView('board'),
+          style: IconButton.styleFrom(
+            backgroundColor: studio.view == 'board'
+                ? const Color(0xffedf2e5)
+                : Colors.transparent,
+          ),
+          icon: Icon(
+            Icons.dashboard_outlined,
+            color: studio.view == 'board' ? pine : muted,
+          ),
+        ),
+        const SizedBox(width: 3),
+        IconButton(
+          tooltip: 'Câu hỏi',
+          iconSize: 18,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          onPressed: () =>
+              studio.setView(studio.view == 'question' ? 'board' : 'question'),
+          style: IconButton.styleFrom(
+            backgroundColor: studio.view == 'question'
+                ? const Color(0xffedf2e5)
+                : Colors.transparent,
+          ),
+          icon: Icon(
+            Icons.quiz_outlined,
+            color: studio.view == 'question' ? pine : muted,
+          ),
+        ),
+        const SizedBox(width: 3),
+        IconButton(
+          tooltip: 'Xem khung trình bày',
+          iconSize: 18,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          onPressed: preview,
+          icon: const Icon(Icons.slideshow_outlined, color: pine),
+        ),
+        const SizedBox(width: 3),
+        IconButton(
+          tooltip: 'Thiết bị và API AI',
+          iconSize: 18,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          onPressed: () {
+            if (width < 1250) {
+              openInspector();
+            } else {
+              setState(() => showInspector = !showInspector);
+            }
+          },
+          icon: Icon(
+            showInspector ? Icons.tune : Icons.tune_outlined,
+            color: showInspector ? pine : muted,
+          ),
+        ),
+        const SizedBox(width: 6),
+        FilledButton.icon(
+          onPressed: studio.saving || studio.loading ? null : save,
+          icon: const Icon(Icons.save_outlined, size: 14),
+          label: Text(
+            width > 900 ? (studio.saving ? 'Đang lưu…' : 'Lưu bài') : '',
+          ),
+          style: FilledButton.styleFrom(
+            backgroundColor: pine,
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(
+              horizontal: width > 900 ? 12 : 8,
+              vertical: 7,
+            ),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            textStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ],
     ),
   );
@@ -469,55 +480,61 @@ class _StudioScreenState extends State<StudioScreen> {
       border: Border(right: BorderSide(color: line)),
     ),
     child: ListView(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       children: [
-        const SizedBox(height: 6),
-        const Text(
-          'BÀI GIẢNG',
-          style: TextStyle(
-            fontSize: 10,
-            letterSpacing: 1.5,
-            color: muted,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 14),
-        DropdownButtonFormField<String>(
-          initialValue: studio.subject,
-          isExpanded: true,
-          items: ['Toán học', 'Vật lí', 'Hóa học', 'Sinh học']
-              .map(
-                (s) => DropdownMenuItem(
-                  value: s,
-                  child: Text(s, style: const TextStyle(fontSize: 12)),
+        Row(
+          children: [
+            const Icon(Icons.layers_outlined, size: 15, color: pine),
+            const SizedBox(width: 6),
+            const Expanded(
+              child: Text(
+                'CÁC TRANG BẢNG',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 0.8,
+                  color: pine,
+                  fontWeight: FontWeight.w700,
                 ),
-              )
-              .toList(),
-          onChanged: (s) {
-            if (s != null) studio.change(() => studio.subject = s);
-          },
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'P.${studio.page + 1}/3',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: muted,
+              ),
+            ),
+            const SizedBox(width: 4),
+            InkWell(
+              onTap: () => setState(() => showLessons = false),
+              borderRadius: BorderRadius.circular(4),
+              child: const Padding(
+                padding: EdgeInsets.all(3),
+                child: Icon(Icons.close, size: 14, color: muted),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 22),
-        const Text(
-          'Nội dung buổi dạy',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         for (final (index, label) in [
           (0, 'Khám phá hàm số'),
-          (1, 'Giải thích trên bảng'),
+          (1, 'Giải thích bảng'),
           (2, 'Luyện tập'),
         ])
           Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: 5),
             child: InkWell(
               onTap: () => studio.change(() {
                 studio.page = index;
                 studio.view = 'board';
               }),
-              borderRadius: BorderRadius.circular(11),
-              child: Container(
-                padding: const EdgeInsets.all(12),
+              borderRadius: BorderRadius.circular(8),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
                   color: studio.page == index && studio.view == 'board'
                       ? const Color(0xfff0f4e8)
@@ -527,253 +544,171 @@ class _StudioScreenState extends State<StudioScreen> {
                         ? const Color(0xffadc38c)
                         : line,
                   ),
-                  borderRadius: BorderRadius.circular(11),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          '0${index + 1}',
-                          style: const TextStyle(fontSize: 10, color: muted),
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: studio.page == index && studio.view == 'board'
+                            ? pine
+                            : const Color(0xfff0f2eb),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                studio.page == index && studio.view == 'board'
+                                ? lime
+                                : muted,
+                          ),
                         ),
-                        const Spacer(),
-                        Icon(
-                          index == 0 ? Icons.show_chart : Icons.draw_outlined,
-                          size: 15,
-                          color: muted,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      index == 0
-                          ? 'Học liệu mẫu · bảng nháp'
-                          : '${studio.pages[index].length} nét vẽ',
-                      style: const TextStyle(fontSize: 10, color: muted),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight:
+                              studio.page == index && studio.view == 'board'
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: pine,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      index == 0 ? Icons.show_chart : Icons.draw_outlined,
+                      size: 13,
+                      color: studio.page == index && studio.view == 'board'
+                          ? pine
+                          : muted,
                     ),
                   ],
                 ),
               ),
             ),
           ),
+        const SizedBox(height: 14),
+        const Divider(height: 1, color: line),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => studio.setView('question'),
-          icon: const Icon(Icons.quiz_outlined, size: 16),
-          label: const Text('Đặt câu hỏi', style: TextStyle(fontSize: 12)),
-        ),
-        const SizedBox(height: 26),
-        const Text(
-          'DẠY QUA MEET',
-          style: TextStyle(
-            fontSize: 10,
-            letterSpacing: 1.3,
-            color: muted,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Học sinh chỉ dùng meeting. Kết nối thu đáp án tự động chưa được triển khai.',
-          style: TextStyle(fontSize: 11, color: muted, height: 1.7),
-        ),
-      ],
-    ),
-  );
-
-  Widget canvasHeader(bool showLessons, bool wide) => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 18, 24, 12),
-    child: Row(
-      children: [
-        if (!showLessons)
-          IconButton(
-            tooltip: 'Nội dung bài giảng',
-            onPressed: openLessons,
-            icon: const Icon(Icons.view_sidebar_outlined, size: 19),
-          ),
-        Expanded(
-          child: Row(
-            children: [
-              const Icon(Icons.circle, size: 6, color: muted),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  studio.view == 'question'
-                      ? 'Câu hỏi cho cả lớp'
-                      : flat
-                      ? 'Whiteboard Flat'
-                      : 'Không gian giảng bài',
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+        Row(
+          children: [
+            const Icon(Icons.extension_outlined, size: 13, color: muted),
+            const SizedBox(width: 5),
+            const Expanded(
+              child: Text(
+                'TIỆN ÍCH MÔN HỌC',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 9,
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w700,
+                  color: muted,
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xffedf2e5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'Plugins',
+                style: TextStyle(
+                  fontSize: 8,
+                  color: pine,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
-        if (studio.view == 'board')
-          TextButton(
-            onPressed: () => setState(() => flat = !flat),
-            child: Text(
-              flat ? 'Bảng nháp' : 'Mở Flat',
-              style: const TextStyle(fontSize: 11),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () {
+            message(
+              'Hệ thống Extension Microkernel: Sẵn sàng kết nối plugin bộ môn (Tiếng Anh, Toán, Khoa học…).',
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xfff8f9f5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xffdbe2d4),
+                style: BorderStyle.solid,
+              ),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.add_circle_outline, size: 15, color: pine),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Cài thêm tiện ích môn',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: pine,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        if (!wide)
-          IconButton(
-            tooltip: 'Thiết bị và ghi chú',
-            onPressed: openInspector,
-            icon: const Icon(Icons.tune, size: 19),
-          ),
+        ),
       ],
     ),
   );
 
   Widget fittedStage({bool interactive = true}) => LayoutBuilder(
     builder: (context, constraints) {
-      final width = math.min(
-        constraints.maxWidth,
-        constraints.maxHeight * 16 / 9,
-      );
-      return Center(
-        child: SizedBox(
-          width: width,
-          height: width * 9 / 16,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              color: const Color(0xfffffef8),
-              child: studio.view == 'question'
-                  ? questionStage()
-                  : boardStage(interactive),
+      if (studio.view == 'question') {
+        final width = math.min(
+          constraints.maxWidth,
+          constraints.maxHeight * 16 / 9,
+        );
+        return Center(
+          child: SizedBox(
+            width: width,
+            height: width * 9 / 16,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                color: const Color(0xff14221d),
+                child: questionStage(),
+              ),
             ),
           ),
-        ),
-      );
+        );
+      }
+      return StageContainer(studio: studio, interactive: interactive);
     },
   );
 
   Widget boardStage(bool interactive) => LayoutBuilder(
     builder: (context, box) {
-      final size = Size(box.maxWidth, box.maxHeight);
-      Offset normalized(Offset p) => Offset(
-        (p.dx / size.width).clamp(0, 1),
-        (p.dy / size.height).clamp(0, 1),
-      );
-      return GestureDetector(
-        onPanStart: interactive
-            ? (e) => studio.startStroke(normalized(e.localPosition))
-            : null,
-        onPanUpdate: interactive
-            ? (e) => studio.extendStroke(normalized(e.localPosition))
-            : null,
-        onTapUp: interactive
-            ? (e) => studio.startStroke(normalized(e.localPosition))
-            : null,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: BoardPainter(studio.strokes, graph: studio.page == 0),
-              ),
-            ),
-            Positioned(
-              left: box.maxWidth * .055,
-              top: box.maxHeight * .08,
-              child: IgnorePointer(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${studio.subject.toUpperCase()} / 0${studio.page + 1}',
-                      style: TextStyle(
-                        fontSize: box.maxWidth * .015,
-                        letterSpacing: 1.4,
-                        color: muted,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      studio.page == 0
-                          ? 'Một đường cong, nhiều điều để khám phá.'
-                          : studio.page == 1
-                          ? 'Cùng giải thích.'
-                          : 'Thử một cách giải khác.',
-                      style: TextStyle(
-                        fontFamily: 'Literata',
-                        fontSize: box.maxWidth * .029,
-                        color: pine,
-                      ),
-                    ),
-                    if (studio.page == 0) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        'y = x² − 2x − 3',
-                        style: TextStyle(
-                          fontSize: box.maxWidth * .032,
-                          color: pine,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            if (studio.page == 0)
-              Positioned(
-                left: box.maxWidth * .06,
-                bottom: box.maxHeight * .16,
-                child: IgnorePointer(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'HÃY QUAN SÁT',
-                        style: TextStyle(
-                          fontSize: box.maxWidth * .012,
-                          letterSpacing: 1.5,
-                          color: muted,
-                        ),
-                      ),
-                      const SizedBox(height: 9),
-                      Text(
-                        'Đỉnh ở đâu?\nĐồ thị cắt trục Ox tại điểm nào?',
-                        style: TextStyle(
-                          fontSize: box.maxWidth * .017,
-                          height: 1.8,
-                          color: pine,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            Positioned(
-              bottom: 12,
-              right: 16,
-              child: Text(
-                'BẢNG NHÁP DEMO · KHÔNG PHẢI FLAT',
-                style: TextStyle(
-                  fontSize: math.max(7, box.maxWidth * .009),
-                  color: muted,
-                ),
-              ),
-            ),
-          ],
-        ),
+      return Stack(
+        children: [
+          const Positioned.fill(child: CustomPaint(painter: GridPainter())),
+          Positioned.fill(
+            child: StrokeCanvas(studio: studio, interactive: interactive),
+          ),
+        ],
       );
     },
   );
@@ -848,10 +783,10 @@ class _StudioScreenState extends State<StudioScreen> {
   );
 
   Widget drawingToolbar() => Padding(
-    padding: const EdgeInsets.only(bottom: 18),
+    padding: const EdgeInsets.only(bottom: 6),
     child: Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: line),
@@ -865,6 +800,7 @@ class _StudioScreenState extends State<StudioScreen> {
               ('pen', Icons.edit_outlined, 'Bút vẽ'),
               ('highlight', Icons.brush_outlined, 'Bút đánh dấu'),
               ('erase', Icons.auto_fix_normal, 'Tẩy nét'),
+              ('laser', Icons.adjust, 'Chấm Laser (Chỉ trỏ)'),
             ])
               IconButton(
                 tooltip: label,
@@ -878,34 +814,39 @@ class _StudioScreenState extends State<StudioScreen> {
                 icon: Icon(icon, size: 19, color: pine),
               ),
             const SizedBox(width: 8),
-            for (final color in [
-              pine,
-              const Color(0xffb95b3b),
-              const Color(0xff517bb0),
+            for (final (color, label) in [
+              (const Color(0xfff0f3ed), 'Trắng phấn'),
+              (const Color(0xffffe66d), 'Vàng phấn'),
+              (const Color(0xff70e0d0), 'Xanh phấn'),
+              (const Color(0xffff8c69), 'Cam phấn'),
+              (const Color(0xffff85a2), 'Hồng phấn'),
             ])
               Tooltip(
-                message:
-                    'Chọn màu ${color == pine
-                        ? 'xanh lá'
-                        : color == const Color(0xffb95b3b)
-                        ? 'cam'
-                        : 'xanh dương'}',
+                message: label,
                 child: InkWell(
                   onTap: () =>
                       studio.change(() => studio.ink = color, persist: false),
                   child: Container(
-                    width: 25,
-                    height: 25,
-                    margin: const EdgeInsets.all(4),
+                    width: 24,
+                    height: 24,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: studio.ink == color
-                            ? const Color(0xffc2cfac)
-                            : Colors.white,
-                        width: 3,
+                            ? pine
+                            : const Color(0xffd5dcd2),
+                        width: studio.ink == color ? 2.5 : 1.5,
                       ),
+                      boxShadow: [
+                        if (studio.ink == color)
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.5),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -921,44 +862,46 @@ class _StudioScreenState extends State<StudioScreen> {
               onPressed: studio.strokes.isEmpty ? null : studio.clearPage,
               icon: const Icon(Icons.delete_outline, size: 19),
             ),
+            const SizedBox(width: 6),
+            Container(width: 1, height: 20, color: line),
+            const SizedBox(width: 6),
+            IconButton(
+              tooltip: studio.showCameraPip
+                  ? 'Ẩn Webcam PIP'
+                  : 'Hiện Webcam PIP',
+              onPressed: studio.toggleCameraPip,
+              style: IconButton.styleFrom(
+                backgroundColor: studio.showCameraPip
+                    ? const Color(0xffedf2e5)
+                    : Colors.transparent,
+              ),
+              icon: Icon(
+                studio.showCameraPip
+                    ? Icons.videocam
+                    : Icons.videocam_off_outlined,
+                size: 19,
+                color: pine,
+              ),
+            ),
+            IconButton(
+              tooltip: studio.showQuestionsDrawer
+                  ? 'Đóng khay tài liệu đã nhập'
+                  : 'Mở khay tài liệu đã nhập',
+              onPressed: studio.toggleQuestionsDrawer,
+              style: IconButton.styleFrom(
+                backgroundColor: studio.showQuestionsDrawer
+                    ? const Color(0xffedf2e5)
+                    : Colors.transparent,
+              ),
+              icon: const Icon(
+                Icons.collections_bookmark_outlined,
+                size: 19,
+                color: pine,
+              ),
+            ),
           ],
         ),
       ),
-    ),
-  );
-
-  Widget footer() => Container(
-    height: 46,
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    decoration: const BoxDecoration(
-      border: Border(top: BorderSide(color: line)),
-    ),
-    child: Row(
-      children: [
-        Icon(
-          Icons.circle,
-          size: 6,
-          color: studio.online
-              ? const Color(0xff68934b)
-              : const Color(0xffbc8d52),
-        ),
-        const SizedBox(width: 7),
-        Text(
-          studio.online ? 'Java đã kết nối' : 'Chưa kết nối Java',
-          style: const TextStyle(fontSize: 10, color: muted),
-        ),
-        const Spacer(),
-        Text(
-          studio.dirty
-              ? 'Có thay đổi chưa lưu'
-              : studio.savedAt.isNotEmpty
-              ? 'Đã lưu ${studio.savedAt}'
-              : 'Bài giảng trên máy',
-          style: const TextStyle(fontSize: 10, color: muted),
-        ),
-        const SizedBox(width: 14),
-        const Text('16:9', style: TextStyle(fontSize: 10, color: muted)),
-      ],
     ),
   );
 
@@ -1211,112 +1154,4 @@ class _StudioScreenState extends State<StudioScreen> {
       ),
     ),
   );
-}
-
-class BoardPainter extends CustomPainter {
-  BoardPainter(this.strokes, {this.graph = false});
-  final List<BoardStroke> strokes;
-  final bool graph;
-  @override
-  void paint(Canvas canvas, Size size) {
-    final grid = Paint()..color = const Color(0xffe4e7da);
-    for (double x = 20; x < size.width; x += 22) {
-      for (double y = 20; y < size.height; y += 22) {
-        canvas.drawCircle(Offset(x, y), .65, grid);
-      }
-    }
-    if (graph) {
-      final origin = Offset(size.width * .72, size.height * .50);
-      final unit = size.height * .059;
-      final axes = Paint()
-        ..color = const Color(0xff9eaca0)
-        ..strokeWidth = 1;
-      canvas.drawLine(
-        Offset(size.width * .47, origin.dy),
-        Offset(size.width * .95, origin.dy),
-        axes,
-      );
-      canvas.drawLine(
-        Offset(origin.dx, size.height * .18),
-        Offset(origin.dx, size.height * .88),
-        axes,
-      );
-      for (int i = -3; i <= 3; i++) {
-        canvas.drawLine(
-          origin + Offset(i * unit, -3),
-          origin + Offset(i * unit, 3),
-          axes,
-        );
-      }
-      final curve = Path();
-      bool first = true;
-      for (double x = -2.3; x <= 4.2; x += .025) {
-        final y = x * x - 2 * x - 3;
-        final point = origin + Offset(x * unit, -y * unit);
-        if (point.dy < size.height * .20 || point.dy > size.height * .9) {
-          first = true;
-          continue;
-        }
-        if (first) {
-          curve.moveTo(point.dx, point.dy);
-          first = false;
-        } else {
-          curve.lineTo(point.dx, point.dy);
-        }
-      }
-      canvas.drawPath(
-        curve,
-        Paint()
-          ..color = pine
-          ..strokeWidth = 2.6
-          ..style = PaintingStyle.stroke,
-      );
-      canvas.drawCircle(
-        origin + Offset(unit, 4 * unit),
-        4,
-        Paint()..color = const Color(0xffbd6947),
-      );
-      final label = TextPainter(
-        text: const TextSpan(
-          text: 'I (1; −4)',
-          style: TextStyle(
-            fontFamily: 'Manrope',
-            color: Color(0xffbd6947),
-            fontSize: 11,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      label.paint(canvas, origin + Offset(unit + 10, 4 * unit - 8));
-    }
-    for (final stroke in strokes) {
-      if (stroke.points.isEmpty) continue;
-      final paint = Paint()
-        ..color = stroke.width > 3
-            ? stroke.color.withValues(alpha: .3)
-            : stroke.color
-        ..strokeWidth = stroke.width
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke;
-      Offset at(Offset p) => Offset(p.dx * size.width, p.dy * size.height);
-      if (stroke.points.length == 1) {
-        canvas.drawCircle(
-          at(stroke.points.first),
-          stroke.width / 2,
-          Paint()..color = paint.color,
-        );
-        continue;
-      }
-      final path = Path()
-        ..moveTo(at(stroke.points.first).dx, at(stroke.points.first).dy);
-      for (final point in stroke.points.skip(1)) {
-        path.lineTo(at(point).dx, at(point).dy);
-      }
-      canvas.drawPath(path, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant BoardPainter oldDelegate) => true;
 }
