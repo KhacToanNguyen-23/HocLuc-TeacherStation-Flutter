@@ -1,7 +1,7 @@
 # Spec: Teacher Station Broadcasting (Virtual Camera)
 
 **Date:** 2026-10-09
-**Status:** Draft
+**Status:** Approved
 
 ---
 
@@ -65,7 +65,6 @@ Giáo viên cần một ứng dụng hỗ trợ giảng dạy (có bảng trắn
 
 ---
 
-## [NEEDS CLARIFICATION]
-
-- [ ] Giải pháp kỹ thuật Mix Video (Sử dụng OBS Core C++ nhúng hay tự viết Desktop Duplication / Media Foundation plugin)?
-- [ ] Học sinh có cần công cụ riêng để xem bài tập không (hay chỉ thuần tuý xem qua Google Meet)?
+## Finalized Technical Architecture
+- **Mix Video Engine:** Sử dụng OBS Core C++ (libobs) hoặc tương đương nhúng vào Java Service để tạo Virtual Camera/Microphone chuẩn phần cứng, đảm bảo độ nét tuyệt đối.
+- **Học sinh:** Thuần túy tiếp nhận bài giảng một chiều qua Google Meet dưới dạng luồng hình ảnh & âm thanh.
