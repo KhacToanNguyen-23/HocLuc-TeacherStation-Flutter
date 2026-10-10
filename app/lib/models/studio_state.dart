@@ -16,21 +16,64 @@ class BoardStroke {
   final List<Offset> points;
   final bool isEraser;
   Path? _cachedPath;
+  Size? _cachedSize;
 
-  Path getPath() {
-    if (_cachedPath != null) return _cachedPath!;
+  Path getPath([Size? size]) {
+    if (size == null) {
+      if (_cachedPath != null && _cachedSize == null) return _cachedPath!;
+      if (points.isEmpty) return Path();
+      if (points.length == 1) {
+        _cachedSize = null;
+        _cachedPath = Path()
+          ..addOval(Rect.fromCircle(center: points.first, radius: width / 2));
+        return _cachedPath!;
+      }
+      final pointVectors = points.map((p) => PointVector(p.dx, p.dy)).toList();
+      final outline = getStroke(
+        pointVectors,
+        options: StrokeOptions(
+          size: width,
+          thinning: 0.35,
+          smoothing: 0.65,
+          streamline: 0.5,
+          isComplete: true,
+        ),
+      );
+      final path = Path();
+      if (outline.isNotEmpty) {
+        path.moveTo(outline.first.dx, outline.first.dy);
+        for (int i = 1; i < outline.length; i++) {
+          path.lineTo(outline[i].dx, outline[i].dy);
+        }
+        path.close();
+      }
+      _cachedSize = null;
+      _cachedPath = path;
+      return path;
+    }
+
+    if (_cachedSize == size && _cachedPath != null) return _cachedPath!;
     if (points.isEmpty) return Path();
     if (points.length == 1) {
+      final p = Offset(
+        points.first.dx * size.width,
+        points.first.dy * size.height,
+      );
+      _cachedSize = size;
       _cachedPath = Path()
-        ..addOval(Rect.fromCircle(center: points.first, radius: width / 2));
+        ..addOval(Rect.fromCircle(center: p, radius: width / 2));
       return _cachedPath!;
     }
-    final pointVectors = points.map((p) => PointVector(p.dx, p.dy)).toList();
+
+    final pointVectors = points
+        .map((p) => PointVector(p.dx * size.width, p.dy * size.height))
+        .toList();
+    final isHighlight = width > 6;
     final outline = getStroke(
       pointVectors,
       options: StrokeOptions(
         size: width,
-        thinning: 0.35,
+        thinning: isHighlight ? 0.0 : 0.35,
         smoothing: 0.65,
         streamline: 0.5,
         isComplete: true,
@@ -44,12 +87,14 @@ class BoardStroke {
       }
       path.close();
     }
+    _cachedSize = size;
     _cachedPath = path;
     return path;
   }
 
   void invalidatePath() {
     _cachedPath = null;
+    _cachedSize = null;
   }
 
   Map<String, dynamic> toJson() => {
@@ -123,6 +168,24 @@ class StudioState extends ChangeNotifier {
   Offset pipPosition = const Offset(16, 16);
   bool showQuestionsDrawer = false;
   int timerInitialSeconds = 300;
+  Offset pdfWindowPosition = const Offset(60, 60);
+  Size pdfWindowSize = const Size(520, 680);
+  bool pdfWindowMaximized = false;
+
+  void setPdfWindowPosition(Offset pos) {
+    pdfWindowPosition = pos;
+    notifyListeners();
+  }
+
+  void setPdfWindowSize(Size s) {
+    pdfWindowSize = s;
+    notifyListeners();
+  }
+
+  void togglePdfWindowMaximized() {
+    pdfWindowMaximized = !pdfWindowMaximized;
+    notifyListeners();
+  }
 
   void togglePdfPosition() {
     pdfOnRight = !pdfOnRight;
@@ -292,6 +355,7 @@ class StudioState extends ChangeNotifier {
   Timer? _timer;
   String savedAt = '';
   int _revision = 0;
+  int get revision => _revision;
   List<BoardStroke> get strokes => pages[page];
   bool get timerRunning => _timer != null;
 
@@ -438,6 +502,15 @@ class StudioState extends ChangeNotifier {
   }
 
   void setView(String next) => change(() => view = next, persist: false);
+  void addStroke(BoardStroke stroke, {List<BoardStroke>? target}) {
+    final list = target ?? strokes;
+    list.add(stroke);
+    _currentRedoStack.clear();
+    _revision++;
+    dirty = true;
+    notifyListeners();
+  }
+
   void startStroke(Offset point, {List<BoardStroke>? target}) {
     if (tool == 'laser') {
       setLaserOffset(point);
@@ -448,7 +521,8 @@ class StudioState extends ChangeNotifier {
       erase(point, target: list);
       return;
     }
-    final w = tool == 'highlight' ? 18.0 : strokeWidth;
+    _currentRedoStack.clear();
+    final w = tool == 'highlight' ? 20.0 : strokeWidth;
     list.add(BoardStroke(ink, w, [point]));
     _revision++;
     dirty = true;
@@ -483,11 +557,68 @@ class StudioState extends ChangeNotifier {
     notifyListeners();
   }
 
+  final Map<int, List<BoardStroke>> _redoPages = {};
+  List<BoardStroke> get _currentRedoStack =>
+      _redoPages.putIfAbsent(page, () => []);
+  bool get canUndo => strokes.isNotEmpty;
+  bool get canRedo => _currentRedoStack.isNotEmpty;
+
   void undo() {
-    if (strokes.isNotEmpty) change(() => strokes.removeLast());
+    if (strokes.isNotEmpty) {
+      final stroke = strokes.removeLast();
+      _currentRedoStack.add(stroke);
+      _revision++;
+      dirty = true;
+      notifyListeners();
+    }
   }
 
-  void clearPage() => change(() => strokes.clear());
+  void redo() {
+    if (_currentRedoStack.isNotEmpty) {
+      final stroke = _currentRedoStack.removeLast();
+      strokes.add(stroke);
+      _revision++;
+      dirty = true;
+      notifyListeners();
+    }
+  }
+
+  void nextPage() {
+    if (page < pages.length - 1) {
+      page++;
+      notifyListeners();
+    } else {
+      addPage();
+    }
+  }
+
+  void prevPage() {
+    if (page > 0) {
+      page--;
+      notifyListeners();
+    }
+  }
+
+  void addPage() {
+    pages.add([]);
+    page = pages.length - 1;
+    notifyListeners();
+  }
+
+  void setPage(int p) {
+    if (p >= 0 && p < pages.length && p != page) {
+      page = p;
+      notifyListeners();
+    }
+  }
+
+  void clearPage() {
+    if (strokes.isNotEmpty) {
+      _currentRedoStack.addAll(strokes);
+      change(() => strokes.clear());
+    }
+  }
+
   void toggleTimer() {
     if (_timer != null) {
       _timer?.cancel();

@@ -1,9 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'models/studio_state.dart';
-import 'widgets/stroke_canvas.dart';
-import 'widgets/grid_painter.dart';
 import 'widgets/stage_container.dart';
+import 'widgets/interactive_chalkboard.dart';
 
 const pine = Color(0xff173e35);
 const muted = Color(0xff728078);
@@ -700,18 +699,8 @@ class _StudioScreenState extends State<StudioScreen> {
     },
   );
 
-  Widget boardStage(bool interactive) => LayoutBuilder(
-    builder: (context, box) {
-      return Stack(
-        children: [
-          const Positioned.fill(child: CustomPaint(painter: GridPainter())),
-          Positioned.fill(
-            child: StrokeCanvas(studio: studio, interactive: interactive),
-          ),
-        ],
-      );
-    },
-  );
+  Widget boardStage(bool interactive) =>
+      InteractiveChalkboard(studio: studio, interactive: interactive);
 
   Widget questionStage() => LayoutBuilder(
     builder: (context, box) => Padding(
@@ -853,14 +842,64 @@ class _StudioScreenState extends State<StudioScreen> {
               ),
             const SizedBox(width: 8),
             IconButton(
-              tooltip: 'Hoàn tác nét',
-              onPressed: studio.strokes.isEmpty ? null : studio.undo,
+              tooltip: 'Hoàn tác nét (Ctrl+Z)',
+              onPressed: studio.canUndo ? studio.undo : null,
               icon: const Icon(Icons.undo, size: 19),
+            ),
+            IconButton(
+              tooltip: 'Làm lại nét (Ctrl+Y)',
+              onPressed: studio.canRedo ? studio.redo : null,
+              icon: const Icon(Icons.redo, size: 19),
             ),
             IconButton(
               tooltip: 'Xóa nét trang này',
               onPressed: studio.strokes.isEmpty ? null : studio.clearPage,
               icon: const Icon(Icons.delete_outline, size: 19),
+            ),
+            const SizedBox(width: 6),
+            Container(width: 1, height: 20, color: line),
+            const SizedBox(width: 6),
+            Tooltip(
+              message: 'Trang trước',
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                onPressed: studio.page > 0 ? studio.prevPage : null,
+                icon: const Icon(Icons.chevron_left, size: 20),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                '${studio.page + 1}/${studio.pages.length}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: pine,
+                ),
+              ),
+            ),
+            Tooltip(
+              message: 'Trang sau',
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                onPressed: studio.nextPage,
+                icon: const Icon(Icons.chevron_right, size: 20),
+              ),
+            ),
+            Tooltip(
+              message: 'Thêm trang mới',
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                onPressed: studio.addPage,
+                icon: const Icon(
+                  Icons.add_circle_outline,
+                  size: 18,
+                  color: pine,
+                ),
+              ),
             ),
             const SizedBox(width: 6),
             Container(width: 1, height: 20, color: line),

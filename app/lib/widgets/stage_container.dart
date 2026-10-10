@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 import '../models/studio_state.dart';
 import 'grid_painter.dart';
 import 'pdf_stage.dart';
-import 'stroke_canvas.dart';
+import 'interactive_chalkboard.dart';
+import 'floating_pdf_window.dart';
 import 'floating_pip.dart';
 import 'drawer_questions.dart';
 
@@ -20,102 +21,119 @@ class StageContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.f1): () =>
-            studio.setViewportMode(StudioViewportMode.fullBoard),
-        const SingleActivator(LogicalKeyboardKey.f2): () =>
-            studio.setViewportMode(StudioViewportMode.fullPdf),
-        const SingleActivator(LogicalKeyboardKey.f3): () =>
-            studio.setViewportMode(StudioViewportMode.split),
-      },
-      child: Focus(
-        autofocus: true,
-        child: DropTarget(
-          onDragDone: (detail) async {
-            for (final file in detail.files) {
-              if (file.name.toLowerCase().endsWith('.pdf')) {
-                final bytes = await file.readAsBytes();
-                studio.addImportedDoc(file.name, file.path, bytes);
-              }
-            }
-          },
-          child: DragTarget<ImportedDocument>(
-            onWillAcceptWithDetails: (details) => true,
-            onAcceptWithDetails: (details) {
-              final RenderBox? renderBox =
-                  context.findRenderObject() as RenderBox?;
-              if (renderBox != null) {
-                final local = renderBox.globalToLocal(details.offset);
-                final isRight = local.dx > renderBox.size.width / 2;
-                studio.setPdfOnRight(isRight);
-              }
-              studio.selectDoc(
-                details.data.id,
-                targetMode: StudioViewportMode.split,
-              );
+    return ListenableBuilder(
+      listenable: studio,
+      builder: (context, _) {
+        return CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.f1): () =>
+                studio.setViewportMode(StudioViewportMode.fullBoard),
+            const SingleActivator(LogicalKeyboardKey.f2): () =>
+                studio.setViewportMode(StudioViewportMode.fullPdf),
+            const SingleActivator(LogicalKeyboardKey.f3): () =>
+                studio.setViewportMode(StudioViewportMode.split),
+            const SingleActivator(LogicalKeyboardKey.keyZ, control: true): () {
+              if (studio.canUndo) studio.undo();
             },
-            builder: (context, candidateData, rejectedData) {
-              final isHovering = candidateData.isNotEmpty;
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  return Center(
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: chalkboardBg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: isHovering
-                              ? Border.all(
-                                  color: const Color(0xffd4e8a6),
-                                  width: 2.5,
-                                )
-                              : null,
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x33000000),
-                              blurRadius: 16,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          clipBehavior: Clip.hardEdge,
-                          children: [
-                            // Viewport Mode Content
-                            Positioned.fill(
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 200),
-                                child: KeyedSubtree(
-                                  key: ValueKey(
-                                    '${studio.viewportMode}_${studio.pdfOnRight}',
-                                  ),
-                                  child: _buildStageContent(constraints),
-                                ),
-                              ),
-                            ),
-
-                            // Collapsible Left Drawer
-                            if (interactive)
-                              Positioned.fill(
-                                child: DrawerQuestions(studio: studio),
-                              ),
-
-                            // Floating Draggable Camera PIP Card
-                            if (interactive) FloatingPip(studio: studio),
-                          ],
-                        ),
-                      ),
-                    ),
+            const SingleActivator(LogicalKeyboardKey.keyY, control: true): () {
+              if (studio.canRedo) studio.redo();
+            },
+            const SingleActivator(
+              LogicalKeyboardKey.keyZ,
+              control: true,
+              shift: true,
+            ): () {
+              if (studio.canRedo) studio.redo();
+            },
+          },
+          child: Focus(
+            autofocus: true,
+            child: DropTarget(
+              onDragDone: (detail) async {
+                for (final file in detail.files) {
+                  if (file.name.toLowerCase().endsWith('.pdf')) {
+                    final bytes = await file.readAsBytes();
+                    studio.addImportedDoc(file.name, file.path, bytes);
+                  }
+                }
+              },
+              child: DragTarget<ImportedDocument>(
+                onWillAcceptWithDetails: (details) => true,
+                onAcceptWithDetails: (details) {
+                  final RenderBox? renderBox =
+                      context.findRenderObject() as RenderBox?;
+                  if (renderBox != null) {
+                    final local = renderBox.globalToLocal(details.offset);
+                    studio.setPdfWindowPosition(local);
+                  }
+                  studio.selectDoc(
+                    details.data.id,
+                    targetMode: StudioViewportMode.split,
                   );
                 },
-              );
-            },
+                builder: (context, candidateData, rejectedData) {
+                  final isHovering = candidateData.isNotEmpty;
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Center(
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: chalkboardBg,
+                              borderRadius: BorderRadius.circular(12),
+                              border: isHovering
+                                  ? Border.all(
+                                      color: const Color(0xffd4e8a6),
+                                      width: 2.5,
+                                    )
+                                  : null,
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x33000000),
+                                  blurRadius: 16,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Stack(
+                              clipBehavior: Clip.hardEdge,
+                              children: [
+                                // Viewport Mode Content
+                                Positioned.fill(
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    child: KeyedSubtree(
+                                      key: ValueKey(
+                                        '${studio.viewportMode}_${studio.pdfOnRight}',
+                                      ),
+                                      child: _buildStageContent(constraints),
+                                    ),
+                                  ),
+                                ),
+
+                                // Collapsible Left Drawer
+                                if (interactive)
+                                  Positioned.fill(
+                                    child: DrawerQuestions(studio: studio),
+                                  ),
+
+                                // Floating Draggable Camera PIP Card
+                                if (interactive) FloatingPip(studio: studio),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -126,70 +144,21 @@ class StageContainer extends StatelessWidget {
       case StudioViewportMode.fullPdf:
         return PdfStage(studio: studio, interactive: interactive);
       case StudioViewportMode.split:
-        return _buildSplitStage(constraints);
+        return Stack(
+          children: [
+            Positioned.fill(child: _buildChalkboard()),
+            FloatingPdfWindow(
+              studio: studio,
+              boardConstraints: constraints,
+              interactive: interactive,
+            ),
+          ],
+        );
     }
   }
 
-  Widget _buildSplitStage(BoxConstraints constraints) {
-    final pdfWidget = PdfStage(studio: studio, interactive: interactive);
-    final boardWidget = _buildChalkboard();
-
-    final pdfFlex = (studio.splitRatio * 1000).toInt();
-    final boardFlex = ((1.0 - studio.splitRatio) * 1000).toInt();
-
-    final firstChild = studio.pdfOnRight ? boardWidget : pdfWidget;
-    final secondChild = studio.pdfOnRight ? pdfWidget : boardWidget;
-    final firstFlex = studio.pdfOnRight ? boardFlex : pdfFlex;
-    final secondFlex = studio.pdfOnRight ? pdfFlex : boardFlex;
-
-    return Row(
-      children: [
-        Expanded(flex: firstFlex, child: firstChild),
-        // Draggable Split Divider
-        MouseRegion(
-          cursor: SystemMouseCursors.resizeColumn,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onHorizontalDragUpdate: (details) {
-              final boxWidth = constraints.maxWidth;
-              if (boxWidth <= 0) return;
-              final deltaRatio = details.delta.dx / boxWidth;
-              final newRatio = studio.pdfOnRight
-                  ? studio.splitRatio - deltaRatio
-                  : studio.splitRatio + deltaRatio;
-              studio.setSplitRatio(newRatio);
-            },
-            onDoubleTap: () => studio.setSplitRatio(0.5),
-            child: Container(
-              width: 14,
-              color: const Color(0x14000000),
-              child: Center(
-                child: Container(
-                  width: 3.5,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0x77ffffff),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Expanded(flex: secondFlex, child: secondChild),
-      ],
-    );
-  }
-
   Widget _buildChalkboard() {
-    return Stack(
-      children: [
-        const Positioned.fill(child: CustomPaint(painter: GridPainter())),
-        Positioned.fill(
-          child: StrokeCanvas(studio: studio, interactive: interactive),
-        ),
-      ],
-    );
+    return InteractiveChalkboard(studio: studio, interactive: interactive);
   }
 }
 
