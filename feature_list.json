@@ -122,8 +122,8 @@
   {
     "id": "phase-04-python-sidecar-desktop",
     "title": "Python Sidecar Lifecycle Manager (Desktop) & Web Fallback",
-    "status": "not_started",
-    "evidence": "",
+    "status": "passing",
+    "evidence": "Tests: 3 passed in test/sidecar_manager_test.dart, 43 total passed across suite",
     "user_visible_behavior": "Tiến trình service.exe tự động khởi chạy và tắt ngầm trên Windows, hiển thị trạng thái kết nối trên Web.",
     "verification_command": "flutter test test/sidecar_manager_test.dart",
     "notes": "Covers stories: P2",
