@@ -31,7 +31,7 @@ public final class CompanionServer {
     public static void main(String[] args) throws Exception {
         Path root = Path.of(args.length > 0 ? args[0] : "..");
         int port = args.length > 1 ? Integer.parseInt(args[1]) : 47831;
-        Path data = args.length > 2 ? Path.of(args[2]) : root.resolve("service/data");
+        Path data = args.length > 2 ? Path.of(args[2]) : root.resolve("backend/service/data");
         new CompanionServer(root, port, data).start();
         String parent = System.getenv("HOC_LUC_PARENT_PID");
         if (parent != null) {
@@ -85,7 +85,7 @@ public final class CompanionServer {
             if (!method.equals("GET") && !method.equals("HEAD")) {
                 send(exchange, 405, Map.of("error", "Method not allowed")); return;
             }
-            Path base = root.resolve(path.startsWith("/flat/") ? "whiteboard-host/dist" : "app/build/web");
+            Path base = root.resolve(path.startsWith("/flat/") ? "backend/whiteboard-host/dist" : "frontend/build/web");
             String relative = path.startsWith("/flat/") ? path.substring(6) : path.substring(1);
             if (relative.isEmpty()) relative = "index.html";
             Path file = base.resolve(relative).normalize();
@@ -110,7 +110,7 @@ public final class CompanionServer {
             send(exchange, 200, Map.of("javaService", true, "virtualCamera", false,
                 "virtualMicrophone", false, "audioCapture", false, "cameraCapture", false,
                 "aiStreaming", false, "meetInteraction", false,
-                "flatHostBuilt", Files.isRegularFile(root.resolve("whiteboard-host/dist/index.html"))));
+                "flatHostBuilt", Files.isRegularFile(root.resolve("backend/whiteboard-host/dist/index.html"))));
         } else if (path.equals("/api/devices") && method.equals("GET")) {
             List<Map<String, Object>> microphones = new ArrayList<>();
             for (Mixer.Info info : AudioSystem.getMixerInfo()) {
