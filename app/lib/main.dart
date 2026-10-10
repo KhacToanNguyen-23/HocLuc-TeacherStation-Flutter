@@ -76,7 +76,8 @@ class _StudioScreenState extends State<StudioScreen> {
   bool initializedControllers = false;
   bool showLessons = false;
   bool showInspector = false;
-  bool showColorWheelFlyout = false;
+  final GlobalKey<PopupMenuButtonState<int>> toolSizeMenuKey = GlobalKey();
+  bool showColorWheelDropdown = false;
   @override
   void initState() {
     super.initState();
@@ -296,47 +297,58 @@ class _StudioScreenState extends State<StudioScreen> {
                     children: [
                       if (hasLessons) SizedBox(width: 200, child: lessons()),
                       Expanded(
-                        child: Column(
+                        child: Stack(
+                          clipBehavior: Clip.none,
                           children: [
-                            Expanded(
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onTapDown: (_) {
-                                  if (showColorWheelFlyout) {
-                                    setState(
-                                      () => showColorWheelFlyout = false,
-                                    );
-                                  }
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    10,
-                                    6,
-                                    10,
-                                    4,
+                            Column(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.translucent,
+                                    onTapDown: (_) {
+                                      if (showColorWheelDropdown) {
+                                        setState(() {
+                                          showColorWheelDropdown = false;
+                                        });
+                                      }
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        10,
+                                        6,
+                                        10,
+                                        4,
+                                      ),
+                                      child: fittedStage(),
+                                    ),
                                   ),
-                                  child: fittedStage(),
+                                ),
+                                if (studio.view == 'board') drawingToolbar(),
+                              ],
+                            ),
+                            if (showColorWheelDropdown) ...[
+                              Positioned.fill(
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.translucent,
+                                  onTap: () => setState(
+                                    () => showColorWheelDropdown = false,
+                                  ),
                                 ),
                               ),
-                            ),
-                            if (studio.view == 'board')
-                              Stack(
-                                alignment: Alignment.bottomCenter,
-                                clipBehavior: Clip.none,
-                                children: [
-                                  drawingToolbar(),
-                                  if (showColorWheelFlyout)
-                                    Positioned(
-                                      bottom: 46,
-                                      child: ColorWheelCompactFlyout(
-                                        studio: studio,
-                                        onClose: () => setState(
-                                          () => showColorWheelFlyout = false,
-                                        ),
-                                      ),
+                              Positioned(
+                                bottom: 58,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: ColorWheelCompactFlyout(
+                                    studio: studio,
+                                    onClose: () => setState(
+                                      () => showColorWheelDropdown = false,
                                     ),
-                                ],
+                                  ),
+                                ),
                               ),
+                            ],
                           ],
                         ),
                       ),
@@ -945,6 +957,7 @@ class _StudioScreenState extends State<StudioScreen> {
     child: Center(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        clipBehavior: Clip.none,
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: line),
@@ -953,6 +966,7 @@ class _StudioScreenState extends State<StudioScreen> {
         child: Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: 3,
+          clipBehavior: Clip.none,
           children: [
             for (final (name, icon, label) in [
               ('pen', Icons.edit_outlined, 'Bút vẽ'),
@@ -964,12 +978,12 @@ class _StudioScreenState extends State<StudioScreen> {
                 tooltip: label,
                 onPressed: () {
                   if (studio.tool == name && (name == 'pen' || name == 'highlight' || name == 'erase')) {
-                    showDialog<void>(
-                      context: context,
-                      builder: (_) => ToolSizeDialog(studio: studio),
-                    );
+                    toolSizeMenuKey.currentState?.showButtonMenu();
                   } else {
                     studio.change(() => studio.tool = name, persist: false);
+                    setState(() {
+                      showColorWheelDropdown = false;
+                    });
                   }
                 },
                 style: IconButton.styleFrom(
@@ -979,47 +993,11 @@ class _StudioScreenState extends State<StudioScreen> {
                 ),
                 icon: Icon(icon, size: 19, color: pine),
               ),
-            Tooltip(
-              message: 'Kích thước nét & tẩy',
-              child: InkWell(
-                onTap: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => ToolSizeDialog(studio: studio),
-                ),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xfff5f7f2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: line),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 16,
-                        height: (studio.tool == 'highlight'
-                                ? studio.highlighterWidth / 5
-                                : (studio.tool == 'erase'
-                                    ? studio.eraserRadius * 80
-                                    : studio.strokeWidth))
-                            .clamp(1.8, 7.5),
-                        decoration: BoxDecoration(
-                          color: studio.tool == 'erase'
-                              ? const Color(0xffff8c69)
-                              : (studio.tool == 'laser'
-                                  ? Colors.redAccent
-                                  : pine),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 3),
-                      const Icon(Icons.arrow_drop_down, size: 14, color: pine),
-                    ],
-                  ),
-                ),
-              ),
+            ToolSizePopupMenuButton(
+              studio: studio,
+              pine: pine,
+              line: line,
+              menuKey: toolSizeMenuKey,
             ),
             const SizedBox(width: 6),
             for (final (color, label) in [
@@ -1104,7 +1082,7 @@ class _StudioScreenState extends State<StudioScreen> {
               message: 'Bảng phối màu tùy thích',
               child: InkWell(
                 onTap: () => setState(
-                  () => showColorWheelFlyout = !showColorWheelFlyout,
+                  () => showColorWheelDropdown = !showColorWheelDropdown,
                 ),
                 child: Container(
                   width: 24,
@@ -1128,11 +1106,11 @@ class _StudioScreenState extends State<StudioScreen> {
                       ],
                     ),
                     border: Border.all(
-                      color: showColorWheelFlyout ? pine : Colors.white,
-                      width: showColorWheelFlyout ? 2.5 : 1.5,
+                      color: showColorWheelDropdown ? pine : Colors.white,
+                      width: showColorWheelDropdown ? 2.5 : 1.5,
                     ),
                     boxShadow: [
-                      if (showColorWheelFlyout)
+                      if (showColorWheelDropdown)
                         BoxShadow(
                           color: pine.withValues(alpha: 0.4),
                           blurRadius: 5,

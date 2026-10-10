@@ -266,40 +266,50 @@ class ColorWheelPainter extends CustomPainter {
   }
 }
 
-/// Minimalist Tool Size Popup Dialog (Clean horizontal stroke lines, no text, compact)
-class ToolSizeDialog extends StatelessWidget {
-  const ToolSizeDialog({super.key, required this.studio});
+/// Minimalist Tool Size Dropdown (Clean horizontal stroke lines, no text, compact dropdown menu)
+/// Tool Size Dropdown Button using Flutter's native PopupMenuButton
+class ToolSizePopupMenuButton extends StatelessWidget {
+  const ToolSizePopupMenuButton({
+    super.key,
+    required this.studio,
+    required this.pine,
+    required this.line,
+    this.menuKey,
+  });
 
   final StudioState studio;
+  final Color pine;
+  final Color line;
+  final GlobalKey<PopupMenuButtonState<int>>? menuKey;
+
+  static List<({double val, double lineThickness})> getPresetsForTool(String tool) {
+    if (tool == 'highlight') {
+      return const [
+        (val: 14.0, lineThickness: 3.0),
+        (val: 24.0, lineThickness: 7.0),
+        (val: 40.0, lineThickness: 13.0),
+      ];
+    } else if (tool == 'erase') {
+      return const [
+        (val: 0.025, lineThickness: 3.0),
+        (val: 0.05, lineThickness: 6.5),
+        (val: 0.09, lineThickness: 12.0),
+      ];
+    } else {
+      return const [
+        (val: 2.0, lineThickness: 2.0),
+        (val: 4.0, lineThickness: 4.5),
+        (val: 7.5, lineThickness: 8.0),
+      ];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final tool = studio.tool;
-    final isHighlighter = tool == 'highlight';
-    final isEraser = tool == 'erase';
-
-    // 3 clean thickness levels matching the user's reference image
-    final List<({double val, double lineThickness})> presets = isHighlighter
-        ? [
-            (val: 14.0, lineThickness: 3.0),
-            (val: 24.0, lineThickness: 7.0),
-            (val: 40.0, lineThickness: 13.0),
-          ]
-        : (isEraser
-            ? [
-                (val: 0.025, lineThickness: 3.0),
-                (val: 0.05, lineThickness: 6.5),
-                (val: 0.09, lineThickness: 12.0),
-              ]
-            : [
-                (val: 2.0, lineThickness: 1.8),
-                (val: 4.0, lineThickness: 4.0),
-                (val: 7.5, lineThickness: 7.5),
-              ]);
-
+    final presets = getPresetsForTool(tool);
     final currentVal = studio.currentToolSize;
 
-    // Find the closest preset index
     int selectedIndex = 0;
     double minDiff = double.infinity;
     for (int i = 0; i < presets.length; i++) {
@@ -310,55 +320,162 @@ class ToolSizeDialog extends StatelessWidget {
       }
     }
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      insetPadding: EdgeInsets.zero,
-      child: Center(
-        child: Container(
-          width: 90,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xffd5dcd2), width: 1),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 16,
-                offset: Offset(0, 4),
+    return PopupMenuButton<int>(
+      key: menuKey,
+      tooltip: 'Kích thước nét & tẩy',
+      offset: const Offset(0, -135),
+      color: Colors.white,
+      elevation: 6,
+      shadowColor: Colors.black38,
+      surfaceTintColor: Colors.transparent,
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Color(0xffd5dcd2), width: 1.2),
+      ),
+      constraints: const BoxConstraints(
+        minWidth: 84,
+        maxWidth: 84,
+      ),
+      onSelected: (index) {
+        studio.setCurrentToolSize(presets[index].val);
+      },
+      itemBuilder: (context) => [
+        for (int i = 0; i < presets.length; i++)
+          PopupMenuItem<int>(
+            value: i,
+            height: 38,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            child: Container(
+              height: 32,
+              decoration: BoxDecoration(
+                color: i == selectedIndex
+                    ? const Color(0xffe5e8e3)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
               ),
-            ],
+              alignment: Alignment.center,
+              child: Container(
+                width: 48,
+                height: presets[i].lineThickness,
+                decoration: BoxDecoration(
+                  color: const Color(0xff1f2a24),
+                  borderRadius: BorderRadius.circular(presets[i].lineThickness / 2),
+                ),
+              ),
+            ),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (int i = 0; i < presets.length; i++)
-                InkWell(
-                  onTap: () {
-                    studio.setCurrentToolSize(presets[i].val);
-                    Navigator.of(context).pop();
-                  },
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xfff5f7f2),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: line),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 16,
+              height: (tool == 'highlight'
+                      ? studio.highlighterWidth / 5
+                      : (tool == 'erase'
+                          ? studio.eraserRadius * 80
+                          : studio.strokeWidth))
+                  .clamp(1.8, 7.5),
+              decoration: BoxDecoration(
+                color: tool == 'erase'
+                    ? const Color(0xffff8c69)
+                    : (tool == 'laser'
+                        ? Colors.redAccent
+                        : pine),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 3),
+            Icon(Icons.arrow_drop_down, size: 14, color: pine),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Minimalist Tool Size Dropdown (Clean horizontal stroke lines, no text, compact dropdown menu)
+class ToolSizeDropdown extends StatelessWidget {
+  const ToolSizeDropdown({
+    super.key,
+    required this.studio,
+    this.onSelected,
+  });
+
+  final StudioState studio;
+  final VoidCallback? onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tool = studio.tool;
+    final presets = ToolSizePopupMenuButton.getPresetsForTool(tool);
+    final currentVal = studio.currentToolSize;
+
+    int selectedIndex = 0;
+    double minDiff = double.infinity;
+    for (int i = 0; i < presets.length; i++) {
+      final diff = (currentVal - presets[i].val).abs();
+      if (diff < minDiff) {
+        minDiff = diff;
+        selectedIndex = i;
+      }
+    }
+
+    return Material(
+      color: Colors.transparent,
+      elevation: 0,
+      child: Container(
+        width: 84,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xffd5dcd2), width: 1.2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33000000),
+              blurRadius: 16,
+              offset: Offset(0, -3),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (int i = 0; i < presets.length; i++)
+              InkWell(
+                onTap: () {
+                  studio.setCurrentToolSize(presets[i].val);
+                  onSelected?.call();
+                },
+                child: Container(
+                  height: 38,
+                  color: i == selectedIndex
+                      ? const Color(0xffe5e8e3)
+                      : Colors.transparent,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  alignment: Alignment.center,
                   child: Container(
-                    height: 38,
-                    color: i == selectedIndex
-                        ? const Color(0xffe5e8e3)
-                        : Colors.transparent,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    alignment: Alignment.center,
-                    child: Container(
-                      height: presets[i].lineThickness,
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(
-                          presets[i].lineThickness / 2,
-                        ),
+                    width: 48,
+                    height: presets[i].lineThickness,
+                    decoration: BoxDecoration(
+                      color: const Color(0xff1f2a24),
+                      borderRadius: BorderRadius.circular(
+                        presets[i].lineThickness / 2,
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
