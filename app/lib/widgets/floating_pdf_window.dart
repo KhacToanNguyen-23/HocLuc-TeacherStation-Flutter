@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
 import 'pdf_stage.dart';
 
-class FloatingPdfWindow extends StatelessWidget {
+class FloatingPdfWindow extends StatefulWidget {
   const FloatingPdfWindow({
     super.key,
     required this.studio,
@@ -16,7 +16,44 @@ class FloatingPdfWindow extends StatelessWidget {
   final bool interactive;
 
   @override
+  State<FloatingPdfWindow> createState() => _FloatingPdfWindowState();
+}
+
+class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
+  late final ValueNotifier<Offset> _posNotifier;
+  late final ValueNotifier<Size> _sizeNotifier;
+  bool _isDragging = false;
+  bool _isResizing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _posNotifier = ValueNotifier(widget.studio.pdfWindowPosition);
+    _sizeNotifier = ValueNotifier(widget.studio.pdfWindowSize);
+  }
+
+  @override
+  void didUpdateWidget(covariant FloatingPdfWindow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isDragging && _posNotifier.value != widget.studio.pdfWindowPosition) {
+      _posNotifier.value = widget.studio.pdfWindowPosition;
+    }
+    if (!_isResizing && _sizeNotifier.value != widget.studio.pdfWindowSize) {
+      _sizeNotifier.value = widget.studio.pdfWindowSize;
+    }
+  }
+
+  @override
+  void dispose() {
+    _posNotifier.dispose();
+    _sizeNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final studio = widget.studio;
+
     return ListenableBuilder(
       listenable: studio,
       builder: (context, _) {
@@ -29,103 +66,150 @@ class FloatingPdfWindow extends StatelessWidget {
 
         if (studio.pdfWindowMaximized) {
           return Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xff182721),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0x44ffffff), width: 1.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black87,
-                    blurRadius: 20,
-                    offset: Offset(0, 6),
+            child: RepaintBoundary(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xff182721),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0x44ffffff),
+                    width: 1.5,
                   ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  _buildHeader(context, docName, isMaximized: true),
-                  Expanded(
-                    child: PdfStage(studio: studio, interactive: interactive),
-                  ),
-                ],
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black87,
+                      blurRadius: 20,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    _buildHeader(context, docName, isMaximized: true),
+                    Expanded(
+                      child: RepaintBoundary(
+                        child: PdfStage(
+                          studio: studio,
+                          interactive: widget.interactive,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
         }
 
-        final maxW = math.max(360.0, boardConstraints.maxWidth);
-        final maxH = math.max(280.0, boardConstraints.maxHeight);
+        final maxW = math.max(360.0, widget.boardConstraints.maxWidth);
+        final maxH = math.max(280.0, widget.boardConstraints.maxHeight);
 
-        final cardW = studio.pdfWindowSize.width.clamp(340.0, maxW * 0.95);
-        final cardH = studio.pdfWindowSize.height.clamp(260.0, maxH * 0.95);
+        return ListenableBuilder(
+          listenable: Listenable.merge([_posNotifier, _sizeNotifier]),
+          builder: (context, _) {
+            final cardW = _sizeNotifier.value.width.clamp(340.0, maxW * 0.95);
+            final cardH = _sizeNotifier.value.height.clamp(260.0, maxH * 0.95);
 
-        final maxX = math.max(0.0, boardConstraints.maxWidth - cardW);
-        final maxY = math.max(0.0, boardConstraints.maxHeight - cardH);
+            final maxX = math.max(
+              0.0,
+              widget.boardConstraints.maxWidth - cardW,
+            );
+            final maxY = math.max(
+              0.0,
+              widget.boardConstraints.maxHeight - cardH,
+            );
 
-        final posX = studio.pdfWindowPosition.dx.clamp(0.0, maxX);
-        final posY = studio.pdfWindowPosition.dy.clamp(0.0, maxY);
+            final posX = _posNotifier.value.dx.clamp(0.0, maxX);
+            final posY = _posNotifier.value.dy.clamp(0.0, maxY);
 
-        return Positioned(
-          left: posX,
-          top: posY,
-          width: cardW,
-          height: cardH,
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xff182721),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0x44ffffff), width: 1.5),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black87,
-                  blurRadius: 18,
-                  offset: Offset(0, 6),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                Column(
-                  children: [
-                    _buildHeader(context, docName, isMaximized: false),
-                    Expanded(
-                      child: PdfStage(studio: studio, interactive: interactive),
+            return Positioned(
+              left: posX,
+              top: posY,
+              width: cardW,
+              height: cardH,
+              child: RepaintBoundary(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xff182721),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0x44ffffff),
+                      width: 1.5,
                     ),
-                  ],
-                ),
-                // Resize handle at bottom-right corner
-                if (interactive)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.resizeDownRight,
-                      child: GestureDetector(
-                        onPanUpdate: (d) {
-                          final newW = math.max(340.0, cardW + d.delta.dx);
-                          final newH = math.max(260.0, cardH + d.delta.dy);
-                          studio.setPdfWindowSize(Size(newW, newH));
-                        },
-                        child: Container(
-                          width: 22,
-                          height: 22,
-                          alignment: Alignment.bottomRight,
-                          padding: const EdgeInsets.all(3),
-                          child: const Icon(
-                            Icons.south_east,
-                            size: 14,
-                            color: Colors.white54,
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black87,
+                        blurRadius: 18,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: [
+                      Column(
+                        children: [
+                          _buildHeader(context, docName, isMaximized: false),
+                          Expanded(
+                            child: RepaintBoundary(
+                              child: PdfStage(
+                                studio: studio,
+                                interactive: widget.interactive,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Resize handle at bottom-right corner
+                      if (widget.interactive)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.resizeDownRight,
+                            child: GestureDetector(
+                              onPanStart: (_) => _isResizing = true,
+                              onPanUpdate: (d) {
+                                final current = _sizeNotifier.value;
+                                final newW = math.max(
+                                  340.0,
+                                  current.width + d.delta.dx,
+                                );
+                                final newH = math.max(
+                                  260.0,
+                                  current.height + d.delta.dy,
+                                );
+                                _sizeNotifier.value = Size(
+                                  newW.clamp(340.0, maxW * 0.95),
+                                  newH.clamp(260.0, maxH * 0.95),
+                                );
+                              },
+                              onPanEnd: (_) {
+                                _isResizing = false;
+                                studio.setPdfWindowSize(_sizeNotifier.value);
+                              },
+                              onPanCancel: () => _isResizing = false,
+                              child: Container(
+                                width: 22,
+                                height: 22,
+                                alignment: Alignment.bottomRight,
+                                padding: const EdgeInsets.all(3),
+                                child: const Icon(
+                                  Icons.south_east,
+                                  size: 14,
+                                  color: Colors.white54,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                    ],
                   ),
-              ],
-            ),
-          ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -136,13 +220,46 @@ class FloatingPdfWindow extends StatelessWidget {
     String docName, {
     required bool isMaximized,
   }) {
+    final studio = widget.studio;
+
     return GestureDetector(
-      onPanUpdate: isMaximized || !interactive
+      onPanStart: isMaximized || !widget.interactive
+          ? null
+          : (_) => _isDragging = true,
+      onPanUpdate: isMaximized || !widget.interactive
           ? null
           : (d) {
-              final newPos = studio.pdfWindowPosition + d.delta;
-              studio.setPdfWindowPosition(newPos);
+              final current = _posNotifier.value;
+              final maxW = math.max(360.0, widget.boardConstraints.maxWidth);
+              final maxH = math.max(280.0, widget.boardConstraints.maxHeight);
+              final cardW = _sizeNotifier.value.width.clamp(340.0, maxW * 0.95);
+              final cardH = _sizeNotifier.value.height.clamp(
+                260.0,
+                maxH * 0.95,
+              );
+              final maxX = math.max(
+                0.0,
+                widget.boardConstraints.maxWidth - cardW,
+              );
+              final maxY = math.max(
+                0.0,
+                widget.boardConstraints.maxHeight - cardH,
+              );
+
+              _posNotifier.value = Offset(
+                (current.dx + d.delta.dx).clamp(0.0, maxX),
+                (current.dy + d.delta.dy).clamp(0.0, maxY),
+              );
             },
+      onPanEnd: isMaximized || !widget.interactive
+          ? null
+          : (_) {
+              _isDragging = false;
+              studio.setPdfWindowPosition(_posNotifier.value);
+            },
+      onPanCancel: isMaximized || !widget.interactive
+          ? null
+          : () => _isDragging = false,
       child: Container(
         height: 38,
         padding: const EdgeInsets.symmetric(horizontal: 10),

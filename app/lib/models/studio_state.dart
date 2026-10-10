@@ -436,7 +436,6 @@ class StudioState extends ChangeNotifier {
 
   void setLaserOffset(Offset? offset) {
     laserOffset = offset;
-    notifyListeners();
   }
 
   void finishStroke({List<BoardStroke>? target}) {

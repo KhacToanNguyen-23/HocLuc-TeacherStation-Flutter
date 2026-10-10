@@ -146,7 +146,7 @@ class StageContainer extends StatelessWidget {
       case StudioViewportMode.split:
         return Stack(
           children: [
-            Positioned.fill(child: _buildChalkboard()),
+            Positioned.fill(child: RepaintBoundary(child: _buildChalkboard())),
             FloatingPdfWindow(
               studio: studio,
               boardConstraints: constraints,

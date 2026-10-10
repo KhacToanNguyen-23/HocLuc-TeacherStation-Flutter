@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -129,53 +130,68 @@ class _PdfStageState extends State<PdfStage> {
     );
   }
 
+  Widget? _cachedPdfViewer;
+  String? _cachedPdfPath;
+  Uint8List? _cachedPdfBytes;
+
+  Widget _getPdfViewerWidget() {
+    final studio = widget.studio;
+    if (_cachedPdfViewer != null &&
+        _cachedPdfPath == studio.pdfFilePath &&
+        identical(_cachedPdfBytes, studio.pdfBytes)) {
+      return _cachedPdfViewer!;
+    }
+    _cachedPdfPath = studio.pdfFilePath;
+    _cachedPdfBytes = studio.pdfBytes;
+
+    final params = PdfViewerParams(
+      backgroundColor: chalkboardBg,
+      panAxis: PanAxis.free,
+      onPageChanged: (page) {
+        if (page != null && page != studio.pdfPage) {
+          studio.setPdfPage(page);
+        }
+      },
+      onDocumentChanged: (doc) {
+        if (doc != null && doc.pages.length != studio.pdfTotalPages) {
+          studio.setPdfTotalPages(doc.pages.length);
+        }
+      },
+    );
+
+    _cachedPdfViewer = RepaintBoundary(
+      child: studio.pdfBytes != null
+          ? PdfViewer.data(
+              studio.pdfBytes!,
+              sourceName: studio.pdfFilePath ?? 'document.pdf',
+              controller: _pdfController,
+              params: params,
+            )
+          : PdfViewer.file(
+              studio.pdfFilePath!,
+              controller: _pdfController,
+              params: params,
+            ),
+    );
+    return _cachedPdfViewer!;
+  }
+
   Widget _buildPdfView() {
     final studio = widget.studio;
 
     return Stack(
       children: [
-        // PDF Render Layer
-        Positioned.fill(
-          child: studio.pdfBytes != null
-              ? PdfViewer.data(
-                  studio.pdfBytes!,
-                  sourceName: studio.pdfFilePath ?? 'document.pdf',
-                  controller: _pdfController,
-                  params: PdfViewerParams(
-                    backgroundColor: chalkboardBg,
-                    onPageChanged: (page) {
-                      if (page != null) studio.setPdfPage(page);
-                    },
-                    onDocumentChanged: (doc) {
-                      if (doc != null) {
-                        studio.setPdfTotalPages(doc.pages.length);
-                      }
-                    },
-                  ),
-                )
-              : PdfViewer.file(
-                  studio.pdfFilePath!,
-                  controller: _pdfController,
-                  params: PdfViewerParams(
-                    backgroundColor: chalkboardBg,
-                    onPageChanged: (page) {
-                      if (page != null) studio.setPdfPage(page);
-                    },
-                    onDocumentChanged: (doc) {
-                      if (doc != null) {
-                        studio.setPdfTotalPages(doc.pages.length);
-                      }
-                    },
-                  ),
-                ),
-        ),
+        // PDF Render Layer (cached & RepaintBoundary isolated)
+        Positioned.fill(child: _getPdfViewerWidget()),
 
-        // Transparent Per-Page Annotation Layer
+        // Transparent Per-Page Annotation Layer (RepaintBoundary isolated)
         Positioned.fill(
-          child: StrokeCanvas(
-            studio: studio,
-            targetStrokes: studio.currentPdfStrokes,
-            interactive: widget.interactive,
+          child: RepaintBoundary(
+            child: StrokeCanvas(
+              studio: studio,
+              targetStrokes: studio.currentPdfStrokes,
+              interactive: widget.interactive,
+            ),
           ),
         ),
 
