@@ -189,6 +189,9 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           _buildDropTargetBar(studio),
                           const SizedBox(height: 6),
                           _buildDocsList(studio),
+
+                          // 4. TIỆN ÍCH MÔN HỌC (PLUGINS)
+                          _buildPluginsSection(context),
                         ],
                       ),
                     ),
@@ -358,6 +361,105 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildPluginsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 10, bottom: 8),
+          child: Divider(color: Color(0x28ffffff), height: 1),
+        ),
+        Row(
+          children: [
+            const Icon(
+              Icons.extension_outlined,
+              size: 13,
+              color: Color(0xffd4e8a6),
+            ),
+            const SizedBox(width: 5),
+            const Expanded(
+              child: Text(
+                'TIỆN ÍCH MÔN HỌC',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 9.5,
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xffd4e8a6),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 1,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0x28d4e8a6),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'Plugins',
+                style: TextStyle(
+                  fontSize: 7.5,
+                  color: Color(0xffd4e8a6),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Hệ thống Extension Microkernel: Sẵn sàng kết nối plugin bộ môn (Tiếng Anh, Toán, Khoa học…).',
+                  style: TextStyle(fontSize: 12),
+                ),
+                backgroundColor: Color(0xff1b2e25),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+            decoration: BoxDecoration(
+              color: const Color(0x14ffffff),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0x2effffff)),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.add_circle_outline,
+                  size: 14,
+                  color: Color(0xffd4e8a6),
+                ),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Cài thêm tiện ích môn',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xffd4e8a6),
+                    ),
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios, size: 10, color: Color(0xff8a9a8d)),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -572,12 +674,16 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
           children: [
             Icon(Icons.add, size: 14, color: Color(0xffd4e8a6)),
             SizedBox(width: 4),
-            Text(
-              'Thêm trang bài giảng',
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.bold,
-                color: Color(0xffd4e8a6),
+            Flexible(
+              child: Text(
+                'Thêm trang bài giảng',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xffd4e8a6),
+                ),
               ),
             ),
           ],
@@ -588,34 +694,34 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
 
   Widget _buildSectionDivider(StudioState studio) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Expanded(child: Divider(color: Color(0x28ffffff), height: 1)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.folder_open_outlined,
-                  size: 12,
-                  color: Color(0xff8a9a8d),
-                ),
-                const SizedBox(width: 4),
-                Text(
+          const Divider(color: Color(0x28ffffff), height: 1),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.folder_open_outlined,
+                size: 13,
+                color: Color(0xffd4e8a6),
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
                   'TỆP TÀI LIỆU (${studio.importedDocs.length})',
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 8.5,
+                    fontSize: 9.5,
                     letterSpacing: 0.8,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xff8a9a8d),
+                    color: Color(0xffd4e8a6),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const Expanded(child: Divider(color: Color(0x28ffffff), height: 1)),
         ],
       ),
     );
