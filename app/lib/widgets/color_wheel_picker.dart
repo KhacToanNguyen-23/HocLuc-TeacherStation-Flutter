@@ -2,25 +2,23 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
 
-/// 24-Hue, 6-Ring Color Wheel Widget & Dialog matching the educational color wheel
-class ColorWheelDialog extends StatefulWidget {
-  const ColorWheelDialog({super.key, required this.studio});
+/// Compact Color Wheel Flyout (Clean 190px width, instant pick, non-blocking)
+class ColorWheelCompactFlyout extends StatelessWidget {
+  const ColorWheelCompactFlyout({
+    super.key,
+    required this.studio,
+    this.onClose,
+  });
 
   final StudioState studio;
+  final VoidCallback? onClose;
 
-  @override
-  State<ColorWheelDialog> createState() => _ColorWheelDialogState();
-}
-
-class _ColorWheelDialogState extends State<ColorWheelDialog> {
-  late Color _selectedColor;
-
-  static const List<double> _wheelHues = [
+  static const List<double> wheelHues = [
     60, 50, 40, 30, 20, 10, 0, 345, 330, 310, 290, 270,
     250, 230, 210, 195, 180, 165, 150, 135, 120, 105, 90, 75,
   ];
 
-  static const List<(double lightness, double saturation)> _wheelRings = [
+  static const List<(double lightness, double saturation)> wheelRings = [
     (0.20, 0.95), // Ring 0: Innermost dark shade
     (0.32, 0.90), // Ring 1: Dark
     (0.44, 0.90), // Ring 2: Medium dark
@@ -30,196 +28,101 @@ class _ColorWheelDialogState extends State<ColorWheelDialog> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _selectedColor = widget.studio.ink;
-  }
+  Widget build(BuildContext context) {
+    final currentColor = studio.ink;
+    final hexCode =
+        '#${(currentColor.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
 
-  void _onColorTapped(Color color) {
-    setState(() => _selectedColor = color);
-  }
+    return Material(
+      color: Colors.transparent,
+      elevation: 0,
+      child: Container(
+        width: 195,
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xffd5dcd2), width: 1.2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33000000),
+              blurRadius: 18,
+              offset: Offset(0, -3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Mini Header
+            Row(
+              children: [
+                Container(
+                  width: 13,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    color: currentColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.black26),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  hexCode,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xff173e35),
+                  ),
+                ),
+                const Spacer(),
+                if (onClose != null)
+                  InkWell(
+                    onTap: onClose,
+                    borderRadius: BorderRadius.circular(4),
+                    child: const Padding(
+                      padding: EdgeInsets.all(2),
+                      child: Icon(Icons.close, size: 14, color: Colors.black45),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
 
-  void _applyColor() {
-    widget.studio.setCustomColor(_selectedColor);
-    Navigator.of(context).pop();
+            // Compact 24-Sector Color Wheel (diameter 155px)
+            SizedBox(
+              width: 155,
+              height: 155,
+              child: ColorWheelInteractive(
+                selectedColor: currentColor,
+                hues: wheelHues,
+                rings: wheelRings,
+                onColorSelected: (c) => studio.setCustomColor(c),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+}
+
+/// Fallback Compact Color Wheel Dialog (used if called via dialog)
+class ColorWheelDialog extends StatelessWidget {
+  const ColorWheelDialog({super.key, required this.studio});
+
+  final StudioState studio;
 
   @override
   Widget build(BuildContext context) {
-    final hexCode = '#${_selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      insetPadding: EdgeInsets.zero,
       child: Center(
-        child: Container(
-          width: 380,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xff182721),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0x44ffffff), width: 1.5),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black87,
-                blurRadius: 28,
-                offset: Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                children: [
-                  const Icon(Icons.palette_outlined, size: 20, color: Color(0xffd4e8a6)),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Bảng phối màu tùy thích',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, size: 18, color: Colors.white54),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Interactive 24-Sector Color Wheel
-              SizedBox(
-                width: 250,
-                height: 250,
-                child: ColorWheelInteractive(
-                  selectedColor: _selectedColor,
-                  hues: _wheelHues,
-                  rings: _wheelRings,
-                  onColorSelected: _onColorTapped,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Current color preview & Hex code
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xff121d19),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0x22ffffff)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: _selectedColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white70, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _selectedColor.withValues(alpha: 0.5),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Màu đang chọn',
-                            style: TextStyle(fontSize: 10.5, color: Colors.white54),
-                          ),
-                          Text(
-                            hexCode,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xffd4e8a6),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    FilledButton(
-                      onPressed: _applyColor,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xffd4e8a6),
-                        foregroundColor: const Color(0xff14221d),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      child: const Text('Chọn màu này', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Quick Preset Teaching Palette
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Màu phấn & dạ quang phổ biến:',
-                    style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final c in [
-                        const Color(0xffffffff),
-                        const Color(0xfff0f3ed),
-                        const Color(0xffffe66d),
-                        const Color(0xffffd166),
-                        const Color(0xffff8c69),
-                        const Color(0xffff6b6b),
-                        const Color(0xffff85a2),
-                        const Color(0xffb388ff),
-                        const Color(0xff70e0d0),
-                        const Color(0xff48cae4),
-                        const Color(0xff06d6a0),
-                        const Color(0xff9ef01a),
-                      ])
-                        InkWell(
-                          onTap: () => _onColorTapped(c),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              color: c,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: _selectedColor == c ? const Color(0xffd4e8a6) : Colors.white24,
-                                width: _selectedColor == c ? 2.5 : 1.2,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
+        child: ColorWheelCompactFlyout(
+          studio: studio,
+          onClose: () => Navigator.of(context).pop(),
         ),
       ),
     );
@@ -347,10 +250,14 @@ class ColorWheelPainter extends CustomPainter {
       }
     }
 
-    // Center circular hub
-    final centerPaint = Paint()..color = const Color(0xff182721);
+    // Center circular hub shows the active color
+    final centerPaint = Paint()..color = selectedColor;
     canvas.drawCircle(center, minR, centerPaint);
-    canvas.drawCircle(center, minR, linePaint);
+    final centerBorder = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    canvas.drawCircle(center, minR, centerBorder);
   }
 
   @override

@@ -76,6 +76,7 @@ class _StudioScreenState extends State<StudioScreen> {
   bool initializedControllers = false;
   bool showLessons = false;
   bool showInspector = false;
+  bool showColorWheelFlyout = false;
   @override
   void initState() {
     super.initState();
@@ -298,17 +299,44 @@ class _StudioScreenState extends State<StudioScreen> {
                         child: Column(
                           children: [
                             Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  10,
-                                  6,
-                                  10,
-                                  4,
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTapDown: (_) {
+                                  if (showColorWheelFlyout) {
+                                    setState(
+                                      () => showColorWheelFlyout = false,
+                                    );
+                                  }
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    10,
+                                    6,
+                                    10,
+                                    4,
+                                  ),
+                                  child: fittedStage(),
                                 ),
-                                child: fittedStage(),
                               ),
                             ),
-                            if (studio.view == 'board') drawingToolbar(),
+                            if (studio.view == 'board')
+                              Stack(
+                                alignment: Alignment.bottomCenter,
+                                clipBehavior: Clip.none,
+                                children: [
+                                  drawingToolbar(),
+                                  if (showColorWheelFlyout)
+                                    Positioned(
+                                      bottom: 46,
+                                      child: ColorWheelCompactFlyout(
+                                        studio: studio,
+                                        onClose: () => setState(
+                                          () => showColorWheelFlyout = false,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
@@ -1073,11 +1101,10 @@ class _StudioScreenState extends State<StudioScreen> {
                 ),
               ),
             Tooltip(
-              message: 'Bảng phối màu tùy thích (Color Wheel)',
+              message: 'Bảng phối màu tùy thích',
               child: InkWell(
-                onTap: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => ColorWheelDialog(studio: studio),
+                onTap: () => setState(
+                  () => showColorWheelFlyout = !showColorWheelFlyout,
                 ),
                 child: Container(
                   width: 24,
@@ -1101,15 +1128,22 @@ class _StudioScreenState extends State<StudioScreen> {
                       ],
                     ),
                     border: Border.all(
-                      color: Colors.white,
-                      width: 1.5,
+                      color: showColorWheelFlyout ? pine : Colors.white,
+                      width: showColorWheelFlyout ? 2.5 : 1.5,
                     ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 3,
-                        spreadRadius: 0.5,
-                      ),
+                    boxShadow: [
+                      if (showColorWheelFlyout)
+                        BoxShadow(
+                          color: pine.withValues(alpha: 0.4),
+                          blurRadius: 5,
+                          spreadRadius: 1,
+                        )
+                      else
+                        const BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 3,
+                          spreadRadius: 0.5,
+                        ),
                     ],
                   ),
                   child: const Center(
