@@ -359,7 +359,7 @@ class ColorWheelPainter extends CustomPainter {
   }
 }
 
-/// Tool Size Dialog for Pen, Highlighter, and Eraser
+/// Minimalist Tool Size Popup Dialog (Clean horizontal stroke lines, no text, compact)
 class ToolSizeDialog extends StatelessWidget {
   const ToolSizeDialog({super.key, required this.studio});
 
@@ -371,196 +371,85 @@ class ToolSizeDialog extends StatelessWidget {
     final isHighlighter = tool == 'highlight';
     final isEraser = tool == 'erase';
 
-    final title = isHighlighter
-        ? 'Kích thước Bút đánh dấu'
-        : (isEraser ? 'Kích thước Tẩy nét' : 'Kích thước Bút vẽ');
-
-    final icon = isHighlighter
-        ? Icons.brush_outlined
-        : (isEraser ? Icons.auto_fix_normal : Icons.edit_outlined);
-
-    final currentVal = studio.currentToolSize;
-
-    final List<({double val, String label})> presets = isHighlighter
+    // 3 clean thickness levels matching the user's reference image
+    final List<({double val, double lineThickness})> presets = isHighlighter
         ? [
-            (val: 12.0, label: 'Mảnh (12px)'),
-            (val: 20.0, label: 'Vừa (20px)'),
-            (val: 32.0, label: 'Dày (32px)'),
-            (val: 48.0, label: 'Rất dày (48px)'),
+            (val: 14.0, lineThickness: 3.0),
+            (val: 24.0, lineThickness: 7.0),
+            (val: 40.0, lineThickness: 13.0),
           ]
         : (isEraser
             ? [
-                (val: 0.02, label: 'Tẩy nhỏ'),
-                (val: 0.04, label: 'Tẩy vừa'),
-                (val: 0.07, label: 'Tẩy lớn'),
-                (val: 0.12, label: 'Tẩy cực to'),
+                (val: 0.025, lineThickness: 3.0),
+                (val: 0.05, lineThickness: 6.5),
+                (val: 0.09, lineThickness: 12.0),
               ]
             : [
-                (val: 1.5, label: 'Siêu mảnh (1.5)'),
-                (val: 2.5, label: 'Mảnh (2.5)'),
-                (val: 3.5, label: 'Tiêu chuẩn (3.5)'),
-                (val: 6.0, label: 'Đậm (6.0)'),
-                (val: 10.0, label: 'Cực đậm (10.0)'),
+                (val: 2.0, lineThickness: 1.8),
+                (val: 4.0, lineThickness: 4.0),
+                (val: 7.5, lineThickness: 7.5),
               ]);
 
-    final minSlider = isHighlighter ? 8.0 : (isEraser ? 0.015 : 1.0);
-    final maxSlider = isHighlighter ? 60.0 : (isEraser ? 0.15 : 16.0);
+    final currentVal = studio.currentToolSize;
+
+    // Find the closest preset index
+    int selectedIndex = 0;
+    double minDiff = double.infinity;
+    for (int i = 0; i < presets.length; i++) {
+      final diff = (currentVal - presets[i].val).abs();
+      if (diff < minDiff) {
+        minDiff = diff;
+        selectedIndex = i;
+      }
+    }
 
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      insetPadding: EdgeInsets.zero,
       child: Center(
         child: Container(
-          width: 330,
-          padding: const EdgeInsets.all(18),
+          width: 90,
           decoration: BoxDecoration(
-            color: const Color(0xff182721),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0x44ffffff), width: 1.5),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xffd5dcd2), width: 1),
             boxShadow: const [
               BoxShadow(
-                color: Colors.black87,
-                blurRadius: 24,
-                offset: Offset(0, 8),
+                color: Color(0x33000000),
+                blurRadius: 16,
+                offset: Offset(0, 4),
               ),
             ],
           ),
+          clipBehavior: Clip.antiAlias,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
-              Row(
-                children: [
-                  Icon(icon, size: 18, color: const Color(0xffd4e8a6)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, size: 16, color: Colors.white54),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Visual preview dot of current size
-              Container(
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xff121d19),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0x22ffffff)),
-                ),
-                child: Center(
+              for (int i = 0; i < presets.length; i++)
+                InkWell(
+                  onTap: () {
+                    studio.setCurrentToolSize(presets[i].val);
+                    Navigator.of(context).pop();
+                  },
                   child: Container(
-                    width: isEraser ? currentVal * 400 : currentVal.clamp(2.0, 48.0),
-                    height: isEraser ? currentVal * 400 : currentVal.clamp(2.0, 48.0),
-                    decoration: BoxDecoration(
-                      color: isEraser ? const Color(0x99ff9070) : studio.ink,
-                      shape: BoxShape.circle,
-                      border: isEraser ? Border.all(color: Colors.white70, width: 1.5) : null,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              // Preset options
-              Column(
-                children: [
-                  for (final p in presets)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 5),
-                      child: InkWell(
-                        onTap: () {
-                          studio.setCurrentToolSize(p.val);
-                          Navigator.of(context).pop();
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: (currentVal - p.val).abs() < 0.005
-                                ? const Color(0xff22382c)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: (currentVal - p.val).abs() < 0.005
-                                  ? const Color(0xffd4e8a6)
-                                  : const Color(0x1fffffff),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 18,
-                                height: 18,
-                                decoration: BoxDecoration(
-                                  color: (currentVal - p.val).abs() < 0.005
-                                      ? const Color(0xffd4e8a6)
-                                      : Colors.transparent,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: (currentVal - p.val).abs() < 0.005
-                                        ? const Color(0xffd4e8a6)
-                                        : Colors.white38,
-                                  ),
-                                ),
-                                child: (currentVal - p.val).abs() < 0.005
-                                    ? const Icon(Icons.check, size: 12, color: Color(0xff14221d))
-                                    : null,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                p.label,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: (currentVal - p.val).abs() < 0.005
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  color: (currentVal - p.val).abs() < 0.005
-                                      ? Colors.white
-                                      : Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
+                    height: 38,
+                    color: i == selectedIndex
+                        ? const Color(0xffe5e8e3)
+                        : Colors.transparent,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    alignment: Alignment.center,
+                    child: Container(
+                      height: presets[i].lineThickness,
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(
+                          presets[i].lineThickness / 2,
                         ),
                       ),
                     ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              // Slider for custom size
-              SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: const Color(0xffd4e8a6),
-                  inactiveTrackColor: Colors.white12,
-                  thumbColor: const Color(0xffd4e8a6),
-                  overlayColor: const Color(0x33d4e8a6),
-                  trackHeight: 3,
+                  ),
                 ),
-                child: Slider(
-                  value: currentVal.clamp(minSlider, maxSlider),
-                  min: minSlider,
-                  max: maxSlider,
-                  onChanged: (v) => studio.setCurrentToolSize(v),
-                ),
-              ),
             ],
           ),
         ),

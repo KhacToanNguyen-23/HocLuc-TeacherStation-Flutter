@@ -952,8 +952,7 @@ class _StudioScreenState extends State<StudioScreen> {
                 icon: Icon(icon, size: 19, color: pine),
               ),
             Tooltip(
-              message:
-                  'Kích thước nét & tẩy (${studio.tool == 'erase' ? 'Tẩy' : (studio.tool == 'highlight' ? 'Dạ quang' : 'Bút')})',
+              message: 'Kích thước nét & tẩy',
               child: InkWell(
                 onTap: () => showDialog<void>(
                   context: context,
@@ -961,7 +960,7 @@ class _StudioScreenState extends State<StudioScreen> {
                 ),
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xfff5f7f2),
                     borderRadius: BorderRadius.circular(8),
@@ -971,22 +970,23 @@ class _StudioScreenState extends State<StudioScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 14,
-                        height: 14,
+                        width: 16,
+                        height: (studio.tool == 'highlight'
+                                ? studio.highlighterWidth / 5
+                                : (studio.tool == 'erase'
+                                    ? studio.eraserRadius * 80
+                                    : studio.strokeWidth))
+                            .clamp(1.8, 7.5),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
                           color: studio.tool == 'erase'
-                              ? const Color(0xffff9070)
+                              ? const Color(0xffff8c69)
                               : (studio.tool == 'laser'
                                   ? Colors.redAccent
-                                  : studio.ink),
-                          border: Border.all(
-                            color: const Color(0x33000000),
-                            width: 1,
-                          ),
+                                  : pine),
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 3),
                       const Icon(Icons.arrow_drop_down, size: 14, color: pine),
                     ],
                   ),
@@ -1041,7 +1041,7 @@ class _StudioScreenState extends State<StudioScreen> {
                 ].contains(studio.customColor))
               Tooltip(
                 message:
-                    'Màu tự chọn (#${studio.customColor!.toARGB32().toRadixString(16).substring(2).toUpperCase()})',
+                    'Màu tự chọn (#${(studio.customColor!.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()})',
                 child: InkWell(
                   onTap: () => studio.change(
                     () => studio.ink = studio.customColor!,
