@@ -88,5 +88,55 @@
     "verification_command": "flutter test",
     "notes": "Covers stories: P1 (Free-Floating PDF Window, Drag & Drop from Drawer)",
     "priority": "P1"
+  },
+  {
+    "id": "phase-01-board-sticker",
+    "title": "BoardSticker Canvas Model, Rendering & Persistence",
+    "status": "passing",
+    "evidence": "Tests: 3 passed in test/board_sticker_test.dart, 34 total passed across suite",
+    "user_visible_behavior": "Thẻ phân tích cú pháp S-V-O và lỗi ngữ pháp xuất hiện trên bảng phấn, có thể kéo thả di chuyển vị trí và lưu vào bài giảng.",
+    "verification_command": "flutter test test/board_sticker_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-plugin-manifest-loader",
+    "title": "Plugin Package (.hlep) Loader & Storage Manager",
+    "status": "not_started",
+    "evidence": "",
+    "user_visible_behavior": "Hệ thống đọc file manifest.json và giải nén gói .hlep, quản lý danh sách tiện ích đã cài đặt.",
+    "verification_command": "flutter test test/plugin_manifest_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-plugin-host-ui",
+    "title": "Hybrid Plugin Host UI (Drawer Panel 420px & Pop-out Floating Window)",
+    "status": "not_started",
+    "evidence": "",
+    "user_visible_behavior": "Giao diện plugin mở trong ngăn kéo 420px bên phải bảng hoặc pop-out thành cửa sổ nổi, nhận sự kiện ghim thẻ sang bảng phấn.",
+    "verification_command": "flutter test test/plugin_ui_test.dart",
+    "notes": "Covers stories: P1, P2",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-04-python-sidecar-desktop",
+    "title": "Python Sidecar Lifecycle Manager (Desktop) & Web Fallback",
+    "status": "not_started",
+    "evidence": "",
+    "user_visible_behavior": "Tiến trình service.exe tự động khởi chạy và tắt ngầm trên Windows, hiển thị trạng thái kết nối trên Web.",
+    "verification_command": "flutter test test/sidecar_manager_test.dart",
+    "notes": "Covers stories: P2",
+    "priority": "P2"
+  },
+  {
+    "id": "phase-05-english-assistant-bundle",
+    "title": "English Assistant Sample Bundle (.hlep) & End-to-End Tests",
+    "status": "not_started",
+    "evidence": "",
+    "user_visible_behavior": "Giáo viên cài đặt và sử dụng trọn vẹn plugin Trợ giảng Tiếng Anh bóc tách S-V-O và bắt lỗi thì/ngữ pháp từ đầu đến cuối.",
+    "verification_command": "flutter test test/english_assistant_e2e_test.dart",
+    "notes": "Covers stories: P1, P2",
+    "priority": "P1"
   }
 ]

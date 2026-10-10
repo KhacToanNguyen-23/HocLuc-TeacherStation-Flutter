@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../services/local_service.dart';
 import '../services/desktop_lifecycle.dart';
+import 'board_sticker.dart';
 
 import 'package:perfect_freehand/perfect_freehand.dart';
 
@@ -414,6 +415,40 @@ class StudioState extends ChangeNotifier {
 
   List<List<BoardStroke>> pages = [[]];
   List<String> pageTitles = ['Khám phá bài học'];
+  final Map<int, List<BoardSticker>> pageStickers = {};
+
+  List<BoardSticker> get currentStickers =>
+      pageStickers.putIfAbsent(page, () => []);
+
+  void addSticker(BoardSticker sticker) {
+    currentStickers.add(sticker);
+    dirty = true;
+    _revision++;
+    notifyListeners();
+  }
+
+  void removeSticker(String id) {
+    final list = currentStickers;
+    final idx = list.indexWhere((s) => s.id == id);
+    if (idx != -1) {
+      list.removeAt(idx);
+      dirty = true;
+      _revision++;
+      notifyListeners();
+    }
+  }
+
+  void updateStickerRect(String id, Rect newRect) {
+    final list = currentStickers;
+    final idx = list.indexWhere((s) => s.id == id);
+    if (idx != -1) {
+      list[idx].normalizedRect = newRect;
+      dirty = true;
+      _revision++;
+      notifyListeners();
+    }
+  }
+
   Timer? _timer;
   String savedAt = '';
   int _revision = 0;
@@ -764,6 +799,18 @@ class StudioState extends ChangeNotifier {
     });
     _redoPages = newRedo;
 
+    final newStickers = <int, List<BoardSticker>>{};
+    pageStickers.forEach((k, v) {
+      if (k < index) {
+        newStickers[k] = v;
+      } else if (k > index) {
+        newStickers[k - 1] = v;
+      }
+    });
+    pageStickers
+      ..clear()
+      ..addAll(newStickers);
+
     if (page >= pages.length) {
       page = pages.length - 1;
     } else if (page > index) {
@@ -826,6 +873,9 @@ class StudioState extends ChangeNotifier {
       'page': page,
       'pages': pages.map((p) => p.map((s) => s.toJson()).toList()).toList(),
       'pageTitles': pageTitles,
+      'stickers': pageStickers.map(
+        (k, v) => MapEntry(k.toString(), v.map((s) => s.toJson()).toList()),
+      ),
     };
     final configSnapshot = {
       'endpoint': endpoint,

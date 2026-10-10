@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/studio_state.dart';
+import 'board_sticker_card.dart';
 import 'grid_painter.dart';
 import 'stroke_canvas.dart';
 
@@ -96,6 +97,37 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
                     studio: widget.studio,
                     interactive: widget.interactive && !isPanMode,
                   ),
+                ),
+                ListenableBuilder(
+                  listenable: widget.studio,
+                  builder: (context, _) {
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final size = Size(
+                          constraints.maxWidth,
+                          constraints.maxHeight,
+                        );
+                        final stickers = widget.studio.currentStickers;
+                        return Stack(
+                          children: [
+                            for (final s in stickers)
+                              Positioned(
+                                left: s.normalizedRect.left * size.width,
+                                top: s.normalizedRect.top * size.height,
+                                child: BoardStickerCard(
+                                  sticker: s,
+                                  parentSize: size,
+                                  onDelete: () =>
+                                      widget.studio.removeSticker(s.id),
+                                  onUpdateRect: (r) =>
+                                      widget.studio.updateStickerRect(s.id, r),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    );
+                  },
                 ),
               ],
             ),
