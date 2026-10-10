@@ -156,10 +156,54 @@ class StudioState extends ChangeNotifier {
       view = 'board',
       tool = 'pen';
   bool reveal = false, denoise = true;
-  int page = 0, seconds = 300;
+  int _page = 0, seconds = 300;
+  int get page => _page;
+  set page(int p) {
+    final next = p < 0 ? 0 : p;
+    while (pages.length <= next) {
+      pages.add([]);
+      pageTitles.add('Trang ${pages.length}');
+    }
+    _page = next;
+  }
   Color ink = const Color(0xfff0f3ed);
   double strokeWidth = 3.5;
+  double highlighterWidth = 20.0;
+  double eraserRadius = 0.04;
   Offset? laserOffset;
+  Color? customColor;
+  List<Color> recentColors = [];
+
+  double get currentToolSize {
+    if (tool == 'highlight') return highlighterWidth;
+    if (tool == 'erase') return eraserRadius;
+    return strokeWidth;
+  }
+
+  void setCurrentToolSize(double val) {
+    if (tool == 'highlight') {
+      highlighterWidth = val;
+    } else if (tool == 'erase') {
+      eraserRadius = val;
+    } else {
+      strokeWidth = val;
+    }
+    dirty = true;
+    notifyListeners();
+  }
+
+  void setCustomColor(Color color) {
+    customColor = color;
+    ink = color;
+    if (!recentColors.contains(color)) {
+      recentColors.insert(0, color);
+      if (recentColors.length > 8) {
+        recentColors.removeLast();
+      }
+    }
+    dirty = true;
+    notifyListeners();
+  }
   StudioViewportMode viewportMode = StudioViewportMode.fullBoard;
   bool pdfOnRight = false;
   double splitRatio = 0.5;
@@ -366,12 +410,19 @@ class StudioState extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<List<BoardStroke>> pages = [[], [], []];
+  List<List<BoardStroke>> pages = [[]];
+  List<String> pageTitles = ['Khám phá bài học'];
   Timer? _timer;
   String savedAt = '';
   int _revision = 0;
   int get revision => _revision;
-  List<BoardStroke> get strokes => pages[page];
+  List<BoardStroke> get strokes {
+    while (pages.length <= _page) {
+      pages.add([]);
+      pageTitles.add('Trang ${pages.length}');
+    }
+    return pages[_page];
+  }
   bool get timerRunning => _timer != null;
 
   String? pdfFilePath;
@@ -496,8 +547,8 @@ class StudioState extends ChangeNotifier {
         subject = lesson['subject'] as String? ?? subject;
         notes = lesson['notes'] as String? ?? notes;
         question = lesson['question'] as String? ?? question;
-        page = ((lesson['page'] as num?)?.toInt() ?? 0).clamp(0, 2);
-        if (lesson['pages'] is List && (lesson['pages'] as List).length == 3) {
+        page = ((lesson['page'] as num?)?.toInt() ?? 0).clamp(0, 999);
+        if (lesson['pages'] is List && (lesson['pages'] as List).isNotEmpty) {
           pages = (lesson['pages'] as List)
               .map(
                 (p) => (p as List)
@@ -505,6 +556,15 @@ class StudioState extends ChangeNotifier {
                     .toList(),
               )
               .toList();
+          if (lesson['pageTitles'] is List) {
+            pageTitles = (lesson['pageTitles'] as List).cast<String>();
+          } else {
+            pageTitles = List.generate(
+              pages.length,
+              (i) => i == 0 ? 'Khám phá bài học' : 'Trang ${i + 1}',
+            );
+          }
+          page = page.clamp(0, pages.length - 1);
         }
         endpoint = config['endpoint'] as String? ?? '';
         language = config['language'] as String? ?? 'English';
@@ -562,7 +622,7 @@ class StudioState extends ChangeNotifier {
       return;
     }
     _currentRedoStack.clear();
-    final w = tool == 'highlight' ? 20.0 : strokeWidth;
+    final w = tool == 'highlight' ? highlighterWidth : strokeWidth;
     list.add(BoardStroke(ink, w, [point]));
     _revision++;
     dirty = true;
@@ -589,8 +649,9 @@ class StudioState extends ChangeNotifier {
 
   void erase(Offset point, {List<BoardStroke>? target}) {
     final list = target ?? strokes;
+    final r = eraserRadius;
     list.removeWhere(
-      (stroke) => stroke.points.any((p) => (p - point).distance < .035),
+      (stroke) => stroke.points.any((p) => (p - point).distance < r),
     );
     _revision++;
     dirty = true;
@@ -641,10 +702,58 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  void addPage() {
+  void addPage([String? title]) {
     pages.add([]);
+    pageTitles.add(title ?? 'Trang ${pages.length}');
     page = pages.length - 1;
+    dirty = true;
+    _revision++;
     notifyListeners();
+  }
+
+  void deletePage(int index) {
+    if (index < 0 || index >= pages.length) return;
+    if (pages.length <= 1) {
+      // Giữ lại ít nhất 1 trang trắng
+      pages[0].clear();
+      _redoPages?[0]?.clear();
+      pageTitles[0] = 'Khám phá bài học';
+      dirty = true;
+      _revision++;
+      notifyListeners();
+      return;
+    }
+    pages.removeAt(index);
+    if (index < pageTitles.length) {
+      pageTitles.removeAt(index);
+    }
+    final newRedo = <int, List<BoardStroke>>{};
+    _redoPages?.forEach((k, v) {
+      if (k < index) {
+        newRedo[k] = v;
+      } else if (k > index) {
+        newRedo[k - 1] = v;
+      }
+    });
+    _redoPages = newRedo;
+
+    if (page >= pages.length) {
+      page = pages.length - 1;
+    } else if (page > index) {
+      page--;
+    }
+    dirty = true;
+    _revision++;
+    notifyListeners();
+  }
+
+  void renamePage(int index, String title) {
+    if (index >= 0 && index < pageTitles.length) {
+      final trimmed = title.trim();
+      pageTitles[index] = trimmed.isEmpty ? 'Trang ${index + 1}' : trimmed;
+      dirty = true;
+      notifyListeners();
+    }
   }
 
   void setPage(int p) {
@@ -689,6 +798,7 @@ class StudioState extends ChangeNotifier {
       'question': question,
       'page': page,
       'pages': pages.map((p) => p.map((s) => s.toJson()).toList()).toList(),
+      'pageTitles': pageTitles,
     };
     final configSnapshot = {
       'endpoint': endpoint,

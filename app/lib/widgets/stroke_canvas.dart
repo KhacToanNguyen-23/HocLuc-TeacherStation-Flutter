@@ -136,7 +136,7 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                     if (_activePoints.isNotEmpty) {
                       final isHighlighter = widget.studio.tool == 'highlight';
                       final width = isHighlighter
-                          ? 20.0
+                          ? widget.studio.highlighterWidth
                           : widget.studio.strokeWidth;
                       final stroke = BoardStroke(
                         widget.studio.ink,
@@ -164,7 +164,7 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                     } else {
                       final isHighlighter = widget.studio.tool == 'highlight';
                       final width = isHighlighter
-                          ? 20.0
+                          ? widget.studio.highlighterWidth
                           : widget.studio.strokeWidth;
                       final stroke = BoardStroke(widget.studio.ink, width, [
                         norm,
@@ -207,7 +207,7 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                               ? widget.studio.ink.withValues(alpha: 0.35)
                               : widget.studio.ink,
                           width: isHighlighter
-                              ? 20.0
+                              ? widget.studio.highlighterWidth
                               : widget.studio.strokeWidth,
                           isHighlight: isHighlighter,
                         ),

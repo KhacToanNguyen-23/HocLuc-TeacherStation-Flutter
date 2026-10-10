@@ -123,39 +123,86 @@ void main() {
   });
 
   test(
-    'Phase 02: Multi-page navigation preserves per-page strokes independently',
+    'Phase 02: Dynamic multi-page navigation and management (add, delete, rename)',
     () {
       final state = StudioState();
       expect(state.page, equals(0));
-      expect(state.pages.length, equals(3));
+      expect(state.pages.length, equals(1));
+      expect(state.pageTitles.first, equals('Khám phá bài học'));
 
       state.addStroke(BoardStroke(Colors.white, 3.0, [const Offset(0.1, 0.1)]));
       expect(state.strokes.length, equals(1));
 
-      state.nextPage();
+      // Add page dynamically
+      state.addPage('Trang giải bài tập');
       expect(state.page, equals(1));
+      expect(state.pages.length, equals(2));
+      expect(state.pageTitles[1], equals('Trang giải bài tập'));
       expect(state.strokes.isEmpty, isTrue);
 
       state.addStroke(BoardStroke(Colors.red, 3.0, [const Offset(0.5, 0.5)]));
       expect(state.strokes.length, equals(1));
 
+      // Navigate back and forth
       state.prevPage();
       expect(state.page, equals(0));
       expect(state.strokes.length, equals(1));
       expect(state.strokes.first.color, equals(Colors.white));
 
-      state.addPage();
-      expect(state.page, equals(3));
-      expect(state.pages.length, equals(4));
-      expect(state.strokes.isEmpty, isTrue);
+      state.nextPage();
+      expect(state.page, equals(1));
+      expect(state.strokes.first.color, equals(Colors.red));
+
+      // Rename page
+      state.renamePage(1, 'Ôn tập chương 1');
+      expect(state.pageTitles[1], equals('Ôn tập chương 1'));
+
+      // Delete page
+      state.deletePage(1);
+      expect(state.pages.length, equals(1));
+      expect(state.page, equals(0));
+      expect(state.strokes.length, equals(1));
     },
   );
 
-  test('Phase 02: Highlighter stroke creates width=20.0 stroke', () {
+  test('Tool sizes: pen, highlighter, eraser customizable', () {
+    final state = StudioState();
+    expect(state.tool, equals('pen'));
+    expect(state.currentToolSize, equals(3.5));
+
+    state.setCurrentToolSize(6.0);
+    expect(state.strokeWidth, equals(6.0));
+    expect(state.currentToolSize, equals(6.0));
+
+    state.tool = 'highlight';
+    expect(state.currentToolSize, equals(20.0));
+    state.setCurrentToolSize(32.0);
+    expect(state.highlighterWidth, equals(32.0));
+    expect(state.currentToolSize, equals(32.0));
+
+    state.tool = 'erase';
+    expect(state.currentToolSize, equals(0.04));
+    state.setCurrentToolSize(0.08);
+    expect(state.eraserRadius, equals(0.08));
+    expect(state.currentToolSize, equals(0.08));
+  });
+
+  test('Color wheel custom color sets ink and recentColors', () {
+    final state = StudioState();
+    const testColor = Color(0xff9ef01a);
+    state.setCustomColor(testColor);
+
+    expect(state.customColor, equals(testColor));
+    expect(state.ink, equals(testColor));
+    expect(state.recentColors.contains(testColor), isTrue);
+  });
+
+  test('Highlighter stroke creates custom highlighterWidth stroke', () {
     final state = StudioState();
     state.tool = 'highlight';
+    state.highlighterWidth = 28.0;
     state.startStroke(const Offset(0.1, 0.1));
     expect(state.strokes.length, equals(1));
-    expect(state.strokes.first.width, equals(20.0));
+    expect(state.strokes.first.width, equals(28.0));
   });
 }

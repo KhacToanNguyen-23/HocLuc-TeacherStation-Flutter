@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'models/studio_state.dart';
 import 'widgets/stage_container.dart';
 import 'widgets/interactive_chalkboard.dart';
+import 'widgets/color_wheel_picker.dart';
 
 const pine = Color(0xff173e35);
 const muted = Color(0xff728078);
@@ -179,6 +180,84 @@ class _StudioScreenState extends State<StudioScreen> {
     input.dispose();
     if (result != null && result.isNotEmpty) {
       studio.change(() => studio.title = result);
+    }
+  }
+
+  Future<void> _showRenamePageDialog(int index) async {
+    final currentTitle = index < studio.pageTitles.length
+        ? studio.pageTitles[index]
+        : 'Trang ${index + 1}';
+    final input = TextEditingController(text: currentTitle);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Đổi tên Trang ${index + 1}'),
+        content: TextField(
+          controller: input,
+          autofocus: true,
+          maxLength: 60,
+          decoration: const InputDecoration(
+            hintText: 'Nhập tiêu đề trang...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, input.text.trim()),
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
+    );
+    input.dispose();
+    if (result != null && result.isNotEmpty) {
+      studio.renamePage(index, result);
+    }
+  }
+
+  Future<void> _confirmDeletePage(int index) async {
+    if (studio.pages.length <= 1) {
+      message('Không thể xóa trang duy nhất còn lại.');
+      return;
+    }
+    final pageTitle = index < studio.pageTitles.length
+        ? studio.pageTitles[index]
+        : 'Trang ${index + 1}';
+    final hasStrokes = studio.pages[index].isNotEmpty;
+
+    if (hasStrokes) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Xác nhận xóa trang'),
+          content: Text(
+            'Trang "$pageTitle" đang có nội dung nét vẽ bài giảng. Bạn có chắc chắn muốn xóa không?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xffc2410c),
+              ),
+              child: const Text('Xóa trang'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        studio.deletePage(index);
+        message('Đã xóa $pageTitle.');
+      }
+    } else {
+      studio.deletePage(index);
+      message('Đã xóa $pageTitle.');
     }
   }
 
@@ -499,7 +578,7 @@ class _StudioScreenState extends State<StudioScreen> {
             ),
             const SizedBox(width: 4),
             Text(
-              'P.${studio.page + 1}/3',
+              'P.${studio.page + 1}/${studio.pages.length}',
               style: const TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
@@ -518,86 +597,148 @@ class _StudioScreenState extends State<StudioScreen> {
           ],
         ),
         const SizedBox(height: 10),
-        for (final (index, label) in [
-          (0, 'Khám phá hàm số'),
-          (1, 'Giải thích bảng'),
-          (2, 'Luyện tập'),
-        ])
-          Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: InkWell(
-              onTap: () => studio.change(() {
-                studio.page = index;
-                studio.view = 'board';
-              }),
-              borderRadius: BorderRadius.circular(8),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                decoration: BoxDecoration(
-                  color: studio.page == index && studio.view == 'board'
-                      ? const Color(0xfff0f4e8)
-                      : Colors.white,
-                  border: Border.all(
-                    color: studio.page == index && studio.view == 'board'
-                        ? const Color(0xffadc38c)
-                        : line,
-                  ),
+        for (int index = 0; index < studio.pages.length; index++)
+          Builder(
+            builder: (context) {
+              final isCurrent = studio.page == index && studio.view == 'board';
+              final label = index < studio.pageTitles.length
+                  ? studio.pageTitles[index]
+                  : 'Trang ${index + 1}';
+              final hasStrokes = studio.pages[index].isNotEmpty;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: InkWell(
+                  onTap: () => studio.change(() {
+                    studio.page = index;
+                    studio.view = 'board';
+                  }),
                   borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: studio.page == index && studio.view == 'board'
-                            ? pine
-                            : const Color(0xfff0f2eb),
-                        borderRadius: BorderRadius.circular(5),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? const Color(0xfff0f4e8)
+                          : Colors.white,
+                      border: Border.all(
+                        color: isCurrent
+                            ? const Color(0xffadc38c)
+                            : line,
                       ),
-                      child: Center(
-                        child: Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                studio.page == index && studio.view == 'board'
-                                ? lime
-                                : muted,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: isCurrent
+                                ? pine
+                                : const Color(0xfff0f2eb),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isCurrent
+                                    ? lime
+                                    : muted,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        label,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight:
-                              studio.page == index && studio.view == 'board'
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: pine,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            label,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isCurrent
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: pine,
+                            ),
+                          ),
                         ),
-                      ),
+                        Tooltip(
+                          message: 'Đổi tên trang',
+                          child: InkWell(
+                            onTap: () => _showRenamePageDialog(index),
+                            borderRadius: BorderRadius.circular(4),
+                            child: const Padding(
+                              padding: EdgeInsets.all(2),
+                              child: Icon(Icons.edit_outlined, size: 14, color: muted),
+                            ),
+                          ),
+                        ),
+                        if (studio.pages.length > 1) ...[
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message: 'Xóa trang này',
+                            child: InkWell(
+                              onTap: () => _confirmDeletePage(index),
+                              borderRadius: BorderRadius.circular(4),
+                              child: const Padding(
+                                padding: EdgeInsets.all(2),
+                                child: Icon(
+                                  Icons.delete_outline,
+                                  size: 14,
+                                  color: Color(0xffc2410c),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 4),
+                        Icon(
+                          hasStrokes ? Icons.draw_outlined : Icons.crop_portrait,
+                          size: 13,
+                          color: isCurrent ? pine : muted,
+                        ),
+                      ],
                     ),
-                    Icon(
-                      index == 0 ? Icons.show_chart : Icons.draw_outlined,
-                      size: 13,
-                      color: studio.page == index && studio.view == 'board'
-                          ? pine
-                          : muted,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              );
+            },
+          ),
+        InkWell(
+          onTap: () => studio.change(() {
+            studio.addPage();
+            studio.view = 'board';
+          }),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+            margin: const EdgeInsets.only(top: 2, bottom: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xfff7f9f4),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xffc8d7bd)),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add, size: 14, color: pine),
+                SizedBox(width: 4),
+                Text(
+                  'Thêm trang bài giảng',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: pine,
+                  ),
+                ),
+              ],
             ),
           ),
-        const SizedBox(height: 14),
+        ),
+        const SizedBox(height: 8),
         const Divider(height: 1, color: line),
         const SizedBox(height: 12),
         Row(
@@ -793,8 +934,16 @@ class _StudioScreenState extends State<StudioScreen> {
             ])
               IconButton(
                 tooltip: label,
-                onPressed: () =>
-                    studio.change(() => studio.tool = name, persist: false),
+                onPressed: () {
+                  if (studio.tool == name && (name == 'pen' || name == 'highlight' || name == 'erase')) {
+                    showDialog<void>(
+                      context: context,
+                      builder: (_) => ToolSizeDialog(studio: studio),
+                    );
+                  } else {
+                    studio.change(() => studio.tool = name, persist: false);
+                  }
+                },
                 style: IconButton.styleFrom(
                   backgroundColor: studio.tool == name
                       ? const Color(0xffedf2e5)
@@ -802,7 +951,49 @@ class _StudioScreenState extends State<StudioScreen> {
                 ),
                 icon: Icon(icon, size: 19, color: pine),
               ),
-            const SizedBox(width: 8),
+            Tooltip(
+              message:
+                  'Kích thước nét & tẩy (${studio.tool == 'erase' ? 'Tẩy' : (studio.tool == 'highlight' ? 'Dạ quang' : 'Bút')})',
+              child: InkWell(
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => ToolSizeDialog(studio: studio),
+                ),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xfff5f7f2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: line),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: studio.tool == 'erase'
+                              ? const Color(0xffff9070)
+                              : (studio.tool == 'laser'
+                                  ? Colors.redAccent
+                                  : studio.ink),
+                          border: Border.all(
+                            color: const Color(0x33000000),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.arrow_drop_down, size: 14, color: pine),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
             for (final (color, label) in [
               (const Color(0xfff0f3ed), 'Trắng phấn'),
               (const Color(0xffffe66d), 'Vàng phấn'),
@@ -840,6 +1031,97 @@ class _StudioScreenState extends State<StudioScreen> {
                   ),
                 ),
               ),
+            if (studio.customColor != null &&
+                ![
+                  const Color(0xfff0f3ed),
+                  const Color(0xffffe66d),
+                  const Color(0xff70e0d0),
+                  const Color(0xffff8c69),
+                  const Color(0xffff85a2),
+                ].contains(studio.customColor))
+              Tooltip(
+                message:
+                    'Màu tự chọn (#${studio.customColor!.toARGB32().toRadixString(16).substring(2).toUpperCase()})',
+                child: InkWell(
+                  onTap: () => studio.change(
+                    () => studio.ink = studio.customColor!,
+                    persist: false,
+                  ),
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: BoxDecoration(
+                      color: studio.customColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: studio.ink == studio.customColor
+                            ? pine
+                            : const Color(0xffd5dcd2),
+                        width: studio.ink == studio.customColor ? 2.5 : 1.5,
+                      ),
+                      boxShadow: [
+                        if (studio.ink == studio.customColor)
+                          BoxShadow(
+                            color: studio.customColor!.withValues(alpha: 0.5),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            Tooltip(
+              message: 'Bảng phối màu tùy thích (Color Wheel)',
+              child: InkWell(
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => ColorWheelDialog(studio: studio),
+                ),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const SweepGradient(
+                      colors: [
+                        Color(0xffff3b30),
+                        Color(0xffff9500),
+                        Color(0xffffcc00),
+                        Color(0xff34c759),
+                        Color(0xff00c7be),
+                        Color(0xff32ade6),
+                        Color(0xff007aff),
+                        Color(0xff5856d6),
+                        Color(0xffaf52de),
+                        Color(0xffff2d55),
+                        Color(0xffff3b30),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 1.5,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 3,
+                        spreadRadius: 0.5,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.palette_outlined,
+                      size: 13,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(width: 8),
             IconButton(
               tooltip: 'Hoàn tác nét (Ctrl+Z)',
@@ -884,7 +1166,9 @@ class _StudioScreenState extends State<StudioScreen> {
               child: IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                onPressed: studio.nextPage,
+                onPressed: studio.page < studio.pages.length - 1
+                    ? studio.nextPage
+                    : null,
                 icon: const Icon(Icons.chevron_right, size: 20),
               ),
             ),
@@ -893,7 +1177,7 @@ class _StudioScreenState extends State<StudioScreen> {
               child: IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                onPressed: studio.addPage,
+                onPressed: () => studio.addPage(),
                 icon: const Icon(
                   Icons.add_circle_outline,
                   size: 18,
@@ -901,6 +1185,21 @@ class _StudioScreenState extends State<StudioScreen> {
                 ),
               ),
             ),
+            if (studio.pages.length > 1) ...[
+              Tooltip(
+                message: 'Xóa trang hiện tại',
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                  onPressed: () => _confirmDeletePage(studio.page),
+                  icon: const Icon(
+                    Icons.remove_circle_outline,
+                    size: 18,
+                    color: Color(0xffc2410c),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(width: 6),
             Container(width: 1, height: 20, color: line),
             const SizedBox(width: 6),
