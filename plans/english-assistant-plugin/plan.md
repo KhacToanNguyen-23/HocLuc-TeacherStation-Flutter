@@ -38,7 +38,7 @@ Hệ thống bổ sung kiến trúc Plugin Microkernel cho Học Lực Studio g�
 |---|---|---|---|---|---|
 | **[x] 01** | `phase-01-board-sticker.md` | BoardSticker Canvas Model, Rendering & Persistence | Tạo model `BoardSticker`, widget hiển thị thẻ trên `InteractiveChalkboard`, kéo thả di chuyển vị trí, và serialize vào `StudioState` (.hls) | P1 | P1 |
 | **[x] 02** | `phase-02-plugin-manifest-loader.md` | Plugin Package (.hlep) Loader & Storage Manager | Mô hình manifest.json, service giải nén `.hlep` (zip), quản lý danh sách plugin trong bộ nhớ / thư mục | P1 | P1 |
-| **03** | `phase-03-plugin-host-ui.md` | Hybrid Plugin Host UI (Drawer Panel 420px & Pop-out Floating Window) | Dựng khung hiển thị plugin trong ngăn kéo (420px), nút Pop-out thành Floating Window, tích hợp cầu nối `FlatHost` nhận tin nhắn `INSERT_ANNOTATION` | P1, P2 | P1 |
+| **[x] 03** | `phase-03-plugin-host-ui.md` | Hybrid Plugin Host UI (Drawer Panel 420px & Pop-out Floating Window) | Dựng khung hiển thị plugin trong ngăn kéo (420px), nút Pop-out thành Floating Window, tích hợp cầu nối `FlatHost` nhận tin nhắn `INSERT_ANNOTATION` | P1, P2 | P1 |
 | **04** | `phase-04-python-sidecar-desktop.md` | Python Sidecar Lifecycle Manager (Desktop) & Web Fallback | Quản lý vòng đời `service.exe` trên Windows (start, health-check, terminate on dispose), fallback trạng thái trên Web | P2 | P2 |
 | **05** | `phase-05-english-assistant-bundle.md` | English Assistant Sample Bundle (`.hlep`) & End-to-End Tests | Tạo file mẫu `english_assistant.hlep` (manifest, UI HTML/JS, Python engine script), tích hợp vào drawer tài liệu và test suite hoàn chỉnh | P1, P2 | P1 |
 
@@ -47,16 +47,17 @@ Hệ thống bổ sung kiến trúc Plugin Microkernel cho Học Lực Studio g�
 ## Session Notes
 <!-- Updated by cook automatically — do not edit manually -->
 
-**Last active:** 2026-10-10 15:46  
-**Phase in progress:** phase-02-plugin-manifest-loader  
-**Status:** Completed Phase 02 — Plugin Package (.hlep) Loader & Storage Manager (All 37 tests passing, analyzer 0 issues)
+**Last active:** 2026-10-10 15:53  
+**Phase in progress:** phase-03-plugin-host-ui  
+**Status:** Completed Phase 03 — Hybrid Plugin Host UI (Drawer Panel 420px & Pop-out Floating Window) (All 40 tests passing, analyzer 0 issues)
 
 ### Decisions made this session
-- Đưa thư viện `archive: ^4.0.0` thành dependency trực tiếp trong `pubspec.yaml` để đảm bảo giải nén file `.hlep` (zip) an toàn, độc lập không phụ thuộc transitive dependency.
-- Tạo cấu trúc `InstalledPlugin` và `PluginManager` dạng in-memory map linh hoạt, cho phép trích xuất nội dung file (`getFileString`, `getFileBytes`) tức thì mà không cần ghi file tạm ra ổ đĩa nếu không cần thiết.
+- Thiết kế `PluginHostDrawer` trượt từ cạnh phải với `default_width` (420px), kết hợp `FloatingPluginWindow` cho phép chuyển đổi 2 chiều qua nút `[🗗 Pop-out]` và `[🗖 Gắn lại]`.
+- Cầu nối `handlePluginMessage` tự động chuẩn hóa dữ liệu từ tin nhắn bridge `INSERT_ANNOTATION` để sinh `BoardSticker` tức thì lên bảng phấn.
+- Ngăn kéo tài liệu `DrawerQuestions` tự động lắng nghe `PluginManager` để hiển thị danh sách tiện ích đã cài kèm nút kích hoạt nhanh.
 
 ### Next immediate action
-- Chờ xác nhận từ người dùng tại checkpoint của `--hard` mode để tiếp tục triển khai Phase 03: `phase-03-plugin-host-ui`.
+- Chờ xác nhận từ người dùng tại checkpoint của `--hard` mode để tiếp tục triển khai Phase 04: `phase-04-python-sidecar-desktop`.
 
 ---
 

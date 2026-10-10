@@ -1,6 +1,7 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
+import '../services/plugin_manager.dart';
 
 class DrawerQuestions extends StatefulWidget {
   const DrawerQuestions({super.key, required this.studio});
@@ -365,101 +366,153 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
   }
 
   Widget _buildPluginsSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 10, bottom: 8),
-          child: Divider(color: Color(0x28ffffff), height: 1),
-        ),
-        Row(
+    return ListenableBuilder(
+      listenable: PluginManager.instance,
+      builder: (context, _) {
+        final plugins = PluginManager.instance.installedPlugins;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(
-              Icons.extension_outlined,
-              size: 13,
-              color: Color(0xffd4e8a6),
+            const Padding(
+              padding: EdgeInsets.only(top: 10, bottom: 8),
+              child: Divider(color: Color(0x28ffffff), height: 1),
             ),
-            const SizedBox(width: 5),
-            const Expanded(
-              child: Text(
-                'TIỆN ÍCH MÔN HỌC',
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 9.5,
-                  letterSpacing: 0.8,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xffd4e8a6),
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 4,
-                vertical: 1,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0x28d4e8a6),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text(
-                'Plugins',
-                style: TextStyle(
-                  fontSize: 7.5,
-                  color: Color(0xffd4e8a6),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        InkWell(
-          onTap: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Hệ thống Extension Microkernel: Sẵn sàng kết nối plugin bộ môn (Tiếng Anh, Toán, Khoa học…).',
-                  style: TextStyle(fontSize: 12),
-                ),
-                backgroundColor: Color(0xff1b2e25),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-            decoration: BoxDecoration(
-              color: const Color(0x14ffffff),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0x2effffff)),
-            ),
-            child: const Row(
+            Row(
               children: [
-                Icon(
-                  Icons.add_circle_outline,
-                  size: 14,
+                const Icon(
+                  Icons.extension_outlined,
+                  size: 13,
                   color: Color(0xffd4e8a6),
                 ),
-                SizedBox(width: 6),
-                Expanded(
+                const SizedBox(width: 5),
+                const Expanded(
                   child: Text(
-                    'Cài thêm tiện ích môn',
+                    'TIỆN ÍCH MÔN HỌC',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 9.5,
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w700,
                       color: Color(0xffd4e8a6),
                     ),
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios, size: 10, color: Color(0xff8a9a8d)),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0x28d4e8a6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    plugins.isEmpty ? 'Plugins' : '${plugins.length}',
+                    style: const TextStyle(
+                      fontSize: 7.5,
+                      color: Color(0xffd4e8a6),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ],
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 6),
+            for (final p in plugins) ...[
+              InkWell(
+                onTap: () => widget.studio.openPlugin(p),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0x24d4e8a6),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0x44d4e8a6)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.extension,
+                        size: 14,
+                        color: Color(0xffd4e8a6),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          p.manifest.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xffd4e8a6),
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 10,
+                        color: Color(0xff8a9a8d),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            InkWell(
+              onTap: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Hệ thống Extension Microkernel: Sẵn sàng kết nối plugin bộ môn (Tiếng Anh, Toán, Khoa học…).',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    backgroundColor: Color(0xff1b2e25),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0x14ffffff),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0x2effffff)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline,
+                      size: 14,
+                      color: Color(0xffd4e8a6),
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Cài thêm tiện ích môn',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xffd4e8a6),
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 10,
+                      color: Color(0xff8a9a8d),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

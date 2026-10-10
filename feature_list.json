@@ -112,8 +112,8 @@
   {
     "id": "phase-03-plugin-host-ui",
     "title": "Hybrid Plugin Host UI (Drawer Panel 420px & Pop-out Floating Window)",
-    "status": "not_started",
-    "evidence": "",
+    "status": "passing",
+    "evidence": "Tests: 3 passed in test/plugin_ui_test.dart, 40 total passed across suite",
     "user_visible_behavior": "Giao diện plugin mở trong ngăn kéo 420px bên phải bảng hoặc pop-out thành cửa sổ nổi, nhận sự kiện ghim thẻ sang bảng phấn.",
     "verification_command": "flutter test test/plugin_ui_test.dart",
     "notes": "Covers stories: P1, P2",

@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../services/local_service.dart';
 import '../services/desktop_lifecycle.dart';
+import '../services/plugin_manager.dart';
 import 'board_sticker.dart';
 
 import 'package:perfect_freehand/perfect_freehand.dart';
@@ -217,6 +219,77 @@ class StudioState extends ChangeNotifier {
   int timerInitialSeconds = 300;
   bool hasCustomPdfWindowSize = false;
   bool hasCustomPdfWindowPos = false;
+
+  InstalledPlugin? activePlugin;
+  bool showPluginDrawer = false;
+  bool pluginFloating = false;
+  Offset pluginFloatingPosition = const Offset(80, 80);
+  Size pluginFloatingSize = const Size(420, 560);
+
+  void openPlugin(InstalledPlugin plugin) {
+    activePlugin = plugin;
+    showPluginDrawer = true;
+    pluginFloating = false;
+    notifyListeners();
+  }
+
+  void closePlugin() {
+    activePlugin = null;
+    showPluginDrawer = false;
+    pluginFloating = false;
+    notifyListeners();
+  }
+
+  void togglePluginFloating() {
+    pluginFloating = !pluginFloating;
+    notifyListeners();
+  }
+
+  void setPluginFloatingPosition(Offset pos) {
+    pluginFloatingPosition = pos;
+    notifyListeners();
+  }
+
+  void setPluginFloatingSize(Size s) {
+    pluginFloatingSize = s;
+    notifyListeners();
+  }
+
+  void handlePluginMessage(dynamic message) {
+    Map<String, dynamic>? data;
+    if (message is String) {
+      try {
+        data = jsonDecode(message) as Map<String, dynamic>;
+      } catch (_) {}
+    } else if (message is Map) {
+      data = Map<String, dynamic>.from(message);
+    }
+
+    if (data == null) return;
+    final action = data['action'] as String?;
+    if (action == 'INSERT_ANNOTATION') {
+      final payload = data['payload'] as Map<String, dynamic>? ?? {};
+      final rawText = payload['raw_text'] as String? ?? '';
+      final tokens = (payload['tokens'] as List?)
+              ?.map((t) => Map<String, dynamic>.from(t as Map))
+              .toList() ??
+          const [];
+      final issues = (payload['issues'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [];
+
+      final sticker = BoardSticker(
+        id: 'sticker-${DateTime.now().millisecondsSinceEpoch}',
+        type: activePlugin?.manifest.id ?? 'generic_sticker',
+        normalizedRect: const Rect.fromLTWH(0.2, 0.25, 0.45, 0.22),
+        rawText: rawText,
+        tokens: tokens,
+        issues: issues,
+      );
+      addSticker(sticker);
+    }
+  }
 
   Offset? _pdfWindowPosition;
   Offset get pdfWindowPosition => _pdfWindowPosition ?? const Offset(0, 0);
