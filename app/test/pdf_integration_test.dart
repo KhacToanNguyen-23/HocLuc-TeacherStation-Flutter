@@ -140,5 +140,66 @@ void main() {
       await tester.pump();
       expect(state.pdfWindowMaximized, isFalse);
     });
+
+    testWidgets('toggles Fit Page / Fit Width button on header', (
+      tester,
+    ) async {
+      final state = StudioState();
+      state.addImportedDoc(
+        'Giai-tich-12.pdf',
+        '/docs/Giai-tich-12.pdf',
+        Uint8List(0),
+      );
+      state.setViewportMode(StudioViewportMode.split);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                FloatingPdfWindow(
+                  studio: state,
+                  boardConstraints: const BoxConstraints(
+                    maxWidth: 1200,
+                    maxHeight: 800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Initially pdfFitPage is false (Fit Width)
+      expect(state.pdfFitPage, isFalse);
+      final fitPageBtn = find.byTooltip('Xem toàn bộ trang (Fit Page)');
+      expect(fitPageBtn, findsOneWidget);
+
+      // Tap to toggle to Fit Page
+      await tester.tap(fitPageBtn);
+      await tester.pump();
+      expect(state.pdfFitPage, isTrue);
+
+      // Now tooltip changes to Fit Width
+      final fitWidthBtn = find.byTooltip('Vừa chiều rộng (Fit Width)');
+      expect(fitWidthBtn, findsOneWidget);
+
+      // Tap to toggle back to Fit Width
+      await tester.tap(fitWidthBtn);
+      await tester.pump();
+      expect(state.pdfFitPage, isFalse);
+    });
+
+    test('StudioState space pressed sync for global pan', () {
+      final state = StudioState();
+      expect(state.isSpacePressed, isFalse);
+
+      state.setSpacePressed(true);
+      expect(state.isSpacePressed, isTrue);
+
+      state.setSpacePressed(false);
+      expect(state.isSpacePressed, isFalse);
+    });
   });
 }

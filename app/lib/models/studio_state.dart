@@ -434,6 +434,29 @@ class StudioState extends ChangeNotifier {
     }
   }
 
+  bool _pdfFitPage = false;
+  bool get pdfFitPage => _pdfFitPage;
+  void togglePdfFit() {
+    _pdfFitPage = !_pdfFitPage;
+    notifyListeners();
+  }
+
+  void setPdfFitPage(bool fit) {
+    if (_pdfFitPage != fit) {
+      _pdfFitPage = fit;
+      notifyListeners();
+    }
+  }
+
+  bool _isSpacePressed = false;
+  bool get isSpacePressed => _isSpacePressed;
+  void setSpacePressed(bool pressed) {
+    if (_isSpacePressed != pressed) {
+      _isSpacePressed = pressed;
+      notifyListeners();
+    }
+  }
+
   void clearPdfPage() {
     pdfAnnotations[pdfPage]?.clear();
     dirty = true;

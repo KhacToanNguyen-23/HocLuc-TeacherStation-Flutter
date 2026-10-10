@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 import '../models/studio_state.dart';
@@ -20,6 +21,68 @@ class PdfStage extends StatefulWidget {
 class _PdfStageState extends State<PdfStage> {
   final PdfViewerController _pdfController = PdfViewerController();
   bool _isDragging = false;
+  bool _lastFitPage = false;
+  int _lastPage = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastFitPage = widget.studio.pdfFitPage;
+    _lastPage = widget.studio.pdfPage;
+    widget.studio.addListener(_onStudioChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant PdfStage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.studio != widget.studio) {
+      oldWidget.studio.removeListener(_onStudioChanged);
+      widget.studio.addListener(_onStudioChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.studio.removeListener(_onStudioChanged);
+    super.dispose();
+  }
+
+  void _onStudioChanged() {
+    if (!_pdfController.isReady) return;
+
+    final pageChanged =
+        widget.studio.pdfPage != _lastPage &&
+        widget.studio.pdfPage >= 1 &&
+        widget.studio.pdfPage <= widget.studio.pdfTotalPages;
+    final fitChanged = widget.studio.pdfFitPage != _lastFitPage;
+
+    if (pageChanged) {
+      _lastPage = widget.studio.pdfPage;
+      _pdfController.goToPage(pageNumber: widget.studio.pdfPage);
+      if (widget.studio.pdfFitPage) {
+        Future.microtask(() => _applyFit());
+      }
+    } else if (fitChanged) {
+      _lastFitPage = widget.studio.pdfFitPage;
+      _applyFit();
+    }
+  }
+
+  void _applyFit() {
+    if (!_pdfController.isReady) return;
+    final page = widget.studio.pdfPage;
+    final fitH = _pdfController.calcMatrixFitHeightForPage(pageNumber: page);
+    final fitW = _pdfController.calcMatrixFitWidthForPage(pageNumber: page);
+    if (widget.studio.pdfFitPage) {
+      if (fitH != null) {
+        _pdfController.goTo(fitH);
+      }
+    } else {
+      if (fitW != null) {
+        _pdfController.goTo(fitW);
+      }
+    }
+  }
 
   Future<void> _pickFile() async {
     final files = await FilePicker.pickFiles(
@@ -147,8 +210,14 @@ class _PdfStageState extends State<PdfStage> {
     final params = PdfViewerParams(
       backgroundColor: chalkboardBg,
       panAxis: PanAxis.free,
+      scrollByMouseWheel: 1.0,
+      boundaryMargin: const EdgeInsets.symmetric(
+        horizontal: 16.0,
+        vertical: 20.0,
+      ),
       onPageChanged: (page) {
         if (page != null && page != studio.pdfPage) {
+          _lastPage = page;
           studio.setPdfPage(page);
         }
       },
@@ -157,6 +226,81 @@ class _PdfStageState extends State<PdfStage> {
           studio.setPdfTotalPages(doc.pages.length);
         }
       },
+      onViewerReady: (doc, controller) {
+        if (studio.pdfPage > 1 && studio.pdfPage <= doc.pages.length) {
+          controller.goToPage(pageNumber: studio.pdfPage);
+        }
+        if (studio.pdfFitPage) {
+          final fitH = controller.calcMatrixFitHeightForPage(
+            pageNumber: studio.pdfPage,
+          );
+          if (fitH != null) controller.goTo(fitH);
+        }
+      },
+      viewerOverlayBuilder: (context, size, handleLinkTap) => [
+        PdfViewerScrollThumb(
+          controller: _pdfController,
+          orientation: ScrollbarOrientation.right,
+          margin: 4,
+          thumbSize: const Size(18, 48),
+          thumbBuilder: (context, thumbSize, pageNumber, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                color: const Color(0xd0243b30),
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(
+                  color: const Color(0xffd4e8a6).withValues(alpha: 0.7),
+                  width: 1.2,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black45,
+                    blurRadius: 4,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.unfold_more,
+                  size: 14,
+                  color: Color(0xffd4e8a6),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+      pageOverlaysBuilder: (context, pageRect, page) => [
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: ListenableBuilder(
+              listenable: studio,
+              builder: (context, _) {
+                final isPanMode = studio.tool == 'pan' || studio.isSpacePressed;
+                return Listener(
+                  onPointerSignal: (event) {
+                    if (event is PointerScrollEvent) {
+                      _pdfController.handlePointerSignalEvent(event);
+                    }
+                  },
+                  child: IgnorePointer(
+                    ignoring: isPanMode || !widget.interactive,
+                    child: StrokeCanvas(
+                      studio: studio,
+                      targetStrokes: studio.pdfAnnotations.putIfAbsent(
+                        page.pageNumber,
+                        () => [],
+                      ),
+                      interactive: widget.interactive && !isPanMode,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
 
     _cachedPdfViewer = RepaintBoundary(
@@ -177,24 +321,6 @@ class _PdfStageState extends State<PdfStage> {
   }
 
   Widget _buildPdfView() {
-    final studio = widget.studio;
-
-    return Stack(
-      children: [
-        // PDF Render Layer (cached & RepaintBoundary isolated)
-        Positioned.fill(child: _getPdfViewerWidget()),
-
-        // Transparent Per-Page Annotation Layer (RepaintBoundary isolated)
-        Positioned.fill(
-          child: RepaintBoundary(
-            child: StrokeCanvas(
-              studio: studio,
-              targetStrokes: studio.currentPdfStrokes,
-              interactive: widget.interactive,
-            ),
-          ),
-        ),
-      ],
-    );
+    return _getPdfViewerWidget();
   }
 }

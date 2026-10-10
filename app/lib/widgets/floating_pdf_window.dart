@@ -359,6 +359,23 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
               ),
             ),
             const SizedBox(width: 4),
+            // Fit Page / Fit Width toggle button
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+              tooltip: studio.pdfFitPage
+                  ? 'Vừa chiều rộng (Fit Width)'
+                  : 'Xem toàn bộ trang (Fit Page)',
+              onPressed: studio.togglePdfFit,
+              icon: Icon(
+                studio.pdfFitPage ? Icons.fit_screen : Icons.aspect_ratio,
+                size: 18,
+                color: studio.pdfFitPage
+                    ? const Color(0xffd4e8a6)
+                    : Colors.white70,
+              ),
+            ),
+            const SizedBox(width: 2),
             // Clear page annotations button
             IconButton(
               padding: EdgeInsets.zero,

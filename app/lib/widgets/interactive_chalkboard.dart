@@ -70,6 +70,7 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
           final isDown = event is KeyDownEvent || event is KeyRepeatEvent;
           if (_isSpacePressed != isDown) {
             setState(() => _isSpacePressed = isDown);
+            widget.studio.setSpacePressed(isDown);
           }
           return KeyEventResult.handled;
         }
