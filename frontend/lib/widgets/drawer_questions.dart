@@ -13,6 +13,22 @@ class DrawerQuestions extends StatefulWidget {
 
 class _DrawerQuestionsState extends State<DrawerQuestions> {
   bool _isDragging = false;
+  late final ScrollController _pagesScrollController;
+  late final ScrollController _docsScrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pagesScrollController = ScrollController();
+    _docsScrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _pagesScrollController.dispose();
+    _docsScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,8 +181,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          for (int i = 0; i < studio.pages.length; i++)
-                            _buildPageItem(studio, i),
+                          _buildPagesList(studio),
                           _buildAddPageButton(studio),
 
                           // 2. PHÂN CÁCH NGĂN CÁCH VỚI CÁC TỆP FILE
@@ -175,33 +190,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           // 3. DANH SÁCH TỆP TÀI LIỆU (PDF)
                           _buildDropTargetBar(studio),
                           const SizedBox(height: 6),
-                          if (studio.importedDocs.isEmpty)
-                            Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                child: const Text(
-                                  'Chưa có tài liệu nào\nKéo thả tệp hoặc bấm + Nhập tệp',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    height: 1.4,
-                                    color: Color(0xff6e7e72),
-                                  ),
-                                ),
-                              ),
-                            )
-                          else
-                            for (final doc in studio.importedDocs)
-                              _buildDraggableDocItem(
-                                studio,
-                                doc,
-                                doc.id == studio.activeDocId &&
-                                    studio.viewportMode !=
-                                        StudioViewportMode.fullBoard,
-                              ),
+                          _buildDocsList(studio),
                         ],
                       ),
                     ),
@@ -288,6 +277,89 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildPagesList(StudioState studio) {
+    final pageCount = studio.pages.length;
+    if (pageCount <= 3) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int i = 0; i < pageCount; i++) _buildPageItem(studio, i),
+        ],
+      );
+    }
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 126),
+      child: Scrollbar(
+        controller: _pagesScrollController,
+        thumbVisibility: true,
+        thickness: 3.5,
+        radius: const Radius.circular(3),
+        child: ListView.builder(
+          controller: _pagesScrollController,
+          padding: EdgeInsets.zero,
+          itemCount: pageCount,
+          itemBuilder: (context, i) => _buildPageItem(studio, i),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocsList(StudioState studio) {
+    if (studio.importedDocs.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Text(
+            'Chưa có tài liệu nào\nKéo thả tệp hoặc bấm + Nhập tệp',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              height: 1.4,
+              color: Color(0xff6e7e72),
+            ),
+          ),
+        ),
+      );
+    }
+    if (studio.importedDocs.length <= 3) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final doc in studio.importedDocs)
+            _buildDraggableDocItem(
+              studio,
+              doc,
+              doc.id == studio.activeDocId &&
+                  studio.viewportMode != StudioViewportMode.fullBoard,
+            ),
+        ],
+      );
+    }
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 156),
+      child: Scrollbar(
+        controller: _docsScrollController,
+        thumbVisibility: true,
+        thickness: 3.5,
+        radius: const Radius.circular(3),
+        child: ListView.builder(
+          controller: _docsScrollController,
+          padding: EdgeInsets.zero,
+          itemCount: studio.importedDocs.length,
+          itemBuilder: (context, i) {
+            final doc = studio.importedDocs[i];
+            return _buildDraggableDocItem(
+              studio,
+              doc,
+              doc.id == studio.activeDocId &&
+                  studio.viewportMode != StudioViewportMode.fullBoard,
+            );
+          },
+        ),
+      ),
     );
   }
 
