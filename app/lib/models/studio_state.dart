@@ -168,12 +168,15 @@ class StudioState extends ChangeNotifier {
   Offset pipPosition = const Offset(16, 16);
   bool showQuestionsDrawer = false;
   int timerInitialSeconds = 300;
+  bool hasCustomPdfWindowSize = false;
+  bool hasCustomPdfWindowPos = false;
+
   Offset? _pdfWindowPosition;
-  Offset get pdfWindowPosition => _pdfWindowPosition ?? const Offset(60, 60);
+  Offset get pdfWindowPosition => _pdfWindowPosition ?? const Offset(0, 0);
   set pdfWindowPosition(Offset pos) => _pdfWindowPosition = pos;
 
   Size? _pdfWindowSize;
-  Size get pdfWindowSize => _pdfWindowSize ?? const Size(520, 680);
+  Size get pdfWindowSize => _pdfWindowSize ?? const Size(540, 720);
   set pdfWindowSize(Size s) => _pdfWindowSize = s;
 
   bool? _pdfWindowMaximized;
@@ -181,11 +184,13 @@ class StudioState extends ChangeNotifier {
   set pdfWindowMaximized(bool val) => _pdfWindowMaximized = val;
 
   void setPdfWindowPosition(Offset pos) {
+    hasCustomPdfWindowPos = true;
     pdfWindowPosition = pos;
     notifyListeners();
   }
 
   void setPdfWindowSize(Size s) {
+    hasCustomPdfWindowSize = true;
     pdfWindowSize = s;
     notifyListeners();
   }
@@ -284,6 +289,8 @@ class StudioState extends ChangeNotifier {
   }
 
   void closeDocOnBoard() {
+    hasCustomPdfWindowSize = false;
+    hasCustomPdfWindowPos = false;
     if (viewportMode != StudioViewportMode.fullBoard) {
       viewportMode = StudioViewportMode.fullBoard;
       notifyListeners();

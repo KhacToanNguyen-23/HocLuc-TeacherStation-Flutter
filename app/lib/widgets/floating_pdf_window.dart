@@ -28,17 +28,46 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
   @override
   void initState() {
     super.initState();
-    _posNotifier = ValueNotifier(widget.studio.pdfWindowPosition);
-    _sizeNotifier = ValueNotifier(widget.studio.pdfWindowSize);
+    final boardH = widget.boardConstraints.maxHeight > 0
+        ? widget.boardConstraints.maxHeight
+        : 720.0;
+    final boardW = widget.boardConstraints.maxWidth > 0
+        ? widget.boardConstraints.maxWidth
+        : 1280.0;
+    final defaultW = (boardH * 0.72).clamp(360.0, boardW * 0.65);
+    final defaultH = boardH;
+
+    final initialSize = widget.studio.hasCustomPdfWindowSize
+        ? widget.studio.pdfWindowSize
+        : Size(defaultW, defaultH);
+
+    final initialPos = widget.studio.hasCustomPdfWindowPos
+        ? widget.studio.pdfWindowPosition
+        : const Offset(0, 0);
+
+    _posNotifier = ValueNotifier(initialPos);
+    _sizeNotifier = ValueNotifier(initialSize);
   }
 
   @override
   void didUpdateWidget(covariant FloatingPdfWindow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!_isDragging && _posNotifier.value != widget.studio.pdfWindowPosition) {
+    if (!widget.studio.hasCustomPdfWindowSize &&
+        widget.boardConstraints.maxHeight > 0 &&
+        _sizeNotifier.value.height != widget.boardConstraints.maxHeight) {
+      final boardH = widget.boardConstraints.maxHeight;
+      final boardW = widget.boardConstraints.maxWidth;
+      final defaultW = (boardH * 0.72).clamp(360.0, boardW * 0.65);
+      _sizeNotifier.value = Size(defaultW, boardH);
+    }
+    if (!_isDragging &&
+        widget.studio.hasCustomPdfWindowPos &&
+        _posNotifier.value != widget.studio.pdfWindowPosition) {
       _posNotifier.value = widget.studio.pdfWindowPosition;
     }
-    if (!_isResizing && _sizeNotifier.value != widget.studio.pdfWindowSize) {
+    if (!_isResizing &&
+        widget.studio.hasCustomPdfWindowSize &&
+        _sizeNotifier.value != widget.studio.pdfWindowSize) {
       _sizeNotifier.value = widget.studio.pdfWindowSize;
     }
   }
@@ -109,7 +138,7 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
           listenable: Listenable.merge([_posNotifier, _sizeNotifier]),
           builder: (context, _) {
             final cardW = _sizeNotifier.value.width.clamp(340.0, maxW * 0.95);
-            final cardH = _sizeNotifier.value.height.clamp(260.0, maxH * 0.95);
+            final cardH = _sizeNotifier.value.height.clamp(260.0, maxH);
 
             final maxX = math.max(
               0.0,
@@ -182,7 +211,7 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                                 );
                                 _sizeNotifier.value = Size(
                                   newW.clamp(340.0, maxW * 0.95),
-                                  newH.clamp(260.0, maxH * 0.95),
+                                  newH.clamp(260.0, maxH),
                                 );
                               },
                               onPanEnd: (_) {
@@ -233,10 +262,7 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
               final maxW = math.max(360.0, widget.boardConstraints.maxWidth);
               final maxH = math.max(280.0, widget.boardConstraints.maxHeight);
               final cardW = _sizeNotifier.value.width.clamp(340.0, maxW * 0.95);
-              final cardH = _sizeNotifier.value.height.clamp(
-                260.0,
-                maxH * 0.95,
-              );
+              final cardH = _sizeNotifier.value.height.clamp(260.0, maxH);
               final maxX = math.max(
                 0.0,
                 widget.boardConstraints.maxWidth - cardW,
@@ -280,55 +306,89 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
             const SizedBox(width: 6),
             // Document title
             Expanded(
-              child: Text(
-                docName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+              child: Tooltip(
+                message: docName,
+                child: Text(
+                  docName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-            // Page controls
-            if (studio.pdfTotalPages > 1) ...[
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                tooltip: 'Trang trước',
-                onPressed: studio.pdfPage > 1
-                    ? () => studio.setPdfPage(studio.pdfPage - 1)
-                    : null,
-                icon: const Icon(
-                  Icons.chevron_left,
-                  size: 18,
-                  color: Colors.white70,
-                ),
+            const SizedBox(width: 4),
+            // Page navigation: < 1 / 12 >
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              tooltip: 'Trang trước',
+              onPressed: studio.pdfPage > 1
+                  ? () => studio.setPdfPage(studio.pdfPage - 1)
+                  : null,
+              icon: Icon(
+                Icons.chevron_left,
+                size: 18,
+                color: studio.pdfPage > 1 ? Colors.white70 : Colors.white24,
               ),
-              Text(
-                '${studio.pdfPage}/${studio.pdfTotalPages}',
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xffd4e8a6),
-                ),
+            ),
+            Text(
+              '${studio.pdfPage}/${studio.pdfTotalPages}',
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xffd4e8a6),
               ),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                tooltip: 'Trang sau',
-                onPressed: studio.pdfPage < studio.pdfTotalPages
-                    ? () => studio.setPdfPage(studio.pdfPage + 1)
-                    : null,
-                icon: const Icon(
-                  Icons.chevron_right,
-                  size: 18,
-                  color: Colors.white70,
-                ),
+            ),
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              tooltip: 'Trang sau',
+              onPressed: studio.pdfPage < studio.pdfTotalPages
+                  ? () => studio.setPdfPage(studio.pdfPage + 1)
+                  : null,
+              icon: Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: studio.pdfPage < studio.pdfTotalPages
+                    ? Colors.white70
+                    : Colors.white24,
               ),
-              const SizedBox(width: 6),
-            ],
+            ),
+            const SizedBox(width: 4),
+            // Clear page annotations button
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+              tooltip: 'Xóa nét vẽ trên trang này',
+              onPressed: studio.currentPdfStrokes.isNotEmpty
+                  ? studio.clearPdfPage
+                  : null,
+              icon: Icon(
+                Icons.clear_all,
+                size: 18,
+                color: studio.currentPdfStrokes.isNotEmpty
+                    ? const Color(0xffffa089)
+                    : Colors.white24,
+              ),
+            ),
+            const SizedBox(width: 2),
+            // Open / Pick another PDF file
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+              tooltip: 'Đổi / Mở tệp PDF',
+              onPressed: studio.importPdfDialog,
+              icon: const Icon(
+                Icons.folder_open_outlined,
+                size: 18,
+                color: Colors.white70,
+              ),
+            ),
+            const SizedBox(width: 2),
             // Maximize / Restore
             IconButton(
               padding: EdgeInsets.zero,
