@@ -37,7 +37,7 @@ Hệ thống bổ sung kiến trúc Plugin Microkernel cho Học Lực Studio g�
 | Phase | File | Title | Scope | Stories Covered | Priority |
 |---|---|---|---|---|---|
 | **[x] 01** | `phase-01-board-sticker.md` | BoardSticker Canvas Model, Rendering & Persistence | Tạo model `BoardSticker`, widget hiển thị thẻ trên `InteractiveChalkboard`, kéo thả di chuyển vị trí, và serialize vào `StudioState` (.hls) | P1 | P1 |
-| **02** | `phase-02-plugin-manifest-loader.md` | Plugin Package (.hlep) Loader & Storage Manager | Mô hình manifest.json, service giải nén `.hlep` (zip), quản lý danh sách plugin trong bộ nhớ / thư mục | P1 | P1 |
+| **[x] 02** | `phase-02-plugin-manifest-loader.md` | Plugin Package (.hlep) Loader & Storage Manager | Mô hình manifest.json, service giải nén `.hlep` (zip), quản lý danh sách plugin trong bộ nhớ / thư mục | P1 | P1 |
 | **03** | `phase-03-plugin-host-ui.md` | Hybrid Plugin Host UI (Drawer Panel 420px & Pop-out Floating Window) | Dựng khung hiển thị plugin trong ngăn kéo (420px), nút Pop-out thành Floating Window, tích hợp cầu nối `FlatHost` nhận tin nhắn `INSERT_ANNOTATION` | P1, P2 | P1 |
 | **04** | `phase-04-python-sidecar-desktop.md` | Python Sidecar Lifecycle Manager (Desktop) & Web Fallback | Quản lý vòng đời `service.exe` trên Windows (start, health-check, terminate on dispose), fallback trạng thái trên Web | P2 | P2 |
 | **05** | `phase-05-english-assistant-bundle.md` | English Assistant Sample Bundle (`.hlep`) & End-to-End Tests | Tạo file mẫu `english_assistant.hlep` (manifest, UI HTML/JS, Python engine script), tích hợp vào drawer tài liệu và test suite hoàn chỉnh | P1, P2 | P1 |
@@ -47,16 +47,16 @@ Hệ thống bổ sung kiến trúc Plugin Microkernel cho Học Lực Studio g�
 ## Session Notes
 <!-- Updated by cook automatically — do not edit manually -->
 
-**Last active:** 2026-10-10 15:40  
-**Phase in progress:** phase-01-board-sticker  
-**Status:** Completed Phase 01 — BoardSticker Canvas Model, Rendering & Persistence (All 34 tests passing)
+**Last active:** 2026-10-10 15:46  
+**Phase in progress:** phase-02-plugin-manifest-loader  
+**Status:** Completed Phase 02 — Plugin Package (.hlep) Loader & Storage Manager (All 37 tests passing, analyzer 0 issues)
 
 ### Decisions made this session
-- Làm tròn tọa độ chuẩn hóa `normalizedRect` trong `BoardSticker.toJson()` đến 4 chữ số thập phân (`toStringAsFixed(4)`) để tránh sai số IEEE-754 và tối ưu kích thước lưu file `.hls`.
-- Render `BoardStickerCard` bên trong `Stack` của `InteractiveViewer` sử dụng `LayoutBuilder` và `ListenableBuilder` để đồng bộ hoàn hảo với zoom/pan của bảng phấn.
+- Đưa thư viện `archive: ^4.0.0` thành dependency trực tiếp trong `pubspec.yaml` để đảm bảo giải nén file `.hlep` (zip) an toàn, độc lập không phụ thuộc transitive dependency.
+- Tạo cấu trúc `InstalledPlugin` và `PluginManager` dạng in-memory map linh hoạt, cho phép trích xuất nội dung file (`getFileString`, `getFileBytes`) tức thì mà không cần ghi file tạm ra ổ đĩa nếu không cần thiết.
 
 ### Next immediate action
-- Chờ xác nhận từ người dùng tại checkpoint của `--hard` mode để tiếp tục triển khai Phase 02: `phase-02-plugin-manifest-loader`.
+- Chờ xác nhận từ người dùng tại checkpoint của `--hard` mode để tiếp tục triển khai Phase 03: `phase-03-plugin-host-ui`.
 
 ---
 

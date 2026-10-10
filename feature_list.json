@@ -102,8 +102,8 @@
   {
     "id": "phase-02-plugin-manifest-loader",
     "title": "Plugin Package (.hlep) Loader & Storage Manager",
-    "status": "not_started",
-    "evidence": "",
+    "status": "passing",
+    "evidence": "Tests: 3 passed in test/plugin_manifest_test.dart, 37 total passed across suite",
     "user_visible_behavior": "Hệ thống đọc file manifest.json và giải nén gói .hlep, quản lý danh sách tiện ích đã cài đặt.",
     "verification_command": "flutter test test/plugin_manifest_test.dart",
     "notes": "Covers stories: P1",
