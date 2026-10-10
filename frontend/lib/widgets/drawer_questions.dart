@@ -13,20 +13,18 @@ class DrawerQuestions extends StatefulWidget {
 
 class _DrawerQuestionsState extends State<DrawerQuestions> {
   bool _isDragging = false;
-  late final ScrollController _pagesScrollController;
-  late final ScrollController _docsScrollController;
+  ScrollController? _pagesScrollController;
+  ScrollController get pagesScrollController =>
+      _pagesScrollController ??= ScrollController();
 
-  @override
-  void initState() {
-    super.initState();
-    _pagesScrollController = ScrollController();
-    _docsScrollController = ScrollController();
-  }
+  ScrollController? _docsScrollController;
+  ScrollController get docsScrollController =>
+      _docsScrollController ??= ScrollController();
 
   @override
   void dispose() {
-    _pagesScrollController.dispose();
-    _docsScrollController.dispose();
+    _pagesScrollController?.dispose();
+    _docsScrollController?.dispose();
     super.dispose();
   }
 
@@ -293,12 +291,12 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 126),
       child: Scrollbar(
-        controller: _pagesScrollController,
+        controller: pagesScrollController,
         thumbVisibility: true,
         thickness: 3.5,
         radius: const Radius.circular(3),
         child: ListView.builder(
-          controller: _pagesScrollController,
+          controller: pagesScrollController,
           padding: EdgeInsets.zero,
           itemCount: pageCount,
           itemBuilder: (context, i) => _buildPageItem(studio, i),
@@ -341,12 +339,12 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 156),
       child: Scrollbar(
-        controller: _docsScrollController,
+        controller: docsScrollController,
         thumbVisibility: true,
         thickness: 3.5,
         radius: const Radius.circular(3),
         child: ListView.builder(
-          controller: _docsScrollController,
+          controller: docsScrollController,
           padding: EdgeInsets.zero,
           itemCount: studio.importedDocs.length,
           itemBuilder: (context, i) {
