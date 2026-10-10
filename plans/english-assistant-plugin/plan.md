@@ -40,23 +40,26 @@ Hệ thống bổ sung kiến trúc Plugin Microkernel cho Học Lực Studio g�
 | **[x] 02** | `phase-02-plugin-manifest-loader.md` | Plugin Package (.hlep) Loader & Storage Manager | Mô hình manifest.json, service giải nén `.hlep` (zip), quản lý danh sách plugin trong bộ nhớ / thư mục | P1 | P1 |
 | **[x] 03** | `phase-03-plugin-host-ui.md` | Hybrid Plugin Host UI (Drawer Panel 420px & Pop-out Floating Window) | Dựng khung hiển thị plugin trong ngăn kéo (420px), nút Pop-out thành Floating Window, tích hợp cầu nối `FlatHost` nhận tin nhắn `INSERT_ANNOTATION` | P1, P2 | P1 |
 | **[x] 04** | `phase-04-python-sidecar-desktop.md` | Python Sidecar Lifecycle Manager (Desktop) & Web Fallback | Quản lý vòng đời `service.exe` trên Windows (start, health-check, terminate on dispose), fallback trạng thái trên Web | P2 | P2 |
-| **05** | `phase-05-english-assistant-bundle.md` | English Assistant Sample Bundle (`.hlep`) & End-to-End Tests | Tạo file mẫu `english_assistant.hlep` (manifest, UI HTML/JS, Python engine script), tích hợp vào drawer tài liệu và test suite hoàn chỉnh | P1, P2 | P1 |
+| **[x] 05** | `phase-05-english-assistant-bundle.md` | English Assistant Sample Bundle (`.hlep`) & End-to-End Tests | Tạo file mẫu `english_assistant.hlep` (manifest, UI HTML/JS, Python engine script), tích hợp vào drawer tài liệu và test suite hoàn chỉnh | P1, P2 | P1 |
 
 ---
 
 ## Session Notes
 <!-- Updated by cook automatically — do not edit manually -->
 
-**Last active:** 2026-10-10 15:55  
-**Phase in progress:** phase-04-python-sidecar-desktop  
-**Status:** Completed Phase 04 — Python Sidecar Lifecycle Manager (Desktop) & Web Fallback (All 43 tests passing, analyzer 0 issues)
+**Last active:** 2026-10-10 16:13  
+**Phase in progress:** None (Completed 5/5 Phases)  
+**Status:** All 5 Phases Completed — English Assistant Plugin Microkernel Fully Operational (All 47 tests passing, analyzer 0 issues)
 
 ### Decisions made this session
 - Áp dụng conditional export `sidecar_manager_native.dart` (Process.start) và `sidecar_manager_web.dart` (HTTP health-check ping).
 - Quản lý an toàn tiến trình `service.exe` ngầm: Tự động poll health-check với timeout 5 giây, lắng nghe `exitCode`, và dọn dẹp tiến trình ngay khi đóng plugin để tránh orphan process.
+- Tạo gói plugin mẫu `plugins/english_assistant.hlep` và script đóng gói `scripts/package_plugin.mjs`.
+- Hỗ trợ cả 1-click cài đặt plugin mẫu lẫn chọn tệp `.hlep` từ máy tính trong Drawer Tài liệu.
+- Tự động thu gọn ngăn kéo khi ghim thẻ S-V-O (`INSERT_ANNOTATION`) để trả lại 100% không gian bảng cho giáo viên.
 
 ### Next immediate action
-- Chờ xác nhận từ người dùng tại checkpoint của `--hard` mode để tiếp tục triển khai Phase 05: `phase-05-english-assistant-bundle`.
+- Tất cả các phase trong kế hoạch đã hoàn thành 100%. Sẵn sàng báo cáo tổng kết và chờ hướng dẫn tiếp theo từ người dùng.
 
 ---
 

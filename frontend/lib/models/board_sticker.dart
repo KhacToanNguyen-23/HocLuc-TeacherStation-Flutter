@@ -17,6 +17,9 @@ class BoardSticker {
   final List<Map<String, dynamic>> tokens;
   final List<String> issues;
 
+  String get text => rawText;
+  String? get grammarIssue => issues.isNotEmpty ? issues.first : null;
+
   BoardSticker copyWith({
     String? id,
     String? type,

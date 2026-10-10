@@ -98,36 +98,41 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
                     interactive: widget.interactive && !isPanMode,
                   ),
                 ),
-                ListenableBuilder(
-                  listenable: widget.studio,
-                  builder: (context, _) {
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        final size = Size(
-                          constraints.maxWidth,
-                          constraints.maxHeight,
-                        );
-                        final stickers = widget.studio.currentStickers;
-                        return Stack(
-                          children: [
-                            for (final s in stickers)
-                              Positioned(
-                                left: s.normalizedRect.left * size.width,
-                                top: s.normalizedRect.top * size.height,
-                                child: BoardStickerCard(
-                                  sticker: s,
-                                  parentSize: size,
-                                  onDelete: () =>
-                                      widget.studio.removeSticker(s.id),
-                                  onUpdateRect: (r) =>
-                                      widget.studio.updateStickerRect(s.id, r),
+                Positioned.fill(
+                  child: ListenableBuilder(
+                    listenable: widget.studio,
+                    builder: (context, _) {
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final size = Size(
+                            constraints.maxWidth,
+                            constraints.maxHeight,
+                          );
+                          final stickers = widget.studio.currentStickers;
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              for (final s in stickers)
+                                Positioned(
+                                  left: s.normalizedRect.left * size.width,
+                                  top: s.normalizedRect.top * size.height,
+                                  width: (s.normalizedRect.width * size.width)
+                                      .clamp(200.0, size.width > 200 ? size.width : 200.0),
+                                  child: BoardStickerCard(
+                                    sticker: s,
+                                    parentSize: size,
+                                    onDelete: () =>
+                                        widget.studio.removeSticker(s.id),
+                                    onUpdateRect: (r) =>
+                                        widget.studio.updateStickerRect(s.id, r),
+                                  ),
                                 ),
-                              ),
-                          ],
-                        );
-                      },
-                    );
-                  },
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

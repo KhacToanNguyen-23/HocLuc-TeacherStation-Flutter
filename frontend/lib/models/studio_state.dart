@@ -230,6 +230,7 @@ class StudioState extends ChangeNotifier {
     activePlugin = plugin;
     showPluginDrawer = true;
     pluginFloating = false;
+    showQuestionsDrawer = false;
     notifyListeners();
   }
 
@@ -266,18 +267,26 @@ class StudioState extends ChangeNotifier {
     }
 
     if (data == null) return;
-    final action = data['action'] as String?;
+    final action = data['action'] as String? ?? data['type'] as String?;
     if (action == 'INSERT_ANNOTATION') {
-      final payload = data['payload'] as Map<String, dynamic>? ?? {};
-      final rawText = payload['raw_text'] as String? ?? '';
+      final payload = (data['payload'] as Map<String, dynamic>?) ?? data;
+      final rawText = (payload['raw_text'] as String?) ??
+          (payload['rawText'] as String?) ??
+          (payload['text'] as String?) ??
+          '';
       final tokens = (payload['tokens'] as List?)
               ?.map((t) => Map<String, dynamic>.from(t as Map))
               .toList() ??
           const [];
-      final issues = (payload['issues'] as List?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const [];
+
+      List<String> issues = [];
+      if (payload['issues'] is List) {
+        issues = (payload['issues'] as List).map((e) => e.toString()).toList();
+      } else if (payload['grammarIssue'] != null) {
+        issues = [payload['grammarIssue'].toString()];
+      } else if (payload['grammar_issue'] != null) {
+        issues = [payload['grammar_issue'].toString()];
+      }
 
       final sticker = BoardSticker(
         id: 'sticker-${DateTime.now().millisecondsSinceEpoch}',
@@ -288,6 +297,12 @@ class StudioState extends ChangeNotifier {
         issues: issues,
       );
       addSticker(sticker);
+
+      // Auto slide plugin drawer closed when sticker is pinned to return 100% board space
+      if (showPluginDrawer && !pluginFloating) {
+        showPluginDrawer = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -935,10 +950,8 @@ class StudioState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> save() async {
-    if (saving) return false;
-    final revision = _revision;
-    final lessonSnapshot = {
+  Map<String, dynamic> exportLessonJson() {
+    return {
       'title': title,
       'subject': subject,
       'notes': notes,
@@ -950,6 +963,48 @@ class StudioState extends ChangeNotifier {
         (k, v) => MapEntry(k.toString(), v.map((s) => s.toJson()).toList()),
       ),
     };
+  }
+
+  void restoreFromJson(Map<String, dynamic> json) {
+    if (json.containsKey('title')) title = json['title'] as String? ?? title;
+    if (json.containsKey('subject')) subject = json['subject'] as String? ?? subject;
+    if (json.containsKey('notes')) notes = json['notes'] as String? ?? notes;
+    if (json.containsKey('question')) question = json['question'] as String? ?? question;
+    if (json.containsKey('page')) page = (json['page'] as num?)?.toInt() ?? 0;
+    if (json.containsKey('pageTitles') && json['pageTitles'] is List) {
+      pageTitles
+        ..clear()
+        ..addAll((json['pageTitles'] as List).map((e) => e.toString()));
+    }
+    if (json.containsKey('pages') && json['pages'] is List) {
+      pages.clear();
+      for (final p in json['pages'] as List) {
+        if (p is List) {
+          pages.add(p.map((s) => BoardStroke.fromJson(s as Map<String, dynamic>)).toList());
+        }
+      }
+    }
+    if (json.containsKey('stickers') && json['stickers'] is Map) {
+      pageStickers.clear();
+      final map = json['stickers'] as Map;
+      map.forEach((k, v) {
+        final pageIdx = int.tryParse(k.toString()) ?? 0;
+        if (v is List) {
+          pageStickers[pageIdx] = v
+              .map((s) => BoardSticker.fromJson(Map<String, dynamic>.from(s as Map)))
+              .toList();
+        }
+      });
+    }
+    dirty = false;
+    _revision++;
+    notifyListeners();
+  }
+
+  Future<bool> save() async {
+    if (saving) return false;
+    final revision = _revision;
+    final lessonSnapshot = exportLessonJson();
     final configSnapshot = {
       'endpoint': endpoint,
       'language': language,

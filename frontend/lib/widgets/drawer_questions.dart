@@ -1,4 +1,5 @@
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
 import '../services/plugin_manager.dart';
@@ -461,19 +462,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
               ),
             ],
             InkWell(
-              onTap: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Hệ thống Extension Microkernel: Sẵn sàng kết nối plugin bộ môn (Tiếng Anh, Toán, Khoa học…).',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    backgroundColor: Color(0xff1b2e25),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              },
+              onTap: () => _showInstallPluginDialog(context),
               borderRadius: BorderRadius.circular(8),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
@@ -514,6 +503,182 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
         );
       },
     );
+  }
+
+  Future<void> _showInstallPluginDialog(BuildContext context) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xff122019),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: Color(0x33ffffff)),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.extension_outlined, color: Color(0xffd4e8a6), size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Thêm tiện ích môn học',
+              style: TextStyle(
+                color: Color(0xffe8eae6),
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Chọn nguồn tiện ích để cài đặt vào Học Lực Studio:',
+              style: TextStyle(color: Color(0xffa5b5a8), fontSize: 12),
+            ),
+            const SizedBox(height: 14),
+            InkWell(
+              onTap: () => Navigator.pop(ctx, 'sample'),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0x22d4e8a6),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0x44d4e8a6)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.auto_awesome, color: Color(0xffd4e8a6), size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Cài đặt Plugin Mẫu (Trợ giảng Tiếng Anh)',
+                            style: TextStyle(
+                              color: Color(0xffd4e8a6),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Bóc tách S-V-O & bắt lỗi ngữ pháp với spaCy & LanguageTool',
+                            style: TextStyle(color: Color(0xff94a3b8), fontSize: 10.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () => Navigator.pop(ctx, 'file'),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0x14ffffff),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0x22ffffff)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.folder_open, color: Color(0xffe2e8f0), size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Chọn tệp .hlep từ máy tính...',
+                            style: TextStyle(
+                              color: Color(0xffe2e8f0),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Nạp gói plugin đóng gói chuẩn .hlep hoặc .zip',
+                            style: TextStyle(color: Color(0xff94a3b8), fontSize: 10.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng', style: TextStyle(color: Color(0xffa5b5a8))),
+          ),
+        ],
+      ),
+    );
+
+    if (!context.mounted || result == null) return;
+
+    if (result == 'sample') {
+      try {
+        await PluginManager.instance.installSampleEnglishPlugin();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã cài đặt thành công plugin "Trợ giảng Tiếng Anh"!'),
+              backgroundColor: Color(0xff1b2e25),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi cài đặt plugin: $e'),
+              backgroundColor: const Color(0xff8b1c1c),
+            ),
+          );
+        }
+      }
+    } else if (result == 'file') {
+      try {
+        final files = await FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['hlep', 'zip'],
+        );
+        if (files.isNotEmpty) {
+          final file = files.first;
+          final bytes = await file.readAsBytes();
+          await PluginManager.instance.installPluginFromBytes(bytes, file.name);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Đã cài đặt thành công plugin "${file.name}"!'),
+                backgroundColor: const Color(0xff1b2e25),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể nạp tệp plugin: $e'),
+              backgroundColor: const Color(0xff8b1c1c),
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _showRenamePageDialog(int index) async {

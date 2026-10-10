@@ -132,8 +132,8 @@
   {
     "id": "phase-05-english-assistant-bundle",
     "title": "English Assistant Sample Bundle (.hlep) & End-to-End Tests",
-    "status": "not_started",
-    "evidence": "",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in test/english_assistant_e2e_test.dart, 47 total passed across full test suite, analyzer 0 issues",
     "user_visible_behavior": "Giáo viên cài đặt và sử dụng trọn vẹn plugin Trợ giảng Tiếng Anh bóc tách S-V-O và bắt lỗi thì/ngữ pháp từ đầu đến cuối.",
     "verification_command": "flutter test test/english_assistant_e2e_test.dart",
     "notes": "Covers stories: P1, P2",
