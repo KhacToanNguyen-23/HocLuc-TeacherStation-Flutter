@@ -1,8 +1,8 @@
-import 'dart:typed_data';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import '../models/studio_state.dart';
 import 'grid_painter.dart';
@@ -21,14 +21,17 @@ class PdfStage extends StatefulWidget {
 class _PdfStageState extends State<PdfStage> {
   final PdfViewerController _pdfController = PdfViewerController();
   bool _isDragging = false;
-  bool _lastFitPage = false;
+  bool _lastFitWidth = true;
   int _lastPage = 1;
+  int _lastZoomAction = 0;
+  Size? _lastContainerSize;
 
   @override
   void initState() {
     super.initState();
-    _lastFitPage = widget.studio.pdfFitPage;
+    _lastFitWidth = widget.studio.pdfFitWidth;
     _lastPage = widget.studio.pdfPage;
+    _lastZoomAction = widget.studio.pdfZoomAction;
     widget.studio.addListener(_onStudioChanged);
   }
 
@@ -54,32 +57,42 @@ class _PdfStageState extends State<PdfStage> {
         widget.studio.pdfPage != _lastPage &&
         widget.studio.pdfPage >= 1 &&
         widget.studio.pdfPage <= widget.studio.pdfTotalPages;
-    final fitChanged = widget.studio.pdfFitPage != _lastFitPage;
+    final fitChanged = widget.studio.pdfFitWidth != _lastFitWidth;
+    final zoomChanged = widget.studio.pdfZoomAction != _lastZoomAction;
 
     if (pageChanged) {
       _lastPage = widget.studio.pdfPage;
       _pdfController.goToPage(pageNumber: widget.studio.pdfPage);
-      if (widget.studio.pdfFitPage) {
-        Future.microtask(() => _applyFit());
-      }
+      Future.microtask(() => _applyFit());
     } else if (fitChanged) {
-      _lastFitPage = widget.studio.pdfFitPage;
+      _lastFitWidth = widget.studio.pdfFitWidth;
       _applyFit();
+    } else if (zoomChanged) {
+      final action = widget.studio.pdfZoomAction;
+      final prev = _lastZoomAction;
+      _lastZoomAction = action;
+      if (action == 999) {
+        _applyFit();
+      } else if (action > prev) {
+        _pdfController.zoomUp();
+      } else if (action < prev) {
+        _pdfController.zoomDown();
+      }
     }
   }
 
   void _applyFit() {
     if (!_pdfController.isReady) return;
     final page = widget.studio.pdfPage;
-    final fitH = _pdfController.calcMatrixFitHeightForPage(pageNumber: page);
-    final fitW = _pdfController.calcMatrixFitWidthForPage(pageNumber: page);
-    if (widget.studio.pdfFitPage) {
-      if (fitH != null) {
-        _pdfController.goTo(fitH);
-      }
-    } else {
+    if (widget.studio.pdfFitWidth) {
+      final fitW = _pdfController.calcMatrixFitWidthForPage(pageNumber: page);
       if (fitW != null) {
         _pdfController.goTo(fitW);
+      }
+    } else {
+      final fitH = _pdfController.calcMatrixFitHeightForPage(pageNumber: page);
+      if (fitH != null) {
+        _pdfController.goTo(fitH);
       }
     }
   }
@@ -102,23 +115,41 @@ class _PdfStageState extends State<PdfStage> {
     final studio = widget.studio;
     final hasPdf = studio.pdfFilePath != null || studio.pdfBytes != null;
 
-    return DropTarget(
-      onDragEntered: (_) => setState(() => _isDragging = true),
-      onDragExited: (_) => setState(() => _isDragging = false),
-      onDragDone: (detail) async {
-        setState(() => _isDragging = false);
-        if (detail.files.isNotEmpty) {
-          final file = detail.files.first;
-          if (file.name.toLowerCase().endsWith('.pdf')) {
-            final bytes = await file.readAsBytes();
-            widget.studio.setPdfFile(file.path, bytes);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final currentSize = Size(constraints.maxWidth, constraints.maxHeight);
+        if (_lastContainerSize != null &&
+            (_lastContainerSize!.width != currentSize.width ||
+             _lastContainerSize!.height != currentSize.height)) {
+          _lastContainerSize = currentSize;
+          if (_pdfController.isReady && widget.studio.pdfFitWidth) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _applyFit();
+            });
           }
+        } else {
+          _lastContainerSize = currentSize;
         }
+
+        return DropTarget(
+          onDragEntered: (_) => setState(() => _isDragging = true),
+          onDragExited: (_) => setState(() => _isDragging = false),
+          onDragDone: (detail) async {
+            setState(() => _isDragging = false);
+            if (detail.files.isNotEmpty) {
+              final file = detail.files.first;
+              if (file.name.toLowerCase().endsWith('.pdf')) {
+                final bytes = await file.readAsBytes();
+                widget.studio.setPdfFile(file.path, bytes);
+              }
+            }
+          },
+          child: Container(
+            color: chalkboardBg,
+            child: hasPdf ? _buildPdfView() : _buildEmptyState(),
+          ),
+        );
       },
-      child: Container(
-        color: chalkboardBg,
-        child: hasPdf ? _buildPdfView() : _buildEmptyState(),
-      ),
     );
   }
 
@@ -230,12 +261,7 @@ class _PdfStageState extends State<PdfStage> {
         if (studio.pdfPage > 1 && studio.pdfPage <= doc.pages.length) {
           controller.goToPage(pageNumber: studio.pdfPage);
         }
-        if (studio.pdfFitPage) {
-          final fitH = controller.calcMatrixFitHeightForPage(
-            pageNumber: studio.pdfPage,
-          );
-          if (fitH != null) controller.goTo(fitH);
-        }
+        Future.microtask(() => _applyFit());
       },
       viewerOverlayBuilder: (context, size, handleLinkTap) => [
         PdfViewerScrollThumb(
@@ -281,7 +307,15 @@ class _PdfStageState extends State<PdfStage> {
                 return Listener(
                   onPointerSignal: (event) {
                     if (event is PointerScrollEvent) {
-                      _pdfController.handlePointerSignalEvent(event);
+                      if (HardwareKeyboard.instance.isControlPressed) {
+                        if (event.scrollDelta.dy < 0) {
+                          _pdfController.zoomUp();
+                        } else if (event.scrollDelta.dy > 0) {
+                          _pdfController.zoomDown();
+                        }
+                      } else {
+                        _pdfController.handlePointerSignalEvent(event);
+                      }
                     }
                   },
                   child: IgnorePointer(

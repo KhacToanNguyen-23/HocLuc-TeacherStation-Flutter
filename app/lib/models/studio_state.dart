@@ -485,18 +485,40 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  bool _pdfFitPage = false;
-  bool get pdfFitPage => _pdfFitPage;
+  bool _pdfFitWidth = true;
+  bool get pdfFitWidth => _pdfFitWidth;
+  bool get pdfFitPage => !_pdfFitWidth;
+
   void togglePdfFit() {
-    _pdfFitPage = !_pdfFitPage;
+    _pdfFitWidth = !_pdfFitWidth;
     notifyListeners();
   }
 
-  void setPdfFitPage(bool fit) {
-    if (_pdfFitPage != fit) {
-      _pdfFitPage = fit;
+  void setPdfFitWidth(bool fitWidth) {
+    if (_pdfFitWidth != fitWidth) {
+      _pdfFitWidth = fitWidth;
       notifyListeners();
     }
+  }
+
+  void setPdfFitPage(bool fit) {
+    setPdfFitWidth(!fit);
+  }
+
+  int _pdfZoomAction = 0;
+  int get pdfZoomAction => _pdfZoomAction;
+  void zoomInPdf() {
+    _pdfZoomAction++;
+    notifyListeners();
+  }
+  void zoomOutPdf() {
+    _pdfZoomAction--;
+    notifyListeners();
+  }
+  void resetPdfZoom() {
+    _pdfFitWidth = true;
+    _pdfZoomAction = 999;
+    notifyListeners();
   }
 
   bool _isSpacePressed = false;
