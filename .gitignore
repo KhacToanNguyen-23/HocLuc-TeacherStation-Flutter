@@ -12,6 +12,17 @@ frontend/windows/flutter/ephemeral/
 frontend/macos/Flutter/ephemeral/
 frontend/macos/Pods/
 frontend/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Generated files left in the previous layout after the monorepo migration.
+app/build/
+app/.dart_tool/
+app/.flutter-plugins-dependencies
+app/windows/flutter/ephemeral/
+app/macos/Flutter/ephemeral/
+app/macos/Pods/
+service/target/
+whiteboard-host/node_modules/
+whiteboard-host/dist/
 *.log
 
 # Local credentials and editor/OS artifacts. Keep dependency lockfiles in Git.
