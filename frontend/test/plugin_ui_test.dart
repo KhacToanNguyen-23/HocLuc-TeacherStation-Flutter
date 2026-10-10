@@ -36,7 +36,7 @@ void main() {
       expect(studio.pluginFloating, isFalse);
 
       // Open plugin
-      studio.openPlugin(dummyPlugin);
+      studio.openPlugin(dummyPlugin, openModal: true);
       expect(studio.activePlugin?.manifest.id, 'com.test.english');
       expect(studio.showPluginDrawer, isTrue);
       expect(studio.pluginFloating, isFalse);
@@ -79,7 +79,7 @@ void main() {
     testWidgets('PluginHostDrawer renders header, pop-out button, and close button', (
       tester,
     ) async {
-      studio.openPlugin(dummyPlugin);
+      studio.openPlugin(dummyPlugin, openModal: true);
 
       await tester.pumpWidget(
         MaterialApp(

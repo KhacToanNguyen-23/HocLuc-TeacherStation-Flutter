@@ -226,9 +226,9 @@ class StudioState extends ChangeNotifier {
   Offset pluginFloatingPosition = const Offset(80, 80);
   Size pluginFloatingSize = const Size(420, 560);
 
-  void openPlugin(InstalledPlugin plugin) {
+  void openPlugin(InstalledPlugin plugin, {bool openModal = false}) {
     activePlugin = plugin;
-    showPluginDrawer = true;
+    showPluginDrawer = openModal;
     pluginFloating = false;
     showQuestionsDrawer = false;
     notifyListeners();

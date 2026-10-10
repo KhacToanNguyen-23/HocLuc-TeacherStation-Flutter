@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/models/studio_state.dart';
 import 'package:teaching_companion/services/plugin_manager.dart';
 import 'package:teaching_companion/widgets/board_sticker_card.dart';
-import 'package:teaching_companion/widgets/plugin_host_drawer.dart';
+import 'package:teaching_companion/widgets/in_board_extension_bar.dart';
 import 'package:teaching_companion/widgets/stage_container.dart';
 
 List<int> createEnglishAssistantZip() {
@@ -92,9 +92,9 @@ void main() {
       await tester.tap(find.text('Trợ giảng Tiếng Anh'));
       await tester.pumpAndSettle();
 
-      expect(studio.showPluginDrawer, isTrue);
+      expect(studio.showPluginDrawer, isFalse);
       expect(studio.activePlugin?.manifest.id, 'com.hocluc.plugin.english');
-      expect(find.byType(PluginHostDrawer), findsOneWidget);
+      expect(find.byType(InBoardExtensionBar), findsOneWidget);
 
       // Simulate bridge event INSERT_ANNOTATION coming from WebView/Iframe
       studio.handlePluginMessage({
