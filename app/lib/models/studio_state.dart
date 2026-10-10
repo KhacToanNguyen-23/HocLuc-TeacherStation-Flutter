@@ -485,12 +485,12 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  bool _pdfFitWidth = true;
-  bool get pdfFitWidth => _pdfFitWidth;
-  bool get pdfFitPage => !_pdfFitWidth;
+  bool? _pdfFitWidth = true;
+  bool get pdfFitWidth => _pdfFitWidth ?? true;
+  bool get pdfFitPage => !pdfFitWidth;
 
   void togglePdfFit() {
-    _pdfFitWidth = !_pdfFitWidth;
+    _pdfFitWidth = !pdfFitWidth;
     notifyListeners();
   }
 
@@ -505,14 +505,14 @@ class StudioState extends ChangeNotifier {
     setPdfFitWidth(!fit);
   }
 
-  int _pdfZoomAction = 0;
-  int get pdfZoomAction => _pdfZoomAction;
+  int? _pdfZoomAction = 0;
+  int get pdfZoomAction => _pdfZoomAction ?? 0;
   void zoomInPdf() {
-    _pdfZoomAction++;
+    _pdfZoomAction = pdfZoomAction + 1;
     notifyListeners();
   }
   void zoomOutPdf() {
-    _pdfZoomAction--;
+    _pdfZoomAction = pdfZoomAction - 1;
     notifyListeners();
   }
   void resetPdfZoom() {
