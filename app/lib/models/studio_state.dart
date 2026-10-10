@@ -168,9 +168,17 @@ class StudioState extends ChangeNotifier {
   Offset pipPosition = const Offset(16, 16);
   bool showQuestionsDrawer = false;
   int timerInitialSeconds = 300;
-  Offset pdfWindowPosition = const Offset(60, 60);
-  Size pdfWindowSize = const Size(520, 680);
-  bool pdfWindowMaximized = false;
+  Offset? _pdfWindowPosition;
+  Offset get pdfWindowPosition => _pdfWindowPosition ?? const Offset(60, 60);
+  set pdfWindowPosition(Offset pos) => _pdfWindowPosition = pos;
+
+  Size? _pdfWindowSize;
+  Size get pdfWindowSize => _pdfWindowSize ?? const Size(520, 680);
+  set pdfWindowSize(Size s) => _pdfWindowSize = s;
+
+  bool? _pdfWindowMaximized;
+  bool get pdfWindowMaximized => _pdfWindowMaximized ?? false;
+  set pdfWindowMaximized(bool val) => _pdfWindowMaximized = val;
 
   void setPdfWindowPosition(Offset pos) {
     pdfWindowPosition = pos;
@@ -363,7 +371,10 @@ class StudioState extends ChangeNotifier {
   Uint8List? pdfBytes;
   int pdfPage = 1;
   int pdfTotalPages = 1;
-  Map<int, List<BoardStroke>> pdfAnnotations = {};
+  Map<int, List<BoardStroke>>? _pdfAnnotations;
+  Map<int, List<BoardStroke>> get pdfAnnotations =>
+      _pdfAnnotations ??= <int, List<BoardStroke>>{};
+  set pdfAnnotations(Map<int, List<BoardStroke>> map) => _pdfAnnotations = map;
 
   List<BoardStroke> get currentPdfStrokes =>
       pdfAnnotations.putIfAbsent(pdfPage, () => []);
@@ -557,9 +568,11 @@ class StudioState extends ChangeNotifier {
     notifyListeners();
   }
 
-  final Map<int, List<BoardStroke>> _redoPages = {};
+  Map<int, List<BoardStroke>>? _redoPages;
+  Map<int, List<BoardStroke>> get redoPages =>
+      _redoPages ??= <int, List<BoardStroke>>{};
   List<BoardStroke> get _currentRedoStack =>
-      _redoPages.putIfAbsent(page, () => []);
+      redoPages.putIfAbsent(page, () => []);
   bool get canUndo => strokes.isNotEmpty;
   bool get canRedo => _currentRedoStack.isNotEmpty;
 
