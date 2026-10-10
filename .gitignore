@@ -1,17 +1,17 @@
 .run/
 .packaging/
 dist/
-service/target/
-service/data/
-whiteboard-host/node_modules/
-whiteboard-host/dist/
-app/build/
-app/.dart_tool/
-app/.flutter-plugins-dependencies
-app/windows/flutter/ephemeral/
-app/macos/Flutter/ephemeral/
-app/macos/Pods/
-app/macos/Flutter/GeneratedPluginRegistrant.swift
+backend/service/target/
+backend/service/data/
+backend/whiteboard-host/node_modules/
+backend/whiteboard-host/dist/
+frontend/build/
+frontend/.dart_tool/
+frontend/.flutter-plugins-dependencies
+frontend/windows/flutter/ephemeral/
+frontend/macos/Flutter/ephemeral/
+frontend/macos/Pods/
+frontend/macos/Flutter/GeneratedPluginRegistrant.swift
 *.log
 
 # Local credentials and editor/OS artifacts. Keep dependency lockfiles in Git.
