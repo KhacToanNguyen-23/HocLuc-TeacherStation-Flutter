@@ -166,6 +166,7 @@ class StudioState extends ChangeNotifier {
     }
     _page = next;
   }
+
   Color ink = const Color(0xfff0f3ed);
   double strokeWidth = 3.5;
   double highlighterWidth = 20.0;
@@ -204,6 +205,7 @@ class StudioState extends ChangeNotifier {
     dirty = true;
     notifyListeners();
   }
+
   StudioViewportMode viewportMode = StudioViewportMode.fullBoard;
   bool pdfOnRight = false;
   double splitRatio = 0.5;
@@ -423,6 +425,7 @@ class StudioState extends ChangeNotifier {
     }
     return pages[_page];
   }
+
   bool get timerRunning => _timer != null;
 
   String? pdfFilePath;
@@ -511,10 +514,12 @@ class StudioState extends ChangeNotifier {
     _pdfZoomAction = pdfZoomAction + 1;
     notifyListeners();
   }
+
   void zoomOutPdf() {
     _pdfZoomAction = pdfZoomAction - 1;
     notifyListeners();
   }
+
   void resetPdfZoom() {
     _pdfFitWidth = true;
     _pdfZoomAction = 999;

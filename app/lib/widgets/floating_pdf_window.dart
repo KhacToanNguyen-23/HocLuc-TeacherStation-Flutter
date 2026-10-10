@@ -361,7 +361,11 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
             return Row(
               children: [
                 // Drag Indicator & Icon
-                const Icon(Icons.drag_indicator, size: 16, color: Colors.white38),
+                const Icon(
+                  Icons.drag_indicator,
+                  size: 16,
+                  color: Colors.white38,
+                ),
                 const SizedBox(width: 4),
                 const Icon(
                   Icons.picture_as_pdf,
@@ -389,7 +393,10 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                 // Page navigation: < 1 / 12 >
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                  constraints: const BoxConstraints(
+                    minWidth: 22,
+                    minHeight: 22,
+                  ),
                   tooltip: 'Trang trước',
                   onPressed: studio.pdfPage > 1
                       ? () => studio.setPdfPage(studio.pdfPage - 1)
@@ -410,7 +417,10 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                 ),
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                  constraints: const BoxConstraints(
+                    minWidth: 22,
+                    minHeight: 22,
+                  ),
                   tooltip: 'Trang sau',
                   onPressed: studio.pdfPage < studio.pdfTotalPages
                       ? () => studio.setPdfPage(studio.pdfPage + 1)
@@ -427,7 +437,10 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                 // Zoom out [ - ]
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                  constraints: const BoxConstraints(
+                    minWidth: 22,
+                    minHeight: 22,
+                  ),
                   tooltip: 'Thu nhỏ tài liệu',
                   onPressed: studio.zoomOutPdf,
                   icon: const Icon(
@@ -439,7 +452,10 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                 // Fit Page / Fit Width toggle button
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  constraints: const BoxConstraints(
+                    minWidth: 24,
+                    minHeight: 24,
+                  ),
                   tooltip: studio.pdfFitPage
                       ? 'Vừa chiều rộng (Fit Width)'
                       : 'Xem toàn bộ trang (Fit Page)',
@@ -455,27 +471,30 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                 // Zoom in [ + ]
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                  constraints: const BoxConstraints(
+                    minWidth: 22,
+                    minHeight: 22,
+                  ),
                   tooltip: 'Phóng to tài liệu',
                   onPressed: studio.zoomInPdf,
-                  icon: const Icon(
-                    Icons.add,
-                    size: 16,
-                    color: Colors.white70,
-                  ),
+                  icon: const Icon(Icons.add, size: 16, color: Colors.white70),
                 ),
                 if (!isNarrow) ...[
                   const SizedBox(width: 2),
                   // Pan tool toggle (Bàn tay kéo cuộn trang)
                   IconButton(
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
                     tooltip: studio.tool == 'pan'
                         ? 'Đang kéo di chuyển (Bấm để quay lại Bút vẽ)'
                         : 'Bàn tay (Kéo cuộn trang bài giảng)',
                     onPressed: () {
                       studio.change(
-                        () => studio.tool = studio.tool == 'pan' ? 'pen' : 'pan',
+                        () =>
+                            studio.tool = studio.tool == 'pan' ? 'pen' : 'pan',
                         persist: false,
                       );
                     },
@@ -496,7 +515,10 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                   // Clear page annotations button
                   IconButton(
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
                     tooltip: 'Xóa nét vẽ trên trang này',
                     onPressed: studio.currentPdfStrokes.isNotEmpty
                         ? studio.clearPdfPage
@@ -513,7 +535,10 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                   // Open / Pick another PDF file
                   IconButton(
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
                     tooltip: 'Đổi / Mở tệp PDF',
                     onPressed: studio.importPdfDialog,
                     icon: const Icon(
@@ -527,7 +552,10 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                 // Maximize / Restore
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  constraints: const BoxConstraints(
+                    minWidth: 24,
+                    minHeight: 24,
+                  ),
                   tooltip: isMaximized
                       ? 'Thu nhỏ cửa sổ'
                       : 'Phóng to toàn màn hình',
@@ -542,10 +570,17 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                 // Close window button
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  constraints: const BoxConstraints(
+                    minWidth: 24,
+                    minHeight: 24,
+                  ),
                   tooltip: 'Đóng tài liệu trên bảng',
                   onPressed: studio.closeDocOnBoard,
-                  icon: const Icon(Icons.close, size: 18, color: Color(0xffff8585)),
+                  icon: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: Color(0xffff8585),
+                  ),
                 ),
               ],
             );

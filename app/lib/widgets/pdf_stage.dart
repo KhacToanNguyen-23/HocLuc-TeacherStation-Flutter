@@ -120,7 +120,7 @@ class _PdfStageState extends State<PdfStage> {
         final currentSize = Size(constraints.maxWidth, constraints.maxHeight);
         if (_lastContainerSize != null &&
             (_lastContainerSize!.width != currentSize.width ||
-             _lastContainerSize!.height != currentSize.height)) {
+                _lastContainerSize!.height != currentSize.height)) {
           _lastContainerSize = currentSize;
           if (_pdfController.isReady && widget.studio.pdfFitWidth) {
             WidgetsBinding.instance.addPostFrameCallback((_) {

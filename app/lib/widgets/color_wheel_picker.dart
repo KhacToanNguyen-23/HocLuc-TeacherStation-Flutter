@@ -14,8 +14,30 @@ class ColorWheelCompactFlyout extends StatelessWidget {
   final VoidCallback? onClose;
 
   static const List<double> wheelHues = [
-    60, 50, 40, 30, 20, 10, 0, 345, 330, 310, 290, 270,
-    250, 230, 210, 195, 180, 165, 150, 135, 120, 105, 90, 75,
+    60,
+    50,
+    40,
+    30,
+    20,
+    10,
+    0,
+    345,
+    330,
+    310,
+    290,
+    270,
+    250,
+    230,
+    210,
+    195,
+    180,
+    165,
+    150,
+    135,
+    120,
+    105,
+    90,
+    75,
   ];
 
   static const List<(double lightness, double saturation)> wheelRings = [
@@ -162,7 +184,10 @@ class ColorWheelInteractive extends StatelessWidget {
     final sectorIndex = (normalizedAngle / sectorWidth).floor() % hues.length;
 
     final ringWidth = (maxR - minR) / rings.length;
-    final ringIndex = ((r - minR) / ringWidth).floor().clamp(0, rings.length - 1);
+    final ringIndex = ((r - minR) / ringWidth).floor().clamp(
+      0,
+      rings.length - 1,
+    );
 
     final hue = hues[sectorIndex];
     final (lightness, saturation) = rings[ringIndex];
@@ -226,7 +251,12 @@ class ColorWheelPainter extends CustomPainter {
         final innerR = minR + r * ringWidth;
         final outerR = innerR + ringWidth;
         final (lightness, saturation) = rings[r];
-        final color = HSLColor.fromAHSL(1.0, hue, saturation, lightness).toColor();
+        final color = HSLColor.fromAHSL(
+          1.0,
+          hue,
+          saturation,
+          lightness,
+        ).toColor();
 
         fillPaint.color = color;
 
@@ -282,7 +312,9 @@ class ToolSizePopupMenuButton extends StatelessWidget {
   final Color line;
   final GlobalKey<PopupMenuButtonState<int>>? menuKey;
 
-  static List<({double val, double lineThickness})> getPresetsForTool(String tool) {
+  static List<({double val, double lineThickness})> getPresetsForTool(
+    String tool,
+  ) {
     if (tool == 'highlight') {
       return const [
         (val: 14.0, lineThickness: 3.0),
@@ -333,10 +365,7 @@ class ToolSizePopupMenuButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         side: const BorderSide(color: Color(0xffd5dcd2), width: 1.2),
       ),
-      constraints: const BoxConstraints(
-        minWidth: 84,
-        maxWidth: 84,
-      ),
+      constraints: const BoxConstraints(minWidth: 84, maxWidth: 84),
       onSelected: (index) {
         studio.setCurrentToolSize(presets[index].val);
       },
@@ -360,7 +389,9 @@ class ToolSizePopupMenuButton extends StatelessWidget {
                 height: presets[i].lineThickness,
                 decoration: BoxDecoration(
                   color: const Color(0xff1f2a24),
-                  borderRadius: BorderRadius.circular(presets[i].lineThickness / 2),
+                  borderRadius: BorderRadius.circular(
+                    presets[i].lineThickness / 2,
+                  ),
                 ),
               ),
             ),
@@ -378,18 +409,17 @@ class ToolSizePopupMenuButton extends StatelessWidget {
           children: [
             Container(
               width: 16,
-              height: (tool == 'highlight'
-                      ? studio.highlighterWidth / 5
-                      : (tool == 'erase'
-                          ? studio.eraserRadius * 80
-                          : studio.strokeWidth))
-                  .clamp(1.8, 7.5),
+              height:
+                  (tool == 'highlight'
+                          ? studio.highlighterWidth / 5
+                          : (tool == 'erase'
+                                ? studio.eraserRadius * 80
+                                : studio.strokeWidth))
+                      .clamp(1.8, 7.5),
               decoration: BoxDecoration(
                 color: tool == 'erase'
                     ? const Color(0xffff8c69)
-                    : (tool == 'laser'
-                        ? Colors.redAccent
-                        : pine),
+                    : (tool == 'laser' ? Colors.redAccent : pine),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -404,11 +434,7 @@ class ToolSizePopupMenuButton extends StatelessWidget {
 
 /// Minimalist Tool Size Dropdown (Clean horizontal stroke lines, no text, compact dropdown menu)
 class ToolSizeDropdown extends StatelessWidget {
-  const ToolSizeDropdown({
-    super.key,
-    required this.studio,
-    this.onSelected,
-  });
+  const ToolSizeDropdown({super.key, required this.studio, this.onSelected});
 
   final StudioState studio;
   final VoidCallback? onSelected;

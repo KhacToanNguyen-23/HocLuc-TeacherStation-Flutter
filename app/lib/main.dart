@@ -198,9 +198,7 @@ class _StudioScreenState extends State<StudioScreen> {
           controller: input,
           autofocus: true,
           maxLength: 60,
-          decoration: const InputDecoration(
-            hintText: 'Nhập tiêu đề trang...',
-          ),
+          decoration: const InputDecoration(hintText: 'Nhập tiêu đề trang...'),
         ),
         actions: [
           TextButton(
@@ -655,15 +653,14 @@ class _StudioScreenState extends State<StudioScreen> {
                   borderRadius: BorderRadius.circular(8),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
-                      color: isCurrent
-                          ? const Color(0xfff0f4e8)
-                          : Colors.white,
+                      color: isCurrent ? const Color(0xfff0f4e8) : Colors.white,
                       border: Border.all(
-                        color: isCurrent
-                            ? const Color(0xffadc38c)
-                            : line,
+                        color: isCurrent ? const Color(0xffadc38c) : line,
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -673,9 +670,7 @@ class _StudioScreenState extends State<StudioScreen> {
                           width: 22,
                           height: 22,
                           decoration: BoxDecoration(
-                            color: isCurrent
-                                ? pine
-                                : const Color(0xfff0f2eb),
+                            color: isCurrent ? pine : const Color(0xfff0f2eb),
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: Center(
@@ -684,9 +679,7 @@ class _StudioScreenState extends State<StudioScreen> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: isCurrent
-                                    ? lime
-                                    : muted,
+                                color: isCurrent ? lime : muted,
                               ),
                             ),
                           ),
@@ -712,7 +705,11 @@ class _StudioScreenState extends State<StudioScreen> {
                             borderRadius: BorderRadius.circular(4),
                             child: const Padding(
                               padding: EdgeInsets.all(2),
-                              child: Icon(Icons.edit_outlined, size: 14, color: muted),
+                              child: Icon(
+                                Icons.edit_outlined,
+                                size: 14,
+                                color: muted,
+                              ),
                             ),
                           ),
                         ),
@@ -736,7 +733,9 @@ class _StudioScreenState extends State<StudioScreen> {
                         ],
                         const SizedBox(width: 4),
                         Icon(
-                          hasStrokes ? Icons.draw_outlined : Icons.crop_portrait,
+                          hasStrokes
+                              ? Icons.draw_outlined
+                              : Icons.crop_portrait,
                           size: 13,
                           color: isCurrent ? pine : muted,
                         ),
@@ -977,7 +976,10 @@ class _StudioScreenState extends State<StudioScreen> {
               IconButton(
                 tooltip: label,
                 onPressed: () {
-                  if (studio.tool == name && (name == 'pen' || name == 'highlight' || name == 'erase')) {
+                  if (studio.tool == name &&
+                      (name == 'pen' ||
+                          name == 'highlight' ||
+                          name == 'erase')) {
                     toolSizeMenuKey.currentState?.showButtonMenu();
                   } else {
                     studio.change(() => studio.tool = name, persist: false);
@@ -1202,7 +1204,10 @@ class _StudioScreenState extends State<StudioScreen> {
                 message: 'Xóa trang hiện tại',
                 child: IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                  constraints: const BoxConstraints(
+                    minWidth: 26,
+                    minHeight: 26,
+                  ),
                   onPressed: () => _confirmDeletePage(studio.page),
                   icon: const Icon(
                     Icons.remove_circle_outline,
