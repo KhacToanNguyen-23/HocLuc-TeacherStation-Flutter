@@ -1,0 +1,92 @@
+[
+  {
+    "id": "phase-01-drawing-engine",
+    "title": "Interactive Stroke Engine (perfect_freehand)",
+    "status": "passing",
+    "evidence": "Tests: 3 passed, 0 failed in test/drawing_engine_test.dart",
+    "user_visible_behavior": "Teacher draws smooth calligraphic pen strokes and uses a glowing laser pointer cursor.",
+    "verification_command": "flutter test test/drawing_engine_test.dart",
+    "notes": "Covers stories: P1 (Laser Pointer, Smooth Pen)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-universal-chalkboard",
+    "title": "Universal Dark Chalkboard Canvas",
+    "status": "passing",
+    "evidence": "Tests: 9 passed, 0 failed in full test suite",
+    "user_visible_behavior": "App opens immediately to an eye-comfort dark slate green (#14221D) student grid chalkboard without hardcoded subject limits.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1 (Eye-Comfort Chalkboard, Subject-Agnostic)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-pdf-integration",
+    "title": "High-Performance PDF Engine (pdfrx + Per-page Annotations)",
+    "status": "passing",
+    "evidence": "Tests: 10 passed, 0 failed in full test suite including pdf_integration_test",
+    "user_visible_behavior": "Teacher imports PDF via file picker or drag-drop, writes annotations directly on PDF pages, and annotations persist per page.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1 (Dual PDF Import, Per-Page Annotations)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-04-split-stage-switcher",
+    "title": "16:9 Ergonomic Stage & Fast Switcher (F1/F2/F3)",
+    "status": "passing",
+    "evidence": "Tests: 15 passed, 0 failed in full test suite including stage_switcher_test.dart",
+    "user_visible_behavior": "Teacher presses F1 (Full Board), F2 (Full PDF), or F3 (Split 50/50) or clicks top bar buttons to switch 16:9 layout instantly.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1 (16:9 Stage, F1/F2/F3 Switcher)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-05-floating-accessories",
+    "title": "Floating Studio Accessories (Camera PIP, Timer, Left Drawer)",
+    "status": "passing",
+    "evidence": "Tests: 19 passed, 0 failed in full test suite including floating_accessories_test.dart",
+    "user_visible_behavior": "Draggable 16:9 Camera PIP card at top-right, pill countdown timer at top-center, and slide-out question drawer at left edge.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P2 (Camera PIP, Floating Timer, Left Drawer)",
+    "priority": "P2"
+  },
+  {
+    "id": "phase-01-dual-layer-inking-grid",
+    "title": "Zero-Latency Dual-Layer Inking & Compact Grid",
+    "status": "passing",
+    "evidence": "Tests: 21 passed, 0 failed across full test suite including drawing_engine_test",
+    "user_visible_behavior": "Ô ly nhỏ gọn 15px viết được nhiều công thức gấp 2.5 lần; vẽ nét mượt mà zero-latency 60fps không giật lag.",
+    "verification_command": "flutter test test/drawing_engine_test.dart",
+    "notes": "Covers stories: P1 (Compact Grid, Zero-Latency Dual-Layer Inking)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-laser-highlighter-pages",
+    "title": "Laser Trail, Highlighter & Multi-Page Undo/Redo",
+    "status": "passing",
+    "evidence": "Tests: 24 passed, 0 failed across full test suite including drawing_engine_test",
+    "user_visible_behavior": "Vệt laser phát quang tự tan biến sau 1.5s không bẩn bảng; bút dạ quang trong suốt nổi bật chữ; chuyển trang và undo/redo chuẩn xác.",
+    "verification_command": "flutter test test/drawing_engine_test.dart",
+    "notes": "Covers stories: P1 (Laser Trail, Highlighter, Multi-Page, Undo/Redo)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-pan-zoom-canvas",
+    "title": "Canvas Pan & Zoom with Space Key & Wheel",
+    "status": "passing",
+    "evidence": "Tests: 6 passed in stage_switcher_test including InteractiveChalkboard zoom bar",
+    "user_visible_behavior": "Giữ Space kéo bảng (Pan) và lăn chuột zoom 50%-300%, ngòi bút vẽ chính xác 100% không lệch tọa độ, có mini zoom bar ở góc.",
+    "verification_command": "flutter test test/stage_switcher_test.dart",
+    "notes": "Covers stories: P1, P2 (Pan & Zoom, Space Key, Mini Zoom Bar)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-04-floating-pdf-window",
+    "title": "Free-Floating Draggable PDF Window & End-to-End Integration",
+    "status": "passing",
+    "evidence": "Tests: 27 passed, 0 failed across full test suite including pdf_integration_test (drag, resize, maximize, close)",
+    "user_visible_behavior": "Cửa sổ PDF nổi tự do kéo thả khắp mặt bảng qua thanh header, resize góc, chuyển trang và chú thích trực tiếp lên trang PDF.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1 (Free-Floating PDF Window, Drag & Drop from Drawer)",
+    "priority": "P1"
+  }
+]

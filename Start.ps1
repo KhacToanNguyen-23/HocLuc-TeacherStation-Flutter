@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 $taskRoot = $PSScriptRoot
 $taskRun = Join-Path $taskRoot '.run'
 $taskPidFile = Join-Path $taskRun 'service.pid'
-$taskJar = Join-Path $taskRoot 'service\target\companion-service-0.1.0.jar'
+$taskJar = Join-Path $taskRoot 'backend\service\target\companion-service-0.1.0.jar'
 $taskUrl = 'http://127.0.0.1:47831'
 
 function Get-CompanionProcess {
@@ -45,14 +45,14 @@ if ($Mode -eq 'Windows' -or ($Mode -eq 'Preview' -and !$SkipBuild)) {
     }
 }
 if (!$SkipBuild) {
-    Invoke-Checked { mvn -q -f (Join-Path $taskRoot 'service\pom.xml') package }
-    Push-Location (Join-Path $taskRoot 'whiteboard-host')
+    Invoke-Checked { mvn -q -f (Join-Path $taskRoot 'backend\service\pom.xml') package }
+    Push-Location (Join-Path $taskRoot 'backend\whiteboard-host')
     try {
         Invoke-Checked { npm ci --no-audit --no-fund }
         Invoke-Checked { npm run build }
     } finally { Pop-Location }
     if ($Mode -eq 'Preview') {
-        Push-Location (Join-Path $taskRoot 'app')
+        Push-Location (Join-Path $taskRoot 'frontend')
         try {
             # Pub resolves before Windows plugin symlink creation. This preview can
             # use a freshly resolved lock/package config even if that last native step fails.
@@ -66,7 +66,7 @@ if (!$SkipBuild) {
     }
 }
 if (!(Test-Path -LiteralPath $taskJar)) { throw 'Chưa có Java jar; chạy lại không dùng -SkipBuild.' }
-if ($Mode -eq 'Preview' -and !(Test-Path -LiteralPath (Join-Path $taskRoot 'app\build\web\index.html'))) { throw 'Chưa có Flutter web build.' }
+if ($Mode -eq 'Preview' -and !(Test-Path -LiteralPath (Join-Path $taskRoot 'frontend\build\web\index.html'))) { throw 'Chưa có Flutter web build.' }
 
 New-Item -ItemType Directory -Force -Path $taskRun | Out-Null
 $taskProcess = Get-CompanionProcess
@@ -89,9 +89,9 @@ if (!$taskProcess) {
     if (!$taskReady) { throw "Java chưa sẵn sàng. Xem logs tại $taskRun" }
 }
 Write-Host "Java service / preview: $taskUrl"
-Write-Host "Dữ liệu: $taskRoot\service\data. Logs: $taskRun"
+Write-Host "Dữ liệu: $taskRoot\backend\service\data. Logs: $taskRun"
 Write-Host 'Dừng: .\Start.ps1 -Mode Stop. Trạng thái: .\Start.ps1 -Mode Status'
 if ($Mode -eq 'Windows') {
-    Push-Location (Join-Path $taskRoot 'app')
+    Push-Location (Join-Path $taskRoot 'frontend')
     try { Invoke-Checked { & $FlutterPath run -d windows } } finally { Pop-Location }
 }

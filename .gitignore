@@ -1,17 +1,28 @@
 .run/
 .packaging/
 dist/
-service/target/
-service/data/
-whiteboard-host/node_modules/
-whiteboard-host/dist/
+backend/service/target/
+backend/service/data/
+backend/whiteboard-host/node_modules/
+backend/whiteboard-host/dist/
+frontend/build/
+frontend/.dart_tool/
+frontend/.flutter-plugins-dependencies
+frontend/windows/flutter/ephemeral/
+frontend/macos/Flutter/ephemeral/
+frontend/macos/Pods/
+frontend/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Generated files left in the previous layout after the monorepo migration.
 app/build/
 app/.dart_tool/
 app/.flutter-plugins-dependencies
 app/windows/flutter/ephemeral/
 app/macos/Flutter/ephemeral/
 app/macos/Pods/
-app/macos/Flutter/GeneratedPluginRegistrant.swift
+service/target/
+whiteboard-host/node_modules/
+whiteboard-host/dist/
 *.log
 
 # Local credentials and editor/OS artifacts. Keep dependency lockfiles in Git.
@@ -23,3 +34,11 @@ app/macos/Flutter/GeneratedPluginRegistrant.swift
 .DS_Store
 Thumbs.db
 __pycache__/
+
+# Local environment and SDK
+.sdk/
+setup_flutter.ps1
+
+# Local Agent and Codex configs
+.agents/
+.codex/
