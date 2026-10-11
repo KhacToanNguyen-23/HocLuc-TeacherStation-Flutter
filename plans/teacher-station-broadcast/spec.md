@@ -23,6 +23,9 @@ Giáo viên cần một ứng dụng hỗ trợ giảng dạy (có bảng trắn
 
 - **[P3]** _(out of scope — noted for future)_ Hệ thống cho phép học sinh tương tác ngược lại trên bảng trắng thông qua Google Meet (vô thi). 
 
+- **[P1]** As a Giáo viên, I want to bấm nút "Tạo lớp" so that hệ thống tự động sinh link Google Meet và đưa tôi vào lớp hoàn toàn ngầm bên dưới App, mà không cần mở trình duyệt Chrome.
+  Accepted when: App tự động lấy link từ `meet.google.com/new`, tự động join qua WebView ẩn, và truyền Virtual Camera lên.
+
 ---
 
 ## Functional Requirements
@@ -66,5 +69,9 @@ Giáo viên cần một ứng dụng hỗ trợ giảng dạy (có bảng trắn
 ---
 
 ## Finalized Technical Architecture
-- **Mix Video Engine:** Sử dụng OBS Core C++ (libobs) hoặc tương đương nhúng vào Java Service để tạo Virtual Camera/Microphone chuẩn phần cứng, đảm bảo độ nét tuyệt đối.
+- **Architecture Style:** Microkernel (Plug-in) Pattern.
+- **Core System:** App Flutter chịu trách nhiệm UI (Bảng trắng, Quản lý lớp).
+- **Sub-system / Plugin (Broadcasting):** Một Plugin C++ độc lập, sử dụng API **Windows.Graphics.Capture (WGC)** để khóa mục tiêu (HWND) của Bảng trắng và trích xuất khung hình (Xuyên thấu - không dính các cửa sổ đè lên).
+- **Virtual Camera Output:** Hình ảnh từ Plugin WGC được đẩy qua Shared Memory tới Driver Camera Ảo (UnityCapture/DirectShow Filter) để phát lên Google Meet.
+- **Zero-Click Meet Automation:** App Flutter sử dụng một `WebView` ẩn để tự động truy cập `meet.google.com/new`, bắt URL mới sinh ra (qua `onUrlChanged`) để mời học sinh, và dùng Javascript Injection tự động cấp quyền/bấm "Join now". Giáo viên không bao giờ tương tác trực tiếp với Chrome.
 - **Học sinh:** Thuần túy tiếp nhận bài giảng một chiều qua Google Meet dưới dạng luồng hình ảnh & âm thanh.

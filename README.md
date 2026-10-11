@@ -1,6 +1,29 @@
 # Mộc · Teaching Studio
 
-Khung thử phần mềm hỗ trợ giáo viên bằng **Flutter (Dart) + Java 17**. Có bản Windows portable mở bằng `.exe`, source runner Flutter Windows/macOS và bản preview web. Không có lab trong bản này.
+Khung thử phần mềm hỗ trợ giáo viên bằng **Flutter (Dart) + Java 17 (Spring Boot 3)**. Có bản Windows portable mở bằng `.exe`, source runner Flutter Windows và bản preview web.
+
+## Khởi chạy nhanh khi phát triển (2 CMD - Khuyên dùng)
+
+Dự án hỗ trợ quy trình phát triển chuyên nghiệp với Hot-Reload tức thì:
+
+- **Cửa sổ CMD 1 (Backend Spring Boot):**
+  ```cmd
+  dev-backend.bat
+  :: Hoặc gõ lệnh: cd backend\api && mvn spring-boot:run
+  ```
+  *Backend lắng nghe tại `http://127.0.0.1:47831`.*
+
+- **Cửa sổ CMD 2 (Frontend Flutter Web/Windows):**
+  ```cmd
+  dev-frontend.bat
+  :: Hoặc gõ lệnh: cd frontend && flutter run -d chrome
+  :: Hoặc chạy Desktop: cd frontend && flutter run -d windows
+  ```
+  *Hỗ trợ phím `r` (Hot Reload) và `R` (Hot Restart) trực tiếp trong terminal.*
+
+> **Lưu ý trên Windows:** Hãy bật **Developer Mode** trong *Settings > System > For developers* để Flutter tạo symlinks mà không cần quyền Administrator.
+
+---
 
 ## Clone và build trên máy mới
 
@@ -18,7 +41,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Windows.ps1
 
 Script in đường dẫn `HocLuc-Teacher.exe` khi hoàn tất. Double-click file đó để mở app. Toàn bộ folder output cần đi kèm exe khi sao chép. Microsoft WebView2 runtime được pin trong script; nếu Microsoft ngừng cung cấp phiên bản đó, build sẽ dừng với thông báo cần cập nhật và kiểm chứng phiên bản mới.
 
-Prototype UI ban đầu của repo được giữ tại [docs/legacy/teacher_station_prototype.dart](docs/legacy/teacher_station_prototype.dart); app hiện tại chạy từ `app/`, không dùng prototype này làm entrypoint.
+Prototype UI ban đầu của repo được giữ tại [docs/legacy/teacher_station_prototype.dart](docs/legacy/teacher_station_prototype.dart); app hiện tại chạy từ `frontend/`, không dùng prototype này làm entrypoint.
 
 ## Mở app bằng double-click
 
@@ -97,34 +120,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Start.ps1 -Mode Windows
 
 Java chạy nền; Flutter chạy app desktop. Đóng cửa sổ desktop rồi dùng `-Mode Stop` để dừng Java. Máy hiện tại chưa có Visual Studio và symlink support; **chưa build/chạy Flutter Windows native runner**. Bản portable `.exe` ở mục đầu dùng WebView2 host và không phụ thuộc toolchain này khi chạy.
 
-### macOS
-
-Cần máy Mac, Xcode, CocoaPods, Flutter, Java 17+, Maven và Node/npm. Trong thư mục `HocLuc-Teacher`, mở hai terminal:
-
-```bash
-# Terminal 1
-bash start-macos.sh service
-# Terminal 2
-bash start-macos.sh app
-```
-
-Dừng từng terminal bằng Ctrl+C. Có runner macOS, network-client entitlement và host WKWebView; **chưa build/test trên Mac**. Native release sẽ cần JRE đóng gói, quản lý lifecycle sidecar Java, signing/notarization và installer riêng; đây chưa phải bộ cài phân phối.
-
 ## Cấu trúc và trách nhiệm
 
 ```text
-app/                     Flutter UI + Windows/macOS/web runners
-  lib/models/            trạng thái bài, nét demo, cấu hình
-  lib/services/          client gọi Java API
-  lib/widgets/           host Flat: iframe / WebView2 / WKWebView
-service/                 Java HTTP service trên loopback, persistence, JavaSound inventory
-whiteboard-host/         Fastboard host độc lập, không khởi tạo Agora RTC/RTM
-scripts/check-service.mjs kiểm tra Java API qua tiến trình thật
-scripts/check-windows-package.ps1 kiểm tra exe portable và lifecycle sidecar
-packaging/windows/       WinForms/WebView2 host, runtime config và hướng dẫn portable
+frontend/                Flutter UI + Windows desktop / Web preview
+  lib/constants/         tokens bảng màu (pine, lime, paper...)
+  lib/screens/           TeacherLobbyScreen & StudioScreen
+  lib/models/            trạng thái bài giảng, nét vẽ, cấu hình
+  lib/services/          client gọi Java API (Spring Boot 3) và Meet Automation
+  lib/widgets/           bảng vẽ, stage container, camera PIP, timer
+backend/
+  api/                   Spring Boot 3 Companion Service (cổng 47831)
+  whiteboard-host/       Fastboard host độc lập
+dev-backend.bat          Script khởi chạy nhanh Spring Boot backend (CMD 1)
+dev-frontend.bat         Script khởi chạy nhanh Flutter frontend (CMD 2)
 Build-Windows.ps1        đóng gói UI offline + Java runtime + WebView2 + exe
-Start.ps1                build/start/status/stop cho Windows
-start-macos.sh           entrypoint hai terminal trên Mac
+Start.ps1                script launcher legacy
 ```
 
 Flutter viết bằng **Dart**; Java là dịch vụ riêng, không phải ngôn ngữ viết UI Flutter. UI và Java trao đổi JSON qua loopback; preview dev dùng `127.0.0.1:47831`, app portable chọn cổng trống riêng và UI dùng origin của chính phiên đó. Camera/audio frame tốc độ cao trong bản hoàn thiện cần đường media/native riêng, không đưa raw video qua REST JSON.
@@ -137,7 +148,7 @@ Fastboard dùng SDK web và Netless session. Tận dụng phần này trong Flut
 | --- | --- |
 | UI và Java lưu/tải bài | Đã triển khai trong khung thử |
 | Windows portable exe | Đóng gói WinForms/WebView2 + Flutter web + Java runtime; kiểm chứng bằng test chính exe |
-| Flutter Windows/macOS runners | Có source; chưa xác nhận native Flutter runtime |
+| Flutter Windows runner | Hỗ trợ Windows Desktop (WGC + WebView2) & Web Preview |
 | Bảng nháp Flutter | Demo tương tác và persistence |
 | Host Fastboard | Bundle được; có màn nhập session; chưa kiểm chứng join bằng credentials thật |
 | Camera vật lý | Chưa có capture/selection adapter |

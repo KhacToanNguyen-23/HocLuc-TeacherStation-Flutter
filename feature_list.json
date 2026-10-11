@@ -48,5 +48,35 @@
     "verification_command": "flutter test",
     "notes": "Covers stories: P2 (Camera PIP, Floating Timer, Left Drawer)",
     "priority": "P2"
+  },
+  {
+    "id": "phase-01-spring-boot-migration",
+    "title": "Spring Boot 3 Backend Migration",
+    "status": "passing",
+    "evidence": "Tests: 2 passed, 0 failed in mvn test (CompanionServerTest)",
+    "user_visible_behavior": "Backend runs via mvn spring-boot:run on port 47831 with standard REST endpoints and CORS.",
+    "verification_command": "mvn test",
+    "notes": "Covers stories: P1 (Spring Boot Backend)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-code-smell-cleanup",
+    "title": "Repo Smell Cleanup & Gitignore",
+    "status": "passing",
+    "evidence": "Orphan service/ removed, gitignore updated for *.pid and logs",
+    "user_visible_behavior": "Orphan directories removed and gitignore protects workspace artifacts.",
+    "verification_command": "git status --short",
+    "notes": "Covers stories: P1 (Code Smell Cleanup)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-dev-scripts-and-docs",
+    "title": "Dev Scripts and Documentation",
+    "status": "passing",
+    "evidence": "dev-backend.bat & dev-frontend.bat created; README synced to 2-CMD flow",
+    "user_visible_behavior": "Two concise batch scripts dev-backend.bat and dev-frontend.bat allow instant launching from CMD.",
+    "verification_command": "dev-backend.bat and dev-frontend.bat verified",
+    "notes": "Covers stories: P2 (Convenient Launchers)",
+    "priority": "P2"
   }
 ]

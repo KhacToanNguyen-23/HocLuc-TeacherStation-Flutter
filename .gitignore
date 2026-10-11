@@ -1,8 +1,8 @@
 .run/
 .packaging/
 dist/
-backend/service/target/
-backend/service/data/
+backend/*/target/
+backend/*/data/
 backend/whiteboard-host/node_modules/
 backend/whiteboard-host/dist/
 frontend/build/
@@ -13,6 +13,7 @@ frontend/macos/Flutter/ephemeral/
 frontend/macos/Pods/
 frontend/macos/Flutter/GeneratedPluginRegistrant.swift
 *.log
+*.pid
 
 # Local credentials and editor/OS artifacts. Keep dependency lockfiles in Git.
 .env
@@ -31,3 +32,12 @@ setup_flutter.ps1
 # Local Agent and Codex configs
 .agents/
 .codex/
+
+# IDE and Editor configs
+.idea/
+.vscode/
+*.iml
+local.properties
+
+# Local dev scripts
+dev-*.bat

@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [ValidateSet('Preview','Windows','Service','Status','Stop')][string]$Mode = 'Preview',
     [string]$FlutterPath,
@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 $taskRoot = $PSScriptRoot
 $taskRun = Join-Path $taskRoot '.run'
 $taskPidFile = Join-Path $taskRun 'service.pid'
-$taskJar = Join-Path $taskRoot 'backend\service\target\companion-service-0.1.0.jar'
+$taskJar = Join-Path $taskRoot 'backend\api\target\companion-service-0.1.0.jar'
 $taskUrl = 'http://127.0.0.1:47831'
 
 function Get-CompanionProcess {
@@ -45,7 +45,7 @@ if ($Mode -eq 'Windows' -or ($Mode -eq 'Preview' -and !$SkipBuild)) {
     }
 }
 if (!$SkipBuild) {
-    Invoke-Checked { mvn -q -f (Join-Path $taskRoot 'backend\service\pom.xml') package }
+    Invoke-Checked { mvn -q -f (Join-Path $taskRoot 'backend\api\pom.xml') package }
     Push-Location (Join-Path $taskRoot 'backend\whiteboard-host')
     try {
         Invoke-Checked { npm ci --no-audit --no-fund }
@@ -89,7 +89,7 @@ if (!$taskProcess) {
     if (!$taskReady) { throw "Java chưa sẵn sàng. Xem logs tại $taskRun" }
 }
 Write-Host "Java service / preview: $taskUrl"
-Write-Host "Dữ liệu: $taskRoot\backend\service\data. Logs: $taskRun"
+Write-Host "Dữ liệu: $taskRoot\backend\api\data. Logs: $taskRun"
 Write-Host 'Dừng: .\Start.ps1 -Mode Stop. Trạng thái: .\Start.ps1 -Mode Status'
 if ($Mode -eq 'Windows') {
     Push-Location (Join-Path $taskRoot 'frontend')

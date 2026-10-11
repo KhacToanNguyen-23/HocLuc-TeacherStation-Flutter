@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param([string]$FlutterPath, [switch]$SkipFrontendBuild, [switch]$CreateZip)
 $ErrorActionPreference = 'Stop'
 $taskRoot = $PSScriptRoot
@@ -41,7 +41,7 @@ if (!(Test-Path -LiteralPath (Join-Path $taskBrowser 'msedgewebview2.exe'))) {
     Invoke-Checked { & expand.exe $taskCab '-F:*' $taskExtracted > (Join-Path $taskCache 'extract.log') }
 }
 if (!(Test-Path -LiteralPath (Join-Path $taskBrowser 'msedgewebview2.exe'))) { throw 'Fixed WebView2 runtime is missing after extraction.' }
-Invoke-Checked { mvn -q -f (Join-Path $taskRoot 'backend\service\pom.xml') package }
+Invoke-Checked { mvn -q -f (Join-Path $taskRoot 'backend\api\pom.xml') package }
 if (!$SkipFrontendBuild) {
     Push-Location (Join-Path $taskRoot 'backend\whiteboard-host')
     try { Invoke-Checked { npm ci --no-audit --no-fund }; Invoke-Checked { npm run build } }
@@ -59,7 +59,7 @@ $taskResources = Join-Path $taskOutput 'resources'
 New-Item -ItemType Directory -Force (Join-Path $taskResources 'app\build'), (Join-Path $taskResources 'whiteboard-host'), (Join-Path $taskResources 'service') | Out-Null
 Copy-Item -LiteralPath (Join-Path $taskRoot 'frontend\build\web') -Destination (Join-Path $taskResources 'app\build') -Recurse
 Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\whiteboard-host\dist') -Destination (Join-Path $taskResources 'whiteboard-host') -Recurse
-Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\service\target\companion-service-0.1.0.jar') -Destination (Join-Path $taskResources 'service\companion-service.jar')
+Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\api\target\companion-service-0.1.0.jar') -Destination (Join-Path $taskResources 'service\companion-service.jar')
 Copy-Item -LiteralPath $taskBrowser -Destination (Join-Path $taskOutput 'webview2-runtime') -Recurse
 $taskJlink = (Get-Command jlink).Source
 Invoke-Checked { & $taskJlink --add-modules java.base,java.desktop,jdk.httpserver,java.logging,java.net.http,jdk.crypto.ec,jdk.unsupported --strip-debug --no-header-files --no-man-pages --compress=2 --output (Join-Path $taskOutput 'runtime') }

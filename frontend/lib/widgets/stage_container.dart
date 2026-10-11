@@ -6,7 +6,7 @@ import 'grid_painter.dart';
 import 'pdf_stage.dart';
 import 'stroke_canvas.dart';
 import 'floating_pip.dart';
-import 'drawer_questions.dart';
+import 'drawer_documents.dart';
 
 class StageContainer extends StatelessWidget {
   const StageContainer({
@@ -100,7 +100,7 @@ class StageContainer extends StatelessWidget {
                             // Collapsible Left Drawer
                             if (interactive)
                               Positioned.fill(
-                                child: DrawerQuestions(studio: studio),
+                                child: DrawerDocuments(studio: studio),
                               ),
 
                             // Floating Draggable Camera PIP Card
