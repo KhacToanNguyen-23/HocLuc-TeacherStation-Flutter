@@ -1,17 +1,32 @@
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import '../models/studio_state.dart';
+import '../screens/classroom_dashboard_screen.dart';
+import '../services/meet_automation_service.dart';
 import '../widgets/stage_container.dart';
+import '../widgets/studio/studio_admission_banner.dart';
 import '../widgets/studio/studio_drawing_toolbar.dart';
 import '../widgets/studio/studio_inspector_panel.dart';
 import '../widgets/studio/studio_lessons_drawer.dart';
 import '../widgets/studio/studio_preview_dialog.dart';
 import '../widgets/studio/studio_question_view.dart';
 import '../widgets/studio/studio_rename_dialog.dart';
+import '../widgets/studio/studio_student_strip.dart';
+import '../widgets/studio/studio_students_drawer.dart';
 import '../widgets/studio/studio_top_bar.dart';
 
 class StudioScreen extends StatefulWidget {
-  const StudioScreen({super.key, this.initialState});
+  const StudioScreen({
+    super.key,
+    this.initialState,
+    this.lessonTitle,
+    this.meetingUrl,
+  });
+
   final StudioState? initialState;
+  final String? lessonTitle;
+  final String? meetingUrl;
+
   @override
   State<StudioScreen> createState() => _StudioScreenState();
 }
@@ -24,12 +39,21 @@ class _StudioScreenState extends State<StudioScreen> {
   bool initializedControllers = false;
   bool showLessons = false;
   bool showInspector = false;
+  bool showStudentsDrawer = false;
 
   @override
   void initState() {
     super.initState();
     studio = widget.initialState ?? StudioState();
     if (widget.initialState == null) studio.initialize();
+
+    if (widget.lessonTitle != null && widget.lessonTitle!.trim().isNotEmpty) {
+      studio.title = widget.lessonTitle!.trim();
+    }
+    if (widget.meetingUrl != null && widget.meetingUrl!.trim().isNotEmpty) {
+      MeetAutomationService().setMeetingUrl(widget.meetingUrl!.trim());
+    }
+
     studio.addListener(syncControllers);
   }
 
@@ -78,30 +102,72 @@ class _StudioScreenState extends State<StudioScreen> {
     }
   }
 
+  Future<void> _handleLeaveClassroom() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.logout_rounded, color: AppColors.rose600),
+            SizedBox(width: 8),
+            Text('Rời khỏi lớp học?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Bạn có chắc chắn muốn kết thúc buổi giảng dạy này và quay lại Dashboard?',
+          style: TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Ở lại'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.rose600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Kết thúc & Rời phòng'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await MeetAutomationService().leaveClassroom();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const ClassroomDashboardScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
   void openInspector() => showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    builder: (_) => SizedBox(
-      height: MediaQuery.sizeOf(context).height * .9,
-      child: AnimatedBuilder(
-        animation: studio,
-        builder: (_, _) => StudioInspectorPanel(
-          studio: studio,
-          notesController: notes,
-          questionController: question,
-          endpointController: endpoint,
-          onPreview: preview,
-        ),
+    builder: (context) => SizedBox(
+      height: 520,
+      child: StudioInspectorPanel(
+        studio: studio,
+        notesController: notes,
+        questionController: question,
+        endpointController: endpoint,
+        onPreview: preview,
       ),
     ),
   );
 
   void openLessons() => showModalBottomSheet<void>(
     context: context,
-    builder: (_) => AnimatedBuilder(
-      animation: studio,
-      builder: (_, _) => SizedBox(
-        height: 410,
+    isScrollControlled: true,
+    builder: (context) => SizedBox(
+      height: 380,
+      child: Material(
+        color: Colors.white,
         child: StudioLessonsDrawer(
           studio: studio,
           onClose: () => Navigator.pop(context),
@@ -149,6 +215,10 @@ class _StudioScreenState extends State<StudioScreen> {
                       setState(() => showInspector = !showInspector);
                     }
                   },
+                  onToggleStudents: () {
+                    setState(() => showStudentsDrawer = !showStudentsDrawer);
+                  },
+                  onLeaveClassroom: _handleLeaveClassroom,
                   onRename: rename,
                   onPreview: preview,
                   onSave: save,
@@ -157,48 +227,61 @@ class _StudioScreenState extends State<StudioScreen> {
                     studio.initialize();
                   },
                 ),
+                // Horizontal Student Gallery Strip (Zoom style)
+                StudioStudentStrip(
+                  meetService: MeetAutomationService(),
+                  onOpenStudentsDrawer: () {
+                    setState(() => showStudentsDrawer = true);
+                  },
+                ),
                 Expanded(
-                  child: Row(
+                  child: Stack(
                     children: [
-                      if (hasLessons)
-                        SizedBox(
-                          width: 200,
-                          child: StudioLessonsDrawer(
-                            studio: studio,
-                            onClose: () => setState(() => showLessons = false),
-                            onPluginMessage: message,
-                          ),
-                        ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  10,
-                                  6,
-                                  10,
-                                  4,
-                                ),
-                                child: fittedStage(),
+                      Row(
+                        children: [
+                          if (hasLessons)
+                            SizedBox(
+                              width: 200,
+                              child: StudioLessonsDrawer(
+                                studio: studio,
+                                onClose: () => setState(() => showLessons = false),
+                                onPluginMessage: message,
                               ),
                             ),
-                            if (studio.view == 'board')
-                              StudioDrawingToolbar(studio: studio),
-                          ],
-                        ),
-                      ),
-                      if (hasInspector)
-                        SizedBox(
-                          width: 304,
-                          child: StudioInspectorPanel(
-                            studio: studio,
-                            notesController: notes,
-                            questionController: question,
-                            endpointController: endpoint,
-                            onPreview: preview,
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+                                    child: fittedStage(),
+                                  ),
+                                ),
+                                if (studio.view == 'board')
+                                  StudioDrawingToolbar(studio: studio),
+                              ],
+                            ),
                           ),
-                        ),
+                          if (hasInspector)
+                            SizedBox(
+                              width: 304,
+                              child: StudioInspectorPanel(
+                                studio: studio,
+                                notesController: notes,
+                                questionController: question,
+                                endpointController: endpoint,
+                                onPreview: preview,
+                              ),
+                            ),
+                          if (showStudentsDrawer)
+                            StudioStudentsDrawer(
+                              meetService: MeetAutomationService(),
+                              onClose: () => setState(() => showStudentsDrawer = false),
+                            ),
+                        ],
+                      ),
+                      // Floating student admission alert toast
+                      StudioAdmissionBanner(meetService: MeetAutomationService()),
                     ],
                   ),
                 ),
