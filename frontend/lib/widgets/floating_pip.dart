@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
 import '../services/meet_automation_service.dart';
 import '../services/teacher_media_service.dart';
+import '../utils/safe_clamp.dart';
 
 class FloatingPip extends StatefulWidget {
   const FloatingPip({super.key, required this.studio});
@@ -33,13 +34,16 @@ class _FloatingPipState extends State<FloatingPip> {
     const pipW = 250.0;
     const pipH = 155.0;
 
-    final newRight = (studio.pipPosition.dx - details.delta.dx).clamp(
+    final maxRight = (size.width - pipW - margin);
+    final maxTop = (size.height - pipH - margin);
+
+    final newRight = (studio.pipPosition.dx - details.delta.dx).safeClamp(
       margin,
-      size.width - pipW - margin,
+      maxRight,
     );
-    final newTop = (studio.pipPosition.dy + details.delta.dy).clamp(
+    final newTop = (studio.pipPosition.dy + details.delta.dy).safeClamp(
       margin,
-      size.height - pipH - margin,
+      maxTop,
     );
 
     studio.setPipPosition(Offset(newRight, newTop));
