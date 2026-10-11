@@ -8,7 +8,7 @@ class GridPainter extends CustomPainter {
   const GridPainter({
     this.backgroundColor = chalkboardBg,
     this.gridColor = chalkboardGrid,
-    this.cellSize = 24.0,
+    this.cellSize = 15.0,
     this.showGrid = true,
   });
 
@@ -34,11 +34,11 @@ class GridPainter extends CustomPainter {
       ..strokeWidth = 0.5
       ..style = PaintingStyle.stroke;
 
-    // Draw vertical grid lines
+    // Draw vertical grid lines (major line every 5 cells = 75px standard)
     int colIndex = 0;
     for (double x = cellSize; x < size.width; x += cellSize) {
       colIndex++;
-      final isMajor = colIndex % 4 == 0;
+      final isMajor = colIndex % 5 == 0;
       canvas.drawLine(
         Offset(x, 0),
         Offset(x, size.height),
@@ -46,11 +46,11 @@ class GridPainter extends CustomPainter {
       );
     }
 
-    // Draw horizontal grid lines
+    // Draw horizontal grid lines (major line every 5 cells = 75px standard)
     int rowIndex = 0;
     for (double y = cellSize; y < size.height; y += cellSize) {
       rowIndex++;
-      final isMajor = rowIndex % 4 == 0;
+      final isMajor = rowIndex % 5 == 0;
       canvas.drawLine(
         Offset(0, y),
         Offset(size.width, y),

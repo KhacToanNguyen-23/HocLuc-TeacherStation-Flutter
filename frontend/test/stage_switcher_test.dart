@@ -5,6 +5,7 @@ import 'package:teaching_companion/models/studio_state.dart';
 import 'package:teaching_companion/widgets/stage_container.dart';
 import 'package:teaching_companion/widgets/pdf_stage.dart';
 import 'package:teaching_companion/widgets/stroke_canvas.dart';
+import 'package:teaching_companion/widgets/interactive_chalkboard.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -121,6 +122,24 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.f3);
       await tester.pump();
       expect(studio.viewportMode, StudioViewportMode.split);
+      studio.dispose();
+    });
+
+    testWidgets('Phase 03: InteractiveChalkboard renders with Mini Zoom Bar', (
+      tester,
+    ) async {
+      final studio = StudioState()
+        ..setViewportMode(StudioViewportMode.fullBoard);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: StageContainer(studio: studio)),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(InteractiveChalkboard), findsOneWidget);
+      expect(find.text('100%'), findsOneWidget);
+      expect(find.byIcon(Icons.pan_tool_outlined), findsOneWidget);
       studio.dispose();
     });
   });

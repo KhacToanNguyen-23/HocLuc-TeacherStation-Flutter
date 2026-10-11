@@ -43,39 +43,28 @@ class CompanionApp extends StatelessWidget {
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFFF8FAFC),
+          fillColor: const Color(0xfff6f7f2),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(9),
-            borderSide: const BorderSide(color: AppColors.line),
+            borderSide: const BorderSide(color: AppColors.slate200),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(9),
-            borderSide: const BorderSide(color: AppColors.line),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(9),
-            borderSide: const BorderSide(color: AppColors.sky600, width: 1.5),
+            borderSide: const BorderSide(color: AppColors.slate200),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 12,
           ),
         ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.sky600,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          ),
-        ),
       ),
       home: ListenableBuilder(
         listenable: authService,
         builder: (context, _) {
-          return authService.isSignedIn
-              ? const ClassroomDashboardScreen()
-              : const LoginScreen();
+          if (!authService.isSignedIn) {
+            return const LoginScreen();
+          }
+          return const ClassroomDashboardScreen();
         },
       ),
     );
