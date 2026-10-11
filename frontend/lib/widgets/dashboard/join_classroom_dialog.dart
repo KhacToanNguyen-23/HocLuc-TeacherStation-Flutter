@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../constants/theme.dart';
 import '../../services/meet_automation_service.dart';
+import '../../services/url_opener.dart';
 import '../../screens/studio_screen.dart';
 
 /// Dialog to join a classroom via Google Meet link or room code.
@@ -25,6 +27,11 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  static final _meetRegex = RegExp(
+    r'(?:https?:\/\/)?(?:meet\.google\.com\/)?([a-z]{3}-[a-z]{4}-[a-z]{3})',
+    caseSensitive: false,
+  );
+
   @override
   void dispose() {
     _controller.dispose();
@@ -38,17 +45,28 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
       return;
     }
 
+    final match = _meetRegex.firstMatch(input);
+    if (match == null) {
+      setState(() => _errorMessage =
+          'Mã phòng không hợp lệ! Vui lòng nhập link dạng meet.google.com/xxx-yyyy-zzz hoặc mã xxx-yyyy-zzz do Google cấp.');
+      return;
+    }
+
+    final validUrl = 'https://meet.google.com/${match.group(1)!.toLowerCase()}';
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      await _meetService.createClassroom(directUrl: input);
+      await _meetService.createClassroom(directUrl: validUrl);
       if (mounted) {
         Navigator.of(context).pop();
         await Navigator.of(context).push<void>(
-          MaterialPageRoute(builder: (_) => const StudioScreen()),
+          MaterialPageRoute(
+            builder: (_) => StudioScreen(meetingUrl: validUrl),
+          ),
         );
       }
     } catch (e) {
@@ -130,6 +148,19 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
                 hintText: 'https://meet.google.com/xxx-yyyy-zzz',
                 hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
                 prefixIcon: Icon(Icons.link_rounded, size: 18, color: sky),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.paste_rounded, size: 18),
+                  tooltip: 'Dán từ bộ nhớ tạm',
+                  onPressed: () async {
+                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    if (data?.text != null && data!.text!.trim().isNotEmpty) {
+                      setState(() {
+                        _controller.text = data.text!.trim();
+                        _errorMessage = null;
+                      });
+                    }
+                  },
+                ),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(
@@ -150,7 +181,21 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
                 style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626)),
               ),
             ],
-            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => openExternalUrl('https://meet.google.com/new'),
+                icon: const Icon(Icons.open_in_browser_rounded, size: 14),
+                label: const Text('Mở Chrome tạo phòng mới', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(
+                  foregroundColor: sky,
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
