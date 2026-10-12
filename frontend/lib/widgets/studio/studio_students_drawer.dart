@@ -19,15 +19,6 @@ class StudioStudentsDrawer extends StatefulWidget {
 }
 
 class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
-  final TextEditingController _searchController = TextEditingController();
-  String _filter = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -40,28 +31,24 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
         listenable: widget.meetService,
         builder: (context, _) {
           final participants = widget.meetService.participants;
-          final filtered = participants.where((p) {
-            if (_filter.isEmpty) return true;
-            return p.name.toLowerCase().contains(_filter.toLowerCase());
-          }).toList();
 
           return Column(
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
+                padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
                 decoration: const BoxDecoration(
                   border: Border(bottom: BorderSide(color: AppColors.line)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.groups_rounded, size: 18, color: AppColors.sky600),
+                    const Icon(Icons.groups_rounded, size: 19, color: AppColors.sky600),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Học sinh trong lớp (${participants.length})',
+                        'Người tham gia (${participants.length + 1})',
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w800,
                           color: AppColors.slate900,
                         ),
@@ -76,47 +63,103 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                 ),
               ),
 
-              // Search Box
+              // Host (Teacher) Row
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (val) => setState(() => _filter = val.trim()),
-                  style: const TextStyle(fontSize: 12),
-                  decoration: InputDecoration(
-                    hintText: 'Tìm kiếm học sinh...',
-                    hintStyle: const TextStyle(fontSize: 11, color: AppColors.slate400),
-                    prefixIcon: const Icon(Icons.search_rounded, size: 16, color: AppColors.slate400),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    filled: true,
-                    fillColor: AppColors.slate50,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.slate200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.slate200),
-                    ),
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 13,
+                        backgroundColor: AppColors.sky600,
+                        child: Text('GV', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Bạn (Chủ phòng)',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.slate900),
+                            ),
+                            Text(
+                              'Giáo viên giảng dạy',
+                              style: TextStyle(fontSize: 10, color: AppColors.slate500),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.mic_rounded, size: 16, color: AppColors.emerald600),
+                    ],
                   ),
                 ),
               ),
 
-              // Quick Actions: Mute All
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              const Divider(height: 16, color: AppColors.line),
+
+              // Student List
+              Expanded(
+                child: participants.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.groups_outlined, size: 40, color: AppColors.slate300),
+                              SizedBox(height: 12),
+                              Text(
+                                'Đang đợi học sinh tham gia...',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.slate600),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Chia sẻ link lớp học để học sinh vào phòng',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 11, color: AppColors.slate400),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        itemCount: participants.length,
+                        separatorBuilder: (_, _) => const Divider(height: 8, color: Color(0x11000000)),
+                        itemBuilder: (context, index) {
+                          final p = participants[index];
+                          return _buildParticipantRow(p);
+                        },
+                      ),
+              ),
+
+              // Footer (Zoom Style: Mute All at bottom)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8FAFC),
+                  border: Border(top: BorderSide(color: AppColors.line)),
+                ),
                 child: Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => widget.meetService.muteAllParticipants(),
+                        onPressed: participants.isEmpty ? null : () => widget.meetService.muteAllParticipants(),
                         icon: const Icon(Icons.mic_off_rounded, size: 14),
-                        label: const Text('Tắt tiếng cả lớp', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                        label: const Text('Tắt tiếng tất cả', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.rose600,
                           side: const BorderSide(color: Color(0xfffecaca)),
-                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           visualDensity: VisualDensity.compact,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
@@ -124,30 +167,6 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                     ),
                   ],
                 ),
-              ),
-
-              const Divider(height: 10, color: AppColors.line),
-
-              // Student List
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Text(
-                          _filter.isEmpty
-                              ? 'Chưa có học sinh nào trong lớp'
-                              : 'Không tìm thấy học sinh phù hợp',
-                          style: const TextStyle(fontSize: 12, color: AppColors.slate400),
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, _) => const Divider(height: 8, color: Color(0x11000000)),
-                        itemBuilder: (context, index) {
-                          final p = filtered[index];
-                          return _buildParticipantRow(p);
-                        },
-                      ),
               ),
             ],
           );

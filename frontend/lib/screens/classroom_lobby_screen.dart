@@ -457,7 +457,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          flex: 6,
+                          flex: 1,
                           child: LobbyMediaPreview(
                             mediaService: _mediaService,
                             selectedBackground: _selectedBackground,
@@ -471,7 +471,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                         ),
                         const SizedBox(width: 28),
                         Expanded(
-                          flex: 5,
+                          flex: 1,
                           child: LobbyMeetRoomCard(
                             titleController: _titleController,
                             currentMeetingUrl: _currentMeetingUrl,

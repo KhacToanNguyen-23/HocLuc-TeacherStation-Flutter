@@ -9,15 +9,22 @@ class AuthHeroPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1E3A8A), // Deep navy matching SVG base
-      ),
-      child: Center(
-        child: SvgPicture.asset(
-          'assets/images/login-online-learning-v4.svg',
-          fit: BoxFit.contain,
-          width: double.infinity,
-          height: double.infinity,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF4F9BFF),
+            Color(0xFF1E3A8A),
+          ],
         ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SvgPicture.asset(
+        'assets/images/login-online-learning-v4.svg',
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        width: double.infinity,
+        height: double.infinity,
       ),
     );
   }
