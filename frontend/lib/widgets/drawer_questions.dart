@@ -422,7 +422,13 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
             const SizedBox(height: 6),
             for (final p in plugins) ...[
               InkWell(
-                onTap: () => widget.studio.openPlugin(p),
+                onTap: () {
+                  if (p is InstalledPlugin) {
+                    widget.studio.openPlugin(p);
+                  } else {
+                    PluginManager.instance.openPlugin(p);
+                  }
+                },
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 6),
@@ -445,7 +451,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          p.manifest.name,
+                          p is InstalledPlugin ? p.manifest.name : p.name,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 10.5,

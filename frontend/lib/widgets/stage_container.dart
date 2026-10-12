@@ -8,7 +8,6 @@ import 'interactive_chalkboard.dart';
 import 'floating_pdf_window.dart';
 import 'floating_pip.dart';
 import 'floating_timer.dart';
-import 'studio/studio_document_drawer.dart';
 import 'drawer_questions.dart';
 import 'plugin_host_drawer.dart';
 import 'floating_plugin_window.dart';
