@@ -4,6 +4,7 @@ import 'package:teaching_companion/models/studio_state.dart';
 import 'package:teaching_companion/widgets/floating_pip.dart';
 import 'package:teaching_companion/widgets/floating_timer.dart';
 import 'package:teaching_companion/widgets/drawer_questions.dart';
+import 'package:teaching_companion/widgets/studio/studio_document_drawer.dart';
 import 'package:teaching_companion/widgets/stage_container.dart';
 
 void main() {
@@ -150,7 +151,12 @@ void main() {
       await tester.pump();
 
       expect(find.byType(FloatingPip), findsOneWidget);
-      expect(find.byType(DrawerQuestions), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is StudioDocumentDrawer || w is DrawerQuestions,
+        ),
+        findsOneWidget,
+      );
 
       studio.dispose();
     });

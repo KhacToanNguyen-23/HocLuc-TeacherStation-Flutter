@@ -45,7 +45,7 @@ void main() {
     test(
       'PluginManager installs, manages and uninstalls .hlep package from bytes',
       () async {
-        final manager = HlepPluginManager();
+        final manager = PluginManager();
         expect(manager.installedPlugins, isEmpty);
 
         // Create a test zip archive in memory
@@ -98,7 +98,7 @@ void main() {
     );
 
     test('PluginManager rejects zip packages without manifest.json', () async {
-      final manager = HlepPluginManager();
+      final manager = PluginManager();
       final archive = Archive();
       final text = utf8.encode('some file');
       archive.addFile(ArchiveFile('readme.txt', text.length, text));

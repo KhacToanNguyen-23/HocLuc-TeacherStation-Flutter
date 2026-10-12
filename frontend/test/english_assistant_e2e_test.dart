@@ -53,7 +53,7 @@ void main() {
       '1. Install english_assistant.hlep and verify manifest & files',
       () async {
         final zipBytes = createEnglishAssistantZip();
-        final installed = await HlepPluginManager.instance.installPluginFromBytes(
+        final installed = await PluginManager.instance.installPluginFromBytes(
           zipBytes,
           'english_assistant.hlep',
         );
@@ -67,7 +67,7 @@ void main() {
           contains('English Assistant'),
         );
         expect(
-          HlepPluginManager.instance.getPlugin('com.hocluc.plugin.english'),
+          PluginManager.instance.getPlugin('com.hocluc.plugin.english'),
           isNotNull,
         );
       },
@@ -78,7 +78,7 @@ void main() {
       (tester) async {
         final studio = StudioState();
         final zipBytes = createEnglishAssistantZip();
-        await HlepPluginManager.instance.installPluginFromBytes(
+        await PluginManager.instance.installPluginFromBytes(
           zipBytes,
           'english_assistant.hlep',
         );
@@ -174,7 +174,7 @@ void main() {
       '3. DrawerQuestions has "Cài thêm tiện ích môn" quick install option',
       (tester) async {
         final studio = StudioState();
-        HlepPluginManager.instance.uninstallPlugin('com.hocluc.plugin.english');
+        PluginManager.instance.uninstallPlugin('com.hocluc.plugin.english');
 
         await tester.pumpWidget(
           MaterialApp(
@@ -203,7 +203,7 @@ void main() {
 
         // Plugin should now be installed
         expect(
-          HlepPluginManager.instance.getPlugin('com.hocluc.plugin.english'),
+          PluginManager.instance.getPlugin('com.hocluc.plugin.english'),
           isNotNull,
         );
         expect(find.text('Trợ giảng Tiếng Anh'), findsOneWidget);
@@ -216,7 +216,7 @@ void main() {
         final file = File('../plugins/english_assistant.hlep');
         expect(file.existsSync(), isTrue);
         final bytes = await file.readAsBytes();
-        final installed = await HlepPluginManager.instance.installPluginFromBytes(
+        final installed = await PluginManager.instance.installPluginFromBytes(
           bytes,
           'english_assistant.hlep',
         );

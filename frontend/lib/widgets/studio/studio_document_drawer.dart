@@ -3,7 +3,7 @@ import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
 import 'studio_document_pages_list.dart';
 import 'studio_document_files_list.dart';
-import '../../services/hlep_plugin_manager.dart';
+import '../../services/plugin_manager.dart';
 
 class StudioDocumentDrawer extends StatelessWidget {
   const StudioDocumentDrawer({super.key, required this.studio});
@@ -135,9 +135,11 @@ class StudioDocumentDrawer extends StatelessWidget {
                           StudioDocumentFilesList(studio: studio),
                           const SizedBox(height: 12),
                           ListenableBuilder(
-                            listenable: HlepPluginManager.instance,
+                            listenable: PluginManager.instance,
                             builder: (context, _) {
-                              final plugins = HlepPluginManager.instance.installedPlugins;
+                              final plugins = PluginManager.instance.installedPlugins
+                                  .whereType<InstalledPlugin>()
+                                  .toList();
                               if (plugins.isEmpty) return const SizedBox.shrink();
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -160,7 +162,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: Text(
-                                                p.manifest.name,
+                                                p.name,
                                                 style: const TextStyle(
                                                   fontSize: 10.5,
                                                   fontWeight: FontWeight.w600,
@@ -202,7 +204,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                                 ),
                               );
                               if (choice == 'sample') {
-                                await HlepPluginManager.instance.installSampleEnglishPlugin();
+                                await PluginManager.instance.installSampleEnglishPlugin();
                                 studio.change(() {});
                               }
                             },
