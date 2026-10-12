@@ -3,6 +3,7 @@ import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
 import 'studio_document_pages_list.dart';
 import 'studio_document_files_list.dart';
+import '../../services/hlep_plugin_manager.dart';
 
 class StudioDocumentDrawer extends StatelessWidget {
   const StudioDocumentDrawer({super.key, required this.studio});
@@ -125,14 +126,116 @@ class StudioDocumentDrawer extends StatelessWidget {
 
                     // Scrollable Drawer Content (Pages + Divider + Documents)
                     Expanded(
-                      child: ListView(
+                      child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-                        children: [
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
                           StudioDocumentPagesList(studio: studio),
                           StudioDocumentFilesList(studio: studio),
+                          const SizedBox(height: 12),
+                          ListenableBuilder(
+                            listenable: HlepPluginManager.instance,
+                            builder: (context, _) {
+                              final plugins = HlepPluginManager.instance.installedPlugins;
+                              if (plugins.isEmpty) return const SizedBox.shrink();
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  for (final p in plugins)
+                                    InkWell(
+                                      onTap: () => studio.openPlugin(p),
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        margin: const EdgeInsets.only(bottom: 6),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0x1a2e7d32),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: const Color(0x334caf50)),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.extension_outlined, size: 14, color: AppColors.lime),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                p.manifest.name,
+                                                style: const TextStyle(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Color(0xffe8eae6),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                          InkWell(
+                            onTap: () async {
+                              final choice = await showDialog<String>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  backgroundColor: const Color(0xff14221d),
+                                  title: const Text(
+                                    'Cài đặt tiện ích mở rộng (.hlep)',
+                                    style: TextStyle(color: Color(0xffe8eae6), fontSize: 14),
+                                  ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.auto_awesome, color: AppColors.lime),
+                                        title: const Text(
+                                          'Cài đặt Plugin Mẫu (Trợ giảng Tiếng Anh)',
+                                          style: TextStyle(color: Color(0xffe8eae6), fontSize: 12),
+                                        ),
+                                        onTap: () => Navigator.pop(ctx, 'sample'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                              if (choice == 'sample') {
+                                await HlepPluginManager.instance.installSampleEnglishPlugin();
+                                studio.change(() {});
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0x14ffffff),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0x22ffffff)),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.add_circle_outline, size: 14, color: AppColors.lime),
+                                  SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Cài thêm tiện ích môn',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.lime,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
+                  ),
                   ],
                 ),
               ),

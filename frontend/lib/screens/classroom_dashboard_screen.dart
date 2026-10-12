@@ -83,6 +83,8 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
       await MeetAutomationService().leaveClassroom();
     }
 
+    if (!mounted) return;
+
     setState(() => _isStarting = true);
 
     showDialog<void>(
@@ -615,7 +617,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
           Expanded(
             child: ListView.separated(
               itemCount: _historyList.length,
-              separatorBuilder: (_, __) => const Divider(height: 12, color: AppColors.slate100),
+              separatorBuilder: (context, index) => const Divider(height: 12, color: AppColors.slate100),
               itemBuilder: (context, index) {
                 final item = _historyList[index] as Map<String, dynamic>;
                 final title = item['title']?.toString() ?? 'Phòng học trực tuyến';

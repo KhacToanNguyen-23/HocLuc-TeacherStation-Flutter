@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/subject_plugin.dart';
+export 'hlep_plugin_manager.dart';
 
 /// Central Microkernel Registry & Lifecycle Manager for Subject Plugins.
 /// Handles plugin registration, installation persistence, and active states.

@@ -9,6 +9,15 @@ class MockWgcBroadcasterPlatform
     implements WgcBroadcasterPlatform {
   @override
   Future<String?> getPlatformVersion() => Future.value('42');
+
+  @override
+  Future<bool> startBroadcast() => Future.value(true);
+
+  @override
+  Future<bool> stopBroadcast() => Future.value(true);
+
+  @override
+  Future<bool> isBroadcasting() => Future.value(false);
 }
 
 void main() {

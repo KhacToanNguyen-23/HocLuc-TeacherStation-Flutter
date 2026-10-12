@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/main.dart';
 import 'package:teaching_companion/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/screens/login_screen.dart';
-import 'package:teaching_companion/screens/classroom_dashboard_screen.dart';
 import 'package:teaching_companion/widgets/dashboard/join_classroom_dialog.dart';
 import 'package:teaching_companion/widgets/dashboard/schedule_classroom_dialog.dart';
 
