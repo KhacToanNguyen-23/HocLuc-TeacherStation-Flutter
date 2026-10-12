@@ -1,6 +1,8 @@
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
+import '../services/plugin_manager.dart';
 
 class DrawerQuestions extends StatefulWidget {
   const DrawerQuestions({super.key, required this.studio});
@@ -13,6 +15,20 @@ class DrawerQuestions extends StatefulWidget {
 
 class _DrawerQuestionsState extends State<DrawerQuestions> {
   bool _isDragging = false;
+  ScrollController? _pagesScrollController;
+  ScrollController get pagesScrollController =>
+      _pagesScrollController ??= ScrollController();
+
+  ScrollController? _docsScrollController;
+  ScrollController get docsScrollController =>
+      _docsScrollController ??= ScrollController();
+
+  @override
+  void dispose() {
+    _pagesScrollController?.dispose();
+    _docsScrollController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,8 +181,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          for (int i = 0; i < studio.pages.length; i++)
-                            _buildPageItem(studio, i),
+                          _buildPagesList(studio),
                           _buildAddPageButton(studio),
 
                           // 2. PHÂN CÁCH NGĂN CÁCH VỚI CÁC TỆP FILE
@@ -175,33 +190,10 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           // 3. DANH SÁCH TỆP TÀI LIỆU (PDF)
                           _buildDropTargetBar(studio),
                           const SizedBox(height: 6),
-                          if (studio.importedDocs.isEmpty)
-                            Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                child: const Text(
-                                  'Chưa có tài liệu nào\nKéo thả tệp hoặc bấm + Nhập tệp',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    height: 1.4,
-                                    color: Color(0xff6e7e72),
-                                  ),
-                                ),
-                              ),
-                            )
-                          else
-                            for (final doc in studio.importedDocs)
-                              _buildDraggableDocItem(
-                                studio,
-                                doc,
-                                doc.id == studio.activeDocId &&
-                                    studio.viewportMode !=
-                                        StudioViewportMode.fullBoard,
-                              ),
+                          _buildDocsList(studio),
+
+                          // 4. TIỆN ÍCH MÔN HỌC (PLUGINS)
+                          _buildPluginsSection(context),
                         ],
                       ),
                     ),
@@ -289,6 +281,421 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
         );
       },
     );
+  }
+
+  Widget _buildPagesList(StudioState studio) {
+    final pageCount = studio.pages.length;
+    if (pageCount <= 3) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int i = 0; i < pageCount; i++) _buildPageItem(studio, i),
+        ],
+      );
+    }
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 126),
+      child: Scrollbar(
+        controller: pagesScrollController,
+        thumbVisibility: true,
+        thickness: 3.5,
+        radius: const Radius.circular(3),
+        child: ListView.builder(
+          controller: pagesScrollController,
+          padding: EdgeInsets.zero,
+          itemCount: pageCount,
+          itemBuilder: (context, i) => _buildPageItem(studio, i),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocsList(StudioState studio) {
+    if (studio.importedDocs.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Text(
+            'Chưa có tài liệu nào\nKéo thả tệp hoặc bấm + Nhập tệp',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              height: 1.4,
+              color: Color(0xff6e7e72),
+            ),
+          ),
+        ),
+      );
+    }
+    if (studio.importedDocs.length <= 3) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final doc in studio.importedDocs)
+            _buildDraggableDocItem(
+              studio,
+              doc,
+              doc.id == studio.activeDocId &&
+                  studio.viewportMode != StudioViewportMode.fullBoard,
+            ),
+        ],
+      );
+    }
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 156),
+      child: Scrollbar(
+        controller: docsScrollController,
+        thumbVisibility: true,
+        thickness: 3.5,
+        radius: const Radius.circular(3),
+        child: ListView.builder(
+          controller: docsScrollController,
+          padding: EdgeInsets.zero,
+          itemCount: studio.importedDocs.length,
+          itemBuilder: (context, i) {
+            final doc = studio.importedDocs[i];
+            return _buildDraggableDocItem(
+              studio,
+              doc,
+              doc.id == studio.activeDocId &&
+                  studio.viewportMode != StudioViewportMode.fullBoard,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPluginsSection(BuildContext context) {
+    return ListenableBuilder(
+      listenable: PluginManager.instance,
+      builder: (context, _) {
+        final plugins = PluginManager.instance.installedPlugins;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 10, bottom: 8),
+              child: Divider(color: Color(0x28ffffff), height: 1),
+            ),
+            Row(
+              children: [
+                const Icon(
+                  Icons.extension_outlined,
+                  size: 13,
+                  color: Color(0xffd4e8a6),
+                ),
+                const SizedBox(width: 5),
+                const Expanded(
+                  child: Text(
+                    'TIỆN ÍCH MÔN HỌC',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xffd4e8a6),
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0x28d4e8a6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    plugins.isEmpty ? 'Plugins' : '${plugins.length}',
+                    style: const TextStyle(
+                      fontSize: 7.5,
+                      color: Color(0xffd4e8a6),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            for (final p in plugins) ...[
+              InkWell(
+                onTap: () => widget.studio.openPlugin(p),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0x24d4e8a6),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0x44d4e8a6)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.extension,
+                        size: 14,
+                        color: Color(0xffd4e8a6),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          p.manifest.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xffd4e8a6),
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 10,
+                        color: Color(0xff8a9a8d),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            InkWell(
+              onTap: () => _showInstallPluginDialog(context),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0x14ffffff),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0x2effffff)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline,
+                      size: 14,
+                      color: Color(0xffd4e8a6),
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Cài thêm tiện ích môn',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xffd4e8a6),
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 10,
+                      color: Color(0xff8a9a8d),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showInstallPluginDialog(BuildContext context) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xff122019),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: Color(0x33ffffff)),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.extension_outlined, color: Color(0xffd4e8a6), size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Thêm tiện ích môn học',
+              style: TextStyle(
+                color: Color(0xffe8eae6),
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Chọn nguồn tiện ích để cài đặt vào Học Lực Studio:',
+              style: TextStyle(color: Color(0xffa5b5a8), fontSize: 12),
+            ),
+            const SizedBox(height: 14),
+            InkWell(
+              onTap: () => Navigator.pop(ctx, 'sample'),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0x22d4e8a6),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0x44d4e8a6)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      color: Color(0xffd4e8a6),
+                      size: 20,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Cài đặt Plugin Mẫu (Trợ giảng Tiếng Anh)',
+                            style: TextStyle(
+                              color: Color(0xffd4e8a6),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Bóc tách S-V-O & bắt lỗi ngữ pháp với spaCy & LanguageTool',
+                            style: TextStyle(
+                              color: Color(0xff94a3b8),
+                              fontSize: 10.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () => Navigator.pop(ctx, 'file'),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0x14ffffff),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0x22ffffff)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.folder_open, color: Color(0xffe2e8f0), size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Chọn tệp .hlep từ máy tính...',
+                            style: TextStyle(
+                              color: Color(0xffe2e8f0),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Nạp gói plugin đóng gói chuẩn .hlep hoặc .zip',
+                            style: TextStyle(
+                              color: Color(0xff94a3b8),
+                              fontSize: 10.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Đóng',
+              style: TextStyle(color: Color(0xffa5b5a8)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!context.mounted || result == null) return;
+
+    if (result == 'sample') {
+      try {
+        await PluginManager.instance.installSampleEnglishPlugin();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Đã cài đặt thành công plugin "Trợ giảng Tiếng Anh"!',
+              ),
+              backgroundColor: Color(0xff1b2e25),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi cài đặt plugin: $e'),
+              backgroundColor: const Color(0xff8b1c1c),
+            ),
+          );
+        }
+      }
+    } else if (result == 'file') {
+      try {
+        final files = await FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['hlep', 'zip'],
+        );
+        if (files.isNotEmpty) {
+          final file = files.first;
+          final bytes = await file.readAsBytes();
+          await PluginManager.instance.installPluginFromBytes(bytes, file.name);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Đã cài đặt thành công plugin "${file.name}"!'),
+                backgroundColor: const Color(0xff1b2e25),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể nạp tệp plugin: $e'),
+              backgroundColor: const Color(0xff8b1c1c),
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _showRenamePageDialog(int index) async {
@@ -502,12 +909,16 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
           children: [
             Icon(Icons.add, size: 14, color: Color(0xffd4e8a6)),
             SizedBox(width: 4),
-            Text(
-              'Thêm trang bài giảng',
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.bold,
-                color: Color(0xffd4e8a6),
+            Flexible(
+              child: Text(
+                'Thêm trang bài giảng',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xffd4e8a6),
+                ),
               ),
             ),
           ],
@@ -518,34 +929,34 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
 
   Widget _buildSectionDivider(StudioState studio) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Expanded(child: Divider(color: Color(0x28ffffff), height: 1)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.folder_open_outlined,
-                  size: 12,
-                  color: Color(0xff8a9a8d),
-                ),
-                const SizedBox(width: 4),
-                Text(
+          const Divider(color: Color(0x28ffffff), height: 1),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.folder_open_outlined,
+                size: 13,
+                color: Color(0xffd4e8a6),
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
                   'TỆP TÀI LIỆU (${studio.importedDocs.length})',
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 8.5,
+                    fontSize: 9.5,
                     letterSpacing: 0.8,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xff8a9a8d),
+                    color: Color(0xffd4e8a6),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const Expanded(child: Divider(color: Color(0x28ffffff), height: 1)),
         ],
       ),
     );

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trợ giảng Tiếng Anh</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <div class="title-group">
+      <span>🇬🇧</span>
+      <h2>Trợ Giảng Tiếng Anh</h2>
+    </div>
+    <span class="badge" id="backendBadge">Local spaCy</span>
+  </div>
+
+  <div class="quick-samples">
+    <button class="sample-chip" data-sample="The smart student reads a book eagerly in the classroom.">Student reads a book</button>
+    <button class="sample-chip" data-sample="She plays the piano beautifully every evening.">Plays piano</button>
+    <button class="sample-chip" data-sample="The teacher explained the difficult lesson clearly.">Explained lesson</button>
+  </div>
+
+  <textarea id="inputSentence" class="input-box" placeholder="Nhập câu tiếng Anh cần phân tích cú pháp..."></textarea>
+
+  <button id="btnAnalyze" class="btn-primary">
+    <span>⚡</span>
+    <span>Phân tích cú pháp S-V-O</span>
+  </button>
+
+  <div id="resultsCard" class="results-card" style="display: none;">
+    <div class="legend">
+      <div class="legend-item"><span class="dot dot-subject"></span> S (Chủ ngữ)</div>
+      <div class="legend-item"><span class="dot dot-verb"></span> V (Động từ)</div>
+      <div class="legend-item"><span class="dot dot-object"></span> O (Tân ngữ)</div>
+    </div>
+
+    <div id="tokensContainer" class="tokens-container"></div>
+
+    <div id="grammarAlert" class="grammar-alert success">
+      <span>✓</span>
+      <span id="grammarMessage">Câu chuẩn xác ngữ pháp.</span>
+    </div>
+  </div>
+
+  <button id="btnPinToBoard" class="btn-pin" style="display: none;">
+    <span>📌</span>
+    <span>Ghim lên bảng phấn</span>
+  </button>
+
+  <script src="app.js"></script>
+</body>
+</html>

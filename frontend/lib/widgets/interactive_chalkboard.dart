@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/studio_state.dart';
+import 'board_sticker_card.dart';
 import 'grid_painter.dart';
 import 'stroke_canvas.dart';
+import 'smart_chalk_overlay.dart';
 
 class InteractiveChalkboard extends StatefulWidget {
   const InteractiveChalkboard({
@@ -95,6 +97,51 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
                   child: StrokeCanvas(
                     studio: widget.studio,
                     interactive: widget.interactive && !isPanMode,
+                  ),
+                ),
+                Positioned.fill(
+                  child: SmartChalkOverlay(
+                    studio: widget.studio,
+                    onDelete: (id) => widget.studio.removeChalkAnnotation(id),
+                  ),
+                ),
+                Positioned.fill(
+                  child: ListenableBuilder(
+                    listenable: widget.studio,
+                    builder: (context, _) {
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final size = Size(
+                            constraints.maxWidth,
+                            constraints.maxHeight,
+                          );
+                          final stickers = widget.studio.currentStickers;
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              for (final s in stickers)
+                                Positioned(
+                                  left: s.normalizedRect.left * size.width,
+                                  top: s.normalizedRect.top * size.height,
+                                  width: (s.normalizedRect.width * size.width)
+                                      .clamp(
+                                        200.0,
+                                        size.width > 200 ? size.width : 200.0,
+                                      ),
+                                  child: BoardStickerCard(
+                                    sticker: s,
+                                    parentSize: size,
+                                    onDelete: () =>
+                                        widget.studio.removeSticker(s.id),
+                                    onUpdateRect: (r) => widget.studio
+                                        .updateStickerRect(s.id, r),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ],
