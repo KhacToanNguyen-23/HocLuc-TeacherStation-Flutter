@@ -78,12 +78,8 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
 
         final strokes = widget.targetStrokes ?? widget.studio.strokes;
 
-        final isSvoMode = widget.studio.activeSubjectTool == 'svo';
-
         return MouseRegion(
-          cursor: isSvoMode
-              ? SystemMouseCursors.click
-              : widget.studio.tool == 'laser'
+          cursor: widget.studio.tool == 'laser'
               ? SystemMouseCursors.none
               : widget.studio.tool == 'erase'
               ? SystemMouseCursors.grab
@@ -104,7 +100,6 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
           child: GestureDetector(
             onPanStart: widget.interactive
                 ? (e) {
-                    if (isSvoMode) return;
                     final norm = normalized(e.localPosition);
                     if (widget.studio.tool == 'laser') {
                       _addLaserPoint(norm);
@@ -120,7 +115,6 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                 : null,
             onPanUpdate: widget.interactive
                 ? (e) {
-                    if (isSvoMode) return;
                     final norm = normalized(e.localPosition);
                     if (widget.studio.tool == 'laser') {
                       _addLaserPoint(norm);
@@ -135,7 +129,6 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                 : null,
             onPanEnd: widget.interactive
                 ? (_) {
-                    if (isSvoMode) return;
                     if (widget.studio.tool == 'laser' ||
                         widget.studio.tool == 'erase') {
                       return;
@@ -163,10 +156,6 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
             onTapDown: widget.interactive
                 ? (e) {
                     final norm = normalized(e.localPosition);
-                    if (isSvoMode) {
-                      widget.studio.analyzeHandwritingAt(norm);
-                      return;
-                    }
                     if (widget.studio.tool == 'laser') {
                       _addLaserPoint(norm);
                       widget.studio.setLaserOffset(norm);

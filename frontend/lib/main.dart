@@ -74,6 +74,7 @@ class _StudioScreenState extends State<StudioScreen> {
   final question = TextEditingController();
   final endpoint = TextEditingController();
   bool initializedControllers = false;
+  bool showLessons = false;
   bool showInspector = false;
   final GlobalKey<PopupMenuButtonState<int>> toolSizeMenuKey = GlobalKey();
   bool showColorWheelDropdown = false;
@@ -184,6 +185,39 @@ class _StudioScreenState extends State<StudioScreen> {
     }
   }
 
+  Future<void> _showRenamePageDialog(int index) async {
+    final currentTitle = index < studio.pageTitles.length
+        ? studio.pageTitles[index]
+        : 'Trang ${index + 1}';
+    final input = TextEditingController(text: currentTitle);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Đổi tên Trang ${index + 1}'),
+        content: TextField(
+          controller: input,
+          autofocus: true,
+          maxLength: 60,
+          decoration: const InputDecoration(hintText: 'Nhập tiêu đề trang...'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, input.text.trim()),
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
+    );
+    input.dispose();
+    if (result != null && result.isNotEmpty) {
+      studio.renamePage(index, result);
+    }
+  }
+
   Future<void> _confirmDeletePage(int index) async {
     if (studio.pages.length <= 1) {
       message('Không thể xóa trang duy nhất còn lại.');
@@ -235,6 +269,13 @@ class _StudioScreenState extends State<StudioScreen> {
       child: AnimatedBuilder(animation: studio, builder: (_, _) => inspector()),
     ),
   );
+  void openLessons() => showModalBottomSheet<void>(
+    context: context,
+    builder: (_) => AnimatedBuilder(
+      animation: studio,
+      builder: (_, _) => SizedBox(height: 410, child: lessons()),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
@@ -244,13 +285,15 @@ class _StudioScreenState extends State<StudioScreen> {
       return Scaffold(
         body: LayoutBuilder(
           builder: (context, box) {
-            final hasInspector = showInspector && box.maxWidth >= 1250;
+            final hasInspector = showInspector && box.maxWidth >= 1250,
+                hasLessons = showLessons && box.maxWidth >= 1000;
             return Column(
               children: [
-                studioTopBar(box.maxWidth, hasInspector),
+                studioTopBar(box.maxWidth, hasLessons, hasInspector),
                 Expanded(
                   child: Row(
                     children: [
+                      if (hasLessons) SizedBox(width: 200, child: lessons()),
                       Expanded(
                         child: Stack(
                           clipBehavior: Clip.none,
@@ -320,7 +363,11 @@ class _StudioScreenState extends State<StudioScreen> {
     },
   );
 
-  Widget studioTopBar(double width, bool hasInspector) => Container(
+  Widget studioTopBar(
+    double width,
+    bool hasLessons,
+    bool hasInspector,
+  ) => Container(
     height: 48,
     padding: const EdgeInsets.symmetric(horizontal: 10),
     decoration: const BoxDecoration(
@@ -348,7 +395,25 @@ class _StudioScreenState extends State<StudioScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
+        IconButton(
+          tooltip: hasLessons ? 'Đóng mục bài giảng' : 'Mở mục bài giảng',
+          iconSize: 18,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+          onPressed: () {
+            if (width < 1000) {
+              openLessons();
+            } else {
+              setState(() => showLessons = !showLessons);
+            }
+          },
+          icon: Icon(
+            hasLessons ? Icons.view_sidebar : Icons.view_sidebar_outlined,
+            color: pine,
+          ),
+        ),
+        const SizedBox(width: 4),
         Flexible(
           child: InkWell(
             onTap: rename,
@@ -518,6 +583,270 @@ class _StudioScreenState extends State<StudioScreen> {
             textStyle: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget lessons() => Container(
+    decoration: const BoxDecoration(
+      color: Colors.white,
+      border: Border(right: BorderSide(color: line)),
+    ),
+    child: ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.layers_outlined, size: 15, color: pine),
+            const SizedBox(width: 6),
+            const Expanded(
+              child: Text(
+                'CÁC TRANG BẢNG',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 0.8,
+                  color: pine,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'P.${studio.page + 1}/${studio.pages.length}',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: muted,
+              ),
+            ),
+            const SizedBox(width: 4),
+            InkWell(
+              onTap: () => setState(() => showLessons = false),
+              borderRadius: BorderRadius.circular(4),
+              child: const Padding(
+                padding: EdgeInsets.all(3),
+                child: Icon(Icons.close, size: 14, color: muted),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        for (int index = 0; index < studio.pages.length; index++)
+          Builder(
+            builder: (context) {
+              final isCurrent = studio.page == index && studio.view == 'board';
+              final label = index < studio.pageTitles.length
+                  ? studio.pageTitles[index]
+                  : 'Trang ${index + 1}';
+              final hasStrokes = studio.pages[index].isNotEmpty;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: InkWell(
+                  onTap: () => studio.change(() {
+                    studio.page = index;
+                    studio.view = 'board';
+                  }),
+                  borderRadius: BorderRadius.circular(8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isCurrent ? const Color(0xfff0f4e8) : Colors.white,
+                      border: Border.all(
+                        color: isCurrent ? const Color(0xffadc38c) : line,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: isCurrent ? pine : const Color(0xfff0f2eb),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isCurrent ? lime : muted,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            label,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isCurrent
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: pine,
+                            ),
+                          ),
+                        ),
+                        Tooltip(
+                          message: 'Đổi tên trang',
+                          child: InkWell(
+                            onTap: () => _showRenamePageDialog(index),
+                            borderRadius: BorderRadius.circular(4),
+                            child: const Padding(
+                              padding: EdgeInsets.all(2),
+                              child: Icon(
+                                Icons.edit_outlined,
+                                size: 14,
+                                color: muted,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (studio.pages.length > 1) ...[
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message: 'Xóa trang này',
+                            child: InkWell(
+                              onTap: () => _confirmDeletePage(index),
+                              borderRadius: BorderRadius.circular(4),
+                              child: const Padding(
+                                padding: EdgeInsets.all(2),
+                                child: Icon(
+                                  Icons.delete_outline,
+                                  size: 14,
+                                  color: Color(0xffc2410c),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 4),
+                        Icon(
+                          hasStrokes
+                              ? Icons.draw_outlined
+                              : Icons.crop_portrait,
+                          size: 13,
+                          color: isCurrent ? pine : muted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        InkWell(
+          onTap: () => studio.change(() {
+            studio.addPage();
+            studio.view = 'board';
+          }),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+            margin: const EdgeInsets.only(top: 2, bottom: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xfff7f9f4),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xffc8d7bd)),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add, size: 14, color: pine),
+                SizedBox(width: 4),
+                Text(
+                  'Thêm trang bài giảng',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: pine,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Divider(height: 1, color: line),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            const Icon(Icons.extension_outlined, size: 13, color: muted),
+            const SizedBox(width: 5),
+            const Expanded(
+              child: Text(
+                'TIỆN ÍCH MÔN HỌC',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 9,
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w700,
+                  color: muted,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xffedf2e5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'Plugins',
+                style: TextStyle(
+                  fontSize: 8,
+                  color: pine,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () {
+            message(
+              'Hệ thống Extension Microkernel: Sẵn sàng kết nối plugin bộ môn (Tiếng Anh, Toán, Khoa học…).',
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xfff8f9f5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xffdbe2d4),
+                style: BorderStyle.solid,
+              ),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.add_circle_outline, size: 15, color: pine),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Cài thêm tiện ích môn',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: pine,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -820,11 +1149,7 @@ class _StudioScreenState extends State<StudioScreen> {
             ),
             IconButton(
               tooltip: 'Xóa nét trang này',
-              onPressed:
-                  (studio.strokes.isEmpty &&
-                      studio.currentChalkAnnotations.isEmpty)
-                  ? null
-                  : studio.clearPage,
+              onPressed: studio.strokes.isEmpty ? null : studio.clearPage,
               icon: const Icon(Icons.delete_outline, size: 19),
             ),
             const SizedBox(width: 6),
