@@ -30,6 +30,7 @@ public class DeviceService {
             "aiStreaming", false,
             "meetInteraction", false,
             "flatHostBuilt", Files.isRegularFile(root.resolve("backend/whiteboard-host/dist/index.html"))
+                || Files.isRegularFile(root.resolve("whiteboard-host/index.html"))
         );
     }
 

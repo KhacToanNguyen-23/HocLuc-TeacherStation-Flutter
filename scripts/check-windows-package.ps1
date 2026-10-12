@@ -48,6 +48,7 @@ try {
     if (!$taskCurrent.WaitForExit(10000) -or $taskCurrent.ExitCode -ne 0) { throw 'Normal app close failed.' }
     Assert-ServiceStopped $taskNormal.servicePid
     if (!$taskNormal.ready -or !$taskNormal.saveRead -or !$taskNormal.externalResourcesDenied) { throw 'Normal report incomplete.' }
+if (!(Test-Path -LiteralPath (Join-Path $taskPortable 'resources\whiteboard-host\index.html'))) { throw 'Packaged whiteboard entry point is missing.' }
     if (!(Test-Path -LiteralPath (Join-Path $taskNormalDir 'user-data\data\lesson.json'))) { throw 'Lesson not written to user data.' }
     if (Test-Path -LiteralPath (Join-Path $taskPortable 'resources\service\data')) { throw 'Runtime bundle unexpectedly contains lesson data.' }
 

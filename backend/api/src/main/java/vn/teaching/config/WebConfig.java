@@ -7,6 +7,8 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -34,12 +36,23 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        Path flatPath = rootDirectory.resolve("backend/whiteboard-host/dist");
-        Path webPath = rootDirectory.resolve("frontend/build/web");
+        boolean packaged = Files.isDirectory(rootDirectory.resolve("app/build/web"));
+        Path flatPath = rootDirectory.resolve(packaged ? "whiteboard-host" : "backend/whiteboard-host/dist");
+        Path webPath = rootDirectory.resolve(packaged ? "app/build/web" : "frontend/build/web");
 
         registry.addResourceHandler("/flat/**")
-                .addResourceLocations(flatPath.toUri().toString());
+                .addResourceLocations(directoryUri(flatPath));
         registry.addResourceHandler("/**")
-                .addResourceLocations(webPath.toUri().toString());
+                .addResourceLocations(directoryUri(webPath));
+    }
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/").setViewName("forward:/index.html");
+    }
+
+    private static String directoryUri(Path directory) {
+        String uri = directory.toUri().toString();
+        return uri.endsWith("/") ? uri : uri + "/";
     }
 }

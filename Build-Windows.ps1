@@ -60,11 +60,12 @@ $taskResources = Join-Path $taskOutput 'resources'
 New-Item -ItemType Directory -Force (Join-Path $taskResources 'app\build'), (Join-Path $taskResources 'whiteboard-host'), (Join-Path $taskResources 'service') | Out-Null
 Copy-Item -LiteralPath (Join-Path $taskRoot 'frontend\build\web') -Destination (Join-Path $taskResources 'app\build') -Recurse
 & (Join-Path $taskRoot 'scripts\check-flutter-fonts.ps1') -WebRoot (Join-Path $taskResources 'app\build\web')
-Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\whiteboard-host\dist') -Destination (Join-Path $taskResources 'whiteboard-host') -Recurse
+New-Item -ItemType Directory -Force (Join-Path $taskResources 'whiteboard-host') | Out-Null
+Copy-Item -Path (Join-Path $taskRoot 'backend\whiteboard-host\dist\*') -Destination (Join-Path $taskResources 'whiteboard-host') -Recurse
 Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\api\target\companion-service-0.1.0.jar') -Destination (Join-Path $taskResources 'service\companion-service.jar')
 Copy-Item -LiteralPath $taskBrowser -Destination (Join-Path $taskOutput 'webview2-runtime') -Recurse
 $taskJlink = (Get-Command jlink).Source
-Invoke-Checked { & $taskJlink --add-modules java.base,java.desktop,jdk.httpserver,java.logging,java.net.http,jdk.crypto.ec,jdk.unsupported --strip-debug --no-header-files --no-man-pages --compress=2 --output (Join-Path $taskOutput 'runtime') }
+Invoke-Checked { & $taskJlink --add-modules java.se,jdk.httpserver,jdk.crypto.ec,jdk.unsupported --strip-debug --no-header-files --no-man-pages --compress=2 --output (Join-Path $taskOutput 'runtime') }
 Copy-Item -LiteralPath (Join-Path $taskSdk 'lib\net462\Microsoft.Web.WebView2.Core.dll') -Destination $taskOutput
 Copy-Item -LiteralPath (Join-Path $taskSdk 'lib\net462\Microsoft.Web.WebView2.WinForms.dll') -Destination $taskOutput
 Copy-Item -LiteralPath (Join-Path $taskSdk 'runtimes\win-x64\native\WebView2Loader.dll') -Destination $taskOutput
@@ -75,6 +76,7 @@ Copy-Item -LiteralPath (Join-Path $taskRoot 'packaging\windows\README-Portable.t
 Copy-Item -LiteralPath (Join-Path $taskRoot 'packaging\windows\THIRD-PARTY-NOTICES.txt') -Destination $taskOutput
 $taskManifest = [ordered]@{ version='0.1.0'; platform='Windows x64'; host='WinForms + WebView2'; flutter='3.47.7 web'; java='17'; webview2=$taskVersion; sdk=$taskSdkVersion; builtAt=(Get-Date).ToString('o') }
 $taskManifest | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $taskOutput 'build-info.json') -Encoding UTF8
+Invoke-Checked { & (Join-Path $taskRoot 'scripts\check-windows-package.ps1') -Bundle $taskOutput }
 $taskOutput | Set-Content -LiteralPath (Join-Path $taskRoot '.packaging\latest-output.txt') -Encoding UTF8
 if ($CreateZip) { Compress-Archive -LiteralPath $taskOutput -DestinationPath ($taskOutput + '.zip') -CompressionLevel Optimal }
 Write-Host "Ready: $taskOutput\HocLuc-Teacher.exe"

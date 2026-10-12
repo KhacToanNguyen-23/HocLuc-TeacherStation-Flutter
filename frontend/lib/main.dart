@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'constants/theme.dart';
 import 'services/google_meet_auth_service.dart';
+import 'services/desktop_lifecycle.dart';
 import 'screens/login_screen.dart';
 import 'screens/classroom_dashboard_screen.dart';
 
@@ -12,6 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GoogleMeetAuthService().init();
   runApp(const CompanionApp());
+  WidgetsBinding.instance.addPostFrameCallback((_) => notifyDesktopReady());
 }
 
 class CompanionApp extends StatelessWidget {
