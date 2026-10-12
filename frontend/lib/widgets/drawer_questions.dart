@@ -425,8 +425,10 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 6),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0x24d4e8a6),
                     borderRadius: BorderRadius.circular(8),
@@ -549,7 +551,11 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.auto_awesome, color: Color(0xffd4e8a6), size: 20),
+                    Icon(
+                      Icons.auto_awesome,
+                      color: Color(0xffd4e8a6),
+                      size: 20,
+                    ),
                     SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -566,7 +572,10 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           SizedBox(height: 3),
                           Text(
                             'Bóc tách S-V-O & bắt lỗi ngữ pháp với spaCy & LanguageTool',
-                            style: TextStyle(color: Color(0xff94a3b8), fontSize: 10.5),
+                            style: TextStyle(
+                              color: Color(0xff94a3b8),
+                              fontSize: 10.5,
+                            ),
                           ),
                         ],
                       ),
@@ -605,7 +614,10 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           SizedBox(height: 3),
                           Text(
                             'Nạp gói plugin đóng gói chuẩn .hlep hoặc .zip',
-                            style: TextStyle(color: Color(0xff94a3b8), fontSize: 10.5),
+                            style: TextStyle(
+                              color: Color(0xff94a3b8),
+                              fontSize: 10.5,
+                            ),
                           ),
                         ],
                       ),
@@ -619,7 +631,10 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Đóng', style: TextStyle(color: Color(0xffa5b5a8))),
+            child: const Text(
+              'Đóng',
+              style: TextStyle(color: Color(0xffa5b5a8)),
+            ),
           ),
         ],
       ),
@@ -633,7 +648,9 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Đã cài đặt thành công plugin "Trợ giảng Tiếng Anh"!'),
+              content: Text(
+                'Đã cài đặt thành công plugin "Trợ giảng Tiếng Anh"!',
+              ),
               backgroundColor: Color(0xff1b2e25),
               duration: Duration(seconds: 3),
             ),

@@ -72,7 +72,10 @@ void main() {
 
       // Update sticker position
       studio.updateStickerRect('s1', const Rect.fromLTWH(0.3, 0.4, 0.3, 0.2));
-      expect(studio.currentStickers.first.normalizedRect.left, closeTo(0.3, 0.001));
+      expect(
+        studio.currentStickers.first.normalizedRect.left,
+        closeTo(0.3, 0.001),
+      );
 
       // Remove sticker
       studio.removeSticker('s1');
@@ -81,45 +84,46 @@ void main() {
       studio.dispose();
     });
 
-    testWidgets('BoardStickerCard renders tokens, role badges, and triggers delete', (
-      tester,
-    ) async {
-      final sticker = BoardSticker(
-        id: 's-widget',
-        type: 'english_svo_card',
-        normalizedRect: const Rect.fromLTWH(0.1, 0.1, 0.4, 0.2),
-        rawText: 'He runs',
-        tokens: [
-          {'text': 'He', 'role': 'SUBJECT'},
-          {'text': 'runs', 'role': 'VERB'},
-        ],
-        issues: ['⚠️ Simple present tense'],
-      );
+    testWidgets(
+      'BoardStickerCard renders tokens, role badges, and triggers delete',
+      (tester) async {
+        final sticker = BoardSticker(
+          id: 's-widget',
+          type: 'english_svo_card',
+          normalizedRect: const Rect.fromLTWH(0.1, 0.1, 0.4, 0.2),
+          rawText: 'He runs',
+          tokens: [
+            {'text': 'He', 'role': 'SUBJECT'},
+            {'text': 'runs', 'role': 'VERB'},
+          ],
+          issues: ['⚠️ Simple present tense'],
+        );
 
-      bool deleted = false;
+        bool deleted = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: BoardStickerCard(
-              sticker: sticker,
-              onDelete: () => deleted = true,
-              onUpdateRect: (_) {},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BoardStickerCard(
+                sticker: sticker,
+                onDelete: () => deleted = true,
+                onUpdateRect: (_) {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('He'), findsOneWidget);
-      expect(find.text('runs'), findsOneWidget);
-      expect(find.text('S'), findsOneWidget);
-      expect(find.text('V'), findsOneWidget);
-      expect(find.textContaining('Simple present tense'), findsOneWidget);
+        expect(find.text('He'), findsOneWidget);
+        expect(find.text('runs'), findsOneWidget);
+        expect(find.text('S'), findsOneWidget);
+        expect(find.text('V'), findsOneWidget);
+        expect(find.textContaining('Simple present tense'), findsOneWidget);
 
-      // Tap close button
-      await tester.tap(find.byIcon(Icons.close));
-      await tester.pump();
-      expect(deleted, isTrue);
-    });
+        // Tap close button
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pump();
+        expect(deleted, isTrue);
+      },
+    );
   });
 }

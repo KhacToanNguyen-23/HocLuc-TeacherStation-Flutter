@@ -10,7 +10,7 @@ import 'floating_pip.dart';
 import 'drawer_questions.dart';
 import 'plugin_host_drawer.dart';
 import 'floating_plugin_window.dart';
-import 'in_board_extension_bar.dart';
+import 'subject_tool_palette.dart';
 
 class StageContainer extends StatelessWidget {
   const StageContainer({
@@ -125,16 +125,9 @@ class StageContainer extends StatelessWidget {
                                 // Floating Draggable Camera PIP Card
                                 if (interactive) FloatingPip(studio: studio),
 
-                                // In-Board Subject Extension Bar (Applied directly on canvas)
+                                // Floating In-Board Subject Tool Palette Dock
                                 if (interactive && studio.activePlugin != null)
-                                  Positioned(
-                                    top: 10,
-                                    left: 20,
-                                    right: 20,
-                                    child: Center(
-                                      child: InBoardExtensionBar(studio: studio),
-                                    ),
-                                  ),
+                                  SubjectToolPalette(studio: studio),
 
                                 // Hybrid Plugin Host (Drawer Panel & Floating Window)
                                 if (interactive) ...[

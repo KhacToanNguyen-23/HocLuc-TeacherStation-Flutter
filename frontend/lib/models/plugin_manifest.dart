@@ -58,13 +58,14 @@ class PluginManifest {
     final ui = json['ui'] as Map<String, dynamic>? ?? {};
     final backendMap = json['backend'] as Map<String, dynamic>? ?? {};
 
-    final uiEntry = json['main'] as String? ??
-        ui['entry'] as String? ??
-        'ui/index.html';
-    final uiPlacement = json['placement'] as String? ??
+    final uiEntry =
+        json['main'] as String? ?? ui['entry'] as String? ?? 'ui/index.html';
+    final uiPlacement =
+        json['placement'] as String? ??
         ui['placement'] as String? ??
         'drawer_panel';
-    final uiDefaultWidth = (json['default_width'] as num?)?.toDouble() ??
+    final uiDefaultWidth =
+        (json['default_width'] as num?)?.toDouble() ??
         (ui['default_width'] as num?)?.toDouble() ??
         420.0;
 
@@ -72,10 +73,12 @@ class PluginManifest {
         ? PluginBackend.fromJson(json['backend'] as Map<String, dynamic>)
         : null;
 
-    final backendExecutable = backendObj?.entry ?? backendMap['executable'] as String?;
-    final backendPort = backendObj?.port ?? (backendMap['port'] as num?)?.toInt();
-    final hasSidecar = backendObj != null ||
-        (backendMap['has_sidecar'] as bool? ?? false);
+    final backendExecutable =
+        backendObj?.entry ?? backendMap['executable'] as String?;
+    final backendPort =
+        backendObj?.port ?? (backendMap['port'] as num?)?.toInt();
+    final hasSidecar =
+        backendObj != null || (backendMap['has_sidecar'] as bool? ?? false);
 
     return PluginManifest(
       id: json['id'] as String? ?? 'unknown_plugin',

@@ -22,9 +22,7 @@ void main() {
       );
       dummyPlugin = InstalledPlugin(
         manifest: manifest,
-        files: {
-          'ui/index.html': utf8.encode('<h1>English Plugin UI</h1>'),
-        },
+        files: {'ui/index.html': utf8.encode('<h1>English Plugin UI</h1>')},
       );
     });
 
@@ -76,33 +74,30 @@ void main() {
       expect(studio.showPluginDrawer, isFalse);
     });
 
-    testWidgets('PluginHostDrawer renders header, pop-out button, and close button', (
-      tester,
-    ) async {
-      studio.openPlugin(dummyPlugin, openModal: true);
+    testWidgets(
+      'PluginHostDrawer renders header, pop-out button, and close button',
+      (tester) async {
+        studio.openPlugin(dummyPlugin, openModal: true);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Stack(
-              children: [
-                PluginHostDrawer(studio: studio),
-              ],
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Stack(children: [PluginHostDrawer(studio: studio)]),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Trợ giảng Tiếng Anh'), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_new), findsOneWidget); // Pop-out icon
-      expect(find.byIcon(Icons.close), findsOneWidget);
+        expect(find.text('Trợ giảng Tiếng Anh'), findsOneWidget);
+        expect(find.byIcon(Icons.open_in_new), findsOneWidget); // Pop-out icon
+        expect(find.byIcon(Icons.close), findsOneWidget);
 
-      // Tap pop-out button
-      await tester.tap(find.byIcon(Icons.open_in_new));
-      await tester.pump();
-      expect(studio.pluginFloating, isTrue);
-    });
+        // Tap pop-out button
+        await tester.tap(find.byIcon(Icons.open_in_new));
+        await tester.pump();
+        expect(studio.pluginFloating, isTrue);
+      },
+    );
 
     testWidgets('FloatingPluginWindow renders and docks back to drawer', (
       tester,
@@ -113,11 +108,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: Stack(
-              children: [
-                FloatingPluginWindow(studio: studio),
-              ],
-            ),
+            body: Stack(children: [FloatingPluginWindow(studio: studio)]),
           ),
         ),
       );

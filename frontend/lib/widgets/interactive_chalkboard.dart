@@ -4,6 +4,7 @@ import '../models/studio_state.dart';
 import 'board_sticker_card.dart';
 import 'grid_painter.dart';
 import 'stroke_canvas.dart';
+import 'smart_chalk_overlay.dart';
 
 class InteractiveChalkboard extends StatefulWidget {
   const InteractiveChalkboard({
@@ -99,6 +100,12 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
                   ),
                 ),
                 Positioned.fill(
+                  child: SmartChalkOverlay(
+                    studio: widget.studio,
+                    onDelete: (id) => widget.studio.removeChalkAnnotation(id),
+                  ),
+                ),
+                Positioned.fill(
                   child: ListenableBuilder(
                     listenable: widget.studio,
                     builder: (context, _) {
@@ -117,14 +124,17 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
                                   left: s.normalizedRect.left * size.width,
                                   top: s.normalizedRect.top * size.height,
                                   width: (s.normalizedRect.width * size.width)
-                                      .clamp(200.0, size.width > 200 ? size.width : 200.0),
+                                      .clamp(
+                                        200.0,
+                                        size.width > 200 ? size.width : 200.0,
+                                      ),
                                   child: BoardStickerCard(
                                     sticker: s,
                                     parentSize: size,
                                     onDelete: () =>
                                         widget.studio.removeSticker(s.id),
-                                    onUpdateRect: (r) =>
-                                        widget.studio.updateStickerRect(s.id, r),
+                                    onUpdateRect: (r) => widget.studio
+                                        .updateStickerRect(s.id, r),
                                   ),
                                 ),
                             ],

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,9 @@ import '../services/local_service.dart';
 import '../services/desktop_lifecycle.dart';
 import '../services/plugin_manager.dart';
 import 'board_sticker.dart';
+import 'smart_chalk_annotation.dart';
+import '../services/stroke_clusterer.dart';
+import '../services/english_analyzer.dart';
 
 import 'package:perfect_freehand/perfect_freehand.dart';
 
@@ -156,8 +160,17 @@ class StudioState extends ChangeNotifier {
       endpoint = '',
       language = 'Tiếng Việt',
       microphone = '',
-      view = 'board',
-      tool = 'pen';
+      view = 'board';
+  String _tool = 'pen';
+  String get tool => _tool;
+  set tool(String val) {
+    if (_tool != val || activeSubjectTool != null) {
+      _tool = val;
+      activeSubjectTool = null;
+      notifyListeners();
+    }
+  }
+
   bool reveal = false, denoise = true;
   int _page = 0, seconds = 300;
   int get page => _page;
@@ -226,6 +239,25 @@ class StudioState extends ChangeNotifier {
   Offset pluginFloatingPosition = const Offset(80, 80);
   Size pluginFloatingSize = const Size(420, 560);
 
+  String? activeSubjectTool;
+  bool chalkAnnotationsVisible = true;
+  Offset subjectPaletteOffset = const Offset(24, 20);
+
+  void setActiveSubjectTool(String? t) {
+    activeSubjectTool = t;
+    notifyListeners();
+  }
+
+  void toggleChalkAnnotationsVisibility() {
+    chalkAnnotationsVisible = !chalkAnnotationsVisible;
+    notifyListeners();
+  }
+
+  void setSubjectPaletteOffset(Offset offset) {
+    subjectPaletteOffset = offset;
+    notifyListeners();
+  }
+
   void openPlugin(InstalledPlugin plugin, {bool openModal = false}) {
     activePlugin = plugin;
     showPluginDrawer = openModal;
@@ -238,6 +270,7 @@ class StudioState extends ChangeNotifier {
     activePlugin = null;
     showPluginDrawer = false;
     pluginFloating = false;
+    activeSubjectTool = null;
     notifyListeners();
   }
 
@@ -270,11 +303,13 @@ class StudioState extends ChangeNotifier {
     final action = data['action'] as String? ?? data['type'] as String?;
     if (action == 'INSERT_ANNOTATION') {
       final payload = (data['payload'] as Map<String, dynamic>?) ?? data;
-      final rawText = (payload['raw_text'] as String?) ??
+      final rawText =
+          (payload['raw_text'] as String?) ??
           (payload['rawText'] as String?) ??
           (payload['text'] as String?) ??
           '';
-      final tokens = (payload['tokens'] as List?)
+      final tokens =
+          (payload['tokens'] as List?)
               ?.map((t) => Map<String, dynamic>.from(t as Map))
               .toList() ??
           const [];
@@ -537,6 +572,465 @@ class StudioState extends ChangeNotifier {
     }
   }
 
+  final Map<int, List<SmartChalkAnnotation>> pageChalkAnnotations = {};
+  final Map<int, List<SmartChalkAnnotation>> pdfChalkAnnotations = {};
+
+  List<SmartChalkAnnotation> get currentChalkAnnotations =>
+      pageChalkAnnotations.putIfAbsent(page, () => []);
+
+  List<SmartChalkAnnotation> getPdfChalkAnnotations(int pageNumber) =>
+      pdfChalkAnnotations.putIfAbsent(pageNumber, () => []);
+
+  void addChalkAnnotation(SmartChalkAnnotation annotation) {
+    currentChalkAnnotations.add(annotation);
+    dirty = true;
+    _revision++;
+    notifyListeners();
+  }
+
+  void addPdfChalkAnnotation(int pageNumber, SmartChalkAnnotation annotation) {
+    getPdfChalkAnnotations(pageNumber).add(annotation);
+    dirty = true;
+    _revision++;
+    notifyListeners();
+  }
+
+  void removeChalkAnnotation(String id) {
+    for (final list in pageChalkAnnotations.values) {
+      final idx = list.indexWhere((s) => s.id == id);
+      if (idx != -1) {
+        list.removeAt(idx);
+        dirty = true;
+        _revision++;
+        notifyListeners();
+        return;
+      }
+    }
+    for (final list in pdfChalkAnnotations.values) {
+      final idx = list.indexWhere((s) => s.id == id);
+      if (idx != -1) {
+        list.removeAt(idx);
+        dirty = true;
+        _revision++;
+        notifyListeners();
+        return;
+      }
+    }
+  }
+
+  void removePdfChalkAnnotation(int pageNumber, String id) {
+    final list = getPdfChalkAnnotations(pageNumber);
+    final idx = list.indexWhere((s) => s.id == id);
+    if (idx != -1) {
+      list.removeAt(idx);
+      dirty = true;
+      _revision++;
+      notifyListeners();
+    }
+  }
+
+  void updateChalkAnnotationOffset(String id, Offset newOffset) {
+    for (final list in pageChalkAnnotations.values) {
+      final idx = list.indexWhere((s) => s.id == id);
+      if (idx != -1) {
+        list[idx].normalizedOffset = newOffset;
+        dirty = true;
+        _revision++;
+        notifyListeners();
+        return;
+      }
+    }
+    for (final list in pdfChalkAnnotations.values) {
+      final idx = list.indexWhere((s) => s.id == id);
+      if (idx != -1) {
+        list[idx].normalizedOffset = newOffset;
+        dirty = true;
+        _revision++;
+        notifyListeners();
+        return;
+      }
+    }
+  }
+
+  void clearChalkAnnotations([int? targetPage]) {
+    final p = targetPage ?? page;
+    pageChalkAnnotations[p]?.clear();
+    dirty = true;
+    _revision++;
+    notifyListeners();
+  }
+
+  void clearPdfChalkAnnotations(int pageNumber) {
+    pdfChalkAnnotations[pageNumber]?.clear();
+    dirty = true;
+    _revision++;
+    notifyListeners();
+  }
+
+  bool analyzeHandwritingAt(Offset touchPoint, {String? hintText}) {
+    // 1. Generate local annotation if touchPoint is near strokes
+    final annotation = StrokeClusterer.clusterAndAnalyze(
+      touchPoint: touchPoint,
+      strokes: strokes,
+      pageIndex: page,
+      hintText: hintText,
+    );
+    if (annotation == null) {
+      // User touched empty space without strokes, do NOT create phantom annotation
+      return false;
+    }
+
+    // 2. Deduplicate only when a valid stroke cluster exists
+    currentChalkAnnotations.removeWhere((a) {
+      final center = a.normalizedBounds.center;
+      return (center.dy - touchPoint.dy).abs() < 0.12 &&
+          (center.dx - touchPoint.dx).abs() < 0.35;
+    });
+
+    addChalkAnnotation(annotation);
+
+    // 3. Asynchronously refine with RapidOCR + spaCy backend
+    _refineAnnotationWithOcr(annotation, touchPoint);
+
+    return true;
+  }
+
+  bool hasStrokesNear(Offset touchPoint) {
+    return strokes.any((s) {
+      if (s.isEraser || s.points.isEmpty) return false;
+      return s.points.any(
+        (p) =>
+            (p.dy - touchPoint.dy).abs() < 0.12 &&
+            (p.dx - touchPoint.dx).abs() < 0.35,
+      );
+    });
+  }
+
+  Future<bool> analyzeHandwritingWithVerifiedText(
+    Offset touchPoint,
+    String verifiedText,
+  ) async {
+    final cleanText = verifiedText.trim();
+    if (cleanText.isEmpty) return false;
+
+    // 1. Phân tích văn bản chuẩn xác qua spaCy backend
+    final tokensData = await EnglishSentenceAnalyzer.analyzeTokensWithBackend(
+      cleanText,
+    );
+    if (tokensData.isEmpty) return false;
+
+    // 2. Gom nhóm nét vẽ tại touchPoint
+    final annotation = StrokeClusterer.clusterAndAnalyze(
+      touchPoint: touchPoint,
+      strokes: strokes,
+      pageIndex: page,
+      hintText: cleanText,
+    );
+    if (annotation == null) return false;
+
+    // 3. Khớp chính xác từng token từ spaCy vào các cụm nét vẽ
+    final totalTokens = tokensData.length;
+    final updatedChalkTokens = <ChalkWordToken>[];
+
+    for (int i = 0; i < totalTokens; i++) {
+      final t = tokensData[i];
+      final word = t['text'] as String;
+      final role = t['role'] as String?;
+
+      Rect relRect;
+      if (i < annotation.tokens.length) {
+        relRect = annotation.tokens[i].relativeRect;
+      } else {
+        final step = 1.0 / totalTokens;
+        relRect = Rect.fromLTWH(i * step, 0.0, step * 0.9, 1.0);
+      }
+
+      updatedChalkTokens.add(
+        ChalkWordToken(word: word, role: role, relativeRect: relRect),
+      );
+    }
+
+    final finalAnnotation = annotation.copyWith(
+      rawText: cleanText,
+      tokens: updatedChalkTokens,
+    );
+
+    // 4. Xóa annotation cũ cùng vùng và thêm annotation mới
+    currentChalkAnnotations.removeWhere((a) {
+      final center = a.normalizedBounds.center;
+      return (center.dy - touchPoint.dy).abs() < 0.12 &&
+          (center.dx - touchPoint.dx).abs() < 0.35;
+    });
+
+    addChalkAnnotation(finalAnnotation);
+    return true;
+  }
+
+  void _refineAnnotationWithOcr(
+    SmartChalkAnnotation annotation,
+    Offset touchPoint,
+  ) async {
+    try {
+      final lineStrokes = strokes.where((s) {
+        if (s.isEraser || s.points.isEmpty) return false;
+        return s.points.any(
+          (p) =>
+              annotation.normalizedBounds.inflate(0.04).contains(p) ||
+              ((p.dy - touchPoint.dy).abs() < 0.12 &&
+                  p.dx >= (annotation.normalizedBounds.left - 0.03) &&
+                  p.dx <= (annotation.normalizedBounds.right + 0.03)),
+        );
+      }).toList();
+
+      if (lineStrokes.isEmpty) return;
+
+      final pngBytes = await StrokeClusterer.rasterizeStrokesToPng(
+        strokes: lineStrokes,
+        bounds: annotation.normalizedBounds,
+      );
+      if (pngBytes == null) return;
+
+      final ocrResult = await EnglishSentenceAnalyzer.analyzeWithOcr(pngBytes);
+      if (ocrResult == null) return;
+
+      final text = ocrResult['text'] as String?;
+      final rawList = ocrResult['tokens'] as List?;
+      final rawTokens = rawList
+          ?.map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+      if (text == null ||
+          text.isEmpty ||
+          rawTokens == null ||
+          rawTokens.isEmpty) {
+        return;
+      }
+
+      final totalTokens = rawTokens.length;
+      final hasValidGrammarRoles = rawTokens.any(
+        (t) => t['role'] != null && (t['role'] as String).isNotEmpty,
+      );
+      if (!hasValidGrammarRoles) {
+        // OCR produced noise/gibberish (e.g. 'ase Wc') that spaCy cannot parse.
+        // Keep all physical stroke clusters intact so teacher can edit/confirm.
+        return;
+      }
+
+      final chalkTokens = <ChalkWordToken>[];
+      if (totalTokens == annotation.tokens.length) {
+        for (int i = 0; i < totalTokens; i++) {
+          final t = rawTokens[i];
+          chalkTokens.add(
+            ChalkWordToken(
+              word: t['text'] as String,
+              role: t['role'] as String?,
+              relativeRect: annotation.tokens[i].relativeRect,
+            ),
+          );
+        }
+      } else if (totalTokens < annotation.tokens.length) {
+        for (int i = 0; i < annotation.tokens.length; i++) {
+          if (i < totalTokens) {
+            final t = rawTokens[i];
+            chalkTokens.add(
+              ChalkWordToken(
+                word: t['text'] as String,
+                role: t['role'] as String?,
+                relativeRect: annotation.tokens[i].relativeRect,
+              ),
+            );
+          } else {
+            chalkTokens.add(annotation.tokens[i]);
+          }
+        }
+      } else {
+        // totalTokens > annotation.tokens.length:
+        // Map available physical clusters first, then position remaining tokens cleanly to the right
+        for (int i = 0; i < totalTokens; i++) {
+          final t = rawTokens[i];
+          final word = t['text'] as String;
+          final role = t['role'] as String?;
+          if (i < annotation.tokens.length) {
+            chalkTokens.add(
+              ChalkWordToken(
+                word: word,
+                role: role,
+                relativeRect: annotation.tokens[i].relativeRect,
+              ),
+            );
+          } else {
+            final lastCluster = annotation.tokens.isNotEmpty
+                ? annotation.tokens.last.relativeRect
+                : const Rect.fromLTWH(0.8, 0.0, 0.15, 1.0);
+            final extraIdx = i - annotation.tokens.length + 1;
+            final extraW = (lastCluster.width * 0.8).clamp(0.08, 0.25);
+            final extraLeft =
+                (lastCluster.right + (extraIdx - 1) * extraW + 0.02).clamp(
+                  0.0,
+                  1.0 - extraW,
+                );
+            chalkTokens.add(
+              ChalkWordToken(
+                word: word,
+                role: role,
+                relativeRect: Rect.fromLTWH(extraLeft, 0.0, extraW, 1.0),
+              ),
+            );
+          }
+        }
+      }
+
+      final updated = annotation.copyWith(rawText: text, tokens: chalkTokens);
+
+      final idx = currentChalkAnnotations.indexWhere(
+        (a) => a.id == annotation.id,
+      );
+      if (idx != -1) {
+        currentChalkAnnotations[idx] = updated;
+        dirty = true;
+        _revision++;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  bool analyzePdfSentenceAt(
+    int pageNumber,
+    Offset normPoint, {
+    String? sampleText,
+    Rect? targetRect,
+  }) {
+    // Deduplicate in same vicinity on that page
+    getPdfChalkAnnotations(pageNumber).removeWhere((a) {
+      final center = a.normalizedBounds.center;
+      return (center.dy - normPoint.dy).abs() < 0.04 &&
+          (center.dx - normPoint.dx).abs() < 0.35;
+    });
+
+    final rawSentence = (sampleText != null && sampleText.trim().isNotEmpty)
+        ? sampleText.trim()
+        : 'The teacher explains grammar.';
+
+    final stickerData = EnglishSentenceAnalyzer.analyze(text: rawSentence);
+    final rawTokens = stickerData.tokens;
+
+    // Use actual text bounding box if available, otherwise estimate
+    final sentenceRect =
+        targetRect ??
+        Rect.fromLTWH(
+          (normPoint.dx - 0.04).clamp(0.04, 0.58),
+          (normPoint.dy - 0.012).clamp(0.005, 0.96),
+          0.38,
+          0.020,
+        );
+
+    final chalkTokens = <ChalkWordToken>[];
+    final tokenCount = rawTokens.length;
+
+    if (tokenCount <= 1) {
+      // Standalone single word on PDF (e.g. "CONTENTS")
+      final tokenInfo = rawTokens.isNotEmpty
+          ? rawTokens.first
+          : {'text': rawSentence, 'role': 'subject'};
+      chalkTokens.add(
+        ChalkWordToken(
+          word: tokenInfo['text'] as String,
+          role: tokenInfo['role'] as String? ?? 'subject',
+          relativeRect: const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0),
+        ),
+      );
+    } else {
+      final totalLen = math.max(1, rawSentence.length);
+      double currentX = 0.0;
+      for (int i = 0; i < tokenCount; i++) {
+        final tokenInfo = rawTokens[i];
+        final word = tokenInfo['text'] as String;
+        final role = tokenInfo['role'] as String?;
+
+        final relW = (word.length / totalLen).clamp(0.05, 0.95);
+        final relRect = Rect.fromLTWH(currentX, 0.0, relW, 1.0);
+        currentX += relW + (1.0 / totalLen);
+
+        chalkTokens.add(
+          ChalkWordToken(word: word, role: role, relativeRect: relRect),
+        );
+      }
+    }
+
+    final annotation = SmartChalkAnnotation(
+      id: 'pdf-svo-${DateTime.now().millisecondsSinceEpoch}',
+      source: 'pdf',
+      pageIndex: pageNumber,
+      rawText: rawSentence,
+      normalizedBounds: sentenceRect,
+      tokens: chalkTokens,
+      isVisible: true,
+      normalizedOffset: Offset.zero,
+    );
+
+    addPdfChalkAnnotation(pageNumber, annotation);
+    return true;
+  }
+
+  void addTypedChalkAnnotation(String sentence, {Offset? position}) async {
+    final cleanText = sentence.trim();
+    if (cleanText.isEmpty) return;
+
+    List<ChalkWordToken> buildTokens(List<Map<String, dynamic>> tokens) {
+      final list = <ChalkWordToken>[];
+      final count = tokens.length;
+      final totalLen = math.max(1, cleanText.length);
+      double currentX = 0.0;
+      for (int i = 0; i < count; i++) {
+        final t = tokens[i];
+        final word = t['text'] as String;
+        final role = t['role'] as String?;
+        final relW = (word.length / totalLen).clamp(0.05, 0.95);
+        final relRect = Rect.fromLTWH(currentX, 0.0, relW, 1.0);
+        currentX += relW + (1.0 / totalLen);
+        list.add(ChalkWordToken(word: word, role: role, relativeRect: relRect));
+      }
+      return list;
+    }
+
+    // 1. Quick initial token layout
+    final localData = EnglishSentenceAnalyzer.analyze(text: cleanText);
+    final pos = position ?? const Offset(0.20, 0.30);
+    final boxWidth = (cleanText.length * 0.015 + 0.12).clamp(0.12, 0.85);
+    final boxHeight = 0.06;
+    final sentenceRect = Rect.fromLTWH(pos.dx, pos.dy, boxWidth, boxHeight);
+
+    final annotation = SmartChalkAnnotation(
+      id: 'typed-svo-${DateTime.now().millisecondsSinceEpoch}',
+      source: 'chalkboard',
+      pageIndex: page,
+      rawText: cleanText,
+      normalizedBounds: sentenceRect,
+      tokens: buildTokens(localData.tokens),
+      isVisible: true,
+      normalizedOffset: Offset.zero,
+    );
+
+    addChalkAnnotation(annotation);
+
+    // 2. Refine syntax via spaCy backend
+    try {
+      final backendTokens =
+          await EnglishSentenceAnalyzer.analyzeTokensWithBackend(cleanText);
+      if (backendTokens.isNotEmpty) {
+        final updated = annotation.copyWith(tokens: buildTokens(backendTokens));
+        final idx = currentChalkAnnotations.indexWhere(
+          (a) => a.id == annotation.id,
+        );
+        if (idx != -1) {
+          currentChalkAnnotations[idx] = updated;
+          dirty = true;
+          _revision++;
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+  }
+
   Timer? _timer;
   String savedAt = '';
   int _revision = 0;
@@ -660,6 +1154,7 @@ class StudioState extends ChangeNotifier {
 
   void clearPdfPage() {
     pdfAnnotations[pdfPage]?.clear();
+    pdfChalkAnnotations[pdfPage]?.clear();
     dirty = true;
     _revision++;
     notifyListeners();
@@ -800,9 +1295,53 @@ class StudioState extends ChangeNotifier {
   void erase(Offset point, {List<BoardStroke>? target}) {
     final list = target ?? strokes;
     final r = eraserRadius;
+    final int beforeCount = list.length;
     list.removeWhere(
       (stroke) => stroke.points.any((p) => (p - point).distance < r),
     );
+    final bool strokesRemoved = list.length < beforeCount;
+
+    if (target == null) {
+      // 1. Direct hit on chalkboard annotations (bounds + underline + badges)
+      currentChalkAnnotations.removeWhere((ann) {
+        final b = ann.normalizedBounds;
+        final off = ann.normalizedOffset;
+        final effectiveRect = Rect.fromLTRB(
+          b.left + off.dx,
+          b.top + off.dy,
+          b.right + off.dx,
+          b.bottom + off.dy + 0.055,
+        );
+        return effectiveRect.inflate(r).contains(point);
+      });
+
+      // 2. Auto-clean orphan chalkboard annotations when all their handwriting strokes are erased
+      if (strokesRemoved) {
+        currentChalkAnnotations.removeWhere((ann) {
+          if (ann.source != 'chalkboard') return false;
+          final b = ann.normalizedBounds.inflate(0.025);
+          final hasRemainingStrokes = strokes.any(
+            (s) => !s.isEraser && s.points.any((p) => b.contains(p)),
+          );
+          return !hasRemainingStrokes;
+        });
+      }
+    } else {
+      // Direct hit on PDF annotations for the active page
+      final pdfAnns = getPdfChalkAnnotations(pdfPage);
+      pdfAnns.removeWhere((ann) {
+        final b = ann.normalizedBounds;
+        final off = ann.normalizedOffset;
+        final effectiveRect = Rect.fromLTRB(
+          b.left + off.dx,
+          b.top + off.dy,
+          b.right + off.dx,
+          b.bottom + off.dy + 0.055,
+        );
+        return effectiveRect.inflate(r).contains(point);
+      });
+    }
+
     _revision++;
     dirty = true;
     notifyListeners();
@@ -926,9 +1465,20 @@ class StudioState extends ChangeNotifier {
   }
 
   void clearPage() {
+    bool changed = false;
     if (strokes.isNotEmpty) {
       _currentRedoStack.addAll(strokes);
-      change(() => strokes.clear());
+      strokes.clear();
+      changed = true;
+    }
+    if (currentChalkAnnotations.isNotEmpty) {
+      currentChalkAnnotations.clear();
+      changed = true;
+    }
+    if (changed) {
+      _revision++;
+      dirty = true;
+      notifyListeners();
     }
   }
 
@@ -962,14 +1512,26 @@ class StudioState extends ChangeNotifier {
       'stickers': pageStickers.map(
         (k, v) => MapEntry(k.toString(), v.map((s) => s.toJson()).toList()),
       ),
+      'smartChalkAnnotations': pageChalkAnnotations.map(
+        (k, v) => MapEntry(k.toString(), v.map((s) => s.toJson()).toList()),
+      ),
+      'pdfChalkAnnotations': pdfChalkAnnotations.map(
+        (k, v) => MapEntry(k.toString(), v.map((s) => s.toJson()).toList()),
+      ),
     };
   }
 
   void restoreFromJson(Map<String, dynamic> json) {
     if (json.containsKey('title')) title = json['title'] as String? ?? title;
-    if (json.containsKey('subject')) subject = json['subject'] as String? ?? subject;
-    if (json.containsKey('notes')) notes = json['notes'] as String? ?? notes;
-    if (json.containsKey('question')) question = json['question'] as String? ?? question;
+    if (json.containsKey('subject')) {
+      subject = json['subject'] as String? ?? subject;
+    }
+    if (json.containsKey('notes')) {
+      notes = json['notes'] as String? ?? notes;
+    }
+    if (json.containsKey('question')) {
+      question = json['question'] as String? ?? question;
+    }
     if (json.containsKey('page')) page = (json['page'] as num?)?.toInt() ?? 0;
     if (json.containsKey('pageTitles') && json['pageTitles'] is List) {
       pageTitles
@@ -980,7 +1542,11 @@ class StudioState extends ChangeNotifier {
       pages.clear();
       for (final p in json['pages'] as List) {
         if (p is List) {
-          pages.add(p.map((s) => BoardStroke.fromJson(s as Map<String, dynamic>)).toList());
+          pages.add(
+            p
+                .map((s) => BoardStroke.fromJson(s as Map<String, dynamic>))
+                .toList(),
+          );
         }
       }
     }
@@ -991,7 +1557,44 @@ class StudioState extends ChangeNotifier {
         final pageIdx = int.tryParse(k.toString()) ?? 0;
         if (v is List) {
           pageStickers[pageIdx] = v
-              .map((s) => BoardSticker.fromJson(Map<String, dynamic>.from(s as Map)))
+              .map(
+                (s) =>
+                    BoardSticker.fromJson(Map<String, dynamic>.from(s as Map)),
+              )
+              .toList();
+        }
+      });
+    }
+    if (json.containsKey('smartChalkAnnotations') &&
+        json['smartChalkAnnotations'] is Map) {
+      pageChalkAnnotations.clear();
+      final map = json['smartChalkAnnotations'] as Map;
+      map.forEach((k, v) {
+        final pageIdx = int.tryParse(k.toString()) ?? 0;
+        if (v is List) {
+          pageChalkAnnotations[pageIdx] = v
+              .map(
+                (s) => SmartChalkAnnotation.fromJson(
+                  Map<String, dynamic>.from(s as Map),
+                ),
+              )
+              .toList();
+        }
+      });
+    }
+    if (json.containsKey('pdfChalkAnnotations') &&
+        json['pdfChalkAnnotations'] is Map) {
+      pdfChalkAnnotations.clear();
+      final map = json['pdfChalkAnnotations'] as Map;
+      map.forEach((k, v) {
+        final pageIdx = int.tryParse(k.toString()) ?? 1;
+        if (v is List) {
+          pdfChalkAnnotations[pageIdx] = v
+              .map(
+                (s) => SmartChalkAnnotation.fromJson(
+                  Map<String, dynamic>.from(s as Map),
+                ),
+              )
               .toList();
         }
       });

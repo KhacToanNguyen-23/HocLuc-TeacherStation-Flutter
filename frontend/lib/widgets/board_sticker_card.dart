@@ -32,12 +32,22 @@ class BoardStickerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onPanUpdate: (details) {
-        if (parentSize == null || parentSize!.width <= 0 || parentSize!.height <= 0) return;
+        if (parentSize == null ||
+            parentSize!.width <= 0 ||
+            parentSize!.height <= 0) {
+          return;
+        }
         final dxNorm = details.delta.dx / parentSize!.width;
         final dyNorm = details.delta.dy / parentSize!.height;
         final rect = sticker.normalizedRect;
-        final nextLeft = (rect.left + dxNorm).clamp(0.0, 1.0 - rect.width.clamp(0.05, 0.95));
-        final nextTop = (rect.top + dyNorm).clamp(0.0, 1.0 - rect.height.clamp(0.05, 0.95));
+        final nextLeft = (rect.left + dxNorm).clamp(
+          0.0,
+          1.0 - rect.width.clamp(0.05, 0.95),
+        );
+        final nextTop = (rect.top + dyNorm).clamp(
+          0.0,
+          1.0 - rect.height.clamp(0.05, 0.95),
+        );
         onUpdateRect(Rect.fromLTWH(nextLeft, nextTop, rect.width, rect.height));
       },
       child: Material(
@@ -71,7 +81,11 @@ class BoardStickerCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.push_pin, size: 12, color: Color(0xff89b4fa)),
+                    const Icon(
+                      Icons.push_pin,
+                      size: 12,
+                      color: Color(0xff89b4fa),
+                    ),
                     const SizedBox(width: 4),
                     const Expanded(
                       child: Text(
@@ -89,7 +103,11 @@ class BoardStickerCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                       child: const Padding(
                         padding: EdgeInsets.all(2),
-                        child: Icon(Icons.close, size: 13, color: Color(0xffbac2de)),
+                        child: Icon(
+                          Icons.close,
+                          size: 13,
+                          color: Color(0xffbac2de),
+                        ),
                       ),
                     ),
                   ],
@@ -108,14 +126,21 @@ class BoardStickerCard extends StatelessWidget {
                       spacing: 4,
                       runSpacing: 4,
                       children: sticker.tokens.map((token) {
-                        final role = (token['role'] as String? ?? 'OTHER').toUpperCase();
+                        final role = (token['role'] as String? ?? 'OTHER')
+                            .toUpperCase();
                         final text = token['text'] as String? ?? '';
-                        final isKeyRole = role == 'SUBJECT' || role == 'VERB' || role == 'OBJECT';
+                        final isKeyRole =
+                            role == 'SUBJECT' ||
+                            role == 'VERB' ||
+                            role == 'OBJECT';
                         final color = _getRoleColor(role);
 
                         if (!isKeyRole) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                              vertical: 4,
+                            ),
                             child: Text(
                               text,
                               style: const TextStyle(
@@ -128,7 +153,10 @@ class BoardStickerCard extends StatelessWidget {
                         }
 
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(5),
@@ -167,7 +195,10 @@ class BoardStickerCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: const Color(0x33f38ba8),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0x88f38ba8), width: 0.8),
+                          border: Border.all(
+                            color: const Color(0x88f38ba8),
+                            width: 0.8,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

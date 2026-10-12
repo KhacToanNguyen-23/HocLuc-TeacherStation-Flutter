@@ -13,7 +13,8 @@ class PluginHostDrawer extends StatelessWidget {
       listenable: studio,
       builder: (context, _) {
         final plugin = studio.activePlugin;
-        final isOpen = plugin != null && studio.showPluginDrawer && !studio.pluginFloating;
+        final isOpen =
+            plugin != null && studio.showPluginDrawer && !studio.pluginFloating;
         final drawerWidth = plugin?.manifest.uiDefaultWidth ?? 420.0;
 
         return AnimatedPositioned(
@@ -30,10 +31,7 @@ class PluginHostDrawer extends StatelessWidget {
                 topLeft: Radius.circular(14),
                 bottomLeft: Radius.circular(14),
               ),
-              border: Border.all(
-                color: const Color(0x33ffffff),
-                width: 1.2,
-              ),
+              border: Border.all(color: const Color(0x33ffffff), width: 1.2),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x77000000),
@@ -47,7 +45,10 @@ class PluginHostDrawer extends StatelessWidget {
               children: [
                 // Header
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: const BoxDecoration(
                     border: Border(
                       bottom: BorderSide(color: Color(0x22ffffff)),

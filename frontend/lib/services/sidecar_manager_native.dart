@@ -17,7 +17,9 @@ class SidecarManager extends ChangeNotifier {
   Future<bool> checkHealth(int port) async {
     try {
       final uri = Uri.parse('http://127.0.0.1:$port/');
-      final res = await client.get(uri).timeout(const Duration(milliseconds: 1500));
+      final res = await client
+          .get(uri)
+          .timeout(const Duration(milliseconds: 1500));
       return res.statusCode == 200;
     } catch (_) {
       return false;

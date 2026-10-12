@@ -81,7 +81,8 @@ class PluginManager extends ChangeNotifier {
       'name': 'Trợ giảng Tiếng Anh',
       'version': '1.0.0',
       'author': 'Học Lực Studio',
-      'description': 'Bóc tách S-V-O và bắt lỗi thì/ngữ pháp bằng spaCy & LanguageTool.',
+      'description':
+          'Bóc tách S-V-O và bắt lỗi thì/ngữ pháp bằng spaCy & LanguageTool.',
       'main': 'ui/index.html',
       'icon': 'icon.png',
       'placement': 'drawer_panel',
@@ -167,17 +168,17 @@ btnPin?.addEventListener('click', () => {
 ''';
 
     archive.addFile(
-      ArchiveFile('manifest.json', manifestJson.length, utf8.encode(manifestJson)),
+      ArchiveFile(
+        'manifest.json',
+        manifestJson.length,
+        utf8.encode(manifestJson),
+      ),
     );
     archive.addFile(
       ArchiveFile('ui/index.html', indexHtml.length, utf8.encode(indexHtml)),
     );
-    archive.addFile(
-      ArchiveFile('ui/app.js', appJs.length, utf8.encode(appJs)),
-    );
-    archive.addFile(
-      ArchiveFile('icon.png', 4, [0x89, 0x50, 0x4E, 0x47]),
-    );
+    archive.addFile(ArchiveFile('ui/app.js', appJs.length, utf8.encode(appJs)));
+    archive.addFile(ArchiveFile('icon.png', 4, [0x89, 0x50, 0x4E, 0x47]));
 
     final zipBytes = ZipEncoder().encode(archive);
     return installPluginFromBytes(zipBytes, 'english_assistant.hlep');

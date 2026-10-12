@@ -40,7 +40,9 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
 
     final sticker = EnglishSentenceAnalyzer.analyze(
       text: query,
-      pluginId: widget.studio.activePlugin?.manifest.id ?? 'com.hocluc.plugin.english',
+      pluginId:
+          widget.studio.activePlugin?.manifest.id ??
+          'com.hocluc.plugin.english',
     );
 
     widget.studio.addSticker(sticker);
@@ -80,10 +82,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
         decoration: BoxDecoration(
           color: const Color(0xf5101c17), // Deep slate green chalkboard tone
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0x55d4e8a6),
-            width: 1.2,
-          ),
+          border: Border.all(color: const Color(0x55d4e8a6), width: 1.2),
           boxShadow: const [
             BoxShadow(
               color: Color(0x66000000),
@@ -101,7 +100,10 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
               children: [
                 // Plugin Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0x28d4e8a6),
                     borderRadius: BorderRadius.circular(6),
@@ -143,15 +145,13 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                     child: TextField(
                       controller: _controller,
                       focusNode: _focusNode,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: Colors.white),
                       decoration: const InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.zero,
                         border: InputBorder.none,
-                        hintText: 'Nhập câu tiếng Anh... (ví dụ: I go to school.)',
+                        hintText:
+                            'Nhập câu tiếng Anh... (ví dụ: I go to school.)',
                         hintStyle: TextStyle(
                           fontSize: 11,
                           color: Color(0xff8a9a8d),
@@ -174,7 +174,10 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xff2d4c3d),
                     foregroundColor: const Color(0xffd4e8a6),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 0,
+                    ),
                     minimumSize: const Size(0, 32),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),

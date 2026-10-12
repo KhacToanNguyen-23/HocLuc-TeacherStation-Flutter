@@ -820,7 +820,11 @@ class _StudioScreenState extends State<StudioScreen> {
             ),
             IconButton(
               tooltip: 'Xóa nét trang này',
-              onPressed: studio.strokes.isEmpty ? null : studio.clearPage,
+              onPressed:
+                  (studio.strokes.isEmpty &&
+                      studio.currentChalkAnnotations.isEmpty)
+                  ? null
+                  : studio.clearPage,
               icon: const Icon(Icons.delete_outline, size: 19),
             ),
             const SizedBox(width: 6),

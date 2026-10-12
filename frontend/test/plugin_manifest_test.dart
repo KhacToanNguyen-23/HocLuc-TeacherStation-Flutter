@@ -42,45 +42,60 @@ void main() {
       expect(restored['ui']['default_width'], 420);
     });
 
-    test('PluginManager installs, manages and uninstalls .hlep package from bytes', () async {
-      final manager = PluginManager();
-      expect(manager.installedPlugins, isEmpty);
+    test(
+      'PluginManager installs, manages and uninstalls .hlep package from bytes',
+      () async {
+        final manager = PluginManager();
+        expect(manager.installedPlugins, isEmpty);
 
-      // Create a test zip archive in memory
-      final archive = Archive();
-      final manifestContent = utf8.encode(jsonEncode({
-        'id': 'com.test.math',
-        'name': 'Toán học vui',
-        'version': '1.0.0',
-        'ui': {
-          'entry': 'ui/index.html',
-          'placement': 'drawer_panel',
-          'default_width': 400,
-        },
-      }));
-      archive.addFile(ArchiveFile('manifest.json', manifestContent.length, manifestContent));
+        // Create a test zip archive in memory
+        final archive = Archive();
+        final manifestContent = utf8.encode(
+          jsonEncode({
+            'id': 'com.test.math',
+            'name': 'Toán học vui',
+            'version': '1.0.0',
+            'ui': {
+              'entry': 'ui/index.html',
+              'placement': 'drawer_panel',
+              'default_width': 400,
+            },
+          }),
+        );
+        archive.addFile(
+          ArchiveFile('manifest.json', manifestContent.length, manifestContent),
+        );
 
-      final htmlContent = utf8.encode('<h1>Math Plugin</h1>');
-      archive.addFile(ArchiveFile('ui/index.html', htmlContent.length, htmlContent));
+        final htmlContent = utf8.encode('<h1>Math Plugin</h1>');
+        archive.addFile(
+          ArchiveFile('ui/index.html', htmlContent.length, htmlContent),
+        );
 
-      final zipBytes = ZipEncoder().encode(archive);
+        final zipBytes = ZipEncoder().encode(archive);
 
-      // Install
-      final plugin = await manager.installPluginFromBytes(zipBytes, 'math.hlep');
-      expect(plugin.manifest.id, 'com.test.math');
-      expect(plugin.manifest.name, 'Toán học vui');
-      expect(manager.installedPlugins.length, 1);
-      expect(manager.getPlugin('com.test.math'), isNotNull);
+        // Install
+        final plugin = await manager.installPluginFromBytes(
+          zipBytes,
+          'math.hlep',
+        );
+        expect(plugin.manifest.id, 'com.test.math');
+        expect(plugin.manifest.name, 'Toán học vui');
+        expect(manager.installedPlugins.length, 1);
+        expect(manager.getPlugin('com.test.math'), isNotNull);
 
-      // Verify file extraction in memory
-      final entryHtml = manager.getFileString('com.test.math', 'ui/index.html');
-      expect(entryHtml, '<h1>Math Plugin</h1>');
+        // Verify file extraction in memory
+        final entryHtml = manager.getFileString(
+          'com.test.math',
+          'ui/index.html',
+        );
+        expect(entryHtml, '<h1>Math Plugin</h1>');
 
-      // Uninstall
-      manager.uninstallPlugin('com.test.math');
-      expect(manager.installedPlugins, isEmpty);
-      expect(manager.getPlugin('com.test.math'), isNull);
-    });
+        // Uninstall
+        manager.uninstallPlugin('com.test.math');
+        expect(manager.installedPlugins, isEmpty);
+        expect(manager.getPlugin('com.test.math'), isNull);
+      },
+    );
 
     test('PluginManager rejects zip packages without manifest.json', () async {
       final manager = PluginManager();

@@ -64,11 +64,13 @@ class BoardSticker {
         rectList[3].toDouble(),
       ),
       rawText: json['rawText'] as String? ?? '',
-      tokens: (json['tokens'] as List?)
+      tokens:
+          (json['tokens'] as List?)
               ?.map((t) => Map<String, dynamic>.from(t as Map))
               .toList() ??
           const [],
-      issues: (json['issues'] as List?)?.map((e) => e.toString()).toList() ??
+      issues:
+          (json['issues'] as List?)?.map((e) => e.toString()).toList() ??
           const [],
     );
   }

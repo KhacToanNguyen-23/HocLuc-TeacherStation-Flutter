@@ -48,7 +48,10 @@ class FloatingPluginWindow extends StatelessWidget {
                       );
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       decoration: const BoxDecoration(
                         color: Color(0x18ffffff),
                         borderRadius: BorderRadius.only(
