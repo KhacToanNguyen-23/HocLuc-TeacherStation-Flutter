@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../constants/theme.dart';
 import '../services/google_meet_auth_service.dart';
+import '../services/local_service.dart';
 import '../services/meet_automation_service.dart';
 import '../widgets/dashboard/dashboard_action_card.dart';
 import '../widgets/dashboard/dashboard_empty_card.dart';
 import '../widgets/dashboard/join_classroom_dialog.dart';
 import '../widgets/dashboard/schedule_classroom_dialog.dart';
 import 'classroom_lobby_screen.dart';
+import 'login_screen.dart';
 
 /// Classroom Dashboard Screen styled to match the layout in Image 2 with Educational Green theme.
 class ClassroomDashboardScreen extends StatefulWidget {
@@ -18,11 +20,69 @@ class ClassroomDashboardScreen extends StatefulWidget {
 
 class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   final _authService = GoogleMeetAuthService();
+  final _localService = LocalService();
   bool _isStarting = false;
   String _selectedRoomFilter = 'Tất cả';
 
+  Map<String, dynamic>? _activeRoom;
+  List<dynamic> _historyList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoomsAndHistory();
+  }
+
+  Future<void> _loadRoomsAndHistory() async {
+    final active = await _localService.getActiveClassroom();
+    final history = await _localService.getClassroomHistory();
+    if (mounted) {
+      setState(() {
+        _activeRoom = active.isNotEmpty && active['status'] == 'ONGOING' ? active : null;
+        _historyList = history;
+      });
+    }
+  }
+
   Future<void> _startClassroom() async {
     if (_isStarting) return;
+
+    // Nếu đang có phòng cũ đang chạy, hỏi giáo viên trước khi tạo phòng mới
+    if (_activeRoom != null && _activeRoom!['status'] == 'ONGOING') {
+      final shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Tạo phòng học mới?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          content: Text(
+            'Bạn đang có buổi học "${_activeRoom!['title'] ?? 'Hiện tại'}" chưa kết thúc.\n'
+            'Tạo phòng mới sẽ đóng phòng học cũ và bắt đầu một link Google Meet mới 100%. Bạn có muốn tiếp tục?',
+            style: const TextStyle(fontSize: 13, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.sky600,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Đóng cũ & Tạo mới'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldProceed != true) return;
+
+      // Đóng phòng cũ trên backend
+      await _localService.endClassroom(classroomId: _activeRoom!['id']?.toString());
+      await MeetAutomationService().leaveClassroom();
+    }
+
     setState(() => _isStarting = true);
 
     showDialog<void>(
@@ -47,27 +107,13 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                   ),
                 ),
                 SizedBox(width: 20),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Đang khởi tạo phòng Google Meet thật...',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.slate900,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Hệ thống đang kết nối Google Meet & tham gia phòng họp',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.slate500,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'Đang tạo lớp học...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.slate900,
+                  ),
                 ),
               ],
             ),
@@ -96,7 +142,19 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
           ),
         ),
       );
+      _loadRoomsAndHistory();
     }
+  }
+
+  Future<void> _rejoinClassroom(String meetUrl) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ClassroomLobbyScreen(
+          initialMeetingUrl: meetUrl,
+        ),
+      ),
+    );
+    _loadRoomsAndHistory();
   }
 
   void _handleJoinClassroom() {
@@ -105,6 +163,17 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
 
   void _handleScheduleClassroom() {
     ScheduleClassroomDialog.show(context);
+  }
+
+  Future<void> _handleLogout() async {
+    await MeetAutomationService().leaveClassroom();
+    _authService.signOut();
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -164,8 +233,8 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                   ListenableBuilder(
                     listenable: _authService,
                     builder: (context, _) {
-                      final name = _authService.teacherName ?? 'Thầy Khắc Toàn';
-                      final emailOrPhone = _authService.teacherEmail ?? _authService.teacherPhone ?? 'khactoan2233@gmail.com';
+                      final name = _authService.teacherName ?? 'Giáo viên';
+                      final emailOrPhone = _authService.teacherEmail ?? _authService.teacherPhone ?? '';
 
                       return PopupMenuButton<String>(
                         tooltip: 'Hồ sơ & Cài đặt',
@@ -180,7 +249,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                           if (value == 'settings') {
                             _showSettingsDialog(context);
                           } else if (value == 'logout') {
-                            _authService.signOut();
+                            _handleLogout();
                           }
                         },
                         itemBuilder: (context) => [
@@ -197,14 +266,16 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                                     color: AppColors.slate900,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  emailOrPhone,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.slate500,
+                                if (emailOrPhone.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    emailOrPhone,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.slate500,
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ),
@@ -249,14 +320,14 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                         child: MouseRegion(
                           cursor: SystemMouseCursors.click,
                           child: CircleAvatar(
-                            radius: 16,
-                            backgroundColor: AppColors.slate900,
+                            radius: 17,
+                            backgroundColor: AppColors.slate200,
                             child: Text(
                               name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'G',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.sky400,
+                                color: AppColors.slate700,
                               ),
                             ),
                           ),
@@ -268,18 +339,18 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
               ),
             ),
 
-            // Dashboard Main Container
+            // Main Content Area
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1180),
+                    constraints: const BoxConstraints(maxWidth: 1100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // 1. Top Action Cards Row - Purely dynamic hover blue state
-                        if (!isCompact) ...[
+                        // 1. Top Action Cards Row
+                        if (!isCompact)
                           Row(
                             children: [
                               Expanded(
@@ -289,15 +360,15 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                                   onTap: _handleJoinClassroom,
                                 ),
                               ),
-                              const SizedBox(width: 18),
+                              const SizedBox(width: 16),
                               Expanded(
                                 child: DashboardActionCard(
                                   title: 'Bắt đầu',
-                                  icon: Icons.menu_book_rounded,
+                                  icon: Icons.videocam_rounded,
                                   onTap: _startClassroom,
                                 ),
                               ),
-                              const SizedBox(width: 18),
+                              const SizedBox(width: 16),
                               Expanded(
                                 child: DashboardActionCard(
                                   title: 'Lên lịch',
@@ -306,13 +377,13 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                                 ),
                               ),
                             ],
-                          ),
-                        ] else ...[
+                          )
+                        else ...[
                           Column(
                             children: [
                               DashboardActionCard(
                                 title: 'Bắt đầu',
-                                icon: Icons.menu_book_rounded,
+                                icon: Icons.videocam_rounded,
                                 onTap: _startClassroom,
                               ),
                               const SizedBox(height: 12),
@@ -343,7 +414,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
 
                         // 2. Bottom Two Equal Columns
                         SizedBox(
-                          height: 440,
+                          height: 380,
                           child: isCompact
                               ? Column(
                                   children: [
@@ -374,34 +445,200 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   }
 
   Widget _buildRoomListCard() {
-    return DashboardEmptyCard(
-      title: 'Phòng học',
-      dropdownValue: _selectedRoomFilter,
-      dropdownItems: const ['Tất cả', 'Đang diễn ra', 'Đã lên lịch'],
-      onDropdownChanged: (val) {
-        if (val != null) setState(() => _selectedRoomFilter = val);
-      },
-      illustrationType: 'rooms',
-      emptyText: 'Chưa có phòng học',
-      actionButton: ElevatedButton(
-        onPressed: _startClassroom,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.sky600,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          elevation: 0,
+    final hasOngoing = _activeRoom != null && _activeRoom!['status'] == 'ONGOING';
+
+    if (!hasOngoing) {
+      return DashboardEmptyCard(
+        title: 'Phòng học',
+        dropdownValue: _selectedRoomFilter,
+        dropdownItems: const ['Tất cả', 'Đang diễn ra', 'Đã lên lịch'],
+        onDropdownChanged: (val) {
+          if (val != null) setState(() => _selectedRoomFilter = val);
+        },
+        illustrationType: 'rooms',
+        emptyText: 'Chưa có phòng học',
+        actionButton: ElevatedButton(
+          onPressed: _startClassroom,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.sky600,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            elevation: 0,
+          ),
+          child: const Text('Bắt đầu', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         ),
-        child: const Text('Bắt đầu', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+      );
+    }
+
+    final title = _activeRoom!['title']?.toString() ?? 'Phòng học trực tuyến';
+    final meetUrl = _activeRoom!['meetingUrl']?.toString() ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.slate200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('Phòng học', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.slate900)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF86EFAC)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.fiber_manual_record, size: 8, color: Color(0xFF16A34A)),
+                    SizedBox(width: 5),
+                    Text('Đang diễn ra', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF15803D))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0F2FE),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.video_call_rounded, color: AppColors.sky600, size: 26),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.slate900),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              meetUrl,
+                              style: const TextStyle(fontSize: 12, color: AppColors.slate500, fontFamily: 'monospace'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _rejoinClassroom(meetUrl),
+                          icon: const Icon(Icons.login_rounded, size: 16),
+                          label: const Text('Vào lại phòng', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.sky600,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      OutlinedButton(
+                        onPressed: _startClassroom,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.slate700,
+                          side: const BorderSide(color: AppColors.slate300),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
+                        child: const Text('Tạo mới', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHistoryCard() {
-    return const DashboardEmptyCard(
-      title: 'Lịch sử',
-      illustrationType: 'history',
-      emptyText: 'Chưa có lịch sử',
+    if (_historyList.isEmpty) {
+      return const DashboardEmptyCard(
+        title: 'Lịch sử',
+        illustrationType: 'history',
+        emptyText: 'Chưa có lịch sử',
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.slate200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Lịch sử', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.slate900)),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.separated(
+              itemCount: _historyList.length,
+              separatorBuilder: (_, __) => const Divider(height: 12, color: AppColors.slate100),
+              itemBuilder: (context, index) {
+                final item = _historyList[index] as Map<String, dynamic>;
+                final title = item['title']?.toString() ?? 'Phòng học trực tuyến';
+                final duration = item['durationMinutes'] ?? 0;
+                return ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Color(0xFFF1F5F9),
+                    child: Icon(Icons.check_circle_outline_rounded, size: 18, color: AppColors.slate500),
+                  ),
+                  title: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  trailing: Text(
+                    duration > 0 ? '$duration phút • Đã xong' : 'Đã xong',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.slate400),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -449,16 +686,9 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
           ),
         ),
         actions: [
-          ElevatedButton(
+          TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.sky600,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              elevation: 0,
-            ),
-            child: const Text('Đóng', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            child: const Text('Đóng', style: TextStyle(color: AppColors.slate600, fontWeight: FontWeight.w700)),
           ),
         ],
       ),

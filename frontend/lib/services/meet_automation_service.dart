@@ -131,29 +131,52 @@ class MeetAutomationService extends ChangeNotifier {
       return null;
     }
 
+    final previousUrl = _meetingUrl;
+    _meetingUrl = null;
     _status = MeetStatus.creating;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      if (_controller == null) {
-        final version = await win.WebviewController.getWebViewVersion();
-        if (version == null) {
-          throw StateError('Chưa cài đặt Microsoft Edge WebView2 Runtime trên máy tính.');
-        }
-        _controller = win.WebviewController();
-        await _controller!.initialize();
-
-        _webMessageSubscription?.cancel();
-        _webMessageSubscription = _controller!.webMessage.listen((data) {
-          _handleWebMessage(data);
-        });
+      if (_controller != null) {
+        try {
+          _controller!.dispose();
+        } catch (_) {}
+        _controller = null;
       }
+
+      final version = await win.WebviewController.getWebViewVersion();
+      if (version == null) {
+        throw StateError('Chưa cài đặt Microsoft Edge WebView2 Runtime trên máy tính.');
+      }
+      _controller = win.WebviewController();
+      await _controller!.initialize();
+
+      _webMessageSubscription?.cancel();
+      _webMessageSubscription = _controller!.webMessage.listen((data) {
+        _handleWebMessage(data);
+      });
 
       final controller = _controller!;
       final completer = Completer<String?>();
       Timer? autoClickTimer;
       Timer? timeoutTimer;
+
+      void onMeetingUrlDetected(String realUrl) {
+        if (previousUrl != null && realUrl == previousUrl) {
+          debugPrint('[MeetAutomation] Skipping previous room URL lingering in WebView: $realUrl');
+          return;
+        }
+        _meetingUrl = realUrl;
+        _status = MeetStatus.ready;
+        notifyListeners();
+
+        _scheduleAutoJoin(controller);
+
+        if (!completer.isCompleted) {
+          completer.complete(realUrl);
+        }
+      }
 
       _urlSubscription?.cancel();
       _urlSubscription = controller.url.listen((url) {
@@ -161,29 +184,29 @@ class MeetAutomationService extends ChangeNotifier {
         final match = RegExp(r'meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})', caseSensitive: false).firstMatch(url);
         if (match != null) {
           final realUrl = 'https://meet.google.com/${match.group(1)!.toLowerCase()}';
-          _meetingUrl = realUrl;
-          _status = MeetStatus.ready;
-          notifyListeners();
-
-          _scheduleAutoJoin(controller);
-
-          if (!completer.isCompleted) {
-            completer.complete(realUrl);
-          }
+          onMeetingUrlDetected(realUrl);
         }
       });
 
-      await controller.loadUrl('https://meet.google.com/new');
+      final teacherEmail = GoogleMeetAuthService().teacherEmail;
+      final targetUrl = (teacherEmail != null && teacherEmail.isNotEmpty)
+          ? 'https://meet.google.com/new?authuser=$teacherEmail&hs=193'
+          : 'https://meet.google.com/new?hs=193';
+      await controller.loadUrl(targetUrl);
 
-      // Liên tục tiêm script bypass modal cấp quyền media và tự động click Tham gia ngay
-      autoClickTimer = Timer.periodic(const Duration(milliseconds: 700), (timer) async {
+      // Liên tục tiêm script trích xuất URL và bypass modal cấp quyền media
+      autoClickTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) async {
         if (_controller == null) {
           timer.cancel();
           return;
         }
         try {
-          await _controller!.executeScript(r'''
+          final res = await _controller!.executeScript(r'''
             (function() {
+              var href = window.location.href || '';
+              var m = href.match(/meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})/i);
+              var code = m ? m[1].toLowerCase() : '';
+
               var buttons = Array.from(document.querySelectorAll('button'));
               var permBtn = buttons.find(function(b) {
                 var t = (b.innerText || b.textContent || '').trim().toLowerCase();
@@ -213,8 +236,17 @@ class MeetAutomationService extends ChangeNotifier {
               if (joinBtn) {
                 joinBtn.click();
               }
+
+              return code;
             })();
           ''');
+
+          if (res != null && res.isNotEmpty && res != '""') {
+            final cleaned = res.replaceAll('"', '').trim();
+            if (RegExp(r'^[a-z]{3}-[a-z]{4}-[a-z]{3}$').hasMatch(cleaned)) {
+              onMeetingUrlDetected('https://meet.google.com/$cleaned');
+            }
+          }
         } catch (_) {}
       });
 
@@ -406,6 +438,23 @@ class MeetAutomationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Tạm dừng phiên giảng dạy (rời Studio tạm thời, giữ link Meet trên hệ thống)
+  Future<void> pauseSession() async {
+    await stopBroadcast();
+    _urlSubscription?.cancel();
+    _urlSubscription = null;
+    _webMessageSubscription?.cancel();
+    _webMessageSubscription = null;
+    if (_controller != null) {
+      try {
+        await _controller!.loadUrl('about:blank');
+      } catch (e) {
+        debugPrint('[MeetAutomation] Error pausing webview: $e');
+      }
+    }
+    notifyListeners();
+  }
+
   /// Đóng lớp học hoàn toàn
   Future<void> leaveClassroom() async {
     await stopBroadcast();
@@ -423,6 +472,12 @@ class MeetAutomationService extends ChangeNotifier {
       } catch (e) {
         debugPrint('[MeetAutomation] Error resetting webview: $e');
       }
+      try {
+        _controller!.dispose();
+      } catch (e) {
+        debugPrint('[MeetAutomation] Error disposing webview: $e');
+      }
+      _controller = null;
     }
     notifyListeners();
   }

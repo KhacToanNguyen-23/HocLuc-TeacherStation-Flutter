@@ -145,27 +145,50 @@ class LocalService {
     }
   }
 
-  Future<Map<String, dynamic>> loginDemoAccount() async {
+  Future<Map<String, dynamic>> getActiveClassroom() async {
+    try {
+      final res = await client.get(
+        Uri.parse('$base/api/classroom/active'),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200 && res.body.isNotEmpty) {
+        return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('[LocalService] getActiveClassroom error: $e');
+    }
+    return {};
+  }
+
+  Future<bool> endClassroom({String? classroomId}) async {
     try {
       final res = await client.post(
-        Uri.parse('$base/api/auth/demo'),
+        Uri.parse('$base/api/classroom/end'),
         headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'classroomId': classroomId}),
       ).timeout(const Duration(seconds: 4));
-      return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+        return data['success'] == true;
+      }
     } catch (e) {
-      debugPrint('[LocalService] loginDemoAccount fallback: $e');
-      return {
-        'success': true,
-        'token': 'demo-token-khactoan2233',
-        'user': {
-          'id': 'usr_demo_khactoan',
-          'name': 'Thầy Khắc Toàn (Giáo viên Demo)',
-          'email': 'khactoan2233@gmail.com',
-          'phone': '+84988888888',
-          'role': 'TEACHER',
-        },
-      };
+      debugPrint('[LocalService] endClassroom error: $e');
     }
+    return false;
+  }
+
+  Future<List<dynamic>> getClassroomHistory({String? teacherId}) async {
+    try {
+      final url = teacherId != null
+          ? Uri.parse('$base/api/classroom/history?teacherId=$teacherId')
+          : Uri.parse('$base/api/classroom/history');
+      final res = await client.get(url).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200 && res.body.isNotEmpty) {
+        return jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
+      }
+    } catch (e) {
+      debugPrint('[LocalService] getClassroomHistory error: $e');
+    }
+    return [];
   }
 
   Future<Map<String, dynamic>> login({

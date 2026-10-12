@@ -152,6 +152,19 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     );
   }
 
+  Future<void> _handleCancelLobby() async {
+    try {
+      final local = LocalService();
+      await local.endClassroom();
+    } catch (e) {
+      debugPrint('[ClassroomLobby] Error ending classroom on cancel: $e');
+    }
+    await _meetService.leaveClassroom();
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   Future<void> _handleGenerateNewMeetRoom() async {
     setState(() => _isCreatingMeet = true);
     try {
@@ -252,11 +265,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Nhập link hoặc mã phòng Google Meet thật do Google cấp (ví dụ: meet.google.com/xxx-yyyy-zzz):',
-                    style: TextStyle(fontSize: 12, color: AppColors.slate500, height: 1.4),
-                  ),
-                  const SizedBox(height: 12),
                   TextField(
                     controller: customUrlController,
                     autofocus: true,
@@ -338,10 +346,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
               Text('Chưa có link Google Meet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
-          content: const Text(
-            'Phòng học chưa có liên kết Google Meet thật để học sinh vào lớp. Bạn có muốn tạo ngay hay vào phòng trước?',
-            style: TextStyle(fontSize: 13, height: 1.4),
-          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -400,12 +404,19 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 960;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: LobbyHeader(
-        authService: _authService,
-        onBack: () => Navigator.of(context).pop(),
-      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _handleCancelLobby();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        appBar: LobbyHeader(
+          authService: _authService,
+          onBack: _handleCancelLobby,
+        ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -438,7 +449,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                           onPasteFromClipboard: _pasteMeetingLinkFromClipboard,
                           onShowCustomLinkDialog: _showCustomLinkDialog,
                           onEnterStudio: _enterTeachingStudio,
-                          onCancel: () => Navigator.of(context).pop(),
+                          onCancel: _handleCancelLobby,
                         ),
                       ],
                     )
@@ -472,7 +483,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                             onPasteFromClipboard: _pasteMeetingLinkFromClipboard,
                             onShowCustomLinkDialog: _showCustomLinkDialog,
                             onEnterStudio: _enterTeachingStudio,
-                            onCancel: () => Navigator.of(context).pop(),
+                            onCancel: _handleCancelLobby,
                           ),
                         ),
                       ],
@@ -481,6 +492,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }
