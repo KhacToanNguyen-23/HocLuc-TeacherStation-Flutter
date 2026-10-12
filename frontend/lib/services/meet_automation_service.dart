@@ -33,6 +33,8 @@ class MeetAutomationService extends ChangeNotifier {
   final List<MeetParticipant> _participants = [];
   int _pendingAdmitCount = 0;
   bool _isBridgeReady = false;
+  bool _hasHocLucCam = false;
+  bool _hasHocLucMic = false;
 
   MeetStatus get status => _status;
   String? get meetingUrl => _meetingUrl;
@@ -46,6 +48,8 @@ class MeetAutomationService extends ChangeNotifier {
   List<MeetParticipant> get participants => List.unmodifiable(_participants);
   int get pendingAdmitCount => _pendingAdmitCount;
   bool get isBridgeReady => _isBridgeReady;
+  bool get hasHocLucCam => _hasHocLucCam;
+  bool get hasHocLucMic => _hasHocLucMic;
 
   /// Gán link phòng Meet thật (từ người dùng dán hoặc từ Google API)
   void setMeetingUrl(String url) {
@@ -289,6 +293,10 @@ class MeetAutomationService extends ChangeNotifier {
         final event = MeetAdmissionEvent.fromJson(payload.cast<String, dynamic>());
         _pendingAdmitCount = event.pendingCount;
         notifyListeners();
+      } else if (type == 'MEET_MEDIA_DEVICE_SELECTED' && payload is Map) {
+        _hasHocLucCam = payload['hasHocLucCam'] == true;
+        _hasHocLucMic = payload['hasHocLucMic'] == true;
+        notifyListeners();
       } else if (type == 'MEET_BRIDGE_READY') {
         _isBridgeReady = true;
         notifyListeners();
@@ -327,6 +335,22 @@ class MeetAutomationService extends ChangeNotifier {
       await stopBroadcast();
     } else {
       await startBroadcast();
+    }
+  }
+
+  /// Đồng bộ trạng thái Tắt/Bật Mic & Camera từ App sang Google Meet
+  Future<void> syncMuteState({bool? micMuted, bool? camMuted}) async {
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    try {
+      if (micMuted != null) {
+        await ctrl.executeScript('window.MeetBridge && window.MeetBridge.setMicMute($micMuted);');
+      }
+      if (camMuted != null) {
+        await ctrl.executeScript('window.MeetBridge && window.MeetBridge.setCamMute($camMuted);');
+      }
+    } catch (e) {
+      debugPrint('[MeetAutomation] syncMuteState error: $e');
     }
   }
 

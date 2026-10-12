@@ -268,5 +268,45 @@
     "verification_command": "flutter test test/hybrid_svo_ocr_test.dart && flutter test && flutter analyze",
     "notes": "Covers stories: P1, P2",
     "priority": "P1"
+  },
+  {
+    "id": "phase-01-media-device-service",
+    "title": "Hardware Media Device Discovery & PCM Capture Service",
+    "status": "passing",
+    "evidence": "Tests: 5 passed in test/media_device_service_test.dart, analyzer 0 issues",
+    "user_visible_behavior": "App discovers connected physical webcams and microphones, captures live frames and audio PCM streams, and exposes volume levels.",
+    "verification_command": "flutter test test/media_device_service_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-lobby-and-studio-preview",
+    "title": "Classroom Lobby & Studio PIP Live Preview UI",
+    "status": "passing",
+    "evidence": "Tests: 2 passed in test/media_preview_ui_test.dart, all existing lobby & PIP tests pass, analyzer 0 issues",
+    "user_visible_behavior": "Teacher sees live camera feed in Lobby preview card and Studio PIP, with real-time audio volume meter and interactive mute toggles.",
+    "verification_command": "flutter test test/media_preview_ui_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-virtual-cam-and-mic-engine",
+    "title": "DirectShow VirtualCam & Virtual Audio Loopback Native Engine",
+    "status": "passing",
+    "evidence": "Tests: 5 passed in test/virtual_media_bridge_test.dart, analyzer 0 issues",
+    "user_visible_behavior": "Teacher station streams camera frames and mic audio to Windows virtual devices 'HocLuc Studio Camera' and 'HocLuc Virtual Mic' at low latency (< 30ms).",
+    "verification_command": "flutter test test/virtual_media_bridge_test.dart",
+    "notes": "Covers stories: P1, P2",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-04-meet-bridge-automation",
+    "title": "Google Meet Device Selection Automation & Mute Sync",
+    "status": "passing",
+    "evidence": "Tests: 5 passed in test/meet_bridge_parser_test.dart, full suite 102/102 passed, analyzer 0 issues",
+    "user_visible_behavior": "Google Meet inside WebView2 automatically selects HocLuc virtual devices upon joining, and mute/unmute actions stay synchronized.",
+    "verification_command": "flutter test test/meet_bridge_parser_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
   }
 ]

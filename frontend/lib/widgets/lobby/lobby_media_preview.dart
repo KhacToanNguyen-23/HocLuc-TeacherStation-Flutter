@@ -279,6 +279,37 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
               ),
             ),
           ),
+          // Real-time Audio Level Meter Bar
+          const SizedBox(height: 10),
+          ListenableBuilder(
+            listenable: mediaService,
+            builder: (context, _) {
+              final level = mediaService.audioLevel;
+              final isMicOn = mediaService.isMicActive;
+              return Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  color: AppColors.slate100,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: isMicOn ? level.clamp(0.01, 1.0) : 0.0,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 60),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: level > 0.8
+                            ? [AppColors.emerald500, AppColors.amber500, AppColors.rose500]
+                            : [AppColors.emerald600, AppColors.emerald500],
+                      ),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           // Collapsible Device Settings Drawer
           if (_showDeviceSettings) ...[
             const SizedBox(height: 12),

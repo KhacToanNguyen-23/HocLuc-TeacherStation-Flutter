@@ -1,48 +1,62 @@
 import 'package:flutter/material.dart';
+import 'media_device_service.dart';
 
 class TeacherMediaService extends ChangeNotifier {
   static final TeacherMediaService _instance = TeacherMediaService._internal();
   factory TeacherMediaService() => _instance;
-  TeacherMediaService._internal();
+  TeacherMediaService._internal() {
+    _deviceService.addListener(_onDeviceServiceChanged);
+  }
 
-  bool _isCameraActive = true;
-  bool _isMicActive = true;
+  final MediaDeviceService _deviceService = MediaDeviceService();
   bool _isInitialized = false;
-  final double _audioLevel = 0.0;
-  String? _errorMessage;
 
-  bool get isCameraActive => _isCameraActive;
-  bool get isMicActive => _isMicActive;
-  bool get isInitialized => _isInitialized;
-  double get audioLevel => _audioLevel;
-  String? get errorMessage => _errorMessage;
-
-  Future<void> initMedia() async {
-    _isInitialized = true;
+  void _onDeviceServiceChanged() {
     notifyListeners();
   }
 
+  bool get isCameraActive =>
+      _deviceService.isCameraActive && !_deviceService.isCameraMuted;
+
+  bool get isMicActive =>
+      _deviceService.isMicActive && !_deviceService.isMicMuted;
+
+  bool get isInitialized => _isInitialized;
+
+  double get audioLevel => _deviceService.currentAudioLevel;
+
+  String? get errorMessage => null;
+
+  Future<void> initMedia() async {
+    if (!_isInitialized) {
+      await _deviceService.init();
+      _isInitialized = true;
+      notifyListeners();
+    }
+  }
+
   Future<void> toggleCamera() async {
-    _isCameraActive = !_isCameraActive;
+    _deviceService.toggleCameraMute();
     notifyListeners();
   }
 
   Future<void> toggleMic() async {
-    _isMicActive = !_isMicActive;
+    _deviceService.toggleMicrophoneMute();
     notifyListeners();
   }
 
   Widget buildCameraPreview() {
+    final active = isCameraActive;
     return Container(
       color: const Color(0xff12201a),
       child: Center(
-        child: _isCameraActive
+        child: active
             ? Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
                       color: const Color(0x33d4e8a6),
                       shape: BoxShape.circle,
@@ -55,17 +69,21 @@ class TeacherMediaService extends ChangeNotifier {
                       child: Text(
                         'GV',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Color(0xffd4e8a6),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   const Text(
-                    'Giáo viên giảng dạy',
-                    style: TextStyle(fontSize: 11, color: Color(0xffa0b3a5)),
+                    'Giáo viên giảng dạy (Live)',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xffa0b3a5),
+                    ),
                   ),
                 ],
               )
@@ -77,7 +95,7 @@ class TeacherMediaService extends ChangeNotifier {
                     size: 36,
                     color: Colors.white38,
                   ),
-                  SizedBox(height: 4),
+                  SizedBox(height: 6),
                   Text(
                     'Camera đã tắt',
                     style: TextStyle(fontSize: 11, color: Colors.white54),

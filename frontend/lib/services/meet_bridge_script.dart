@@ -192,8 +192,55 @@ class MeetBridgeScript {
         return true;
       }
       return false;
+    },
+
+    setMicMute: function(muted) {
+      var micBtn = Array.from(document.querySelectorAll('button')).find(function(b) {
+        var a = (b.getAttribute('aria-label') || '').toLowerCase();
+        return a.includes('micro') || a.includes('microphone') || a.includes('tắt mic') || a.includes('bật mic');
+      });
+      if (micBtn) {
+        var isCurrentlyMuted = (micBtn.getAttribute('aria-label') || '').toLowerCase().includes('bật') ||
+                               (micBtn.getAttribute('data-is-muted') === 'true');
+        if (isCurrentlyMuted !== muted) {
+          micBtn.click();
+          return true;
+        }
+      }
+      return false;
+    },
+
+    setCamMute: function(muted) {
+      var camBtn = Array.from(document.querySelectorAll('button')).find(function(b) {
+        var a = (b.getAttribute('aria-label') || '').toLowerCase();
+        return a.includes('máy ảnh') || a.includes('camera') || a.includes('tắt máy ảnh') || a.includes('bật máy ảnh');
+      });
+      if (camBtn) {
+        var isCurrentlyMuted = (camBtn.getAttribute('aria-label') || '').toLowerCase().includes('bật') ||
+                               (camBtn.getAttribute('data-is-muted') === 'true');
+        if (isCurrentlyMuted !== muted) {
+          camBtn.click();
+          return true;
+        }
+      }
+      return false;
     }
   };
+
+  if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+    try {
+      navigator.mediaDevices.enumerateDevices().then(function(devices) {
+        var hocLucCam = devices.find(function(d) { return (d.label || '').includes('HocLuc'); });
+        var hocLucMic = devices.find(function(d) { return (d.label || '').includes('HocLuc'); });
+        sendToFlutter('MEET_MEDIA_DEVICE_SELECTED', {
+          hasHocLucCam: !!hocLucCam,
+          hasHocLucMic: !!hocLucMic,
+          camLabel: hocLucCam ? hocLucCam.label : 'Default',
+          micLabel: hocLucMic ? hocLucMic.label : 'Default'
+        });
+      });
+    } catch (e) {}
+  }
 
   sendToFlutter('MEET_BRIDGE_READY', { status: 'ready', url: window.location.href });
 })();
