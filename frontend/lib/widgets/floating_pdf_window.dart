@@ -520,21 +520,13 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                       minHeight: 24,
                     ),
                     tooltip: 'Xóa nét vẽ trên trang này',
-                    onPressed:
-                        (studio.currentPdfStrokes.isNotEmpty ||
-                            studio
-                                .getPdfChalkAnnotations(studio.pdfPage)
-                                .isNotEmpty)
+                    onPressed: studio.currentPdfStrokes.isNotEmpty
                         ? studio.clearPdfPage
                         : null,
                     icon: Icon(
                       Icons.clear_all,
                       size: 17,
-                      color:
-                          (studio.currentPdfStrokes.isNotEmpty ||
-                              studio
-                                  .getPdfChalkAnnotations(studio.pdfPage)
-                                  .isNotEmpty)
+                      color: studio.currentPdfStrokes.isNotEmpty
                           ? const Color(0xffffa089)
                           : Colors.white24,
                     ),

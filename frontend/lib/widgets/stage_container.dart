@@ -8,9 +8,6 @@ import 'interactive_chalkboard.dart';
 import 'floating_pdf_window.dart';
 import 'floating_pip.dart';
 import 'drawer_questions.dart';
-import 'plugin_host_drawer.dart';
-import 'floating_plugin_window.dart';
-import 'subject_tool_palette.dart';
 
 class StageContainer extends StatelessWidget {
   const StageContainer({
@@ -124,16 +121,6 @@ class StageContainer extends StatelessWidget {
 
                                 // Floating Draggable Camera PIP Card
                                 if (interactive) FloatingPip(studio: studio),
-
-                                // Floating In-Board Subject Tool Palette Dock
-                                if (interactive && studio.activePlugin != null)
-                                  SubjectToolPalette(studio: studio),
-
-                                // Hybrid Plugin Host (Drawer Panel & Floating Window)
-                                if (interactive) ...[
-                                  PluginHostDrawer(studio: studio),
-                                  FloatingPluginWindow(studio: studio),
-                                ],
                               ],
                             ),
                           ),

@@ -7,7 +7,6 @@ import 'package:pdfrx/pdfrx.dart';
 import '../models/studio_state.dart';
 import 'grid_painter.dart';
 import 'stroke_canvas.dart';
-import 'smart_chalk_overlay.dart';
 
 class PdfStage extends StatefulWidget {
   const PdfStage({super.key, required this.studio, this.interactive = true});
@@ -321,90 +320,13 @@ class _PdfStageState extends State<PdfStage> {
                   },
                   child: IgnorePointer(
                     ignoring: isPanMode || !widget.interactive,
-                    child: Stack(
-                      children: [
-                        StrokeCanvas(
-                          studio: studio,
-                          targetStrokes: studio.pdfAnnotations.putIfAbsent(
-                            page.pageNumber,
-                            () => [],
-                          ),
-                          interactive:
-                              widget.interactive &&
-                              !isPanMode &&
-                              studio.activeSubjectTool != 'svo',
-                        ),
-                        if (studio.activeSubjectTool == 'svo')
-                          Positioned.fill(
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTapDown: (details) async {
-                                  final normX =
-                                      (details.localPosition.dx /
-                                              pageRect.width)
-                                          .clamp(0.0, 1.0);
-                                  final normY =
-                                      (details.localPosition.dy /
-                                              pageRect.height)
-                                          .clamp(0.0, 1.0);
-
-                                  String? extractedText;
-                                  Rect? textNormalizedRect;
-
-                                  try {
-                                    final pageText = await page.loadText();
-                                    final full =
-                                        pageText?.fullText.trim() ?? '';
-                                    if (full.isNotEmpty) {
-                                      final rawLines = full
-                                          .split('\n')
-                                          .map((l) => l.trim())
-                                          .where((l) => l.isNotEmpty)
-                                          .toList();
-                                      if (rawLines.isNotEmpty) {
-                                        final idx = (normY * rawLines.length)
-                                            .clamp(0, rawLines.length - 1)
-                                            .toInt();
-                                        extractedText = rawLines[idx];
-                                        final approxW =
-                                            (extractedText.length * 0.018)
-                                                .clamp(0.12, 0.70);
-                                        textNormalizedRect = Rect.fromLTWH(
-                                          (normX - approxW / 2).clamp(
-                                            0.04,
-                                            0.96 - approxW,
-                                          ),
-                                          (normY - 0.012).clamp(0.005, 0.96),
-                                          approxW,
-                                          0.022,
-                                        );
-                                      }
-                                    }
-                                  } catch (_) {}
-
-                                  studio.analyzePdfSentenceAt(
-                                    page.pageNumber,
-                                    Offset(normX, normY),
-                                    sampleText: extractedText,
-                                    targetRect: textNormalizedRect,
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        SmartChalkOverlay(
-                          studio: studio,
-                          targetAnnotations: studio.getPdfChalkAnnotations(
-                            page.pageNumber,
-                          ),
-                          onDelete: (id) => studio.removePdfChalkAnnotation(
-                            page.pageNumber,
-                            id,
-                          ),
-                        ),
-                      ],
+                    child: StrokeCanvas(
+                      studio: studio,
+                      targetStrokes: studio.pdfAnnotations.putIfAbsent(
+                        page.pageNumber,
+                        () => [],
+                      ),
+                      interactive: widget.interactive && !isPanMode,
                     ),
                   ),
                 );
