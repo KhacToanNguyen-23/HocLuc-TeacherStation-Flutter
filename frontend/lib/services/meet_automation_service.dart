@@ -56,26 +56,7 @@ class MeetAutomationService extends ChangeNotifier {
     _meetingUrl = cleanUrl.isEmpty ? null : cleanUrl;
     _status = _meetingUrl != null ? MeetStatus.ready : MeetStatus.idle;
     _errorMessage = null;
-    if (_meetingUrl != null && _participants.isEmpty) {
-      _populateSampleStudents();
-    }
     notifyListeners();
-  }
-
-  void _populateSampleStudents() {
-    _participants.clear();
-    _participants.addAll([
-      const MeetParticipant(id: 's1', name: 'Nguyễn Văn An', isMuted: false, isCameraOn: true, isSpeaking: true),
-      const MeetParticipant(id: 's2', name: 'Trần Thị Bình', isMuted: true, isCameraOn: true, isHandRaised: true),
-      const MeetParticipant(id: 's3', name: 'Lê Hoàng Cường', isMuted: true, isCameraOn: false),
-      const MeetParticipant(id: 's4', name: 'Phạm Minh Đức', isMuted: true, isCameraOn: true),
-      const MeetParticipant(id: 's5', name: 'Vũ Ngọc Hân', isMuted: true, isCameraOn: true),
-      const MeetParticipant(id: 's6', name: 'Đỗ Tuấn Kiệt', isMuted: true, isCameraOn: true),
-    ]);
-    if (!_raisedHands.contains('Trần Thị Bình')) {
-      _raisedHands.add('Trần Thị Bình');
-    }
-    _pendingAdmitCount = 2;
   }
 
   /// Tạo lớp học (Khởi tạo phòng Meet chính thức từ API hoặc WebView2 native)

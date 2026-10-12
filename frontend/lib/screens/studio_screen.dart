@@ -5,14 +5,12 @@ import '../screens/classroom_dashboard_screen.dart';
 import '../services/local_service.dart';
 import '../services/meet_automation_service.dart';
 import '../widgets/stage_container.dart';
-import '../widgets/studio/studio_admission_banner.dart';
 import '../widgets/studio/studio_drawing_toolbar.dart';
 import '../widgets/studio/studio_inspector_panel.dart';
 import '../widgets/studio/studio_lessons_drawer.dart';
 import '../widgets/studio/studio_preview_dialog.dart';
 import '../widgets/studio/studio_question_view.dart';
 import '../widgets/studio/studio_rename_dialog.dart';
-import '../widgets/studio/studio_student_strip.dart';
 import '../widgets/studio/studio_students_drawer.dart';
 import '../widgets/studio/studio_top_bar.dart';
 import '../services/plugin_manager.dart';
@@ -261,6 +259,8 @@ class _StudioScreenState extends State<StudioScreen> {
                   width: box.maxWidth,
                   hasLessons: hasLessons,
                   hasInspector: hasInspector,
+                  hasStudents: showStudentsDrawer,
+                  hasPlugins: showPluginsMarketplace,
                   onToggleLessons: () {
                     if (box.maxWidth < 1000) {
                       openLessons();
@@ -272,11 +272,32 @@ class _StudioScreenState extends State<StudioScreen> {
                     if (box.maxWidth < 1250) {
                       openInspector();
                     } else {
-                      setState(() => showInspector = !showInspector);
+                      setState(() {
+                        showInspector = !showInspector;
+                        if (showInspector) {
+                          showStudentsDrawer = false;
+                          showPluginsMarketplace = false;
+                        }
+                      });
                     }
                   },
                   onToggleStudents: () {
-                    setState(() => showStudentsDrawer = !showStudentsDrawer);
+                    setState(() {
+                      showStudentsDrawer = !showStudentsDrawer;
+                      if (showStudentsDrawer) {
+                        showInspector = false;
+                        showPluginsMarketplace = false;
+                      }
+                    });
+                  },
+                  onTogglePlugins: () {
+                    setState(() {
+                      showPluginsMarketplace = !showPluginsMarketplace;
+                      if (showPluginsMarketplace) {
+                        showInspector = false;
+                        showStudentsDrawer = false;
+                      }
+                    });
                   },
                   onLeaveClassroom: _handleLeaveClassroom,
                   onRename: rename,
@@ -285,13 +306,6 @@ class _StudioScreenState extends State<StudioScreen> {
                   onRetryConnect: () {
                     initializedControllers = false;
                     studio.initialize();
-                  },
-                ),
-                // Horizontal Student Gallery Strip (Zoom style)
-                StudioStudentStrip(
-                  meetService: MeetAutomationService(),
-                  onOpenStudentsDrawer: () {
-                    setState(() => showStudentsDrawer = true);
                   },
                 ),
                 Expanded(
@@ -306,47 +320,65 @@ class _StudioScreenState extends State<StudioScreen> {
                                 studio: studio,
                                 onClose: () => setState(() => showLessons = false),
                                 onPluginMessage: message,
-                                onOpenPluginsMarketplace: () => setState(() => showPluginsMarketplace = true),
+                                onOpenPluginsMarketplace: () {
+                                  setState(() {
+                                    showPluginsMarketplace = true;
+                                    showStudentsDrawer = false;
+                                    showInspector = false;
+                                  });
+                                },
                               ),
                             ),
                           Expanded(
-                            child: Column(
+                            child: Row(
                               children: [
+                                if (studio.view == 'board')
+                                  StudioDrawingToolbar(studio: studio, isVertical: true),
                                 Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+                                    padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
                                     child: fittedStage(),
                                   ),
                                 ),
-                                if (studio.view == 'board')
-                                  StudioDrawingToolbar(studio: studio),
                               ],
                             ),
                           ),
-                          if (hasInspector)
-                            SizedBox(
-                              width: 304,
-                              child: StudioInspectorPanel(
-                                studio: studio,
-                                notesController: notes,
-                                questionController: question,
-                                endpointController: endpoint,
-                                onPreview: preview,
-                              ),
-                            ),
-                          if (showStudentsDrawer)
-                            StudioStudentsDrawer(
-                              meetService: MeetAutomationService(),
-                              onClose: () => setState(() => showStudentsDrawer = false),
-                            ),
-                          if (showPluginsMarketplace)
-                            StudioPluginsMarketplacePanel(
-                              onClose: () => setState(() => showPluginsMarketplace = false),
-                            ),
                         ],
                       ),
-                      // Floating student admission alert toast
-                      StudioAdmissionBanner(meetService: MeetAutomationService()),
+                      // OVERLAY RIGHT PANELS (Hover đè lên mép phải màn hình, KHÔNG MỜ NỀN, KHÔNG BÓP UI)
+                      if (hasInspector || showStudentsDrawer || showPluginsMarketplace)
+                        Positioned(
+                          top: 0,
+                          bottom: 0,
+                          right: 0,
+                          child: Material(
+                            elevation: 16,
+                            shadowColor: Colors.black.withValues(alpha: 0.35),
+                            child: Container(
+                              width: 320,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                border: Border(left: BorderSide(color: AppColors.line)),
+                              ),
+                              child: showPluginsMarketplace
+                                  ? StudioPluginsMarketplacePanel(
+                                      onClose: () => setState(() => showPluginsMarketplace = false),
+                                    )
+                                  : showStudentsDrawer
+                                      ? StudioStudentsDrawer(
+                                          meetService: MeetAutomationService(),
+                                          onClose: () => setState(() => showStudentsDrawer = false),
+                                        )
+                                      : StudioInspectorPanel(
+                                          studio: studio,
+                                          notesController: notes,
+                                          questionController: question,
+                                          endpointController: endpoint,
+                                          onPreview: preview,
+                                        ),
+                            ),
+                          ),
+                        ),
                       // Floating active plugin window
                       ListenableBuilder(
                         listenable: PluginManager(),

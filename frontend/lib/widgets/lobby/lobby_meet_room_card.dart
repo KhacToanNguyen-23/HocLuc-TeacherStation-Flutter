@@ -66,43 +66,14 @@ class LobbyMeetRoomCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Row: Topic & Status
-              Row(
+              // Header Row: Topic
+              const Row(
                 children: [
-                  const Icon(Icons.school_rounded, size: 20, color: AppColors.sky600),
-                  const SizedBox(width: 8),
-                  const Text(
+                  Icon(Icons.school_rounded, size: 20, color: AppColors.sky600),
+                  SizedBox(width: 8),
+                  Text(
                     'Thông tin Buổi học',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.slate900),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: hasRealLink ? AppColors.emerald50 : AppColors.amber50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: hasRealLink ? const Color(0xFFBBF7D0) : const Color(0xFFFDE68A),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          radius: 3,
-                          backgroundColor: hasRealLink ? AppColors.emerald600 : AppColors.amber600,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          hasRealLink ? 'Sẵn sàng' : 'Chưa có link',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: hasRealLink ? AppColors.emerald600 : AppColors.amber600,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),
@@ -203,32 +174,18 @@ class LobbyMeetRoomCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
 
-                // Supplementary Actions
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 2,
-                  alignment: WrapAlignment.spaceBetween,
-                  children: [
-                    TextButton.icon(
-                      onPressed: isCreatingMeet ? null : onGenerateNewMeet,
-                      icon: isCreatingMeet
-                          ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.autorenew_rounded, size: 14),
-                      label: const Text('Tạo link mới', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                    ),
-                    TextButton.icon(
-                      onPressed: onOpenChrome,
-                      icon: const Icon(Icons.open_in_browser_rounded, size: 14),
-                      label: const Text('Mở trên Chrome', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                    ),
-                    TextButton.icon(
-                      onPressed: onShowCustomLinkDialog,
-                      icon: const Icon(Icons.edit_outlined, size: 14),
-                      label: const Text('Dán link có sẵn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
+                // Refresh link action
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: isCreatingMeet ? null : onGenerateNewMeet,
+                    icon: isCreatingMeet
+                        ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.autorenew_rounded, size: 14),
+                    label: const Text('Tạo link khác', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                  ),
                 ),
               ] else ...[
                 Row(

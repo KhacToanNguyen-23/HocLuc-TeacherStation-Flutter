@@ -44,19 +44,6 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
     'Virtual Audio Cable',
   ];
 
-  String _getBackgroundLabel(String key) {
-    switch (key) {
-      case 'blur_soft':
-        return 'Mờ nhẹ';
-      case 'blur_heavy':
-        return 'Mờ sâu';
-      case 'studio':
-        return 'Phòng học ảo';
-      default:
-        return 'Gốc (Tắt)';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final mediaService = widget.mediaService;
@@ -131,35 +118,6 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                     child: ListenableBuilder(
                       listenable: mediaService,
                       builder: (context, _) => mediaService.buildCameraPreview(),
-                    ),
-                  ),
-
-                  // Background mode indicator chip (Top Left)
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.65),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.auto_awesome_rounded, size: 12, color: AppColors.lime),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Phông: ${_getBackgroundLabel(widget.selectedBackground)}',
-                            style: const TextStyle(
-                              fontSize: 10.5,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
 
@@ -321,21 +279,6 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
               ),
             ),
           ),
-          const SizedBox(height: 14),
-
-          // Virtual Background Options
-          Row(
-            children: [
-              Expanded(child: _buildBgChip('off', 'Gốc (Tắt)', Icons.block_rounded)),
-              const SizedBox(width: 6),
-              Expanded(child: _buildBgChip('blur_soft', 'Mờ nhẹ', Icons.blur_on_rounded)),
-              const SizedBox(width: 6),
-              Expanded(child: _buildBgChip('blur_heavy', 'Mờ sâu', Icons.blur_circular_rounded)),
-              const SizedBox(width: 6),
-              Expanded(child: _buildBgChip('studio', 'Phòng học ảo', Icons.school_rounded)),
-            ],
-          ),
-
           // Collapsible Device Settings Drawer
           if (_showDeviceSettings) ...[
             const SizedBox(height: 12),
@@ -380,49 +323,6 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildBgChip(String key, String label, IconData icon) {
-    final isSelected = widget.selectedBackground == key;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => widget.onBackgroundSelected(key),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
-              width: isSelected ? 1.6 : 1.0,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? const Color(0xFF2563EB) : AppColors.slate500,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected ? const Color(0xFF1D4ED8) : AppColors.slate700,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

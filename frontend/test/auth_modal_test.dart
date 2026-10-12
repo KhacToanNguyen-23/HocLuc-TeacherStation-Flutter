@@ -57,8 +57,8 @@ void main() {
       expect(find.text('Email hoặc số điện thoại'), findsOneWidget);
       expect(find.text('Mật khẩu'), findsOneWidget);
       expect(find.text('Đăng nhập'), findsOneWidget);
-      expect(find.text('Đăng ký'), findsOneWidget); // Chữ nhỏ dưới nút login
-      expect(find.text('Đăng nhập bằng Google / Email trường'), findsOneWidget);
+      expect(find.byTooltip('Đăng nhập bằng Google'), findsOneWidget);
+      expect(find.text('G'), findsOneWidget);
 
       // 2. Click chữ nhỏ "Đăng ký" -> Chuyển sang form Đăng ký chuẩn ảnh mẫu
       await tester.tap(find.text('Đăng ký'));

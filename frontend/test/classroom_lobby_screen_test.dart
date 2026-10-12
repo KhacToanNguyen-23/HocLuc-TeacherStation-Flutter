@@ -55,27 +55,15 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byTooltip('Bật Micro'), findsOneWidget);
 
-      // 3. Verify Virtual Background options
-      expect(find.text('Gốc (Tắt)'), findsOneWidget);
-      expect(find.text('Mờ nhẹ'), findsOneWidget);
-      expect(find.text('Mờ sâu'), findsOneWidget);
-      expect(find.text('Phòng học ảo'), findsOneWidget);
-
-      // Select 'Phòng học ảo'
-      await tester.tap(find.text('Phòng học ảo'));
-      await tester.pumpAndSettle();
-      expect(find.text('Phông: Phòng học ảo'), findsOneWidget);
-
-      // 4. Verify Lesson Info (Right)
+      // 3. Verify Lesson Info (Right)
       expect(find.text('Thông tin Buổi học'), findsOneWidget);
       expect(find.text('Toán 12: Khảo sát hàm số'), findsOneWidget);
 
-      // 5. Verify Google Meet Card (Right)
+      // 4. Verify Google Meet Card (Right)
       expect(find.text('Kênh Phát sóng Google Meet'), findsOneWidget);
       expect(find.text('https://meet.google.com/abc-defg-hij'), findsOneWidget);
       expect(find.text('Sao chép'), findsOneWidget);
-      expect(find.text('Tạo link mới'), findsOneWidget);
-      expect(find.text('Dán link có sẵn'), findsOneWidget);
+      expect(find.text('Tạo link khác'), findsOneWidget);
 
       // Tap Copy button
       await tester.tap(find.text('Sao chép'));
@@ -115,8 +103,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify that warning state is shown
-      expect(find.text('Chưa có link'), findsOneWidget);
+      // Verify that offline action buttons are shown
       expect(find.text('Mở Chrome'), findsOneWidget);
       expect(find.text('Dán từ Clipboard'), findsOneWidget);
 

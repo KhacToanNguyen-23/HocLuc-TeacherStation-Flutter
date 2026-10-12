@@ -20,6 +20,9 @@ class StudioTopBar extends StatelessWidget {
     required this.onSave,
     required this.onRetryConnect,
     this.onToggleStudents,
+    this.onTogglePlugins,
+    this.hasStudents = false,
+    this.hasPlugins = false,
     this.onLeaveClassroom,
   });
 
@@ -27,6 +30,8 @@ class StudioTopBar extends StatelessWidget {
   final double width;
   final bool hasLessons;
   final bool hasInspector;
+  final bool hasStudents;
+  final bool hasPlugins;
   final VoidCallback onToggleLessons;
   final VoidCallback onToggleInspector;
   final VoidCallback onRename;
@@ -34,6 +39,7 @@ class StudioTopBar extends StatelessWidget {
   final VoidCallback onSave;
   final VoidCallback onRetryConnect;
   final VoidCallback? onToggleStudents;
+  final VoidCallback? onTogglePlugins;
   final VoidCallback? onLeaveClassroom;
 
   @override
@@ -142,25 +148,25 @@ class StudioTopBar extends StatelessWidget {
                 ),
               ),
             )
-          else
+          else if (studio.dirty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xffedf6ec),
+                color: const Color(0xfffff7ed),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xffc8e6c9)),
+                border: Border.all(color: const Color(0xfffed7aa)),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.circle, size: 6, color: Color(0xff43a047)),
-                  const SizedBox(width: 4),
+                  Icon(Icons.circle, size: 6, color: Color(0xffea580c)),
+                  SizedBox(width: 4),
                   Text(
-                    studio.dirty ? 'Chưa lưu' : 'Java OK',
-                    style: const TextStyle(
+                    'Chưa lưu',
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff2e7d32),
+                      color: Color(0xffc2410c),
                     ),
                   ),
                 ],
@@ -187,7 +193,7 @@ class StudioTopBar extends StatelessWidget {
                       const Icon(Icons.link_rounded, size: 15, color: Color(0xFF2563EB)),
                       const SizedBox(width: 5),
                       ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 160),
+                        constraints: BoxConstraints(maxWidth: width > 1150 ? 150 : 90),
                         child: Text(
                           url.replaceFirst(RegExp(r'^https?:\/\/'), ''),
                           overflow: TextOverflow.ellipsis,
@@ -316,56 +322,65 @@ class StudioTopBar extends StatelessWidget {
               color: hasInspector ? pine : muted,
             ),
           ),
-          const SizedBox(width: 6),
-          FilledButton.icon(
+          IconButton(
+            tooltip: studio.saving ? 'Đang lưu…' : 'Lưu bài giảng',
+            iconSize: 18,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: studio.saving || studio.loading ? null : onSave,
-            icon: const Icon(Icons.save_outlined, size: 14),
-            label: Text(
-              width > 900 ? (studio.saving ? 'Đang lưu…' : 'Lưu bài') : '',
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: pine,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(
-                horizontal: width > 900 ? 12 : 8,
-                vertical: 7,
-              ),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              textStyle: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
+            icon: Icon(
+              studio.saving ? Icons.hourglass_top_rounded : Icons.save_outlined,
+              color: pine,
             ),
           ),
           if (width > 800 && onToggleStudents != null) ...[
-            const SizedBox(width: 4),
+            const SizedBox(width: 3),
             IconButton(
               tooltip: 'Danh sách học sinh',
               iconSize: 18,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               onPressed: onToggleStudents,
-              icon: const Icon(Icons.groups_outlined, color: pine),
+              style: IconButton.styleFrom(
+                backgroundColor: hasStudents ? const Color(0xffedf2e5) : Colors.transparent,
+              ),
+              icon: Icon(hasStudents ? Icons.groups : Icons.groups_outlined, color: pine),
             ),
           ],
-          if (width > 800 && onLeaveClassroom != null) ...[
-            const SizedBox(width: 6),
-            OutlinedButton.icon(
+          if (width > 800 && onTogglePlugins != null) ...[
+            const SizedBox(width: 3),
+            IconButton(
+              tooltip: 'Hoạt động & Tiện ích môn',
+              iconSize: 18,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: onTogglePlugins,
+              style: IconButton.styleFrom(
+                backgroundColor: hasPlugins ? const Color(0xffedf2e5) : Colors.transparent,
+              ),
+              icon: Icon(hasPlugins ? Icons.extension : Icons.extension_outlined, color: pine),
+            ),
+          ],
+          if (onLeaveClassroom != null) ...[
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
               onPressed: onLeaveClassroom,
-              icon: const Icon(Icons.logout_rounded, size: 14),
-              label: Text(width > 950 ? 'Rời phòng' : ''),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.rose600,
-                side: const BorderSide(color: Color(0xfffecaca)),
-                backgroundColor: const Color(0xfffef2f2),
+              icon: const Icon(Icons.call_end_rounded, size: 14, color: Colors.white),
+              label: Text(
+                width > 900 ? 'Rời phòng' : '',
+                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+                elevation: 0,
                 padding: EdgeInsets.symmetric(
-                  horizontal: width > 950 ? 10 : 6,
+                  horizontal: width > 900 ? 10 : 8,
                   vertical: 7,
                 ),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ],

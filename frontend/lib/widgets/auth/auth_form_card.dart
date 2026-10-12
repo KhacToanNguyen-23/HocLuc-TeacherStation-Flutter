@@ -298,52 +298,6 @@ class _AuthFormCardState extends State<AuthFormCard> {
                   const SizedBox(height: 12),
                 ],
 
-                // 1. Nút Đăng nhập Google
-                if (!_isSignUpMode) ...[
-                  SizedBox(
-                    height: 44,
-                    child: OutlinedButton.icon(
-                      onPressed: _isLoading ? null : _handleGoogleSignInAction,
-                      icon: Container(
-                        width: 22,
-                        height: 22,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'G',
-                            style: TextStyle(
-                              color: Color(0xFF4285F4),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ),
-                      label: const Text(
-                        'Đăng nhập bằng Google / Email trường',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.slate900,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFD1D5DB)),
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-                  _buildDividerText('Hoặc đăng nhập với tài khoản'),
-                  const SizedBox(height: 14),
-                ],
-
                 // Form tương ứng
                 if (!_isSignUpMode) _buildPasswordLoginForm() else _buildSignupOtpForm(),
               ],
@@ -517,7 +471,53 @@ class _AuthFormCardState extends State<AuthFormCard> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        _buildDividerText('Hoặc đăng nhập bằng'),
+        const SizedBox(height: 12),
+        Center(
+          child: _buildGoogleCircleButton(),
+        ),
       ],
+    );
+  }
+
+  Widget _buildGoogleCircleButton() {
+    return Tooltip(
+      message: 'Đăng nhập bằng Google',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isLoading ? null : _handleGoogleSignInAction,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFD1D5DB), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Text(
+                'G',
+                style: TextStyle(
+                  color: Color(0xFF4285F4),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Roboto',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
