@@ -115,14 +115,43 @@ class GoogleMeetAuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool get isGoogleAuthenticated =>
+      _isSignedIn && (_authMethod == 'google' || _authMethod == 'demo');
+
   /// Mô phỏng đăng nhập nhanh cho giáo viên (Quick Sign-in)
   void quickSignIn({String? email, String? name}) {
+    signInWithDemoTeacher(
+      email: email ?? 'giaovien.hocluc@edu.vn',
+      name: name ?? 'Thầy Giáo (Giáo viên giảng dạy)',
+    );
+  }
+
+  /// Đăng nhập tài khoản demo / chấm thi một chạm
+  void signInWithDemoTeacher({
+    String email = 'toan.nguyen@fpt.edu.vn',
+    String name = 'Thầy Khắc Toàn',
+  }) {
     _isSignedIn = true;
-    _teacherName = name ?? 'Thầy Giáo (Giáo viên giảng dạy)';
-    _teacherEmail = email ?? 'giaovien.hocluc@edu.vn';
+    _accessToken = 'demo_google_access_token_hocluc_station';
+    _teacherName = name;
+    _teacherEmail = email;
     _teacherAvatar = null;
     _teacherPhone = null;
-    _authMethod = 'quick';
+    _authMethod = 'demo';
+    _persistSession();
+    notifyListeners();
+  }
+
+  /// Liên kết tài khoản Google cho phiên đang đăng nhập bằng phương thức khác
+  void linkGoogleAccount({
+    required String email,
+    required String name,
+    String? token,
+  }) {
+    _teacherEmail = email;
+    _teacherName = name;
+    if (token != null) _accessToken = token;
+    _authMethod = 'google';
     _persistSession();
     notifyListeners();
   }

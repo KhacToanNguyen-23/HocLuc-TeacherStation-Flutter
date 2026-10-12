@@ -7,7 +7,8 @@ import 'pdf_stage.dart';
 import 'interactive_chalkboard.dart';
 import 'floating_pdf_window.dart';
 import 'floating_pip.dart';
-import 'drawer_questions.dart';
+import 'floating_timer.dart';
+import 'studio/studio_document_drawer.dart';
 
 class StageContainer extends StatelessWidget {
   const StageContainer({
@@ -116,11 +117,19 @@ class StageContainer extends StatelessWidget {
                                 // Collapsible Left Drawer
                                 if (interactive)
                                   Positioned.fill(
-                                    child: DrawerQuestions(studio: studio),
+                                    child: StudioDocumentDrawer(studio: studio),
                                   ),
 
                                 // Floating Draggable Camera PIP Card
                                 if (interactive) FloatingPip(studio: studio),
+
+                                // Floating Countdown Timer Pill
+                                if (interactive && (studio.timerRunning || studio.seconds > 0))
+                                  Positioned(
+                                    top: 14,
+                                    left: 14,
+                                    child: FloatingTimer(studio: studio),
+                                  ),
                               ],
                             ),
                           ),

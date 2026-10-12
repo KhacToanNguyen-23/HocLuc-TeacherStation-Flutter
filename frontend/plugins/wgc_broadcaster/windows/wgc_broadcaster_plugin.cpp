@@ -27,7 +27,7 @@ class UnityCaptureSender {
   bool Open() {
     if (shared_buf_) return true;
 
-    char num_char = (cap_num_ ? '0' + cap_num_ : '\0');
+    char num_char = (cap_num_ ? static_cast<char>('0' + cap_num_) : '\0');
     char name_mutex[] = "UnityCapture_Mutx0"; name_mutex[sizeof(name_mutex) - 2] = num_char;
     char name_want[]  = "UnityCapture_Want0"; name_want[sizeof(name_want) - 2] = num_char;
     char name_sent[]  = "UnityCapture_Sent0"; name_sent[sizeof(name_sent) - 2] = num_char;

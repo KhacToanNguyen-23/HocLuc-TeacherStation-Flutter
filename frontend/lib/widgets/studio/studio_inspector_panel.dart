@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
+import '../../services/google_meet_auth_service.dart';
+import '../../services/meet_automation_service.dart';
+import 'studio_meet_cockpit_tab.dart';
+import 'studio_notes_settings_tab.dart';
 
-class StudioInspectorPanel extends StatelessWidget {
+class StudioInspectorPanel extends StatefulWidget {
   const StudioInspectorPanel({
     super.key,
     required this.studio,
@@ -19,8 +23,139 @@ class StudioInspectorPanel extends StatelessWidget {
   final VoidCallback onPreview;
 
   @override
+  State<StudioInspectorPanel> createState() => _StudioInspectorPanelState();
+}
+
+class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
+  int _selectedTab = 0; // 0: Live Meet Cockpit, 1: Thiết bị & Ghi chú
+  final MeetAutomationService _meetService = MeetAutomationService();
+  final GoogleMeetAuthService _authService = GoogleMeetAuthService();
+
+  Widget _buildTabBar() {
+    return ListenableBuilder(
+      listenable: _meetService,
+      builder: (context, _) {
+        final handCount = _meetService.raisedHands.length;
+        final hasLiveRoom = _meetService.hasRoom;
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+          child: Container(
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.slate100,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedTab = 0),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _selectedTab == 0 ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: _selectedTab == 0
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: hasLiveRoom
+                                  ? AppColors.emerald500
+                                  : AppColors.slate400,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Flexible(
+                            child: Text(
+                              'Trực tiếp',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.slate800,
+                              ),
+                            ),
+                          ),
+                          if (handCount > 0) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xfff97316),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '✋$handCount',
+                                style: const TextStyle(
+                                  fontSize: 8,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedTab = 1),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _selectedTab == 1 ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: _selectedTab == 1
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Cài đặt & Ghi chú',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.slate600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const muted = AppColors.muted;
     const line = AppColors.line;
 
     return Container(
@@ -28,234 +163,32 @@ class StudioInspectorPanel extends StatelessWidget {
         color: Colors.white,
         border: Border(left: BorderSide(color: line)),
       ),
-      child: ListView(
-        padding: const EdgeInsets.all(20),
+      child: Column(
         children: [
-          const Text(
-            'Chuẩn bị buổi dạy',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 5),
-          const Text(
-            'Điều khiển riêng của giáo viên',
-            style: TextStyle(fontSize: 11, color: muted),
-          ),
-          const SizedBox(height: 22),
-          _sectionLabel('ĐẦU RA CHO MEETING'),
-          const SizedBox(height: 10),
-          Container(
-            height: 128,
-            decoration: BoxDecoration(
-              color: const Color(0xffeef1e7),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.videocam_off_outlined, size: 27, color: muted),
-                const SizedBox(height: 9),
-                const Text('Camera chưa kết nối', style: TextStyle(fontSize: 12)),
-                const SizedBox(height: 5),
-                TextButton(
-                  onPressed: onPreview,
-                  child: const Text(
-                    'Xem khung trình bày →',
-                    style: TextStyle(fontSize: 11),
+          // Header Tab Bar
+          _buildTabBar(),
+          const Divider(height: 1, color: line),
+
+          // Tab Content
+          Expanded(
+            child: _selectedTab == 0
+                ? ListenableBuilder(
+                    listenable: Listenable.merge([_meetService, _authService]),
+                    builder: (context, _) => StudioMeetCockpitTab(
+                      meetService: _meetService,
+                      authService: _authService,
+                    ),
+                  )
+                : StudioNotesSettingsTab(
+                    studio: widget.studio,
+                    notesController: widget.notesController,
+                    questionController: widget.questionController,
+                    endpointController: widget.endpointController,
+                    onPreview: widget.onPreview,
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _statusLine(Icons.videocam_outlined, 'Camera ảo', 'Cần native bridge'),
-          _statusLine(Icons.mic_none_outlined, 'Micro ảo', 'Cần native bridge'),
-          const SizedBox(height: 18),
-          const Divider(color: line),
-          const SizedBox(height: 14),
-          _sectionLabel('ÂM THANH & API AI'),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: studio.microphone,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Microphone'),
-            items: [
-              const DropdownMenuItem(
-                value: '',
-                child: Text('Chọn thiết bị', style: TextStyle(fontSize: 11)),
-              ),
-              ...studio.microphones.map(
-                (m) => DropdownMenuItem(
-                  value: m['id'] as String,
-                  child: Text(
-                    m['name'] as String,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                ),
-              ),
-            ],
-            onChanged: (value) =>
-                studio.change(() => studio.microphone = value ?? ''),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'Danh sách từ JavaSound; chưa thu âm.',
-            style: TextStyle(fontSize: 10, color: muted),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: endpointController,
-            decoration: const InputDecoration(
-              labelText: 'API AI của bạn',
-              hintText: 'https://ai.example.vn',
-            ),
-            style: const TextStyle(fontSize: 12),
-            onChanged: (v) => studio.change(() => studio.endpoint = v),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: studio.language,
-            decoration: const InputDecoration(labelText: 'Ngôn ngữ đầu ra'),
-            items: ['English', 'Tiếng Việt', '日本語', '한국어', 'Français']
-                .map(
-                  (s) => DropdownMenuItem(
-                    value: s,
-                    child: Text(s, style: const TextStyle(fontSize: 12)),
-                  ),
-                )
-                .toList(),
-            onChanged: (s) {
-              if (s != null) studio.change(() => studio.language = s);
-            },
-          ),
-          const SizedBox(height: 7),
-          Material(
-            color: Colors.white,
-            child: SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text(
-                'Yêu cầu lọc tiếng ồn',
-                style: TextStyle(fontSize: 11),
-              ),
-              subtitle: const Text(
-                'Tùy chọn cho API sau này',
-                style: TextStyle(fontSize: 10, color: muted),
-              ),
-              value: studio.denoise,
-              onChanged: (v) => studio.change(() => studio.denoise = v),
-            ),
-          ),
-          const Text(
-            'Hiện chỉ lưu cấu hình. Chưa gọi AI, chưa phát âm thanh.',
-            style: TextStyle(fontSize: 10, color: muted, height: 1.6),
-          ),
-          const SizedBox(height: 18),
-          const Divider(color: line),
-          const SizedBox(height: 14),
-          if (studio.view == 'question') ...[
-            _sectionLabel('CÂU HỎI MẪU'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: questionController,
-              minLines: 2,
-              maxLines: 4,
-              onChanged: (v) => studio.change(() => studio.question = v),
-              decoration: const InputDecoration(hintText: 'Nội dung câu hỏi…'),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Bản khung dùng bốn phương án và đáp án B của bài mẫu.',
-              style: TextStyle(fontSize: 10, color: muted, height: 1.6),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => studio.change(
-                () => studio.reveal = !studio.reveal,
-                persist: false,
-              ),
-              icon: Icon(
-                studio.reveal
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                size: 16,
-              ),
-              label: Text(studio.reveal ? 'Ẩn đáp án' : 'Hiện đáp án'),
-            ),
-            const SizedBox(height: 16),
-          ],
-          _sectionLabel('GHI CHÚ RIÊNG'),
-          const SizedBox(height: 12),
-          TextField(
-            controller: notesController,
-            minLines: 3,
-            maxLines: 5,
-            onChanged: (v) => studio.change(() => studio.notes = v),
-            decoration: const InputDecoration(
-              hintText: 'Điểm cần nhấn mạnh, câu hỏi gợi mở…',
-            ),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'Không xuất trong khung trình bày.',
-            style: TextStyle(fontSize: 10, color: muted),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              const Icon(Icons.timer_outlined, size: 19),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${(studio.seconds ~/ 60).toString().padLeft(2, '0')}:${(studio.seconds % 60).toString().padLeft(2, '0')}',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: studio.timerRunning ? 'Dừng đồng hồ' : 'Bắt đầu 2 phút',
-                onPressed: studio.toggleTimer,
-                icon: Icon(
-                  studio.timerRunning
-                      ? Icons.pause_circle_outline
-                      : Icons.play_circle_outline,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Bản thử không có lab. Kết nối Meet tự động sẽ phát triển sau.',
-            style: TextStyle(fontSize: 10, color: muted, height: 1.6),
           ),
         ],
       ),
     );
   }
-
-  static Widget _sectionLabel(String text) => Text(
-    text,
-    style: const TextStyle(
-      fontSize: 10,
-      letterSpacing: 1.2,
-      fontWeight: FontWeight.w700,
-      color: AppColors.muted,
-    ),
-  );
-
-  static Widget _statusLine(IconData icon, String text, String status) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7),
-    child: Row(
-      children: [
-        Icon(icon, size: 17, color: AppColors.muted),
-        const SizedBox(width: 8),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 11))),
-        Text(
-          status,
-          style: const TextStyle(fontSize: 10, color: Color(0xff9b7246)),
-        ),
-      ],
-    ),
-  );
 }

@@ -118,5 +118,45 @@
     "verification_command": "flutter test",
     "notes": "Covers stories: P1 (Free-Floating PDF Window, Drag & Drop from Drawer)",
     "priority": "P1"
+  },
+  {
+    "id": "phase-01-headless-bridge-script",
+    "title": "Headless Meet DOM MutationObserver Bridge Script",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in test/meet_bridge_parser_test.dart",
+    "user_visible_behavior": "Script ngầm tự động trích xuất Chat, danh sách Giơ tay và Yêu cầu vào lớp từ Google Meet về app.",
+    "verification_command": "flutter test test/meet_bridge_parser_test.dart",
+    "notes": "Covers stories: P1 (Đọc chat, Giơ tay)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-meet-automation-service-ipc",
+    "title": "Meet Automation Two-Way IPC Service",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in test/meet_automation_service_test.dart",
+    "user_visible_behavior": "MeetAutomationService xử lý luồng sự kiện 2 chiều từ WebView2 và gửi lệnh điều khiển từ xa.",
+    "verification_command": "flutter test test/meet_automation_service_test.dart",
+    "notes": "Covers stories: P1 (Kết nối 2 chiều), P2 (Điều khiển từ xa)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-studio-inspector-cockpit-ui",
+    "title": "Studio Inspector Live Meet Cockpit UI",
+    "status": "passing",
+    "evidence": "Tests: 1 passed in test/meet_cockpit_inspector_test.dart",
+    "user_visible_behavior": "Bảng điều khiển Inspector bên phải có tab xem Live Chat Meet, danh sách giơ tay và nút 1 chạm Duyệt / Mute all.",
+    "verification_command": "flutter test test/meet_cockpit_inspector_test.dart",
+    "notes": "Covers stories: P1 (Giao diện tập trung), P2 (Duyệt & Mute 1 chạm)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-04-wgc-high-def-dual-stream",
+    "title": "High-Definition WGC Dual-Feed Broadcasting",
+    "status": "passing",
+    "evidence": "Full test suite: 43 passed, 0 failed; flutter analyze lib: 0 issues",
+    "user_visible_behavior": "Bảng vẽ được truyền tải tới học sinh với độ nét 1080p không vỡ hạt và webcam quay mặt giáo viên độc lập.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1 (1080p Crisp Canvas, Dual-feed Stream)",
+    "priority": "P1"
   }
 ]

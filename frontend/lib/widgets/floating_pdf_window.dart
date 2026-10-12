@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
+import '../utils/safe_clamp.dart';
 import 'pdf_stage.dart';
 
 class FloatingPdfWindow extends StatefulWidget {
@@ -34,7 +35,7 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
     final boardW = widget.boardConstraints.maxWidth > 0
         ? widget.boardConstraints.maxWidth
         : 1280.0;
-    final defaultW = (boardH * 0.72).clamp(360.0, boardW * 0.65);
+    final defaultW = (boardH * 0.72).safeClamp(360.0, boardW * 0.65);
     final defaultH = boardH;
 
     final initialSize = widget.studio.hasCustomPdfWindowSize
@@ -57,7 +58,7 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
         _sizeNotifier.value.height != widget.boardConstraints.maxHeight) {
       final boardH = widget.boardConstraints.maxHeight;
       final boardW = widget.boardConstraints.maxWidth;
-      final defaultW = (boardH * 0.72).clamp(360.0, boardW * 0.65);
+      final defaultW = (boardH * 0.72).safeClamp(360.0, boardW * 0.65);
       _sizeNotifier.value = Size(defaultW, boardH);
     }
     if (!_isDragging &&
@@ -137,8 +138,8 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
         return ListenableBuilder(
           listenable: Listenable.merge([_posNotifier, _sizeNotifier]),
           builder: (context, _) {
-            final cardW = _sizeNotifier.value.width.clamp(340.0, maxW);
-            final cardH = _sizeNotifier.value.height.clamp(260.0, maxH);
+            final cardW = _sizeNotifier.value.width.safeClamp(340.0, maxW);
+            final cardH = _sizeNotifier.value.height.safeClamp(260.0, maxH);
 
             final maxX = math.max(
               0.0,
@@ -149,8 +150,8 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
               widget.boardConstraints.maxHeight - cardH,
             );
 
-            final posX = _posNotifier.value.dx.clamp(0.0, maxX);
-            final posY = _posNotifier.value.dy.clamp(0.0, maxY);
+            final posX = _posNotifier.value.dx.safeClamp(0.0, maxX);
+            final posY = _posNotifier.value.dy.safeClamp(0.0, maxY);
 
             return Positioned(
               left: posX,
@@ -208,7 +209,7 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                                   current.width + d.delta.dx,
                                 );
                                 _sizeNotifier.value = Size(
-                                  newW.clamp(340.0, maxW),
+                                  newW.safeClamp(340.0, maxW),
                                   current.height,
                                 );
                               },
@@ -240,7 +241,7 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                                 );
                                 _sizeNotifier.value = Size(
                                   current.width,
-                                  newH.clamp(260.0, maxH),
+                                  newH.safeClamp(260.0, maxH),
                                 );
                               },
                               onPanEnd: (_) {
@@ -272,8 +273,8 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                                   current.height + d.delta.dy,
                                 );
                                 _sizeNotifier.value = Size(
-                                  newW.clamp(340.0, maxW),
-                                  newH.clamp(260.0, maxH),
+                                  newW.safeClamp(340.0, maxW),
+                                  newH.safeClamp(260.0, maxH),
                                 );
                               },
                               onPanEnd: (_) {
@@ -323,8 +324,8 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
               final current = _posNotifier.value;
               final maxW = math.max(360.0, widget.boardConstraints.maxWidth);
               final maxH = math.max(280.0, widget.boardConstraints.maxHeight);
-              final cardW = _sizeNotifier.value.width.clamp(340.0, maxW * 0.95);
-              final cardH = _sizeNotifier.value.height.clamp(260.0, maxH);
+              final cardW = _sizeNotifier.value.width.safeClamp(340.0, maxW * 0.95);
+              final cardH = _sizeNotifier.value.height.safeClamp(260.0, maxH);
               final maxX = math.max(
                 0.0,
                 widget.boardConstraints.maxWidth - cardW,
@@ -335,8 +336,8 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
               );
 
               _posNotifier.value = Offset(
-                (current.dx + d.delta.dx).clamp(0.0, maxX),
-                (current.dy + d.delta.dy).clamp(0.0, maxY),
+                (current.dx + d.delta.dx).safeClamp(0.0, maxX),
+                (current.dy + d.delta.dy).safeClamp(0.0, maxY),
               );
             },
       onPanEnd: isMaximized || !widget.interactive

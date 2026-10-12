@@ -23,10 +23,10 @@ void main() {
       // 1. Initial unauthenticated state: shows LoginScreen
       expect(find.byType(LoginScreen), findsOneWidget);
       expect(find.byType(ClassroomDashboardScreen), findsNothing);
-      expect(find.byTooltip('Đăng nhập nhanh'), findsOneWidget);
+      expect(find.text('Trải nghiệm nhanh (Demo GV Mẫu)'), findsOneWidget);
 
-      // 2. Perform 1-Click demo quick login (1 nút duy nhất)
-      await tester.tap(find.byTooltip('Đăng nhập nhanh'));
+      // 2. Perform 1-Click demo quick login
+      await tester.tap(find.text('Trải nghiệm nhanh (Demo GV Mẫu)'));
       await tester.pumpAndSettle();
 
       // 3. Authenticated state: transitions to ClassroomDashboardScreen

@@ -19,6 +19,8 @@ class StudioTopBar extends StatelessWidget {
     required this.onPreview,
     required this.onSave,
     required this.onRetryConnect,
+    this.onToggleStudents,
+    this.onLeaveClassroom,
   });
 
   final StudioState studio;
@@ -31,6 +33,8 @@ class StudioTopBar extends StatelessWidget {
   final VoidCallback onPreview;
   final VoidCallback onSave;
   final VoidCallback onRetryConnect;
+  final VoidCallback? onToggleStudents;
+  final VoidCallback? onLeaveClassroom;
 
   @override
   Widget build(BuildContext context) {
@@ -334,6 +338,37 @@ class StudioTopBar extends StatelessWidget {
               ),
             ),
           ),
+          if (width > 800 && onToggleStudents != null) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Danh sách học sinh',
+              iconSize: 18,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: onToggleStudents,
+              icon: const Icon(Icons.groups_outlined, color: pine),
+            ),
+          ],
+          if (width > 800 && onLeaveClassroom != null) ...[
+            const SizedBox(width: 6),
+            OutlinedButton.icon(
+              onPressed: onLeaveClassroom,
+              icon: const Icon(Icons.logout_rounded, size: 14),
+              label: Text(width > 950 ? 'Rời phòng' : ''),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.rose600,
+                side: const BorderSide(color: Color(0xfffecaca)),
+                backgroundColor: const Color(0xfffef2f2),
+                padding: EdgeInsets.symmetric(
+                  horizontal: width > 950 ? 10 : 6,
+                  vertical: 7,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
         ],
       ),
     );

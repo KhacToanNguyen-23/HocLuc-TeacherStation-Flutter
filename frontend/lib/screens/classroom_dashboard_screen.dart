@@ -6,7 +6,7 @@ import '../widgets/dashboard/dashboard_action_card.dart';
 import '../widgets/dashboard/dashboard_empty_card.dart';
 import '../widgets/dashboard/join_classroom_dialog.dart';
 import '../widgets/dashboard/schedule_classroom_dialog.dart';
-import 'studio_screen.dart';
+import 'classroom_lobby_screen.dart';
 
 /// Classroom Dashboard Screen styled to match the layout in Image 2 with Educational Green theme.
 class ClassroomDashboardScreen extends StatefulWidget {
@@ -17,23 +17,85 @@ class ClassroomDashboardScreen extends StatefulWidget {
 }
 
 class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
-  final _meetService = MeetAutomationService();
   final _authService = GoogleMeetAuthService();
   bool _isStarting = false;
   String _selectedRoomFilter = 'Tất cả';
+
   Future<void> _startClassroom() async {
     if (_isStarting) return;
     setState(() => _isStarting = true);
 
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const PopScope(
+        canPop: false,
+        child: Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
+                  ),
+                ),
+                SizedBox(width: 20),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Đang khởi tạo phòng Google Meet thật...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.slate900,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Hệ thống đang kết nối Google Meet & tham gia phòng họp',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.slate500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    String? realMeetUrl;
     try {
-      await _meetService.createClassroom();
-      if (mounted) {
-        await Navigator.of(context).push<void>(
-          MaterialPageRoute(builder: (_) => const StudioScreen()),
-        );
-      }
+      realMeetUrl = await MeetAutomationService().generateAndJoinRealMeetRoom();
+    } catch (e) {
+      debugPrint('[Dashboard] Error starting meet room: $e');
     } finally {
-      if (mounted) setState(() => _isStarting = false);
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isStarting = false);
+      }
+    }
+
+    if (mounted) {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => ClassroomLobbyScreen(
+            initialMeetingUrl: realMeetUrl,
+          ),
+        ),
+      );
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import '../models/studio_state.dart';
 
 class FloatingTimer extends StatefulWidget {
@@ -27,9 +28,9 @@ class _FloatingTimerState extends State<FloatingTimer> {
         final isRunning = studio.timerRunning;
 
         final borderColor = isZero
-            ? const Color(0xffff6b6b)
+            ? AppColors.rose600
             : isRunning
-            ? const Color(0xffd4e8a6)
+            ? AppColors.lime
             : const Color(0x33ffffff);
 
         return Column(
@@ -72,9 +73,9 @@ class _FloatingTimerState extends State<FloatingTimer> {
                           : Icons.hourglass_empty,
                       size: 15,
                       color: isZero
-                          ? const Color(0xffff6b6b)
+                          ? AppColors.rose600
                           : isRunning
-                          ? const Color(0xffd4e8a6)
+                          ? AppColors.lime
                           : const Color(0xffc5d2c8),
                     ),
                     const SizedBox(width: 8),
@@ -86,9 +87,9 @@ class _FloatingTimerState extends State<FloatingTimer> {
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                         color: isZero
-                            ? const Color(0xffff6b6b)
+                            ? AppColors.rose600
                             : isRunning
-                            ? const Color(0xffd4e8a6)
+                            ? AppColors.lime
                             : const Color(0xffe8eae6),
                       ),
                     ),
@@ -154,7 +155,7 @@ class _FloatingTimerState extends State<FloatingTimer> {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xffd4e8a6),
+                                color: AppColors.lime,
                               ),
                             ),
                           ),
@@ -173,8 +174,8 @@ class _FloatingTimerState extends State<FloatingTimer> {
                           onPressed: studio.toggleTimer,
                           style: FilledButton.styleFrom(
                             backgroundColor: isRunning
-                                ? const Color(0xffe57373)
-                                : const Color(0xffd4e8a6),
+                                ? AppColors.rose600
+                                : AppColors.lime,
                             foregroundColor: const Color(0xff14221d),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 14,
@@ -250,7 +251,7 @@ class _FloatingTimerState extends State<FloatingTimer> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xffd4e8a6) : const Color(0x22ffffff),
+          color: isSelected ? AppColors.lime : const Color(0x22ffffff),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
