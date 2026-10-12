@@ -243,28 +243,6 @@ class _AuthFormCardState extends State<AuthFormCard> {
     });
   }
 
-  Future<void> _handleDemoQuickLogin() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _infoMessage = null;
-    });
-
-    try {
-      final res = await _localService.loginDemoAccount();
-      final user = (res['user'] as Map<String, dynamic>?) ?? {};
-      final name = (user['name'] as String?) ?? 'Thầy Khắc Toàn';
-      final email = (user['email'] as String?) ?? 'toan.nguyen@fpt.edu.vn';
-
-      _authService.signInWithDemoTeacher(name: name, email: email);
-      widget.onSuccess?.call();
-    } catch (_) {
-      _authService.signInWithDemoTeacher();
-      widget.onSuccess?.call();
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
   Future<void> _handleGoogleSignInAction() async {
     final result = await GoogleWebviewLoginDialog.show(
@@ -355,26 +333,6 @@ class _AuthFormCardState extends State<AuthFormCard> {
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFD1D5DB)),
                         backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // 2. Nút Demo Quick Login
-                  SizedBox(
-                    height: 42,
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _handleDemoQuickLogin,
-                      icon: const Icon(Icons.flash_on_rounded, size: 18, color: Colors.amberAccent),
-                      label: const Text(
-                        'Trải nghiệm nhanh (Demo GV Mẫu)',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.sky600,
-                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         elevation: 0,
                       ),

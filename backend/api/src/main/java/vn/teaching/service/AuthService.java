@@ -138,7 +138,10 @@ public class AuthService {
 
         // Check registered password or allow default demo accounts
         String storedPassword = registeredPasswords.get(cleanIdentifier);
-        if (storedPassword != null && !storedPassword.equals(cleanPassword)) {
+        if (storedPassword == null) {
+            return AuthResponse.error("Tài khoản chưa được đăng ký. Vui lòng chuyển sang tab Đăng ký để tạo tài khoản.");
+        }
+        if (!storedPassword.equals(cleanPassword)) {
             return AuthResponse.error("Mật khẩu không chính xác. Vui lòng thử lại.");
         }
 
@@ -149,7 +152,7 @@ public class AuthService {
 
         Map<String, Object> userData = new HashMap<>();
         userData.put("id", UUID.randomUUID().toString());
-        userData.put("name", cleanIdentifier.equals("khactoan2233@gmail.com") ? "Thầy Khắc Toàn" : displayName);
+        userData.put("name", displayName);
         if (cleanIdentifier.contains("@")) {
             userData.put("email", cleanIdentifier);
             userData.put("phone", "");
@@ -228,28 +231,6 @@ public class AuthService {
         return new AuthResponse(
                 true,
                 "Đăng ký tài khoản thành công!",
-                userToken,
-                userData
-        );
-    }
-
-    public AuthResponse loginDemoAccount() {
-        String userToken = "demo-token-" + UUID.randomUUID().toString();
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("id", "usr_demo_khactoan");
-        userData.put("name", "Thầy Khắc Toàn (Giáo viên Demo)");
-        userData.put("email", "khactoan2233@gmail.com");
-        userData.put("phone", "+84988888888");
-        userData.put("role", "TEACHER");
-        userData.put("loginType", "demo_quick");
-
-        userStorage.put(userToken, userData);
-
-        log.info("[AuthService] Demo account khactoan2233@gmail.com logged in successfully.");
-
-        return new AuthResponse(
-                true,
-                "Đăng nhập thành công với tài khoản demo Thầy Khắc Toàn!",
                 userToken,
                 userData
         );

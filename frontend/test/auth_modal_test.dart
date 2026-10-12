@@ -59,7 +59,6 @@ void main() {
       expect(find.text('Đăng nhập'), findsOneWidget);
       expect(find.text('Đăng ký'), findsOneWidget); // Chữ nhỏ dưới nút login
       expect(find.text('Đăng nhập bằng Google / Email trường'), findsOneWidget);
-      expect(find.text('Trải nghiệm nhanh (Demo GV Mẫu)'), findsOneWidget);
 
       // 2. Click chữ nhỏ "Đăng ký" -> Chuyển sang form Đăng ký chuẩn ảnh mẫu
       await tester.tap(find.text('Đăng ký'));
@@ -80,17 +79,14 @@ void main() {
       expect(find.text('Email hoặc số điện thoại'), findsOneWidget);
       expect(find.text('Đăng nhập'), findsOneWidget);
 
-      // 4. Test 1-click Demo Quick Login
+      // 4. Test session sign in
       final auth = GoogleMeetAuthService();
       auth.signOut();
       expect(auth.isSignedIn, isFalse);
 
-      await tester.tap(find.text('Trải nghiệm nhanh (Demo GV Mẫu)'));
-      await tester.pumpAndSettle();
-
+      auth.signInWithOtpSession(token: 'test-token', name: 'Giáo viên Real', phone: '+84988888888');
       expect(auth.isSignedIn, isTrue);
-      expect(auth.teacherEmail, 'khactoan2233@gmail.com');
-      expect(auth.isGoogleAuthenticated, isTrue);
+      expect(auth.teacherPhone, '+84988888888');
     });
   });
 }

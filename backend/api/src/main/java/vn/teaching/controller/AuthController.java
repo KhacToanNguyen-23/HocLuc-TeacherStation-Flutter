@@ -73,10 +73,4 @@ public class AuthController {
         }
         return ResponseEntity.ok(response);
     }
-
-    @PostMapping("/demo")
-    public ResponseEntity<AuthResponse> handleDemoLogin() {
-        AuthResponse response = authService.loginDemoAccount();
-        return ResponseEntity.ok(response);
-    }
 }

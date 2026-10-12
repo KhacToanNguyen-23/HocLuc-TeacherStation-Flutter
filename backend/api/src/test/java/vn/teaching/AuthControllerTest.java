@@ -7,7 +7,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import vn.teaching.model.LoginRequest;
 import vn.teaching.model.OtpAuthRequest;
+import vn.teaching.model.RegisterRequest;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -91,13 +93,29 @@ public class AuthControllerTest {
     }
 
     @Test
-    void testDemoLoginEndpoint() throws Exception {
-        mockMvc.perform(post("/api/auth/demo")
-                        .contentType(MediaType.APPLICATION_JSON))
+    void testRegisterAndLoginEndpoint() throws Exception {
+        RegisterRequest regReq = new RegisterRequest();
+        regReq.setTarget("gv.test@hocluc.vn");
+        regReq.setOtp("123456");
+        regReq.setPassword("matkhau123");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(regReq)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.user.email").value("khactoan2233@gmail.com"))
-                .andExpect(jsonPath("$.user.name").value("Thầy Khắc Toàn (Giáo viên Demo)"));
+                .andExpect(jsonPath("$.user.email").value("gv.test@hocluc.vn"));
+
+        LoginRequest loginReq = new LoginRequest();
+        loginReq.setIdentifier("gv.test@hocluc.vn");
+        loginReq.setPassword("matkhau123");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.token").isNotEmpty());
     }
 }

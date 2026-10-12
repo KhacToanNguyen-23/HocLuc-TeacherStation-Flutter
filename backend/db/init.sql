@@ -3,31 +3,34 @@
 -- Script khởi tạo Cơ sở dữ liệu PostgreSQL cho Docker
 -- =========================================================
 
+-- Bảng người dùng (Giáo viên / Học sinh)
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    phone VARCHAR(20),
+    email VARCHAR(255) UNIQUE,
+    phone VARCHAR(20) UNIQUE,
+    password_hash VARCHAR(255),
     role VARCHAR(50) DEFAULT 'TEACHER',
     avatar_url TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Seed tài khoản Demo Giáo viên: khactoan2233@gmail.com
-INSERT INTO users (id, name, email, phone, role, avatar_url)
-VALUES (
-    'usr_demo_khactoan',
-    'Thầy Khắc Toàn (Giáo viên Demo)',
-    'khactoan2233@gmail.com',
-    '+84988888888',
-    'TEACHER',
-    'https://lh3.googleusercontent.com/a/default-user'
-)
-ON CONFLICT (email) DO UPDATE 
-SET 
-    name = EXCLUDED.name,
-    phone = EXCLUDED.phone,
-    role = EXCLUDED.role;
+-- Bảng phòng học / Phiên giảng dạy (Classroom Sessions)
+CREATE TABLE IF NOT EXISTS classrooms (
+    id VARCHAR(64) PRIMARY KEY,
+    teacher_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    meeting_url TEXT NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'ONGOING', -- ONGOING, COMPLETED, SCHEDULED
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ended_at TIMESTAMP,
+    duration_minutes INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_classrooms_teacher_status ON classrooms(teacher_id, status);
 
 -- Bảng lưu trữ lịch sử mã OTP xác thực
 CREATE TABLE IF NOT EXISTS auth_otps (
