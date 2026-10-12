@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
+import '../../services/plugin_manager.dart';
 
 class StudioLessonsDrawer extends StatelessWidget {
   const StudioLessonsDrawer({
@@ -8,11 +9,13 @@ class StudioLessonsDrawer extends StatelessWidget {
     required this.studio,
     required this.onClose,
     this.onPluginMessage,
+    this.onOpenPluginsMarketplace,
   });
 
   final StudioState studio;
   final VoidCallback onClose;
   final void Function(String message)? onPluginMessage;
+  final VoidCallback? onOpenPluginsMarketplace;
 
   @override
   Widget build(BuildContext context) {
@@ -183,11 +186,62 @@ class StudioLessonsDrawer extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
+          ListenableBuilder(
+            listenable: PluginManager(),
+            builder: (context, _) {
+              final installed = PluginManager().installedPlugins;
+              if (installed.isEmpty) return const SizedBox.shrink();
+
+              return Column(
+                children: [
+                  for (final p in installed)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: InkWell(
+                        onTap: () => PluginManager().openPlugin(p),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xffdbe2d4)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(p.icon, size: 14, color: p.color),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  p.name,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.slate800,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                ],
+              );
+            },
+          ),
           InkWell(
             onTap: () {
-              onPluginMessage?.call(
-                'Hệ thống Extension Microkernel: Sẵn sàng kết nối plugin bộ môn (Tiếng Anh, Toán, Khoa học…).',
-              );
+              if (onOpenPluginsMarketplace != null) {
+                onOpenPluginsMarketplace!();
+              } else {
+                onPluginMessage?.call(
+                  'Hệ thống Extension Microkernel: Sẵn sàng kết nối plugin bộ môn (Tiếng Anh, Toán, Khoa học…).',
+                );
+              }
             },
             borderRadius: BorderRadius.circular(8),
             child: Container(
