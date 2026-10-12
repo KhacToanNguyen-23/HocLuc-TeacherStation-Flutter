@@ -136,12 +136,7 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Dán link Google Meet của lớp học hoặc nhập mã phòng (vd: abc-defg-hij):',
-              style: TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
             TextField(
               controller: _controller,
               decoration: InputDecoration(

@@ -111,17 +111,6 @@ class DashboardEmptyCard extends StatelessWidget {
                         color: Color(0xFF6B7280),
                       ),
                     ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF9CA3AF),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
                     if (actionButton != null) ...[
                       const SizedBox(height: 16),
                       actionButton!,

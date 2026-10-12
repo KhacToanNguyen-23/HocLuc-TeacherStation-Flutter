@@ -128,18 +128,6 @@ class _DashboardActionCardState extends State<DashboardActionCard> {
                         ],
                       ],
                     ),
-                    if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        widget.subtitle!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.slate500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                   ],
                 ),
               ),

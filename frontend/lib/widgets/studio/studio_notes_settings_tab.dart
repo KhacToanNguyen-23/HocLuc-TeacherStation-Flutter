@@ -145,7 +145,6 @@ class StudioNotesSettingsTab extends StatelessWidget {
           child: SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             title: const Text('Lọc tạp âm AI thông minh', style: TextStyle(fontSize: 11)),
-            subtitle: const Text('Loại bỏ tiếng ồn quạt & bàn phím', style: TextStyle(fontSize: 10, color: muted)),
             value: studio.denoise,
             onChanged: (v) => studio.change(() => studio.denoise = v),
           ),
