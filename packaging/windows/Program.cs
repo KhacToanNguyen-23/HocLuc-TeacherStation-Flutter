@@ -56,6 +56,8 @@ internal sealed class TeacherWindow : Form {
         Directory.CreateDirectory(Path.Combine(userRoot, "logs"));
         if (smokeFolder != null) Directory.CreateDirectory(smokeFolder);
         Text = "HocLuc Teacher";
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Dpi;
         Size = new Size(1440, 900);
         MinimumSize = new Size(780, 700);
         StartPosition = FormStartPosition.CenterScreen;

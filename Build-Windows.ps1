@@ -54,10 +54,12 @@ if (!$SkipFrontendBuild) {
     } finally { Pop-Location }
 }
 if (!(Test-Path -LiteralPath (Join-Path $taskRoot 'frontend\build\web\canvaskit\canvaskit.wasm'))) { throw 'Build the offline Flutter web bundle first.' }
+& (Join-Path $taskRoot 'scripts\check-flutter-fonts.ps1') -WebRoot (Join-Path $taskRoot 'frontend\build\web')
 New-Item -ItemType Directory -Force $taskOutput | Out-Null
 $taskResources = Join-Path $taskOutput 'resources'
 New-Item -ItemType Directory -Force (Join-Path $taskResources 'app\build'), (Join-Path $taskResources 'whiteboard-host'), (Join-Path $taskResources 'service') | Out-Null
 Copy-Item -LiteralPath (Join-Path $taskRoot 'frontend\build\web') -Destination (Join-Path $taskResources 'app\build') -Recurse
+& (Join-Path $taskRoot 'scripts\check-flutter-fonts.ps1') -WebRoot (Join-Path $taskResources 'app\build\web')
 Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\whiteboard-host\dist') -Destination (Join-Path $taskResources 'whiteboard-host') -Recurse
 Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\api\target\companion-service-0.1.0.jar') -Destination (Join-Path $taskResources 'service\companion-service.jar')
 Copy-Item -LiteralPath $taskBrowser -Destination (Join-Path $taskOutput 'webview2-runtime') -Recurse
@@ -67,7 +69,7 @@ Copy-Item -LiteralPath (Join-Path $taskSdk 'lib\net462\Microsoft.Web.WebView2.Co
 Copy-Item -LiteralPath (Join-Path $taskSdk 'lib\net462\Microsoft.Web.WebView2.WinForms.dll') -Destination $taskOutput
 Copy-Item -LiteralPath (Join-Path $taskSdk 'runtimes\win-x64\native\WebView2Loader.dll') -Destination $taskOutput
 $taskCompiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
-Invoke-Checked { & $taskCompiler /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 "/out:$taskOutput\HocLuc-Teacher.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll "/reference:$taskOutput\Microsoft.Web.WebView2.Core.dll" "/reference:$taskOutput\Microsoft.Web.WebView2.WinForms.dll" (Join-Path $taskRoot 'packaging\windows\Program.cs') }
+Invoke-Checked { & $taskCompiler /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 "/win32manifest:$taskRoot\packaging\windows\app.manifest" "/out:$taskOutput\HocLuc-Teacher.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll "/reference:$taskOutput\Microsoft.Web.WebView2.Core.dll" "/reference:$taskOutput\Microsoft.Web.WebView2.WinForms.dll" (Join-Path $taskRoot 'packaging\windows\Program.cs') }
 Copy-Item -LiteralPath (Join-Path $taskRoot 'packaging\windows\HocLuc-Teacher.exe.config') -Destination $taskOutput
 Copy-Item -LiteralPath (Join-Path $taskRoot 'packaging\windows\README-Portable.txt') -Destination $taskOutput
 Copy-Item -LiteralPath (Join-Path $taskRoot 'packaging\windows\THIRD-PARTY-NOTICES.txt') -Destination $taskOutput
