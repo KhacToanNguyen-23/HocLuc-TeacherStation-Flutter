@@ -6,6 +6,7 @@
 
 #include "generated_plugin_registrant.h"
 
+#include <audio_bridge/audio_bridge_plugin_c_api.h>
 #include <camera_windows/camera_windows.h>
 #include <desktop_drop/desktop_drop_plugin.h>
 #include <record_windows/record_windows_plugin_c_api.h>
@@ -14,6 +15,8 @@
 #include <wgc_broadcaster/wgc_broadcaster_plugin_c_api.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
+  AudioBridgePluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("AudioBridgePluginCApi"));
   CameraWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("CameraWindows"));
   DesktopDropPluginRegisterWithRegistrar(
