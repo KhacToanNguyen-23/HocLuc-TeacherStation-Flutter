@@ -227,7 +227,9 @@ class StudioState extends ChangeNotifier {
   double splitRatio = 0.5;
   bool showCameraPip = false;
   bool pipMinimized = false;
-  Offset pipPosition = const Offset(16, 16);
+  // Fraction of the available travel distance; stable across board resizing.
+  Offset pipPosition = const Offset(0.98, 0.02);
+  double pipWidthFraction = 0.22;
   bool showQuestionsDrawer = false;
   int timerInitialSeconds = 300;
   bool hasCustomPdfWindowSize = false;
@@ -502,7 +504,12 @@ class StudioState extends ChangeNotifier {
   }
 
   void setPipPosition(Offset pos) {
-    pipPosition = pos;
+    pipPosition = Offset(pos.dx.clamp(0, 1), pos.dy.clamp(0, 1));
+    notifyListeners();
+  }
+
+  void setPipWidth(double fraction) {
+    pipWidthFraction = fraction.clamp(0.12, 0.4);
     notifyListeners();
   }
 

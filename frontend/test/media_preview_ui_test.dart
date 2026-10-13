@@ -85,20 +85,15 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Webcam GV'), findsOneWidget);
-      expect(find.text('Mic ON'), findsOneWidget);
+      expect(find.text('Webcam'), findsOneWidget);
+      expect(find.text('Phát camera ảo'), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_full), findsOneWidget);
 
-      // Mute Mic via MediaDeviceService
-      mediaService.setMicrophoneMuted(true);
+      // Hide PiP
+      studio.toggleCameraPip();
       await tester.pump();
-
-      expect(find.text('Đã tắt mic'), findsOneWidget);
-
-      // Mute Camera via MediaDeviceService
-      mediaService.setCameraMuted(true);
-      await tester.pump();
-
-      expect(find.byIcon(Icons.videocam_off), findsWidgets);
+      expect(find.text('Webcam'), findsNothing);
+      expect(find.text('Phát camera ảo'), findsOneWidget);
 
       studio.dispose();
     });

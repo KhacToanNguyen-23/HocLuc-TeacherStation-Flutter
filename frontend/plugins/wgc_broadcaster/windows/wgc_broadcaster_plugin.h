@@ -6,10 +6,9 @@
 #include <flutter/standard_method_codec.h>
 
 #include <memory>
-#include <thread>
-#include <atomic>
 
 namespace wgc_broadcaster {
+class UnityCaptureSender;
 
 class WgcBroadcasterPlugin : public flutter::Plugin {
  public:
@@ -29,10 +28,8 @@ class WgcBroadcasterPlugin : public flutter::Plugin {
 
  private:
   flutter::PluginRegistrarWindows* registrar_;
-  std::atomic<bool> is_broadcasting_{false};
-  std::thread capture_thread_;
-
-  void CaptureLoop();
+  bool is_broadcasting_{false};
+  std::unique_ptr<UnityCaptureSender> sender_;
 };
 
 }  // namespace wgc_broadcaster

@@ -3,6 +3,7 @@ import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
 import '../stage_container.dart';
 import 'studio_question_view.dart';
+import '../../services/camera_broadcast_service.dart';
 
 class StudioPreviewDialog extends StatelessWidget {
   const StudioPreviewDialog({super.key, required this.studio});
@@ -28,10 +29,15 @@ class StudioPreviewDialog extends StatelessWidget {
               children: [
                 const Icon(Icons.crop_landscape, color: AppColors.lime),
                 const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Khung trình bày · chưa phát qua camera ảo',
-                    style: TextStyle(color: Colors.white),
+                Expanded(
+                  child: ListenableBuilder(
+                    listenable: CameraBroadcastService(),
+                    builder: (_, _) => Text(
+                      CameraBroadcastService().isBroadcasting
+                          ? 'Camera ảo · khung hình đang gửi đến Unity Video Capture'
+                          : 'Khung trình bày · camera ảo chưa phát',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
                 IconButton(
@@ -46,10 +52,17 @@ class StudioPreviewDialog extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: AnimatedBuilder(
-                animation: studio,
+                animation: Listenable.merge([studio, CameraBroadcastService()]),
                 builder: (_, _) {
+                  final frame = CameraBroadcastService().preview;
+                  if (frame != null) {
+                    return RawImage(image: frame, fit: BoxFit.contain);
+                  }
                   if (studio.view == 'question') {
-                    return StudioQuestionView(studio: studio);
+                    return StudioQuestionView(
+                      studio: studio,
+                      interactive: false,
+                    );
                   }
                   return StageContainer(studio: studio, interactive: false);
                 },

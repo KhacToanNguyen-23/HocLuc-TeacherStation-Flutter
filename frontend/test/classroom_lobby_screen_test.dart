@@ -42,11 +42,12 @@ void main() {
 
       // 2. Verify Hardware Section (Left)
       expect(find.text('Kiểm tra Thiết bị & Hình ảnh'), findsOneWidget);
-      expect(find.byTooltip('Tắt Camera'), findsOneWidget);
+      // Widget tests have no physical camera attached: camera is off by default
+      expect(find.byTooltip('Bật Camera'), findsOneWidget);
       expect(find.byTooltip('Tắt Micro'), findsOneWidget);
 
       // Toggle Camera
-      await tester.tap(find.byTooltip('Tắt Camera'));
+      await tester.tap(find.byTooltip('Bật Camera'));
       await tester.pumpAndSettle();
       expect(find.byTooltip('Bật Camera'), findsOneWidget);
 

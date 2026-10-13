@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import '../services/camera_broadcast_service.dart';
+import '../services/teacher_media_service.dart';
 import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../screens/classroom_dashboard_screen.dart';
@@ -71,6 +74,8 @@ class _StudioScreenState extends State<StudioScreen> {
 
   @override
   void dispose() {
+    unawaited(CameraBroadcastService().stop());
+    unawaited(TeacherMediaService().shutdown());
     studio.removeListener(syncControllers);
     studio.dispose();
     notes.dispose();
@@ -237,7 +242,7 @@ class _StudioScreenState extends State<StudioScreen> {
 
   Widget fittedStage({bool interactive = true}) {
     if (studio.view == 'question') {
-      return StudioQuestionView(studio: studio);
+      return StudioQuestionView(studio: studio, interactive: interactive);
     }
     return StageContainer(studio: studio, interactive: interactive);
   }

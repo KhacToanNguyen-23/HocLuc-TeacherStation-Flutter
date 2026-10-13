@@ -26,15 +26,32 @@ class TeacherMediaService extends ChangeNotifier {
 
   bool get isCameraActive => _isCameraActive;
   bool get isMicActive => _isMicActive;
+  bool get supportsAudio => true;
   bool get isInitialized => _isInitialized;
+  bool get isInitializing => false;
   double get audioLevel => _audioLevel;
   String? get errorMessage => _errorMessage;
 
   List<String> get availableCameras => const ['Webcam HD (Web Browser)'];
   List<String> get availableMicrophones => const ['Microphone (Web Browser)'];
+  List<dynamic> get cameras => const [];
+  String? get selectedCamera => null;
 
   Future<void> switchCamera(String cameraName) async {}
   Future<void> switchMicrophone(String micLabel) async {}
+  Future<void> selectCamera(String name) async {}
+  Future<void> shutdown() async {
+    _audioTimer?.cancel();
+    if (_stream != null) {
+      for (final track in _stream!.getTracks().toDart) {
+        track.stop();
+      }
+    }
+    _stream = null;
+    _videoElement?.srcObject = null;
+    _isInitialized = false;
+    notifyListeners();
+  }
 
   Future<void> initMedia() async {
     if (_isInitialized && _stream != null) return;

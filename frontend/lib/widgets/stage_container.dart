@@ -12,6 +12,7 @@ import 'studio/studio_document_drawer.dart';
 import 'plugin_host_drawer.dart';
 import 'floating_plugin_window.dart';
 import 'subject_tool_palette.dart';
+import 'presentation_surface.dart';
 
 class StageContainer extends StatelessWidget {
   const StageContainer({
@@ -106,13 +107,19 @@ class StageContainer extends StatelessWidget {
                               children: [
                                 // Viewport Mode Content
                                 Positioned.fill(
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
-                                    child: KeyedSubtree(
-                                      key: ValueKey(
-                                        '${studio.viewportMode}_${studio.pdfOnRight}',
+                                  child: PresentationSurface(
+                                    studio: studio,
+                                    broadcastSource: interactive,
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 200,
                                       ),
-                                      child: _buildStageContent(constraints),
+                                      child: KeyedSubtree(
+                                        key: ValueKey(
+                                          '${studio.viewportMode}_${studio.pdfOnRight}',
+                                        ),
+                                        child: _buildStageContent(constraints),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -124,10 +131,14 @@ class StageContainer extends StatelessWidget {
                                   ),
 
                                 // Floating Draggable Camera PIP Card
-                                if (interactive) FloatingPip(studio: studio),
+                                if (interactive)
+                                  Positioned.fill(
+                                    child: FloatingPip(studio: studio),
+                                  ),
 
                                 // Floating Countdown Timer Pill
-                                if (interactive && (studio.timerRunning || studio.seconds > 0))
+                                if (interactive &&
+                                    (studio.timerRunning || studio.seconds > 0))
                                   Positioned(
                                     top: 14,
                                     left: 14,

@@ -1,5 +1,5 @@
 name: wgc_broadcaster
-description: "A new Flutter plugin project."
+description: "Windows RGBA frame output for a registered UnityCapture virtual camera."
 version: 0.0.1
 homepage:
 

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:webview_windows/webview_windows.dart' as win;
-import 'package:wgc_broadcaster/wgc_broadcaster.dart';
+import 'camera_broadcast_service.dart';
 import '../models/meet_events.dart';
 import 'google_meet_auth_service.dart';
 import 'local_service.dart';
@@ -18,7 +18,15 @@ enum MeetStatus {
 class MeetAutomationService extends ChangeNotifier {
   static final MeetAutomationService _instance = MeetAutomationService._internal();
   factory MeetAutomationService() => _instance;
-  MeetAutomationService._internal();
+  MeetAutomationService._internal() {
+    CameraBroadcastService().addListener(() {
+      final broadcasting = CameraBroadcastService().isBroadcasting;
+      if (_isBroadcasting != broadcasting) {
+        _isBroadcasting = broadcasting;
+        notifyListeners();
+      }
+    });
+  }
 
   win.WebviewController? _controller;
   MeetStatus _status = MeetStatus.idle;
@@ -312,21 +320,12 @@ class MeetAutomationService extends ChangeNotifier {
   /// Bắt đầu phát sóng stream màn hình bảng vẽ lên Virtual Camera
   Future<void> startBroadcast() async {
     if (_isBroadcasting) return;
-    if (!kIsWeb) {
-      await WgcBroadcaster.startBroadcast();
-    }
-    _isBroadcasting = true;
-    notifyListeners();
+    await CameraBroadcastService().start();
   }
 
   /// Tạm dừng / Dừng phát sóng stream
   Future<void> stopBroadcast() async {
-    if (!_isBroadcasting) return;
-    if (!kIsWeb) {
-      await WgcBroadcaster.stopBroadcast();
-    }
-    _isBroadcasting = false;
-    notifyListeners();
+    await CameraBroadcastService().stop();
   }
 
   /// Chuyển đổi trạng thái phát sóng ON / OFF

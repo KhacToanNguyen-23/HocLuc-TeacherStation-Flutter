@@ -11,7 +11,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 05: Floating Studio Accessories', () {
-    testWidgets('FloatingPip renders webcam card and handles toggle/minimize', (
+    testWidgets('FloatingPip exposes camera controls and hides the overlay', (
       tester,
     ) async {
       final studio = StudioState();
@@ -29,27 +29,17 @@ void main() {
       );
       await tester.pump();
 
-      // Normal card state
-      expect(find.text('Webcam GV'), findsOneWidget);
-      expect(find.text('GV'), findsOneWidget);
-      expect(find.text('1080p · 30fps'), findsOneWidget);
-      expect(find.text('Mic ON'), findsOneWidget);
-
-      // Minimize PIP
-      studio.togglePipMinimized();
-      await tester.pump();
+      expect(find.text('Webcam'), findsOneWidget);
+      expect(find.text('Phát camera ảo'), findsOneWidget);
       expect(find.byIcon(Icons.open_in_full), findsOneWidget);
-      expect(find.text('1080p · 30fps'), findsNothing);
-
-      // Restore PIP
-      studio.togglePipMinimized();
-      await tester.pump();
-      expect(find.text('1080p · 30fps'), findsOneWidget);
+      expect(find.text('Mic ON'), findsNothing);
 
       // Hide PIP
       studio.toggleCameraPip();
       await tester.pump();
-      expect(find.text('Webcam GV'), findsNothing);
+      expect(find.text('Webcam'), findsNothing);
+      // Output controls remain available even when the webcam is hidden.
+      expect(find.text('Phát camera ảo'), findsOneWidget);
 
       studio.dispose();
     });
