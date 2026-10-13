@@ -19,7 +19,7 @@ public class SecurityTokenInterceptor implements HandlerInterceptor {
             return true;
         }
         String path = request.getRequestURI();
-        if (path.equals("/api/bootstrap") || path.startsWith("/api/auth/") || !path.startsWith("/api/")) {
+        if (path.equals("/api/bootstrap") || path.startsWith("/api/auth/") || path.startsWith("/api/exams/") || !path.startsWith("/api/")) {
             return true;
         }
 

@@ -123,55 +123,26 @@ public class AuthService {
         );
     }
 
-    private final Map<String, String> registeredPasswords = new ConcurrentHashMap<>();
+    private final vn.teaching.exam.ExamAuth sharedAuth;
+
+    public AuthService(vn.teaching.exam.ExamAuth sharedAuth) { this.sharedAuth=sharedAuth; }
+
+    private String accountEmail(String target) {
+        String clean=target.trim().toLowerCase(java.util.Locale.ROOT);
+        return clean.contains("@")?clean:clean+"@hocluc.edu.vn";
+    }
+    private AuthResponse sharedResponse(Map<String,Object> session,String target) {
+        var account=(vn.teaching.exam.ExamModels.Account)session.get("user");
+        Map<String,Object> user=new HashMap<>();
+        user.put("id",account.id()); user.put("name",account.name()); user.put("role",account.role());
+        user.put("email",target.contains("@")?account.email():""); user.put("phone",target.contains("@")?"":target.trim());
+        return new AuthResponse(true,"Đăng nhập thành công",(String)session.get("token"),user);
+    }
 
     public AuthResponse login(String identifier, String password) {
-        if (identifier == null || identifier.trim().isEmpty()) {
-            return AuthResponse.error("Vui lòng cung cấp Số điện thoại hoặc Email.");
-        }
-        if (password == null || password.trim().isEmpty()) {
-            return AuthResponse.error("Vui lòng nhập mật khẩu.");
-        }
-
-        String cleanIdentifier = identifier.trim().toLowerCase();
-        String cleanPassword = password.trim();
-
-        // Check registered password or allow default demo accounts
-        String storedPassword = registeredPasswords.get(cleanIdentifier);
-        if (storedPassword == null) {
-            return AuthResponse.error("Tài khoản chưa được đăng ký. Vui lòng chuyển sang tab Đăng ký để tạo tài khoản.");
-        }
-        if (!storedPassword.equals(cleanPassword)) {
-            return AuthResponse.error("Mật khẩu không chính xác. Vui lòng thử lại.");
-        }
-
-        String userToken = "jwt-" + UUID.randomUUID().toString();
-        String displayName = cleanIdentifier.contains("@")
-                ? cleanIdentifier.split("@")[0]
-                : "Thầy/Cô (" + cleanIdentifier + ")";
-
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("id", UUID.randomUUID().toString());
-        userData.put("name", displayName);
-        if (cleanIdentifier.contains("@")) {
-            userData.put("email", cleanIdentifier);
-            userData.put("phone", "");
-        } else {
-            userData.put("phone", cleanIdentifier);
-            userData.put("email", cleanIdentifier + "@hocluc.edu.vn");
-        }
-        userData.put("role", "teacher");
-        userData.put("loginType", "password");
-
-        userStorage.put(userToken, userData);
-        log.info("[AuthService] User {} logged in via password successfully.", cleanIdentifier);
-
-        return new AuthResponse(
-                true,
-                "Đăng nhập thành công! Chào mừng " + userData.get("name"),
-                userToken,
-                userData
-        );
+        if(identifier==null||identifier.isBlank()) return AuthResponse.error("Vui lòng cung cấp Email hoặc Số điện thoại.");
+        try { return sharedResponse(sharedAuth.login(accountEmail(identifier),password),identifier); }
+        catch(vn.teaching.exam.ExamException e) { return AuthResponse.error(e.getMessage()); }
     }
 
     public AuthResponse register(String target, String otp, String password) {
@@ -204,35 +175,8 @@ public class AuthService {
             return AuthResponse.error("Mã xác thực OTP không chính xác hoặc đã hết hạn.");
         }
 
-        // Save password
-        registeredPasswords.put(cleanTarget, password.trim());
-
-        String userToken = "jwt-" + UUID.randomUUID().toString();
-        String displayName = cleanTarget.contains("@")
-                ? cleanTarget.split("@")[0]
-                : "Thầy/Cô (" + cleanTarget + ")";
-
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("id", UUID.randomUUID().toString());
-        userData.put("name", displayName);
-        if (cleanTarget.contains("@")) {
-            userData.put("email", cleanTarget);
-            userData.put("phone", "");
-        } else {
-            userData.put("phone", cleanTarget);
-            userData.put("email", cleanTarget + "@hocluc.edu.vn");
-        }
-        userData.put("role", "teacher");
-        userData.put("loginType", "signup_verified");
-
-        userStorage.put(userToken, userData);
-        log.info("[AuthService] User {} registered and logged in successfully.", cleanTarget);
-
-        return new AuthResponse(
-                true,
-                "Đăng ký tài khoản thành công!",
-                userToken,
-                userData
-        );
+        String displayName=cleanTarget.contains("@")?cleanTarget.split("@")[0]:"Thầy/Cô ("+cleanTarget+")";
+        try { return sharedResponse(sharedAuth.registerApp(accountEmail(cleanTarget),password,displayName),cleanTarget); }
+        catch(vn.teaching.exam.ExamException e) { return AuthResponse.error(e.getMessage()); }
     }
 }
