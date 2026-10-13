@@ -22,7 +22,79 @@ class ExamApi {
   final http.Client client;
   final String base;
   final GoogleMeetAuthService auth;
-  Future<http.Response> _withSession(Future<http.Response> Function() send) async => _check(await send());
+  Future<void>? _localSessionFuture;
+
+  Future<void> _ensureLocalSession({String? rejectedToken}) async {
+    if (!auth.hasLocalGoogleProfile) return;
+    if (auth.appSessionToken != null &&
+        auth.appSessionToken!.isNotEmpty &&
+        (rejectedToken == null || auth.appSessionToken != rejectedToken)) {
+      return;
+    }
+    if (_localSessionFuture != null) return _localSessionFuture;
+    final pending = _createLocalSession();
+    _localSessionFuture = pending;
+    try {
+      await pending;
+    } finally {
+      _localSessionFuture = null;
+    }
+  }
+
+  Future<void> _createLocalSession() async {
+    final revision = auth.profileRevision;
+    final email = auth.teacherEmail!;
+    final name = auth.teacherName;
+    final bootstrap = _check(
+      await client
+          .get(Uri.parse('$base/api/bootstrap'))
+          .timeout(const Duration(seconds: 10)),
+    );
+    final companion = jsonDecode(utf8.decode(bootstrap.bodyBytes)) as Map;
+    final response = _check(
+      await client
+          .post(
+            Uri.parse('$base/api/auth/google/webview-session'),
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Companion-Token': companion['token'] as String,
+            },
+            body: jsonEncode({'email': email, 'name': name}),
+          )
+          .timeout(const Duration(seconds: 10)),
+    );
+    final session = jsonDecode(utf8.decode(response.bodyBytes)) as Map;
+    final user = session['user'] as Map;
+    if (!auth.hasLocalGoogleProfile || auth.profileRevision != revision) {
+      throw ExamApiException('Phiên đăng nhập đã thay đổi.', status: 401);
+    }
+    await auth.attachLocalExamSession(
+      token: session['token'] as String,
+      teacherId: user['id'] as String,
+    );
+  }
+
+  Future<http.Response> _withSession(
+    Future<http.Response> Function() send,
+  ) async {
+    final revision = auth.profileRevision;
+    await _ensureLocalSession();
+    if (auth.profileRevision != revision) {
+      throw ExamApiException('Phiên đăng nhập đã thay đổi.', status: 401);
+    }
+    final token = auth.appSessionToken;
+    var response = await send();
+    if (auth.profileRevision != revision) {
+      throw ExamApiException('Phiên đăng nhập đã thay đổi.', status: 401);
+    }
+    if (response.statusCode == 401 &&
+        auth.hasLocalGoogleProfile &&
+        token != null) {
+      await _ensureLocalSession(rejectedToken: token);
+      response = await send();
+    }
+    return _check(response);
+  }
 
   Map<String, String> get headers {
     final token = auth.appSessionToken;

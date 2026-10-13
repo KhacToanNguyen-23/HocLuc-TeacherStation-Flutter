@@ -43,6 +43,25 @@ class GoogleMeetAuthService extends ChangeNotifier {
   String get role => _role;
   int get profileRevision => _profileRevision;
 
+  bool get hasLocalGoogleProfile =>
+      _isSignedIn &&
+      _authMethod == 'google' &&
+      _accessToken == webviewSessionMarker &&
+      _teacherEmail != null &&
+      _teacherEmail!.isNotEmpty;
+
+  /// Attach exam storage to the current develop-style login without changing it.
+  Future<void> attachLocalExamSession({
+    required String token,
+    required String teacherId,
+  }) async {
+    _appSessionToken = token;
+    _teacherId = teacherId;
+    _role = 'TEACHER';
+    await _persistSession();
+    notifyListeners();
+  }
+
   /// Khởi tạo và nạp phiên đăng nhập đã lưu trong LocalStorage / SharedPreferences
   Future<void> init() async {
     _profileRevision++;

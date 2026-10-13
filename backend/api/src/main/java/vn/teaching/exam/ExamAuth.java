@@ -92,6 +92,26 @@ public class ExamAuth {
         }
         return session(account);
     }
+    /** Local app profiles never claim an OAuth/password identity or its admin grants. */
+    @Transactional public synchronized Map<String,Object> localWebview(String email, String name) {
+        if(email==null || email.length()>254 || !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))
+            throw ExamException.bad("Email giáo viên không hợp lệ.");
+        String address=normalize(email);
+        var linked=repo.jdbc().queryForList("SELECT a.* FROM exam_platform.accounts a JOIN exam_platform.external_identities i ON a.id=i.account_id WHERE i.provider='APP_WEBVIEW' AND i.subject=?",address);
+        Account account;
+        if(linked.isEmpty()) {
+            String localEmail="webview-"+digest(address.getBytes(StandardCharsets.UTF_8))+"@app.hocluc.local";
+            account=create(localEmail,UUID.randomUUID().toString(),name==null||name.isBlank()?address:name,"TEACHER");
+            repo.jdbc().update("INSERT INTO exam_platform.external_identities VALUES ('APP_WEBVIEW',?,?)",address,account.id());
+        } else {
+            var row=linked.get(0);
+            account=new Account((String)row.get("id"),(String)row.get("email"),(String)row.get("name"),"TEACHER");
+            // Local profiles are always teachers, including if a database was edited manually.
+            repo.jdbc().update("UPDATE exam_platform.accounts SET role='TEACHER' WHERE id=?",account.id());
+        }
+        return session(account);
+    }
+
     private Map<String,Object> session(Account account) {
         byte[] random = new byte[32]; new SecureRandom().nextBytes(random);
         String token=Base64.getUrlEncoder().withoutPadding().encodeToString(random);
