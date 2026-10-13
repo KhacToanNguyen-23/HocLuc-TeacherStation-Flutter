@@ -78,8 +78,8 @@ if (!$taskProcess) {
         if ($_.Exception.Message -like 'Cổng 47831*') { throw }
     }
     $taskJava = (Get-Command java).Source
-    $taskArgs = @('-jar', ('"' + $taskJar + '"'), ('"' + $taskRoot + '"'), '47831')
-    $taskStarted = Start-Process -FilePath $taskJava -ArgumentList $taskArgs -WindowStyle Hidden -PassThru -WorkingDirectory $taskRoot -RedirectStandardOutput (Join-Path $taskRun 'service.log') -RedirectStandardError (Join-Path $taskRun 'service-error.log')
+    $taskArgs = @('-jar', ('"' + $taskJar + '"'), '--server.port=47831')
+    $taskStarted = Start-Process -FilePath $taskJava -ArgumentList $taskArgs -WindowStyle Hidden -PassThru -WorkingDirectory (Join-Path $taskRoot 'backend\api') -RedirectStandardOutput (Join-Path $taskRun 'service.log') -RedirectStandardError (Join-Path $taskRun 'service-error.log')
     $taskStarted.Id | Set-Content -LiteralPath $taskPidFile
     $taskReady = $false
     for ($taskAttempt = 0; $taskAttempt -lt 40; $taskAttempt++) {
