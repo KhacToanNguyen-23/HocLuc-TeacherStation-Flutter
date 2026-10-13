@@ -71,6 +71,27 @@ public class ExamAuth {
             throw new ExamException(HttpStatus.UNAUTHORIZED,"LOGIN_FAILED","Email hoặc mật khẩu không đúng.",List.of());
         var r=rows.get(0); return session(new Account((String)r.get("id"),(String)r.get("email"),(String)r.get("name"),(String)r.get("role")));
     }
+    @Transactional public synchronized Map<String,Object> google(String subject,String email,String name) {
+        SourceService.required(subject,"Google subject");
+        if(email==null||!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw ExamException.bad("Google chưa trả về email đã xác minh.");
+        String address=normalize(email);
+        var linked=repo.jdbc().queryForList("SELECT a.* FROM exam_platform.accounts a JOIN exam_platform.external_identities i ON a.id=i.account_id WHERE i.provider='GOOGLE' AND i.subject=?",subject);
+        Account account;
+        if(!linked.isEmpty()) {
+            var row=linked.get(0); account=new Account((String)row.get("id"),(String)row.get("email"),(String)row.get("name"),(String)row.get("role"));
+        } else {
+            var existing=repo.jdbc().queryForList("SELECT * FROM exam_platform.accounts WHERE email=?",address);
+            if(existing.isEmpty()) account=create(address,UUID.randomUUID().toString(),name==null||name.isBlank()?address:name,"TEACHER");
+            else { var row=existing.get(0); account=new Account((String)row.get("id"),(String)row.get("email"),(String)row.get("name"),(String)row.get("role")); }
+            repo.jdbc().update("INSERT INTO exam_platform.external_identities VALUES ('GOOGLE',?,?)",subject,account.id());
+        }
+        // Role grants come only from server configuration and Google's verified identity.
+        if(googleAdmins.contains(address)&&account.email().equals(address)&&!account.role().equals("ADMIN")) {
+            repo.jdbc().update("UPDATE exam_platform.accounts SET role='ADMIN' WHERE id=?",account.id());
+            account=new Account(account.id(),account.email(),account.name(),"ADMIN");
+        }
+        return session(account);
+    }
     private Map<String,Object> session(Account account) {
         byte[] random = new byte[32]; new SecureRandom().nextBytes(random);
         String token=Base64.getUrlEncoder().withoutPadding().encodeToString(random);
