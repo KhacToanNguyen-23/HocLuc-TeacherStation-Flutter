@@ -15,7 +15,10 @@ public class ExamController {
     private final ExamRepository repo;
     private final ExamAuth auth;
     private final SourceService sources;
-    public ExamController(ExamRepository repo,ExamAuth auth,SourceService sources) { this.repo=repo;this.auth=auth;this.sources=sources; }
+    private final MatrixService matrices;
+    private final PaperService papers;
+    private final ExportService exports;
+    public ExamController(ExamRepository repo,ExamAuth auth,SourceService sources,MatrixService matrices,PaperService papers,ExportService exports) { this.repo=repo;this.auth=auth;this.sources=sources;this.matrices=matrices;this.papers=papers;this.exports=exports; }
     private String teacher(HttpServletRequest request) { return auth.current(request).id(); }
     private String text(Map<String,?> map,String key) { Object v=map.get(key); return v==null?null:v.toString(); }
     private int integer(Map<String,?> map,String key) { try { return Integer.parseInt(String.valueOf(map.get(key))); } catch(Exception e) { throw ExamException.bad(key+" phải là số nguyên."); } }
@@ -51,4 +54,29 @@ public class ExamController {
             .filter(q->filter(filters,"examType",q.examType())&&filter(filters,"examVersion",q.examVersion())&&filter(filters,"section",q.section())&&filter(filters,"topic",q.topic())&&filter(filters,"skill",q.skill())&&filter(filters,"difficulty",q.difficulty())&&filter(filters,"sourceId",q.sourceId())&&filter(filters,"type",q.type())).toList();
     }
     private boolean filter(Map<String,String> filters,String key,String value) { String filter=filters.get(key); return filter==null||filter.isBlank()||filter.equals(value); }
+    @GetMapping("/matrices") public Object matrices() { return repo.all("matrix_versions",Matrix.class); }
+    @PostMapping("/admin/matrices") public Object matrix(@RequestBody Matrix matrix) { return matrices.create(matrix); }
+    @PostMapping("/papers/generate") public Object generate(@RequestBody PaperService.Generate input,HttpServletRequest request) { return papers.generate(teacher(request),input); }
+    @PostMapping("/papers/revision") public Object revision(@RequestBody PaperService.Revision input,HttpServletRequest request) { return papers.revision(teacher(request),input); }
+    @PostMapping("/papers/export") public ResponseEntity<?> exportBatch(@RequestBody Map<String,Object> input,HttpServletRequest request) throws IOException {
+        if(!(input.get("paperIds") instanceof List<?> ids)||ids.isEmpty()||ids.size()>20) throw ExamException.bad("Chọn 1–20 mã đề.");
+        String format=text(input,"format"),kind=text(input,"kind");
+        try(java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream(); java.util.zip.ZipOutputStream zip=new java.util.zip.ZipOutputStream(out)) {
+            Set<String> seen=new HashSet<>();
+            for(Object value:ids) {
+                Paper paper=papers.owned(String.valueOf(value),teacher(request)); if(!seen.add(paper.id())) continue;
+                byte[] bytes=exports.export(paper,format,kind); zip.putNextEntry(new java.util.zip.ZipEntry("exam-"+paper.id()+"-"+kind+"."+format)); zip.write(bytes); zip.closeEntry();
+            }
+            zip.finish(); return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/zip")).header("Content-Disposition","attachment; filename=exam-variants.zip").body(out.toByteArray());
+        }
+    }
+    @GetMapping("/papers") public Object papers(HttpServletRequest request) { return repo.owned("papers",teacher(request),Paper.class); }
+    @GetMapping("/papers/{id}") public Object paper(@PathVariable String id,HttpServletRequest request) { return papers.owned(id,teacher(request)); }
+    @PutMapping("/papers/{id}") public Object edit(@PathVariable String id,@RequestBody PaperService.Edit input,HttpServletRequest request) { return papers.edit(id,teacher(request),input); }
+    @PostMapping("/papers/{id}/publish") public Object publish(@PathVariable String id,HttpServletRequest request) { return papers.publish(id,teacher(request)); }
+    @GetMapping("/papers/{id}/export") public ResponseEntity<?> export(@PathVariable String id,@RequestParam(defaultValue="pdf") String format,@RequestParam(defaultValue="paper") String kind,HttpServletRequest request) throws IOException {
+        byte[] bytes=exports.export(papers.owned(id,teacher(request)),format,kind);
+        String mime=format.equals("pdf")?"application/pdf":"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(mime)).header("Content-Disposition","attachment; filename=exam-"+id+"-"+kind+"."+format).cacheControl(CacheControl.noStore()).body(bytes);
+    }
 }
