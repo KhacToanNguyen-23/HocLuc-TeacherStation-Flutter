@@ -3,7 +3,9 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  camera_windows
   desktop_drop
+  record_windows
   url_launcher_windows
   webview_windows
   wgc_broadcaster

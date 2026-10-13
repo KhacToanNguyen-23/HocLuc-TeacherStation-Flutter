@@ -16,16 +16,26 @@ class TeacherMediaService extends ChangeNotifier {
   }
 
   bool get isCameraActive =>
-      _deviceService.isCameraActive && !_deviceService.isCameraMuted;
+      !_deviceService.isCameraMuted &&
+      (_deviceService.isCameraActive || !_deviceService.isInitialized);
 
   bool get isMicActive =>
-      _deviceService.isMicActive && !_deviceService.isMicMuted;
+      !_deviceService.isMicMuted &&
+      (_deviceService.isMicActive || !_deviceService.isInitialized);
 
   bool get isInitialized => _isInitialized;
 
   double get audioLevel => _deviceService.currentAudioLevel;
 
   String? get errorMessage => null;
+
+  MediaDeviceService get deviceService => _deviceService;
+
+  List<String> get availableCameras =>
+      _deviceService.cameras.map((c) => c.label).toList();
+
+  List<String> get availableMicrophones =>
+      _deviceService.microphones.map((m) => m.label).toList();
 
   Future<void> initMedia() async {
     if (!_isInitialized) {
@@ -45,64 +55,17 @@ class TeacherMediaService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> switchCamera(String cameraName) async {
+    await _deviceService.switchCamera(cameraName);
+    notifyListeners();
+  }
+
+  Future<void> switchMicrophone(String micLabel) async {
+    _deviceService.switchMicrophone(micLabel);
+    notifyListeners();
+  }
+
   Widget buildCameraPreview() {
-    final active = isCameraActive;
-    return Container(
-      color: const Color(0xff12201a),
-      child: Center(
-        child: active
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: const Color(0x33d4e8a6),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0x55d4e8a6),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'GV',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xffd4e8a6),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Giáo viên giảng dạy (Live)',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xffa0b3a5),
-                    ),
-                  ),
-                ],
-              )
-            : const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.videocam_off_rounded,
-                    size: 36,
-                    color: Colors.white38,
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'Camera đã tắt',
-                    style: TextStyle(fontSize: 11, color: Colors.white54),
-                  ),
-                ],
-              ),
-      ),
-    );
+    return _deviceService.buildCameraWidget();
   }
 }

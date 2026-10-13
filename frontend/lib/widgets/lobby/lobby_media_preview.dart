@@ -44,6 +44,28 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
     'Virtual Audio Cable',
   ];
 
+  List<String> get _cameras {
+    final list = widget.mediaService.availableCameras;
+    if (list.isNotEmpty) {
+      if (!list.contains(widget.selectedCamera)) {
+        return [widget.selectedCamera, ...list];
+      }
+      return list;
+    }
+    return _availableCameras;
+  }
+
+  List<String> get _mics {
+    final list = widget.mediaService.availableMicrophones;
+    if (list.isNotEmpty) {
+      if (!list.contains(widget.selectedMic)) {
+        return [widget.selectedMic, ...list];
+      }
+      return list;
+    }
+    return _availableMics;
+  }
+
   @override
   Widget build(BuildContext context) {
     final mediaService = widget.mediaService;
@@ -129,6 +151,7 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                       listenable: mediaService,
                       builder: (context, _) {
                         final isMicOn = mediaService.isMicActive;
+                        final isTalking = isMicOn && mediaService.audioLevel > 0.05;
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -138,12 +161,24 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 80),
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: isMicOn ? AppColors.emerald500 : AppColors.rose500,
+                                  color: isMicOn
+                                      ? (isTalking ? const Color(0xFF4ADE80) : AppColors.emerald500)
+                                      : AppColors.rose500,
+                                  boxShadow: isTalking
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(0xFF4ADE80).withValues(alpha: 0.8),
+                                            blurRadius: 6,
+                                            spreadRadius: 2,
+                                          ),
+                                        ]
+                                      : null,
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -323,30 +358,48 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
               child: Column(
                 children: [
                   DropdownButtonFormField<String>(
-                    initialValue: widget.selectedCamera,
+                    initialValue: _cameras.contains(widget.selectedCamera)
+                        ? widget.selectedCamera
+                        : _cameras.first,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Thiết bị Camera',
                       contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       isDense: true,
                     ),
-                    items: _availableCameras.map((cam) => DropdownMenuItem(value: cam, child: Text(cam, style: const TextStyle(fontSize: 12)))).toList(),
+                    items: _cameras
+                        .map((cam) => DropdownMenuItem(
+                            value: cam,
+                            child: Text(cam, style: const TextStyle(fontSize: 12))))
+                        .toList(),
                     onChanged: (val) {
-                      if (val != null) widget.onCameraChanged(val);
+                      if (val != null) {
+                        widget.mediaService.switchCamera(val);
+                        widget.onCameraChanged(val);
+                      }
                     },
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    initialValue: widget.selectedMic,
+                    initialValue: _mics.contains(widget.selectedMic)
+                        ? widget.selectedMic
+                        : _mics.first,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Thiết bị Micro',
                       contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       isDense: true,
                     ),
-                    items: _availableMics.map((mic) => DropdownMenuItem(value: mic, child: Text(mic, style: const TextStyle(fontSize: 12)))).toList(),
+                    items: _mics
+                        .map((mic) => DropdownMenuItem(
+                            value: mic,
+                            child: Text(mic, style: const TextStyle(fontSize: 12))))
+                        .toList(),
                     onChanged: (val) {
-                      if (val != null) widget.onMicChanged(val);
+                      if (val != null) {
+                        widget.mediaService.switchMicrophone(val);
+                        widget.onMicChanged(val);
+                      }
                     },
                   ),
                 ],

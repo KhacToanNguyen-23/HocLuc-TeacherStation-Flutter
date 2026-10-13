@@ -1,6 +1,11 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
+import 'package:camera_platform_interface/camera_platform_interface.dart';
+import 'package:camera_windows/camera_windows.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:record/record.dart';
 import 'virtual_media_bridge.dart';
 
 enum MediaDeviceKind {
@@ -36,10 +41,15 @@ class MediaDeviceService extends ChangeNotifier {
   MediaDeviceInfo? _selectedCamera;
   MediaDeviceInfo? _selectedMicrophone;
 
+  int? _activeCameraId;
+  AudioRecorder? _audioRecorder;
+  StreamSubscription<Amplitude>? _amplitudeSubscription;
+
   bool _isCameraActive = false;
   bool _isMicActive = false;
   bool _isCameraMuted = false;
   bool _isMicMuted = false;
+  bool _isInitialized = false;
 
   double _currentAudioLevel = 0.0;
   final StreamController<double> _audioLevelController =
@@ -50,11 +60,13 @@ class MediaDeviceService extends ChangeNotifier {
   List<MediaDeviceInfo> get microphones => List.unmodifiable(_microphones);
   MediaDeviceInfo? get selectedCamera => _selectedCamera;
   MediaDeviceInfo? get selectedMicrophone => _selectedMicrophone;
+  int? get activeCameraId => _activeCameraId;
 
   bool get isCameraActive => _isCameraActive;
   bool get isMicActive => _isMicActive;
   bool get isCameraMuted => _isCameraMuted;
   bool get isMicMuted => _isMicMuted;
+  bool get isInitialized => _isInitialized;
   double get currentAudioLevel => _currentAudioLevel;
 
   Stream<double> get audioLevelStream => _audioLevelController.stream;
@@ -67,10 +79,114 @@ class MediaDeviceService extends ChangeNotifier {
     _cameras.clear();
     _microphones.clear();
 
-    if (mockCameras != null) {
-      _cameras.addAll(mockCameras);
-    } else {
-      // Default fallback / discovery list on Windows
+    if (mockCameras != null || mockMicrophones != null) {
+      // Testing / Mock mode
+      if (mockCameras != null) _cameras.addAll(mockCameras);
+      if (mockMicrophones != null) _microphones.addAll(mockMicrophones);
+
+      if (_cameras.isNotEmpty) {
+        _selectedCamera = _cameras.first;
+        _isCameraActive = true;
+      }
+      if (_microphones.isNotEmpty) {
+        _selectedMicrophone = _microphones.first;
+        _isMicActive = true;
+      }
+      _isInitialized = true;
+      notifyListeners();
+      return;
+    }
+
+    // Real Hardware Detection on Windows
+    await _initPhysicalHardware();
+    _isInitialized = true;
+    notifyListeners();
+  }
+
+  Future<void> _initPhysicalHardware() async {
+    // Register Windows Camera platform plugin if running on Windows desktop
+    if (!kIsWeb && Platform.isWindows) {
+      try {
+        CameraWindows.registerWith();
+      } catch (e) {
+        debugPrint('[MediaDeviceService] CameraWindows register: $e');
+      }
+    }
+
+    // 1. Physical Webcam Detection & Initialization
+    try {
+      final available = await CameraPlatform.instance.availableCameras();
+      if (available.isNotEmpty) {
+        _cameras.clear();
+        for (final cam in available) {
+          _cameras.add(
+            MediaDeviceInfo(
+              id: cam.name,
+              label: cam.name,
+              kind: MediaDeviceKind.videoInput,
+            ),
+          );
+        }
+        _selectedCamera = _cameras.first;
+        final firstCam = available.first;
+        final id = await CameraPlatform.instance.createCameraWithSettings(
+          firstCam,
+          const MediaSettings(resolutionPreset: ResolutionPreset.medium),
+        );
+        await CameraPlatform.instance.initializeCamera(id);
+        _activeCameraId = id;
+        _isCameraActive = true;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[MediaDeviceService] Physical Camera init error: $e');
+    }
+
+    // 2. Physical Microphone Detection & Audio Recording
+    try {
+      final recorder = _audioRecorder ??= AudioRecorder();
+      if (await recorder.hasPermission()) {
+        final devices = await recorder.listInputDevices();
+        if (devices.isNotEmpty) {
+          _microphones.clear();
+          for (final mic in devices) {
+            _microphones.add(
+              MediaDeviceInfo(
+                id: mic.id,
+                label: mic.label,
+                kind: MediaDeviceKind.audioInput,
+              ),
+            );
+          }
+          _selectedMicrophone = _microphones.first;
+        }
+
+        // Listen to live microphone amplitude (RMS dBFS)
+        _amplitudeSubscription?.cancel();
+        _amplitudeSubscription = recorder
+            .onAmplitudeChanged(const Duration(milliseconds: 60))
+            .listen((amp) {
+          if (_isMicMuted || !_isMicActive) return;
+          // amp.current ranges between -160 dBFS to 0 dBFS. Human voice is usually -50 to -5.
+          final normalized = ((amp.current + 45.0) / 45.0).clamp(0.0, 1.0);
+          simulateAudioLevel(normalized);
+        });
+
+        // Start stream to capture microphone input
+        final stream = await recorder.startStream(
+          const RecordConfig(encoder: AudioEncoder.pcm16bits),
+        );
+        stream.listen((bytes) {
+          feedAudioPcm(Uint8List.fromList(bytes));
+        });
+        _isMicActive = true;
+      }
+    } catch (e) {
+      debugPrint('[MediaDeviceService] Physical Mic init error: $e');
+    }
+
+    // Fallbacks if hardware detection returned empty
+    if (_cameras.isEmpty) {
       _cameras.add(
         const MediaDeviceInfo(
           id: 'default_camera',
@@ -78,11 +194,10 @@ class MediaDeviceService extends ChangeNotifier {
           kind: MediaDeviceKind.videoInput,
         ),
       );
+      _selectedCamera = _cameras.first;
+      _isCameraActive = true;
     }
-
-    if (mockMicrophones != null) {
-      _microphones.addAll(mockMicrophones);
-    } else {
+    if (_microphones.isEmpty) {
       _microphones.add(
         const MediaDeviceInfo(
           id: 'default_mic',
@@ -90,13 +205,6 @@ class MediaDeviceService extends ChangeNotifier {
           kind: MediaDeviceKind.audioInput,
         ),
       );
-    }
-
-    if (_cameras.isNotEmpty) {
-      _selectedCamera = _cameras.first;
-      _isCameraActive = true;
-    }
-    if (_microphones.isNotEmpty) {
       _selectedMicrophone = _microphones.first;
       _isMicActive = true;
     }
@@ -118,6 +226,22 @@ class MediaDeviceService extends ChangeNotifier {
     final found = _microphones.firstWhere(
       (m) => m.id == id,
       orElse: () => _selectedMicrophone ?? _microphones.first,
+    );
+    _selectedMicrophone = found;
+    _isMicActive = true;
+    notifyListeners();
+  }
+
+  void switchMicrophone(String micLabel) {
+    final found = _microphones.firstWhere(
+      (m) => m.label == micLabel || m.id == micLabel,
+      orElse: () => _microphones.isNotEmpty
+          ? _microphones.first
+          : const MediaDeviceInfo(
+              id: 'default_mic',
+              label: 'Microphone Mặc định',
+              kind: MediaDeviceKind.audioInput,
+            ),
     );
     _selectedMicrophone = found;
     _isMicActive = true;
@@ -156,6 +280,38 @@ class MediaDeviceService extends ChangeNotifier {
     }
   }
 
+  Future<void> switchCamera(String cameraName) async {
+    final target = _cameras.firstWhere(
+      (c) => c.label == cameraName || c.id == cameraName,
+      orElse: () => _cameras.isNotEmpty
+          ? _cameras.first
+          : const MediaDeviceInfo(id: 'default', label: 'Default', kind: MediaDeviceKind.videoInput),
+    );
+    _selectedCamera = target;
+
+    if (!kIsWeb && Platform.isWindows && _activeCameraId != null) {
+      try {
+        await CameraPlatform.instance.dispose(_activeCameraId!);
+        _activeCameraId = null;
+        final available = await CameraPlatform.instance.availableCameras();
+        final match = available.firstWhere(
+          (c) => c.name == target.id,
+          orElse: () => available.first,
+        );
+        final id = await CameraPlatform.instance.createCameraWithSettings(
+          match,
+          const MediaSettings(resolutionPreset: ResolutionPreset.medium),
+        );
+        await CameraPlatform.instance.initializeCamera(id);
+        _activeCameraId = id;
+        _isCameraActive = true;
+      } catch (e) {
+        debugPrint('[MediaDeviceService] switchCamera error: $e');
+      }
+    }
+    notifyListeners();
+  }
+
   /// Calculates normalized [0.0, 1.0] RMS volume level from 16-bit PCM little-endian byte array
   static double calculateRmsLevel(Uint8List pcm16Bytes) {
     if (pcm16Bytes.length < 2) return 0.0;
@@ -170,9 +326,12 @@ class MediaDeviceService extends ChangeNotifier {
     }
 
     final rms = math.sqrt(sumSquares / sampleCount);
-    // Normalize against full scale 32767
-    final normalized = (rms / 32767.0).clamp(0.0, 1.0);
-    return normalized;
+    if (rms < 5.0) return 0.0;
+
+    // Expand dynamic range so normal voice scales naturally to 20-75% on VU meter
+    final linear = (rms / 32767.0).clamp(0.0, 1.0);
+    final boosted = math.pow(linear, 0.45).toDouble().clamp(0.0, 1.0);
+    return boosted;
   }
 
   /// Ingest raw PCM samples and publish updated RMS level to stream
@@ -180,12 +339,14 @@ class MediaDeviceService extends ChangeNotifier {
     if (_isMicMuted || !_isMicActive) {
       _currentAudioLevel = 0.0;
       _audioLevelController.add(0.0);
+      notifyListeners();
       return;
     }
 
     final level = calculateRmsLevel(pcm16Bytes);
     _currentAudioLevel = level;
     _audioLevelController.add(level);
+    notifyListeners();
 
     if (VirtualMediaBridge().isStreaming) {
       VirtualMediaBridge().sendAudioChunk(pcm16Bytes);
@@ -205,21 +366,111 @@ class MediaDeviceService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Builds the visual preview widget for the active camera
+  Widget buildCameraWidget() {
+    if (_isCameraMuted) {
+      return Container(
+        color: const Color(0xFF0F172A),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.videocam_off_rounded, size: 40, color: Colors.white38),
+              SizedBox(height: 8),
+              Text(
+                'Camera đã tắt',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white54,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_activeCameraId != null) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: CameraPlatform.instance.buildPreview(_activeCameraId!),
+          ),
+        ),
+      );
+    }
+
+    // Default placeholder if hardware webcam is initializing or in headless tests
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: const Color(0x33d4e8a6),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0x55d4e8a6), width: 1.5),
+            ),
+            child: const Center(
+              child: Text(
+                'GV',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xffd4e8a6),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Giáo viên giảng dạy (Live)',
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: Color(0xffa0b3a5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @visibleForTesting
   void resetForTesting() {
     _cameras.clear();
     _microphones.clear();
     _selectedCamera = null;
     _selectedMicrophone = null;
+    _activeCameraId = null;
+    _amplitudeSubscription?.cancel();
+    final rec = _audioRecorder;
+    _audioRecorder = null;
+    rec?.dispose().catchError((_) {});
     _isCameraActive = false;
     _isMicActive = false;
     _isCameraMuted = false;
     _isMicMuted = false;
+    _isInitialized = false;
     _currentAudioLevel = 0.0;
   }
 
   @override
   void dispose() {
+    _amplitudeSubscription?.cancel();
+    final rec = _audioRecorder;
+    _audioRecorder = null;
+    rec?.dispose().catchError((_) {});
+    if (_activeCameraId != null) {
+      try {
+        CameraPlatform.instance.dispose(_activeCameraId!);
+      } catch (_) {}
+    }
     _audioLevelController.close();
     super.dispose();
   }

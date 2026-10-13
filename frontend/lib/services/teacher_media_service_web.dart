@@ -30,6 +30,12 @@ class TeacherMediaService extends ChangeNotifier {
   double get audioLevel => _audioLevel;
   String? get errorMessage => _errorMessage;
 
+  List<String> get availableCameras => const ['Webcam HD (Web Browser)'];
+  List<String> get availableMicrophones => const ['Microphone (Web Browser)'];
+
+  Future<void> switchCamera(String cameraName) async {}
+  Future<void> switchMicrophone(String micLabel) async {}
+
   Future<void> initMedia() async {
     if (_isInitialized && _stream != null) return;
     try {
