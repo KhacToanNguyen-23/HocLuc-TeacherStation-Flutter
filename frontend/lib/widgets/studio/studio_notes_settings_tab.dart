@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
+import 'audio_translation_studio_button.dart';
 
 class StudioNotesSettingsTab extends StatelessWidget {
   const StudioNotesSettingsTab({
@@ -85,70 +86,11 @@ class StudioNotesSettingsTab extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _statusLine(Icons.videocam_outlined, 'Camera bảng vẽ', '1080p WGC Sẵn sàng'),
-        _statusLine(Icons.mic_none_outlined, 'Micro thu âm', 'Khử ồn tự động'),
+        _statusLine(Icons.mic_none_outlined, 'Micro thu âm', 'Theo thiết bị'),
         const SizedBox(height: 16),
         const Divider(color: line),
         const SizedBox(height: 12),
-        _sectionLabel('ÂM THANH & API AI'),
-        const SizedBox(height: 10),
-        DropdownButtonFormField<String>(
-          initialValue: studio.microphone,
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Microphone'),
-          items: [
-            const DropdownMenuItem(
-              value: '',
-              child: Text('Chọn thiết bị mic', style: TextStyle(fontSize: 11)),
-            ),
-            ...studio.microphones.map(
-              (m) => DropdownMenuItem(
-                value: m['id'] as String,
-                child: Text(
-                  m['name'] as String,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11),
-                ),
-              ),
-            ),
-          ],
-          onChanged: (value) => studio.change(() => studio.microphone = value ?? ''),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: endpointController,
-          decoration: const InputDecoration(
-            labelText: 'API AI của bạn',
-            hintText: 'https://ai.example.vn',
-          ),
-          style: const TextStyle(fontSize: 12),
-          onChanged: (v) => studio.change(() => studio.endpoint = v),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: studio.language,
-          decoration: const InputDecoration(labelText: 'Ngôn ngữ đầu ra'),
-          items: ['English', 'Tiếng Việt', '日本語', '한국어', 'Français']
-              .map(
-                (s) => DropdownMenuItem(
-                  value: s,
-                  child: Text(s, style: const TextStyle(fontSize: 12)),
-                ),
-              )
-              .toList(),
-          onChanged: (s) {
-            if (s != null) studio.change(() => studio.language = s);
-          },
-        ),
-        const SizedBox(height: 10),
-        Material(
-          color: Colors.white,
-          child: SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Lọc tạp âm AI thông minh', style: TextStyle(fontSize: 11)),
-            value: studio.denoise,
-            onChanged: (v) => studio.change(() => studio.denoise = v),
-          ),
-        ),
+        AudioTranslationStudioButton(studio: studio),
         const SizedBox(height: 14),
         const Divider(color: line),
         const SizedBox(height: 12),

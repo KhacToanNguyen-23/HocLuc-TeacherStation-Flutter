@@ -22,6 +22,7 @@ class LocalService {
   final http.Client client;
   final String base;
   String? _token;
+  String? get companionToken => _token;
 
   Future<void> connect() async {
     final response = await client
@@ -79,6 +80,15 @@ class LocalService {
         .post(url, headers: headers, body: jsonEncode(data ?? {}))
         .timeout(const Duration(seconds: 10));
     if (response.statusCode != 200 && response.statusCode != 201) {
+      try {
+        final problem = jsonDecode(utf8.decode(response.bodyBytes));
+        if (problem is Map &&
+            (problem['error'] is String || problem['message'] is String)) {
+          throw StateError((problem['error'] ?? problem['message']) as String);
+        }
+      } on FormatException catch (_) {
+        // Keep the HTTP status when the server returned a non-JSON body.
+      }
       throw StateError('Java service: ${response.statusCode}');
     }
     return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;

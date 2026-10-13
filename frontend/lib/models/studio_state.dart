@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../services/local_service.dart';
+import '../services/audio_translation_service.dart';
+import '../services/teacher_media_service.dart';
 import '../services/desktop_lifecycle.dart';
 import '../services/plugin_manager.dart';
 import 'board_sticker.dart';
@@ -187,7 +189,19 @@ class ImportedDocument {
 }
 
 class StudioState extends ChangeNotifier {
-  StudioState({LocalService? service}) : service = service ?? LocalService();
+  StudioState({LocalService? service}) : service = service ?? LocalService() {
+    audio = AudioTranslationService(
+      service: LocalService(base: this.service.base),
+      manageRuntime: true,
+    );
+    TeacherMediaService().addListener(_syncAudioMute);
+    _syncAudioMute();
+  }
+  late final AudioTranslationService audio;
+  void _syncAudioMute() {
+    final muted = !TeacherMediaService().isMicActive;
+    if (audio.muted != muted) unawaited(audio.setMuted(muted));
+  }
   final LocalService service;
   bool online = false, loading = true, saving = false, dirty = false;
   String? error;
@@ -211,7 +225,7 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  bool reveal = false, denoise = true;
+  bool reveal = false, denoise = false;
   int _page = 0, seconds = 300;
   int get page => _page;
   set page(int p) {
@@ -1501,16 +1515,18 @@ class StudioState extends ChangeNotifier {
           page = page.clamp(0, pages.length - 1);
         }
         endpoint = config['endpoint'] as String? ?? '';
-        language = config['language'] as String? ?? 'English';
+        audio.restore(config);
+        language = audio.language == 'en' ? 'English' : 'Tiếng Việt';
         microphone = config['microphone'] as String? ?? '';
         if (microphone.isNotEmpty &&
             !microphones.any((m) => m['id'] == microphone)) {
           microphone = '';
         }
-        denoise = config['denoise'] as bool? ?? true;
+        denoise = false;
         dirty = false;
       }
       online = true;
+      unawaited(audio.refreshDevices());
     } catch (_) {
       online = false;
       error =
@@ -1936,6 +1952,7 @@ class StudioState extends ChangeNotifier {
       'language': language,
       'microphone': microphone,
       'denoise': denoise,
+      'audio': audio.preferences,
     };
     saving = true;
     notifyListeners();
@@ -1960,6 +1977,8 @@ class StudioState extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    TeacherMediaService().removeListener(_syncAudioMute);
+    audio.dispose();
     service.dispose();
     super.dispose();
   }
