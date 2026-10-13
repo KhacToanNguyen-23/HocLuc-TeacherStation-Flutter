@@ -65,12 +65,12 @@ class LocalService {
       try {
         await connect();
       } catch (e) {
-        debugPrint('[LocalService] Auto-connect before POST "$path" failed: $e');
+        debugPrint(
+          '[LocalService] Auto-connect before POST "$path" failed: $e',
+        );
       }
     }
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
     if (_token != null) {
       headers['X-Companion-Token'] = _token!;
     }
@@ -89,18 +89,18 @@ class LocalService {
     required String type,
   }) async {
     try {
-      final res = await client.post(
-        Uri.parse('$base/api/auth/otp/send'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'target': target, 'type': type}),
-      ).timeout(const Duration(seconds: 4));
+      final res = await client
+          .post(
+            Uri.parse('$base/api/auth/otp/send'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'target': target, 'type': type}),
+          )
+          .timeout(const Duration(seconds: 4));
       return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('[LocalService] sendOtp fallback to dev mode: $e');
       return {
-        'success': true,
-        'message': 'Đã gửi mã OTP đến $target (Mã thử nghiệm: 123456)',
-        'cooldown': 60,
+        'success': false,
+        'message': 'Không kết nối được backend. Vui lòng thử lại.',
       };
     }
   }
@@ -112,45 +112,32 @@ class LocalService {
     required String type,
   }) async {
     try {
-      final res = await client.post(
-        Uri.parse('$base/api/auth/otp/verify'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'target': target,
-          'otp': otp,
-          'name': name,
-          'type': type,
-        }),
-      ).timeout(const Duration(seconds: 4));
+      final res = await client
+          .post(
+            Uri.parse('$base/api/auth/otp/verify'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'target': target,
+              'otp': otp,
+              'name': name,
+              'type': type,
+            }),
+          )
+          .timeout(const Duration(seconds: 4));
       return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('[LocalService] verifyOtp fallback: $e');
-      if (otp == '123456') {
-        final isPhone = !target.contains('@');
-        return {
-          'success': true,
-          'token': 'dev-mock-jwt-token-hocluc',
-          'user': {
-            'target': target,
-            'name': name ?? (type == 'signup' ? 'Thầy Cô Mới' : 'Giáo viên'),
-            'role': 'TEACHER',
-            'phone': isPhone ? target : null,
-            'email': isPhone ? null : target,
-          },
-        };
-      }
       return {
         'success': false,
-        'message': 'Mã OTP không chính xác (Thử mã dev: 123456)',
+        'message': 'Không kết nối được backend. Vui lòng thử lại.',
       };
     }
   }
 
   Future<Map<String, dynamic>> getActiveClassroom() async {
     try {
-      final res = await client.get(
-        Uri.parse('$base/api/classroom/active'),
-      ).timeout(const Duration(seconds: 4));
+      final res = await client
+          .get(Uri.parse('$base/api/classroom/active'))
+          .timeout(const Duration(seconds: 4));
       if (res.statusCode == 200 && res.body.isNotEmpty) {
         return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
       }
@@ -162,13 +149,16 @@ class LocalService {
 
   Future<bool> endClassroom({String? classroomId}) async {
     try {
-      final res = await client.post(
-        Uri.parse('$base/api/classroom/end'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'classroomId': classroomId}),
-      ).timeout(const Duration(seconds: 4));
+      final res = await client
+          .post(
+            Uri.parse('$base/api/classroom/end'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'classroomId': classroomId}),
+          )
+          .timeout(const Duration(seconds: 4));
       if (res.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+        final data =
+            jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
         return data['success'] == true;
       }
     } catch (e) {
@@ -197,34 +187,18 @@ class LocalService {
     required String password,
   }) async {
     try {
-      final res = await client.post(
-        Uri.parse('$base/api/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'identifier': identifier,
-          'password': password,
-        }),
-      ).timeout(const Duration(seconds: 4));
+      final res = await client
+          .post(
+            Uri.parse('$base/api/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'identifier': identifier, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 4));
       return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('[LocalService] login fallback to dev mock: $e');
-      if (password.isNotEmpty) {
-        final isPhone = !identifier.contains('@');
-        return {
-          'success': true,
-          'token': 'dev-mock-jwt-token-hocluc',
-          'user': {
-            'target': identifier,
-            'name': identifier.contains('khactoan') ? 'Thầy Khắc Toàn' : 'Giáo viên',
-            'role': 'TEACHER',
-            'phone': isPhone ? identifier : null,
-            'email': isPhone ? null : identifier,
-          },
-        };
-      }
       return {
         'success': false,
-        'message': 'Vui lòng nhập mật khẩu hợp lệ',
+        'message': 'Không kết nối được backend. Vui lòng thử lại.',
       };
     }
   }
@@ -235,35 +209,22 @@ class LocalService {
     required String password,
   }) async {
     try {
-      final res = await client.post(
-        Uri.parse('$base/api/auth/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'target': target,
-          'otp': otp,
-          'password': password,
-        }),
-      ).timeout(const Duration(seconds: 4));
+      final res = await client
+          .post(
+            Uri.parse('$base/api/auth/register'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'target': target,
+              'otp': otp,
+              'password': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 4));
       return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('[LocalService] register fallback to dev mock: $e');
-      if (otp == '123456' || otp.length == 6) {
-        final isPhone = !target.contains('@');
-        return {
-          'success': true,
-          'token': 'dev-mock-jwt-token-hocluc',
-          'user': {
-            'target': target,
-            'name': isPhone ? 'Thầy/Cô ($target)' : target.split('@')[0],
-            'role': 'TEACHER',
-            'phone': isPhone ? target : null,
-            'email': isPhone ? null : target,
-          },
-        };
-      }
       return {
         'success': false,
-        'message': 'Mã OTP không chính xác (Thử mã dev: 123456)',
+        'message': 'Không kết nối được backend. Vui lòng thử lại.',
       };
     }
   }

@@ -107,6 +107,28 @@ void main() {
       client.dispose();
     },
   );
+  test('Backend failure never becomes a successful app login', () async {
+    final service = LocalService(
+      client: MockClient((_) async => throw http.ClientException('offline')),
+      base: 'http://test.local',
+    );
+    expect(
+      (await service.login(
+        identifier: 'teacher@test.vn',
+        password: 'password',
+      ))['success'],
+      isFalse,
+    );
+    expect(
+      (await service.register(
+        target: 'teacher@test.vn',
+        otp: '123456',
+        password: 'password',
+      ))['success'],
+      isFalse,
+    );
+    service.dispose();
+  });
   testWidgets(
     'Existing dashboard opens the native module with its current session',
     (tester) async {

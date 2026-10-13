@@ -33,6 +33,52 @@ void main() {
     await Future<void>.delayed(Duration.zero);
   });
 
+  testWidgets(
+    'Develop Google dialog completes app login without OAuth configuration',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      try {
+        for (final width in [375.0, 414.0, 768.0, 1024.0, 1440.0]) {
+          auth.signOut();
+          tester.view.physicalSize = Size(width, 1000);
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: () => GoogleWebviewLoginDialog.show(context),
+                    child: const Text('Google'),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.tap(find.text('Google'));
+          await tester.pumpAndSettle();
+          expect(
+            find.textContaining('Chưa cấu hình Google OAuth'),
+            findsNothing,
+          );
+          await tester.enterText(find.byType(TextField), 'teacher@test.vn');
+          await tester.tap(find.text('Xác nhận đăng nhập'));
+          await tester.pumpAndSettle();
+          expect(auth.hasLocalGoogleProfile, isTrue);
+          expect(auth.teacherEmail, 'teacher@test.vn');
+          expect(auth.appSessionToken, isNull);
+          expect(find.byType(GoogleWebviewLoginDialog), findsNothing);
+          expect(tester.takeException(), isNull);
+        }
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
+
   test(
     'Stored develop Google profile creates one session for concurrent exam calls',
     () async {
