@@ -12,13 +12,12 @@ import static vn.teaching.exam.ExamModels.*;
 @RestController
 @RequestMapping("/api/exams")
 public class ExamController {
-    private final ExamRepository repo;
-    private final ExamAuth auth;
-    private final SourceService sources;
-    private final MatrixService matrices;
-    private final PaperService papers;
-    private final ExportService exports;
-    public ExamController(ExamRepository repo,ExamAuth auth,SourceService sources,MatrixService matrices,PaperService papers,ExportService exports) { this.repo=repo;this.auth=auth;this.sources=sources;this.matrices=matrices;this.papers=papers;this.exports=exports; }
+    private final ExamRepository repo; private final ExamAuth auth; private final SourceService sources;
+    private final MatrixService matrices; private final PaperService papers; private final ExportService exports;
+    private final ResultService results; private final AnalyticsService analytics;
+    public ExamController(ExamRepository repo,ExamAuth auth,SourceService sources,MatrixService matrices,PaperService papers,ExportService exports,ResultService results,AnalyticsService analytics) {
+        this.repo=repo; this.auth=auth; this.sources=sources; this.matrices=matrices; this.papers=papers; this.exports=exports; this.results=results; this.analytics=analytics;
+    }
     private String teacher(HttpServletRequest request) { return auth.current(request).id(); }
     private String text(Map<String,?> map,String key) { Object v=map.get(key); return v==null?null:v.toString(); }
     private int integer(Map<String,?> map,String key) { try { return Integer.parseInt(String.valueOf(map.get(key))); } catch(Exception e) { throw ExamException.bad(key+" phải là số nguyên."); } }
@@ -79,4 +78,21 @@ public class ExamController {
         String mime=format.equals("pdf")?"application/pdf":"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(mime)).header("Content-Disposition","attachment; filename=exam-"+id+"-"+kind+"."+format).cacheControl(CacheControl.noStore()).body(bytes);
     }
+    @GetMapping("/classes") public Object classes(HttpServletRequest request) { return repo.owned("classes",teacher(request),SchoolClass.class); }
+    @PostMapping("/classes") public Object createClass(@RequestBody Map<String,String> input,HttpServletRequest request) { return results.createClass(teacher(request),input.get("name")); }
+    @GetMapping("/classes/{id}/students") public Object roster(@PathVariable String id,HttpServletRequest request) { return results.roster(id,teacher(request)); }
+    @PostMapping("/classes/{id}/members") public Object member(@PathVariable String id,@RequestBody Map<String,String> input,HttpServletRequest request) { results.member(id,input.get("studentId"),teacher(request)); return Map.of("success",true); }
+    @PostMapping("/classes/{id}/transfer") public Object transfer(@PathVariable String id,@RequestBody Map<String,String> input,HttpServletRequest request) { results.transfer(id,input.get("toClassId"),input.get("studentId"),teacher(request)); return Map.of("success",true); }
+    @GetMapping("/students") public Object students(HttpServletRequest request) { return repo.owned("students",teacher(request),Student.class); }
+    @PostMapping("/students") public Object student(@RequestBody Map<String,String> input,HttpServletRequest request) { return results.createStudent(teacher(request),input.get("code"),input.get("fullName"),input.get("notes"),input.get("classId")); }
+    @PutMapping("/students/{id}") public Object student(@PathVariable String id,@RequestBody Map<String,String> input,HttpServletRequest request) { return results.editStudent(id,teacher(request),input.get("fullName"),input.get("notes")); }
+    @PostMapping("/students/import/preview") public Object rosterPreview(@RequestParam MultipartFile file,@RequestParam String classId,HttpServletRequest request) throws IOException { return results.preview(teacher(request),null,classId,"ROSTER",file); }
+    @GetMapping("/sessions") public Object sessions(HttpServletRequest request) { return repo.owned("exam_sessions",teacher(request),Session.class); }
+    @PostMapping("/sessions") public Object session(@RequestBody Map<String,String> input,HttpServletRequest request) { return results.createSession(teacher(request),input.get("classId"),input.get("paperId"),input.get("title"),input.get("assessedAt")); }
+    @GetMapping("/sessions/{id}/results") public Object resultList(@PathVariable String id,HttpServletRequest request) { results.ownedSession(id,teacher(request)); return repo.owned("student_results",teacher(request),Result.class).stream().filter(r->r.sessionId().equals(id)).toList(); }
+    @PostMapping("/sessions/{id}/results") public Object result(@PathVariable String id,@RequestBody ResultService.ResultInput input,HttpServletRequest request) { return results.record(teacher(request),id,input); }
+    @PostMapping("/sessions/{id}/import/preview") public Object preview(@PathVariable String id,@RequestParam MultipartFile file,HttpServletRequest request) throws IOException { return results.preview(teacher(request),id,null,"RESULTS",file); }
+    @PostMapping("/imports/{id}/commit") public Object commit(@PathVariable String id,HttpServletRequest request) { return results.commit(teacher(request),id); }
+    @GetMapping("/analytics") public Object report(@RequestParam(required=false) String classId,@RequestParam(required=false) String studentId,@RequestParam(required=false) String examType,HttpServletRequest request) { return analytics.analyze(teacher(request),classId,studentId,examType); }
+    @GetMapping("/analytics/export") public ResponseEntity<?> reportExport(@RequestParam(required=false) String classId,@RequestParam(required=false) String studentId,@RequestParam(required=false) String examType,HttpServletRequest request) { return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/csv;charset=UTF-8")).header("Content-Disposition","attachment; filename=practice-results.csv").body(analytics.csv(analytics.analyze(teacher(request),classId,studentId,examType))); }
 }
