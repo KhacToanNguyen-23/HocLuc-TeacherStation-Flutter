@@ -130,6 +130,8 @@ class _AuthFormCardState extends State<AuthFormCard> {
           name: displayName,
           email: email,
           phone: phone,
+          teacherId: user['id'] as String?,
+          role: user['role'] as String? ?? 'TEACHER',
         );
         widget.onSuccess?.call();
       } else {
@@ -218,6 +220,8 @@ class _AuthFormCardState extends State<AuthFormCard> {
           name: displayName,
           email: isPhone ? null : target,
           phone: isPhone ? target : null,
+          teacherId: user['id'] as String?,
+          role: user['role'] as String? ?? 'TEACHER',
         );
         widget.onSuccess?.call();
       } else {

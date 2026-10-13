@@ -10,6 +10,7 @@ import '../screens/classroom_lobby_screen.dart';
 import '../services/local_service.dart';
 import '../services/meet_automation_service.dart';
 import '../widgets/stage_container.dart';
+import '../widgets/exams/exam_studio_button.dart';
 import '../widgets/studio/studio_drawing_toolbar.dart';
 import '../widgets/studio/studio_inspector_panel.dart';
 import '../widgets/studio/studio_lessons_drawer.dart';
@@ -531,6 +532,7 @@ class _StudioScreenState extends State<StudioScreen> {
           child: Focus(
             autofocus: true,
             child: Scaffold(
+          floatingActionButton: const ExamStudioButton(),
           body: LayoutBuilder(
             builder: (context, box) {
               final hasInspector = showInspector && box.maxWidth >= 1250;

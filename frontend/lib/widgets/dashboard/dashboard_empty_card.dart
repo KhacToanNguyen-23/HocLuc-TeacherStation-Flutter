@@ -77,7 +77,8 @@ class DashboardEmptyCard extends StatelessWidget {
                         value: dropdownValue ?? dropdownItems!.first,
                         isDense: true,
                         icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF6B7280)),
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF374151)),
+                        style: TextStyle(fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
+                          fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF374151)),
                         items: dropdownItems!.map((item) {
                           return DropdownMenuItem<String>(
                             value: item,
