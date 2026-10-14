@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /** Server-side code flow: state, PKCE and one-time polling proof, no email-only login. */
-@Service
+@Service("examGoogleOAuthService")
 public class GoogleOAuthService {
     private static final class Flow {
         final String verifier,proofHash; final long expires; final AtomicBoolean callback=new AtomicBoolean();
