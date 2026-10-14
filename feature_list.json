@@ -562,8 +562,8 @@
   {
     "id": "phase-05-merge-thinh-local-ai-speech",
     "title": "Merge feat/local-ai-speech-translation (Nguyen Duc Thinh)",
-    "status": "active",
-    "evidence": "",
+    "status": "passing",
+    "evidence": "Merged origin/feat/local-ai-speech-translation; synchronized CMake & generated_plugin_registrant; 8/8 audio translation tests passed.",
     "user_visible_behavior": "Local AI offline speech recognition and English-Vietnamese live subtitle controls are integrated with native C++ WASAPI bridge.",
     "verification_command": "flutter test test/audio_translation_test.dart test/audio_translation_preview_test.dart",
     "notes": "Covers stories: P1",
