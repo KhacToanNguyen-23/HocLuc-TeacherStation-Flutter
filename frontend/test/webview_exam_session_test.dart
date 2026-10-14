@@ -53,6 +53,7 @@ void main() {
         'auth_name': 'Giáo viên',
       });
       await auth.init();
+      final providerToken = auth.accessToken;
       int bootstrap = 0, sessions = 0;
       final api = ExamApi(
         base: 'http://127.0.0.1:47831',
@@ -75,7 +76,7 @@ void main() {
       await Future.wait([api.get('dashboard'), api.get('analytics')]);
       expect(bootstrap, 1);
       expect(sessions, 1);
-      expect(auth.accessToken, ExamSessionService.webviewSessionMarker);
+      expect(auth.accessToken, providerToken);
       expect(auth.teacherEmail, 'teacher@test.vn');
       expect(ExamSessionService().appSessionToken, 'local-session');
       expect(ExamSessionService().teacherId, 'local-teacher');
