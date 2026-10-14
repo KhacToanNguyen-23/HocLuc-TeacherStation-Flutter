@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:teaching_companion/widgets/app_capture_surface.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +13,61 @@ import 'package:wgc_broadcaster/wgc_broadcaster.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('wgc_broadcaster');
+  setUp(() => CameraBroadcastService().setCaptureArea(CameraCaptureArea.board));
+  testWidgets('capture area includes app chrome only in entire-app mode', (
+    tester,
+  ) async {
+    final studio = StudioState();
+    final service = CameraBroadcastService();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: SizedBox(
+            width: 400,
+            height: 200,
+            child: AppCaptureSurface(
+              child: Column(
+                children: [
+                  const SizedBox(
+                    height: 40,
+                    child: ColoredBox(
+                      color: Colors.red,
+                      child: SizedBox.expand(),
+                    ),
+                  ),
+                  Expanded(
+                    child: PresentationSurface(
+                      studio: studio,
+                      child: const ColoredBox(color: Colors.green),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    for (final area in CameraCaptureArea.values) {
+      service.setCaptureArea(area);
+      await tester.pump();
+      final boundary =
+          service.captureSourceForTesting!.currentContext!.findRenderObject()!
+              as RenderRepaintBoundary;
+      final image = await tester.runAsync(() => boundary.toImage());
+      final pixels = await tester.runAsync(
+        () => image!.toByteData(format: ui.ImageByteFormat.rawRgba),
+      );
+      expect(image!.width, 400);
+      expect(image.height, area == CameraCaptureArea.app ? 200 : 160);
+      expect(pixels!.getUint8(0), area == CameraCaptureArea.app ? 244 : 76);
+      expect(pixels.getUint8(1), area == CameraCaptureArea.app ? 67 : 175);
+      image.dispose();
+    }
+    await tester.pumpWidget(const SizedBox.shrink());
+    studio.dispose();
+  });
   tearDown(() async {
     await CameraBroadcastService().stop();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

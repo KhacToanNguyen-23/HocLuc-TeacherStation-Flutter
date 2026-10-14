@@ -6,7 +6,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:wgc_broadcaster/wgc_broadcaster.dart';
 
-/// Captures only the presentation layer, never the application window.
+enum CameraCaptureArea { board, app }
+
+/// Captures the presentation or app content, never other desktop windows.
 class CameraBroadcastService extends ChangeNotifier {
   static final CameraBroadcastService _instance = CameraBroadcastService._();
   factory CameraBroadcastService() => _instance;
@@ -14,6 +16,32 @@ class CameraBroadcastService extends ChangeNotifier {
   static const width = 1280;
   static const height = 720;
   GlobalKey? _source;
+  GlobalKey? _appSource;
+  CameraCaptureArea _captureArea = CameraCaptureArea.app;
+  int _areaRevision = 0;
+  CameraCaptureArea get captureArea => _captureArea;
+  GlobalKey? get _selectedSource =>
+      _captureArea == CameraCaptureArea.app ? _appSource : _source;
+  @visibleForTesting
+  GlobalKey? get captureSourceForTesting => _selectedSource;
+  void setCaptureArea(CameraCaptureArea area) {
+    if (_captureArea == area) return;
+    _captureArea = area;
+    _areaRevision++;
+    notifyListeners();
+  }
+
+  void attachApp(GlobalKey key) {
+    _appSource = key;
+  }
+
+  void detachApp(GlobalKey key) {
+    if (_appSource == key) {
+      _appSource = null;
+      unawaited(stop());
+    }
+  }
+
   Timer? _timer;
   bool _capturing = false;
   bool _running = false;
@@ -62,6 +90,9 @@ class CameraBroadcastService extends ChangeNotifier {
       if (_source?.currentContext == null) {
         throw StateError('Mở bảng dạy trước khi phát camera ảo.');
       }
+      if (_selectedSource?.currentContext == null) {
+        throw StateError('Khung ứng dụng chưa sẵn sàng.');
+      }
       if (!await WgcBroadcaster.startBroadcast()) {
         throw StateError('Không khởi động được camera ảo.');
       }
@@ -104,12 +135,18 @@ class CameraBroadcastService extends ChangeNotifier {
     try {
       await SchedulerBinding.instance.endOfFrame;
       if (!_running || generation != _generation) return;
+      final areaRevision = _areaRevision;
       final boundary =
-          _source?.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+          _selectedSource?.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
       if (boundary == null || !boundary.attached || boundary.size.isEmpty) {
         throw StateError('Khung trình bày không còn khả dụng.');
       }
-      source = await boundary.toImage(pixelRatio: width / boundary.size.width);
+      final ratio = (width / boundary.size.width).clamp(
+        0.0,
+        height / boundary.size.height,
+      );
+      source = await boundary.toImage(pixelRatio: ratio);
       if (source.width == width && source.height == height) {
         // Avoid a second GPU render/readback for the normal 16:9 stage.
         frame = source;
@@ -145,7 +182,12 @@ class CameraBroadcastService extends ChangeNotifier {
         }
       }
       final bytes = await frame.toByteData(format: ui.ImageByteFormat.rawRgba);
-      if (!_running || generation != _generation || bytes == null) return;
+      if (!_running ||
+          generation != _generation ||
+          areaRevision != _areaRevision ||
+          bytes == null) {
+        return;
+      }
       final consumed = await WgcBroadcaster.sendFrame(
         width,
         height,
