@@ -74,7 +74,13 @@ def test_dependency_grammar_patterns():
     rule_names2 = [nlp.vocab.strings[m[0]] for m in matches2]
     assert "RELATIVE_CLAUSE" in rule_names2, f"Expected RELATIVE_CLAUSE in {rule_names2}"
 
-    print("PASS: Dependency grammar matchers (Passive Voice & Relative Clause) verified.")
+    # 3. Gerund after Preposition: "He succeeded in passing the entrance exam."
+    doc3 = nlp("He succeeded in passing the entrance exam instead of giving up.")
+    matches3 = dep_matcher(doc3)
+    rule_names3 = [nlp.vocab.strings[m[0]] for m in matches3]
+    assert "GERUND_AFTER_PREP" in rule_names3, f"Expected GERUND_AFTER_PREP in {rule_names3}"
+
+    print("PASS: Dependency grammar matchers (Passive Voice, Relative Clause & Gerund after Prep) verified.")
 
 if __name__ == "__main__":
     test_datasets_load()

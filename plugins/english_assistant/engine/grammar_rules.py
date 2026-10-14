@@ -31,8 +31,22 @@ def setup_dependency_grammar_matcher(nlp) -> DependencyMatcher:
     ]
     dep_matcher.add("PASSIVE_VOICE", [passive_pattern])
 
-    # 2. Relative Clause: Noun with relative clause dependent (relcl)
-    relcl_pattern = [
+    # 2. Relative Clause:
+    # A: Relative pronoun as dependent of relcl verb (e.g. "who spend", "which caused")
+    relcl_pronoun_pattern = [
+        {
+            "RIGHT_ID": "rel_verb",
+            "RIGHT_ATTRS": {"DEP": "relcl"}
+        },
+        {
+            "LEFT_ID": "rel_verb",
+            "REL_OP": ">",
+            "RIGHT_ID": "rel_pronoun",
+            "RIGHT_ATTRS": {"LOWER": {"IN": ["who", "whom", "which", "that", "whose", "where", "when", "why"]}}
+        }
+    ]
+    # B: Fallback for contact relative clauses (omitted pronoun, e.g. "the book I read")
+    relcl_omitted_pattern = [
         {
             "RIGHT_ID": "noun_anchor",
             "RIGHT_ATTRS": {"POS": {"IN": ["NOUN", "PROPN", "PRON"]}}
@@ -44,7 +58,22 @@ def setup_dependency_grammar_matcher(nlp) -> DependencyMatcher:
             "RIGHT_ATTRS": {"DEP": "relcl"}
         }
     ]
-    dep_matcher.add("RELATIVE_CLAUSE", [relcl_pattern])
+    dep_matcher.add("RELATIVE_CLAUSE", [relcl_pronoun_pattern, relcl_omitted_pattern])
+
+    # 3. Gerund after Preposition (Prep + V-ing, e.g. "in passing", "of giving")
+    gerund_prep_pattern = [
+        {
+            "RIGHT_ID": "prep_anchor",
+            "RIGHT_ATTRS": {"POS": "ADP", "DEP": {"IN": ["prep", "cc"]}}
+        },
+        {
+            "LEFT_ID": "prep_anchor",
+            "REL_OP": ">",
+            "RIGHT_ID": "gerund_verb",
+            "RIGHT_ATTRS": {"DEP": "pcomp", "TAG": "VBG"}
+        }
+    ]
+    dep_matcher.add("GERUND_AFTER_PREP", [gerund_prep_pattern])
 
     return dep_matcher
 
@@ -228,6 +257,13 @@ GRAMMAR_METADATA: Dict[str, Dict[str, str]] = {
         "description": "Cấu trúc: Mệnh đề phụ bổ nghĩa cho danh từ đứng trước bằng đại từ quan hệ (who, whom, which, that).",
         "note": "Cấu trúc câu phức phân hóa cao trong phần nối câu và tìm lỗi sai.",
         "cloze_target": "relative",
+        "color": "#89b4fa",
+    },
+    "GERUND_AFTER_PREP": {
+        "name": "Danh động từ sau giới từ (Prep + V-ing)",
+        "description": "Cấu trúc: Giới từ (in/of/at/about/by...) đi kèm động từ dạng V-ing đóng vai trò tân ngữ giới từ.",
+        "note": "Kiến thức ngữ pháp phân loại hay gặp trong các câu trắc nghiệm chia dạng thức từ.",
+        "cloze_target": "gerund",
         "color": "#89b4fa",
     },
 }
