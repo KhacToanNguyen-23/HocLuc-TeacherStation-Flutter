@@ -5,6 +5,8 @@ public class Classroom {
     private String teacherId;
     private String title;
     private String meetingUrl;
+    private String spaceName;
+    private String accessType;
     private String status;
     private long startedAt;
     private Long endedAt;
@@ -12,6 +14,7 @@ public class Classroom {
     private long createdAt;
     private boolean success;
     private String error;
+    private boolean requiresGoogleReconnect;
 
     public Classroom() {
         this.createdAt = System.currentTimeMillis();
@@ -46,6 +49,11 @@ public class Classroom {
     public String getMeetingUrl() { return meetingUrl; }
     public void setMeetingUrl(String meetingUrl) { this.meetingUrl = meetingUrl; }
 
+    public String getSpaceName() { return spaceName; }
+    public void setSpaceName(String spaceName) { this.spaceName = spaceName; }
+    public String getAccessType() { return accessType; }
+    public void setAccessType(String accessType) { this.accessType = accessType; }
+
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
@@ -65,5 +73,7 @@ public class Classroom {
     public void setSuccess(boolean success) { this.success = success; }
 
     public String getError() { return error; }
+    public boolean isRequiresGoogleReconnect() { return requiresGoogleReconnect; }
+    public void setRequiresGoogleReconnect(boolean value) { requiresGoogleReconnect = value; }
     public void setError(String error) { this.error = error; }
 }

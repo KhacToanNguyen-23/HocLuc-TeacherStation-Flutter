@@ -23,22 +23,44 @@ public class ClassroomService {
     private final Object fileLock = new Object();
     private final Gson gson;
 
-    public ClassroomService(Path dataDirectory, Gson gson) {
+    public ClassroomService(Path dataDirectory, Gson gson, GoogleMeetService googleMeetService) {
         this.dataDirectory = dataDirectory;
         this.gson = gson;
-        this.googleMeetService = new GoogleMeetService();
+        this.googleMeetService = googleMeetService;
     }
 
     public Classroom createClassroom(String directUrl, String accessToken, String title, String teacherId) {
         String meetUrl = directUrl;
+        GoogleMeetService.MeetSpace space = null;
 
         // Nếu chưa có link trực tiếp mà có token Google, gọi GoogleMeetService
         if ((meetUrl == null || meetUrl.isBlank()) && accessToken != null && !accessToken.isBlank()) {
-            meetUrl = googleMeetService.createOfficialMeetRoom(accessToken, title);
+            try {
+                space = googleMeetService.createOpenSpace(accessToken);
+                meetUrl = space.meetingUri();
+            } catch (IllegalStateException e) {
+                Classroom error = Classroom.error(e.getMessage());
+                error.setRequiresGoogleReconnect(e instanceof GoogleMeetService.AuthorizationRequiredException);
+                return error;
+            }
         }
 
         if (meetUrl != null && !meetUrl.isBlank()) {
+            if (!meetUrl.matches("https://meet\\.google\\.com/[a-z]{3}-[a-z]{4}-[a-z]{3}")) {
+                return Classroom.error("Đường dẫn Google Meet không hợp lệ.");
+            }
+            if (space == null) {
+                JsonObject active = getActiveClassroom();
+                if (active.has("meetingUrl") && meetUrl.equals(active.get("meetingUrl").getAsString())
+                        && active.has("status") && "ONGOING".equals(active.get("status").getAsString())) {
+                    return gson.fromJson(active, Classroom.class);
+                }
+            }
             Classroom classroom = new Classroom(true, meetUrl, "ONGOING");
+            if (space != null) {
+                classroom.setSpaceName(space.name());
+                classroom.setAccessType(space.accessType());
+            }
             classroom.setId("cls_" + UUID.randomUUID().toString().substring(0, 8));
             classroom.setTitle(title != null && !title.isBlank() ? title : "Phòng học trực tuyến");
             classroom.setTeacherId(teacherId != null && !teacherId.isBlank() ? teacherId : "teacher_default");

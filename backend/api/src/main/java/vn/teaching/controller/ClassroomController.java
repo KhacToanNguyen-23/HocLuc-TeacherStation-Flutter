@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.teaching.model.Classroom;
 import vn.teaching.service.ClassroomService;
+import vn.teaching.service.GoogleOAuthService;
 
 import java.util.Map;
 
@@ -13,15 +14,26 @@ import java.util.Map;
 @RequestMapping("/api/classroom")
 public class ClassroomController {
     private final ClassroomService classroomService;
+    private final GoogleOAuthService googleOAuthService;
 
-    public ClassroomController(ClassroomService classroomService) {
+    public ClassroomController(ClassroomService classroomService, GoogleOAuthService googleOAuthService) {
         this.classroomService = classroomService;
+        this.googleOAuthService = googleOAuthService;
     }
 
     @PostMapping("/create")
     public ResponseEntity<Classroom> handleCreate(@RequestBody(required = false) Map<String, Object> req) {
         String directUrl = req != null && req.get("directUrl") != null ? req.get("directUrl").toString() : null;
-        String token = req != null && req.get("accessToken") != null ? req.get("accessToken").toString() : null;
+        String token = null;
+        if (directUrl == null || directUrl.isBlank()) {
+            String sessionId = req != null && req.get("googleSessionId") != null ? req.get("googleSessionId").toString() : null;
+            try { token = googleOAuthService.accessToken(sessionId); }
+            catch (IllegalStateException e) {
+                Classroom error = Classroom.error(e.getMessage());
+                error.setRequiresGoogleReconnect(true);
+                return ResponseEntity.ok(error);
+            }
+        }
         String title = req != null && req.get("title") != null ? req.get("title").toString() : null;
         String teacherId = req != null && req.get("teacherId") != null ? req.get("teacherId").toString() : null;
 
