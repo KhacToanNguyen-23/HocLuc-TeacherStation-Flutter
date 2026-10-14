@@ -552,7 +552,7 @@
   {
     "id": "phase-04-merge-thinh-exam-platform",
     "title": "Merge feat/vact-hsa-exam-platform (Nguyen Duc Thinh)",
-    "status": "not_started",
+    "status": "active",
     "evidence": "",
     "user_visible_behavior": "V-ACT/HSA exam platform and question bank are accessible from Studio Document Drawer with Flyway DB migrations.",
     "verification_command": "flutter test test/exam_integration_test.dart test/webview_exam_session_test.dart",
