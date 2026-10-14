@@ -35,8 +35,9 @@ void main() {
     // Initial tab 0: Trực tiếp
     expect(find.text('Trực tiếp'), findsOneWidget);
     expect(find.text('Cài đặt & Ghi chú'), findsOneWidget);
-    expect(find.text('Đang kết nối Google Meet'), findsOneWidget);
-    expect(find.text('LIVE'), findsOneWidget);
+    expect(find.text('Phòng Google Meet'), findsOneWidget);
+    expect(find.text('MEET'), findsOneWidget);
+    expect(find.text('Mở panel Google Meet'), findsOneWidget);
     expect(find.text('Tắt tiếng cả lớp'), findsOneWidget);
 
     // Test send message via input

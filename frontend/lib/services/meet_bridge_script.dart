@@ -124,11 +124,13 @@ class MeetBridgeScript {
     attributes: true
   });
 
-  var joinInterval = setInterval(function() {
-    if (attemptAutoJoin()) {
-      clearInterval(joinInterval);
-    }
-  }, 1000);
+  if (!window.__meetManualJoin) {
+    var joinInterval = setInterval(function() {
+      if (attemptAutoJoin()) {
+        clearInterval(joinInterval);
+      }
+    }, 1000);
+  }
 
   window.MeetBridge = {
     admitAll: function() {

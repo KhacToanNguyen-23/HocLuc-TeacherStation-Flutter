@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../constants/theme.dart';
 import '../services/google_meet_auth_service.dart';
@@ -10,6 +11,8 @@ import '../services/url_opener.dart';
 import '../widgets/lobby/lobby_header.dart';
 import '../widgets/lobby/lobby_media_preview.dart';
 import '../widgets/lobby/lobby_meet_room_card.dart';
+import '../widgets/auth/google_oauth_connect_dialog.dart';
+import '../widgets/studio/google_meet_panel_dialog.dart';
 import 'studio_screen.dart';
 
 /// Classroom Lobby screen coordinating hardware pre-flight checks,
@@ -87,6 +90,9 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
 
     if (_currentMeetingUrl != null) {
       _syncClassroomToBackend(_currentMeetingUrl!);
+      if (_meetService.accessType == 'OPEN') {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _showMeetPanel());
+      }
     }
   }
 
@@ -114,14 +120,21 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
   }
 
   Future<void> _syncClassroomToBackend(String meetingUrl) async {
+    if (_meetService.classroomId != null &&
+        _meetService.meetingUrl == meetingUrl) {
+      return;
+    }
     try {
       final local = LocalService();
-      await local.post('classroom/create', data: {
-        'directUrl': meetingUrl,
-        'title': _titleController.text.trim(),
-        'teacherName': _authService.teacherName ?? 'Giáo viên',
-        'teacherEmail': _authService.teacherEmail,
-      });
+      await local.post(
+        'classroom/create',
+        data: {
+          'directUrl': meetingUrl,
+          'title': _titleController.text.trim(),
+          'teacherName': _authService.teacherName ?? 'Giáo viên',
+          'teacherEmail': _authService.teacherEmail,
+        },
+      );
     } catch (e) {
       debugPrint('[ClassroomLobby] Sync classroom to backend error: $e');
     }
@@ -152,6 +165,12 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     );
   }
 
+  void _showMeetPanel() {
+    if (mounted && !kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+      unawaited(GoogleMeetPanelDialog.show(context, meetService: _meetService));
+    }
+  }
+
   Future<void> _handleCancelLobby() async {
     try {
       final local = LocalService();
@@ -166,24 +185,46 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
   }
 
   Future<void> _handleGenerateNewMeetRoom() async {
+    if (_isCreatingMeet) return;
+    if (!_authService.isGoogleAuthenticated) {
+      final connected = await GoogleOAuthConnectDialog.show(
+        context,
+        authService: _authService,
+      );
+      if (connected != true || !mounted) return;
+    }
     setState(() => _isCreatingMeet = true);
     try {
-      final realUrl = await _meetService.generateAndJoinRealMeetRoom();
+      await _meetService.createClassroom(title: _titleController.text.trim());
+      if (!mounted) return;
+      final realUrl = _meetService.status == MeetStatus.ready
+          ? _meetService.meetingUrl
+          : null;
 
       if (realUrl != null && isRealGoogleMeetUrl(realUrl)) {
         final formatted = extractRealGoogleMeetUrl(realUrl)!;
         setState(() => _currentMeetingUrl = formatted);
         _meetService.setMeetingUrl(formatted);
-        await _syncClassroomToBackend(formatted);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Đã kết nối phòng Google Meet thật: $formatted'),
+              content: Text(
+                'Đã tạo phòng cho học sinh vào trực tiếp: $formatted',
+              ),
               backgroundColor: const Color(0xFF16A34A),
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
+        _showMeetPanel();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _meetService.errorMessage ?? 'Không tạo được phòng Google Meet.',
+            ),
+          ),
+        );
       }
     } catch (e) {
       debugPrint('[ClassroomLobby] Error creating real meet: $e');

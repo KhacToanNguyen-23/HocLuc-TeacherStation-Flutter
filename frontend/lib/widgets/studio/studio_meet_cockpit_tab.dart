@@ -5,6 +5,7 @@ import '../../models/meet_events.dart';
 import '../../services/google_meet_auth_service.dart';
 import '../../services/meet_automation_service.dart';
 import '../../services/url_opener.dart';
+import 'google_meet_panel_dialog.dart';
 
 class StudioMeetCockpitTab extends StatefulWidget {
   const StudioMeetCockpitTab({
@@ -140,7 +141,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                     Expanded(
                       child: Text(
                         hasRoom
-                            ? 'Đang kết nối Google Meet'
+                            ? 'Phòng Google Meet'
                             : 'Chưa khởi tạo phòng học',
                         style: TextStyle(
                           fontSize: 12,
@@ -157,7 +158,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
-                          'LIVE',
+                          'MEET',
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
@@ -205,6 +206,16 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                       ),
                     ],
                   ),
+                  if (meetService.accessType == 'OPEN') ...[
+                    const SizedBox(height: 6),
+                    const Text('Đã tạo phòng cho học sinh vào bằng link, không cần duyệt.', style: TextStyle(fontSize: 11)),
+                  ],
+                  const SizedBox(height: 8),
+                  SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                    onPressed: () => GoogleMeetPanelDialog.show(context, meetService: meetService),
+                    icon: const Icon(Icons.open_in_browser, size: 16),
+                    label: const Text('Mở panel Google Meet', style: TextStyle(fontSize: 12)),
+                  )),
                 ],
               ],
             ),

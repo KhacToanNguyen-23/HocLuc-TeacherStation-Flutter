@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../services/google_meet_auth_service.dart';
 import '../../services/local_service.dart';
-import 'google_webview_login_dialog.dart';
+import 'google_oauth_connect_dialog.dart';
 
 /// Reusable Authentication Form Card handling Password Login, OTP Signup,
 /// Google Single Sign-On and Quick Demo Teacher Login.
@@ -245,12 +245,11 @@ class _AuthFormCardState extends State<AuthFormCard> {
 
 
   Future<void> _handleGoogleSignInAction() async {
-    final result = await GoogleWebviewLoginDialog.show(
+    final result = await GoogleOAuthConnectDialog.show(
       context,
       authService: _authService,
-      initialUrl: 'https://accounts.google.com/signin',
     );
-    if ((result != null || _authService.isSignedIn) && mounted) {
+    if (result == true && _authService.isSignedIn && mounted) {
       widget.onSuccess?.call();
     }
   }

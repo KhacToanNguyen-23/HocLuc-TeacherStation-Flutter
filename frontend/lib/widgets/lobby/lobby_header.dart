@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../services/google_meet_auth_service.dart';
-import '../auth/google_webview_login_dialog.dart';
+import '../auth/google_oauth_connect_dialog.dart';
 
 /// Top AppBar header for ClassroomLobbyScreen with Lobby tag and Google account pill.
 class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -67,12 +67,12 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
           listenable: authService,
           builder: (context, _) {
             final isSignedIn = authService.isGoogleAuthenticated;
-            final email = authService.teacherEmail ?? 'toan.nguyen@fpt.edu.vn';
+            final email = authService.googleEmail ?? '';
 
             return Padding(
               padding: const EdgeInsets.only(right: 16),
               child: InkWell(
-                onTap: () => GoogleWebviewLoginDialog.show(context, authService: authService),
+                onTap: () => GoogleOAuthConnectDialog.show(context, authService: authService),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

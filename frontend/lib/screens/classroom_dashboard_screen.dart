@@ -7,6 +7,7 @@ import '../widgets/dashboard/dashboard_action_card.dart';
 import '../widgets/dashboard/dashboard_empty_card.dart';
 import '../widgets/dashboard/join_classroom_dialog.dart';
 import '../widgets/dashboard/schedule_classroom_dialog.dart';
+import '../widgets/auth/google_oauth_connect_dialog.dart';
 import 'classroom_lobby_screen.dart';
 import 'login_screen.dart';
 import 'studio_screen.dart';
@@ -394,14 +395,26 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
 
   Future<void> _startClassroom() async {
     if (_isStarting) return;
+    if (!_authService.isGoogleAuthenticated) {
+      final connected = await GoogleOAuthConnectDialog.show(
+        context,
+        authService: _authService,
+      );
+      if (connected != true || !mounted) return;
+    }
 
     // Nếu đang có phòng cũ đang chạy, hỏi giáo viên trước khi tạo phòng mới
     if (_activeRoom != null && _activeRoom!['status'] == 'ONGOING') {
       final shouldProceed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Tạo phòng học mới?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Tạo phòng học mới?',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           content: Text(
             'Bạn đang có buổi học "${_activeRoom!['title'] ?? 'Hiện tại'}" chưa kết thúc.\n'
             'Tạo phòng mới sẽ đóng phòng học cũ và bắt đầu một link Google Meet mới 100%. Bạn có muốn tiếp tục?',
@@ -410,7 +423,10 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+              child: const Text(
+                'Hủy',
+                style: TextStyle(color: AppColors.slate600),
+              ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(true),
@@ -427,7 +443,9 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
       if (shouldProceed != true) return;
 
       // Đóng phòng cũ trên backend
-      await _localService.endClassroom(classroomId: _activeRoom!['id']?.toString());
+      await _localService.endClassroom(
+        classroomId: _activeRoom!['id']?.toString(),
+      );
       await MeetAutomationService().leaveClassroom();
     }
 
@@ -442,7 +460,9 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
         canPop: false,
         child: Dialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
             child: Row(
@@ -485,11 +505,20 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     }
 
     if (mounted) {
+      if (realMeetUrl == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              MeetAutomationService().errorMessage ??
+                  'Không tạo được phòng Google Meet. Hãy thử lại.',
+            ),
+          ),
+        );
+        return;
+      }
       await Navigator.of(context).push<void>(
         MaterialPageRoute(
-          builder: (_) => ClassroomLobbyScreen(
-            initialMeetingUrl: realMeetUrl,
-          ),
+          builder: (_) => ClassroomLobbyScreen(initialMeetingUrl: realMeetUrl),
         ),
       );
       _loadRoomsAndHistory();

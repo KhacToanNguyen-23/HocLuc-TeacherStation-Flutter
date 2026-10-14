@@ -8,15 +8,11 @@ import 'google_meet_auth_service.dart';
 import 'local_service.dart';
 import 'meet_bridge_script.dart';
 
-enum MeetStatus {
-  idle,
-  creating,
-  ready,
-  error,
-}
+enum MeetStatus { idle, creating, ready, error }
 
 class MeetAutomationService extends ChangeNotifier {
-  static final MeetAutomationService _instance = MeetAutomationService._internal();
+  static final MeetAutomationService _instance =
+      MeetAutomationService._internal();
   factory MeetAutomationService() => _instance;
   MeetAutomationService._internal() {
     CameraBroadcastService().addListener(() {
@@ -29,12 +25,23 @@ class MeetAutomationService extends ChangeNotifier {
   }
 
   win.WebviewController? _controller;
+  @visibleForTesting
+  MeetAutomationService.forTesting({required LocalService Function() localServiceFactory}) {
+    _localServiceFactory = localServiceFactory;
+  }
+
+  LocalService Function() _localServiceFactory = () => LocalService();
   MeetStatus _status = MeetStatus.idle;
   String? _meetingUrl;
   String? _errorMessage;
+  String? _accessType;
+  String? _classroomId;
+  Future<void>? _panelOpening;
+  String? _panelRoomUrl;
   bool _isBroadcasting = false;
   StreamSubscription<String>? _urlSubscription;
   StreamSubscription<dynamic>? _webMessageSubscription;
+  StreamSubscription<win.LoadingState>? _loadingSubscription;
 
   final List<MeetChatMessage> _messages = [];
   final List<String> _raisedHands = [];
@@ -47,8 +54,13 @@ class MeetAutomationService extends ChangeNotifier {
   MeetStatus get status => _status;
   String? get meetingUrl => _meetingUrl;
   String? get errorMessage => _errorMessage;
+  String? get accessType => _accessType;
+  String? get classroomId => _classroomId;
   bool get isBroadcasting => _isBroadcasting;
-  bool get hasRoom => _meetingUrl != null && _status != MeetStatus.idle && _status != MeetStatus.error;
+  bool get hasRoom =>
+      _meetingUrl != null &&
+      _status != MeetStatus.idle &&
+      _status != MeetStatus.error;
   win.WebviewController? get webviewController => _controller;
 
   List<MeetChatMessage> get messages => List.unmodifiable(_messages);
@@ -62,8 +74,15 @@ class MeetAutomationService extends ChangeNotifier {
   /// Gán link phòng Meet thật (từ người dùng dán hoặc từ Google API)
   void setMeetingUrl(String url) {
     var cleanUrl = url.trim();
-    if (cleanUrl.isNotEmpty && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+    if (cleanUrl.isNotEmpty &&
+        !cleanUrl.startsWith('http://') &&
+        !cleanUrl.startsWith('https://')) {
       cleanUrl = 'https://$cleanUrl';
+    }
+    if (_meetingUrl != cleanUrl) {
+      _accessType = null;
+      _classroomId = null;
+      clearMeetingEvents();
     }
     _meetingUrl = cleanUrl.isEmpty ? null : cleanUrl;
     _status = _meetingUrl != null ? MeetStatus.ready : MeetStatus.idle;
@@ -71,200 +90,133 @@ class MeetAutomationService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Tạo lớp học (Khởi tạo phòng Meet chính thức từ API hoặc WebView2 native)
-  Future<void> createClassroom({String? directUrl}) async {
+  /// Create an OPEN space through OAuth + Meet REST; pasted links retain their
+  /// existing Google access settings and are never labelled OPEN here.
+  Future<void> createClassroom({String? directUrl, String? title}) async {
+    if (directUrl != null && directUrl.trim().isNotEmpty) {
+      setMeetingUrl(directUrl);
+      return;
+    }
+    final auth = GoogleMeetAuthService();
+    _status = MeetStatus.creating;
+    _meetingUrl = null;
+    _accessType = null;
+    _classroomId = null;
+    _errorMessage = null;
+    notifyListeners();
+    final local = _localServiceFactory();
     try {
-      if (directUrl != null && directUrl.trim().isNotEmpty) {
-        setMeetingUrl(directUrl);
-        return;
+      if (!auth.isGoogleAuthenticated) {
+        throw StateError(
+          'Hãy kết nối Google và cấp quyền tạo phòng Meet trước.',
+        );
       }
-
-      _status = MeetStatus.creating;
-      _errorMessage = null;
-      notifyListeners();
-
-      // 1. Gọi Backend Java để khởi tạo phòng Meet chính thức nếu có token
-      try {
-        final localService = LocalService();
-        final reqData = <String, dynamic>{};
-        if (directUrl != null) reqData['directUrl'] = directUrl;
-        final token = GoogleMeetAuthService().accessToken;
-        if (token != null) reqData['accessToken'] = token;
-
-        final response = await localService.post('classroom/create', data: reqData);
-        if (response['success'] == true && response['meetingUrl'] != null) {
-          setMeetingUrl(response['meetingUrl'] as String);
-          return;
-        } else {
-          debugPrint('[MeetAutomation] Backend returned response without meetingUrl: $response');
+      final response = await local.post(
+        'classroom/create',
+        data: {
+          'googleSessionId': auth.googleSessionId,
+          'title': title ?? 'Phòng học trực tuyến',
+          'teacherId': auth.teacherEmail,
+        },
+        timeout: const Duration(seconds: 50),
+      );
+      if (response['success'] != true) {
+        if (response['requiresGoogleReconnect'] == true) {
+          auth.disconnectGoogle();
         }
-      } catch (e) {
-        debugPrint('[MeetAutomation] Backend service create classroom failed: $e');
+        throw StateError(
+          response['error']?.toString() ?? 'Không tạo được phòng Google Meet.',
+        );
       }
-
-      // 2. Trên Web: Không gán link giả abc-defg-hij nữa
-      if (kIsWeb) {
-        _status = MeetStatus.ready;
-        notifyListeners();
-        return;
+      final url = response['meetingUrl'] as String?;
+      if (response['accessType'] != 'OPEN' || !isOfficialMeetingUrl(url)) {
+        throw StateError(
+          'Google chưa xác nhận phòng OPEN với đường dẫn hợp lệ.',
+        );
       }
-
-      await generateAndJoinRealMeetRoom();
+      setMeetingUrl(url!);
+      _accessType = response['accessType'] as String;
+      _classroomId = response['id'] as String?;
+      notifyListeners();
     } catch (e) {
       _status = MeetStatus.error;
-      _errorMessage = e.toString();
+      _errorMessage = e.toString().replaceFirst('Bad state: ', '');
       notifyListeners();
+    } finally {
+      local.client.close();
     }
   }
 
-  /// Tự động khởi tạo phòng Google Meet thật (meet.google.com/xxx-yyyy-zzz)
-  /// và tự động tham gia vào phòng với tài khoản Google đang đăng nhập.
-  Future<String?> generateAndJoinRealMeetRoom({Duration timeout = const Duration(seconds: 25)}) async {
-    if (kIsWeb) {
-      return null;
+  /// Compatibility entry point: room creation no longer navigates to /new.
+  Future<String?> generateAndJoinRealMeetRoom({
+    Duration timeout = const Duration(seconds: 50),
+  }) async {
+    await createClassroom();
+    return _status == MeetStatus.ready ? _meetingUrl : null;
+  }
+
+  static bool isOfficialMeetingUrl(String? url) {
+    if (url == null) return false;
+    final uri = Uri.tryParse(url);
+    return uri != null &&
+        uri.scheme == 'https' &&
+        uri.host == 'meet.google.com' &&
+        RegExp(r'^/[a-z]{3}-[a-z]{4}-[a-z]{3}$').hasMatch(uri.path);
+  }
+
+  Future<void> openMeetingPanel() {
+    if (_panelOpening != null) return _panelOpening!;
+    return _panelOpening = _loadMeetingPanel().whenComplete(
+      () => _panelOpening = null,
+    );
+  }
+
+  /// Uses the API's exact meetingUri. Browser cookies are separate from OAuth:
+  /// the teacher may need to sign in to this Meet panel as the room owner.
+  Future<void> _loadMeetingPanel() async {
+    final url = _meetingUrl;
+    if (!isOfficialMeetingUrl(url)) {
+      throw StateError('Chưa có link Google Meet hợp lệ.');
     }
-
-    final previousUrl = _meetingUrl;
-    _meetingUrl = null;
-    _status = MeetStatus.creating;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      if (_controller != null) {
-        try {
-          _controller!.dispose();
-        } catch (_) {}
-        _controller = null;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) {
+      throw StateError(
+        'Panel Google Meet trong app hiện hỗ trợ Windows. Bạn có thể mở cùng link trong trình duyệt.',
+      );
+    }
+    if (_controller != null && _panelRoomUrl == url) return;
+    if (_controller == null) {
+      if (await win.WebviewController.getWebViewVersion() == null) {
+        throw StateError(
+          'Cần Microsoft Edge WebView2 Runtime để mở panel Google Meet.',
+        );
       }
-
-      final version = await win.WebviewController.getWebViewVersion();
-      if (version == null) {
-        throw StateError('Chưa cài đặt Microsoft Edge WebView2 Runtime trên máy tính.');
+      final controller = win.WebviewController();
+      try {
+        await controller.initialize();
+      } catch (_) {
+        controller.dispose();
+        rethrow;
       }
-      _controller = win.WebviewController();
-      await _controller!.initialize();
-
-      _webMessageSubscription?.cancel();
-      _webMessageSubscription = _controller!.webMessage.listen((data) {
-        _handleWebMessage(data);
-      });
-
-      final controller = _controller!;
-      final completer = Completer<String?>();
-      Timer? autoClickTimer;
-      Timer? timeoutTimer;
-
-      void onMeetingUrlDetected(String realUrl) {
-        if (previousUrl != null && realUrl == previousUrl) {
-          debugPrint('[MeetAutomation] Skipping previous room URL lingering in WebView: $realUrl');
-          return;
-        }
-        _meetingUrl = realUrl;
-        _status = MeetStatus.ready;
-        notifyListeners();
-
-        _scheduleAutoJoin(controller);
-
-        if (!completer.isCompleted) {
-          completer.complete(realUrl);
-        }
-      }
-
-      _urlSubscription?.cancel();
-      _urlSubscription = controller.url.listen((url) {
-        debugPrint('[MeetAutomation] Navigation URL: $url');
-        final match = RegExp(r'meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})', caseSensitive: false).firstMatch(url);
-        if (match != null) {
-          final realUrl = 'https://meet.google.com/${match.group(1)!.toLowerCase()}';
-          onMeetingUrlDetected(realUrl);
+      _controller = controller;
+      _webMessageSubscription = controller.webMessage.listen(_handleWebMessage);
+      _loadingSubscription = controller.loadingState.listen((state) {
+        if (state == win.LoadingState.navigationCompleted &&
+            _controller == controller) {
+          _scheduleAutoJoin(controller);
         }
       });
-
-      final teacherEmail = GoogleMeetAuthService().teacherEmail;
-      final targetUrl = (teacherEmail != null && teacherEmail.isNotEmpty)
-          ? 'https://meet.google.com/new?authuser=$teacherEmail&hs=193'
-          : 'https://meet.google.com/new?hs=193';
-      await controller.loadUrl(targetUrl);
-
-      // Liên tục tiêm script trích xuất URL và bypass modal cấp quyền media
-      autoClickTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) async {
-        if (_controller == null) {
-          timer.cancel();
-          return;
-        }
-        try {
-          final res = await _controller!.executeScript(r'''
-            (function() {
-              var href = window.location.href || '';
-              var m = href.match(/meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})/i);
-              var code = m ? m[1].toLowerCase() : '';
-
-              var buttons = Array.from(document.querySelectorAll('button'));
-              var permBtn = buttons.find(function(b) {
-                var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-                return t.includes('sử dụng micrô') || 
-                       t.includes('use microphone') || 
-                       t.includes('cho phép') || 
-                       t.includes('allow') || 
-                       t.includes('tiếp tục mà không') ||
-                       t.includes('continue without');
-              }) || document.querySelector('button[data-id="EBS5Fd"]');
-              if (permBtn) {
-                permBtn.click();
-              }
-
-              var joinBtn = buttons.find(function(b) {
-                var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-                var a = (b.getAttribute('aria-label') || '').toLowerCase();
-                return t.includes('tham gia ngay') || 
-                       t.includes('join now') || 
-                       t.includes('chuyển vào đây') || 
-                       t.includes('switch here') ||
-                       t.includes('yêu cầu tham gia') ||
-                       t.includes('ask to join') ||
-                       a.includes('tham gia ngay') ||
-                       a.includes('join now');
-              }) || document.querySelector('button[jsname="Qx7uuf"]');
-              if (joinBtn) {
-                joinBtn.click();
-              }
-
-              return code;
-            })();
-          ''');
-
-          if (res != null && res.isNotEmpty && res != '""') {
-            final cleaned = res.replaceAll('"', '').trim();
-            if (RegExp(r'^[a-z]{3}-[a-z]{4}-[a-z]{3}$').hasMatch(cleaned)) {
-              onMeetingUrlDetected('https://meet.google.com/$cleaned');
-            }
-          }
-        } catch (_) {}
-      });
-
-      timeoutTimer = Timer(timeout, () {
-        autoClickTimer?.cancel();
-        if (!completer.isCompleted) {
-          completer.complete(_meetingUrl);
-        }
-      });
-
-      final resultUrl = await completer.future;
-      timeoutTimer.cancel();
-
-      // Duy trì auto-click thêm 5 giây để Google hoàn tất animation vào phòng
-      Future.delayed(const Duration(seconds: 5), () {
-        autoClickTimer?.cancel();
-      });
-
-      return resultUrl;
-    } catch (e) {
-      _status = MeetStatus.error;
-      _errorMessage = e.toString();
       notifyListeners();
-      return null;
     }
+    if (_meetingUrl != url) {
+      throw StateError('Phòng Meet đã thay đổi. Hãy mở lại panel.');
+    }
+    final teacherEmail = GoogleMeetAuthService().googleEmail;
+    final uri = Uri.parse(url!);
+    final target = teacherEmail == null
+        ? uri
+        : uri.replace(queryParameters: {'authuser': teacherEmail});
+    await _controller!.loadUrl(target.toString());
+    _panelRoomUrl = url;
   }
 
   /// Xử lý message nhận từ script tiêm trong WebView2
@@ -445,10 +397,7 @@ class MeetAutomationService extends ChangeNotifier {
   /// Tạm dừng phiên giảng dạy (rời Studio tạm thời, giữ link Meet trên hệ thống)
   Future<void> pauseSession() async {
     await stopBroadcast();
-    _urlSubscription?.cancel();
-    _urlSubscription = null;
-    _webMessageSubscription?.cancel();
-    _webMessageSubscription = null;
+    _panelRoomUrl = null;
     if (_controller != null) {
       try {
         await _controller!.loadUrl('about:blank');
@@ -465,10 +414,15 @@ class MeetAutomationService extends ChangeNotifier {
     clearMeetingEvents();
     _status = MeetStatus.idle;
     _meetingUrl = null;
+    _accessType = null;
+    _classroomId = null;
+    _panelRoomUrl = null;
     _urlSubscription?.cancel();
     _urlSubscription = null;
     _webMessageSubscription?.cancel();
     _webMessageSubscription = null;
+    _loadingSubscription?.cancel();
+    _loadingSubscription = null;
 
     if (_controller != null) {
       try {
@@ -501,9 +455,11 @@ class MeetAutomationService extends ChangeNotifier {
   void _scheduleAutoJoin(win.WebviewController controller) {
     for (final delay in [1, 3, 5]) {
       Future.delayed(Duration(seconds: delay), () async {
-        if (_controller == null) return;
+        if (_controller != controller) return;
         try {
-          await controller.executeScript(MeetBridgeScript.script);
+          await controller.executeScript(
+            'if (location.hostname === "meet.google.com") { window.__meetManualJoin = true; ${MeetBridgeScript.script} }',
+          );
         } catch (err) {
           debugPrint('[MeetAutomation] Bridge inject error at ${delay}s: $err');
         }
@@ -515,6 +471,7 @@ class MeetAutomationService extends ChangeNotifier {
   void dispose() {
     _urlSubscription?.cancel();
     _webMessageSubscription?.cancel();
+    _loadingSubscription?.cancel();
     _controller?.dispose();
     super.dispose();
   }

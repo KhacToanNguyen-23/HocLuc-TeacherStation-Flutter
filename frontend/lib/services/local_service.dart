@@ -60,6 +60,7 @@ class LocalService {
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? data,
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     if (_token == null) {
       try {
@@ -77,7 +78,7 @@ class LocalService {
     final url = Uri.parse('$base/api/$path');
     final response = await client
         .post(url, headers: headers, body: jsonEncode(data ?? {}))
-        .timeout(const Duration(seconds: 10));
+        .timeout(timeout);
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw StateError('Java service: ${response.statusCode}');
     }
