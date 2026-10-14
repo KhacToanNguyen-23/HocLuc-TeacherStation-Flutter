@@ -4,6 +4,7 @@ import 'services/google_meet_auth_service.dart';
 import 'services/webview_environment_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/classroom_dashboard_screen.dart';
+import 'widgets/app_capture_surface.dart';
 
 export 'constants/theme.dart';
 export 'screens/studio_screen.dart';
@@ -26,6 +27,7 @@ class CompanionApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mộc · Teaching Studio',
       debugShowCheckedModeBanner: false,
+      builder: (_, child) => AppCaptureSurface(child: child ?? const SizedBox.shrink()),
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'Manrope',

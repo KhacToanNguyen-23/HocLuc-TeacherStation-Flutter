@@ -165,6 +165,28 @@ class FloatingPip extends StatelessWidget {
                                 : 'Phát camera ảo',
                           ),
                         ),
+                        DropdownButton<CameraCaptureArea>(
+                          value: broadcast.captureArea,
+                          dropdownColor: const Color(0xff14221d),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                          underline: const SizedBox.shrink(),
+                          items: const [
+                            DropdownMenuItem(
+                              value: CameraCaptureArea.board,
+                              child: Text('Chỉ bảng'),
+                            ),
+                            DropdownMenuItem(
+                              value: CameraCaptureArea.app,
+                              child: Text('Toàn bộ ứng dụng'),
+                            ),
+                          ],
+                          onChanged: (area) {
+                            if (area != null) broadcast.setCaptureArea(area);
+                          },
+                        ),
                         IconButton(
                           tooltip: 'Hiện / ẩn webcam',
                           onPressed: () {
