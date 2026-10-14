@@ -163,6 +163,65 @@ void main() {
       expect(find.text('2 / 2'), findsOneWidget);
     });
 
+    testWidgets('3b. PdfDgnlPassageOverlay toolbar stays strictly within narrow page bounds without overflowing',
+        (tester) async {
+      tester.view.physicalSize = const Size(600, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final studio = StudioState();
+      final passage = PdfDgnlPassage(
+        id: 'test-narrow-p',
+        pageNumber: 1,
+        rawText: 'Some passage text for testing',
+        normalizedBounds: const Rect.fromLTWH(0.2, 0.2, 0.6, 0.3),
+        spans: const [
+          PdfDgnlHighlightSpan(
+            text: 'test',
+            category: 'grammar',
+            level: 'B2',
+            type: 'Test Grammar',
+            note: 'Test note',
+            normalizedRects: [Rect.fromLTWH(0.2, 0.2, 0.1, 0.05)],
+          )
+        ],
+        metrics: const {},
+        clozeQuestions: const [],
+      );
+      studio.addPdfDgnlPassage(passage);
+
+      const narrowWidth = 480.0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                PdfDgnlPassageOverlay(
+                  studio: studio,
+                  pageNumber: 1,
+                  pageRect: const Rect.fromLTWH(0, 0, narrowWidth, 700),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Ensure no Flutter overflow exceptions occurred
+      expect(tester.takeException(), isNull);
+
+      // Verify the toolbar is clamped and constrained within narrowWidth
+      final constrainedBoxes = tester.widgetList<ConstrainedBox>(find.byType(ConstrainedBox));
+      final toolbarBox = constrainedBoxes.firstWhere(
+        (b) => b.constraints.maxWidth <= narrowWidth && b.constraints.maxWidth > 0,
+      );
+      expect(toolbarBox.constraints.maxWidth, lessThanOrEqualTo(narrowWidth));
+    });
+
     test('4. Test Syncfusion PDF Highlight Annotation export', () {
       final doc = sf.PdfDocument();
       final page = doc.pages.add();

@@ -310,208 +310,219 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
       }
     }
 
-    // 3. Legend Header Bar (styled identically to the user's reference)
-    final headerTop = (pTop - 46).clamp(6.0, pageRect.height - 50).toDouble();
-    final headerLeft = pLeft.clamp(6.0, math.max(6.0, pageRect.width - 560)).toDouble();
+    // 3. Legend Header Bar (bounded inside PDF page dimensions, never overflowing)
+    final headerTop = (pTop - 44).clamp(6.0, pageRect.height - 50).toDouble();
+    const estimatedBarWidth = 620.0;
+    final headerLeft = ((pLeft + estimatedBarWidth > pageRect.width - 8.0)
+        ? (pageRect.width - estimatedBarWidth - 8.0).clamp(8.0, pLeft)
+        : pLeft.clamp(8.0, math.max(8.0, pageRect.width - 100.0))).toDouble();
+    final maxBarWidth = (pageRect.width - headerLeft - 8.0).clamp(120.0, pageRect.width).toDouble();
 
     widgets.add(
       Positioned(
         left: headerLeft,
         top: headerTop,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xf6111a15),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xff89b4fa), width: 1.4),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x99000000),
-                blurRadius: 12,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.search, size: 15, color: Color(0xff89b4fa)),
-              const SizedBox(width: 5),
-              const Text(
-                'Bóc tách Đa tầng',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxBarWidth),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xf6111a15),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xff89b4fa), width: 1.4),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x99000000),
+                  blurRadius: 12,
+                  offset: Offset(0, 3),
                 ),
-              ),
-              const SizedBox(width: 10),
-
-              // Chip: Tất cả các tầng
-              _buildLegendChip(
-                label: 'Tất cả',
-                count: passage.spans.length,
-                color: const Color(0xff89dceb),
-                isDashed: false,
-                isSelected: _activeCategoryFilter == null,
-                onTap: () {
-                  setState(() {
-                    _activeCategoryFilter = null;
-                    _activeSpanIndex = 0;
-                  });
-                },
-              ),
-              const SizedBox(width: 6),
-
-              // Chip: Ngữ pháp
-              _buildLegendChip(
-                label: 'Ngữ pháp',
-                count: grammarCount,
-                color: const Color(0xff89b4fa),
-                isDashed: true,
-                isSelected: _activeCategoryFilter == 'grammar',
-                onTap: () {
-                  setState(() {
-                    _activeCategoryFilter =
-                        _activeCategoryFilter == 'grammar' ? null : 'grammar';
-                    _activeSpanIndex = 0;
-                  });
-                },
-              ),
-              const SizedBox(width: 6),
-
-              // Chip: Collocation
-              _buildLegendChip(
-                label: 'Collocation',
-                count: collocCount,
-                color: const Color(0xff86efac),
-                isDashed: false,
-                isSelected: _activeCategoryFilter == 'collocation',
-                onTap: () {
-                  setState(() {
-                    _activeCategoryFilter =
-                        _activeCategoryFilter == 'collocation' ? null : 'collocation';
-                    _activeSpanIndex = 0;
-                  });
-                },
-              ),
-              const SizedBox(width: 6),
-
-              // Chip: CEFR B2
-              _buildLegendChip(
-                label: 'CEFR B2',
-                count: b2Count,
-                color: const Color(0xfff9e2af),
-                isDashed: false,
-                isSelected: _activeCategoryFilter == 'B2',
-                onTap: () {
-                  setState(() {
-                    _activeCategoryFilter =
-                        _activeCategoryFilter == 'B2' ? null : 'B2';
-                    _activeSpanIndex = 0;
-                  });
-                },
-              ),
-              const SizedBox(width: 6),
-
-              // Chip: CEFR C1
-              if (c1Count > 0) ...[
-                _buildLegendChip(
-                  label: 'CEFR C1',
-                  count: c1Count,
-                  color: const Color(0xffcba6f7),
-                  isDashed: false,
-                  isSelected: _activeCategoryFilter == 'C1',
-                  onTap: () {
-                    setState(() {
-                      _activeCategoryFilter =
-                          _activeCategoryFilter == 'C1' ? null : 'C1';
-                      _activeSpanIndex = 0;
-                    });
-                  },
-                ),
-                const SizedBox(width: 6),
               ],
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.search, size: 14, color: Color(0xff89b4fa)),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Bóc tách Đa tầng',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
 
-              const SizedBox(width: 4),
+                  // Chip: Tất cả các tầng
+                  _buildLegendChip(
+                    label: 'Tất cả',
+                    count: passage.spans.length,
+                    color: const Color(0xff89dceb),
+                    isDashed: false,
+                    isSelected: _activeCategoryFilter == null,
+                    onTap: () {
+                      setState(() {
+                        _activeCategoryFilter = null;
+                        _activeSpanIndex = 0;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 5),
 
-              // Cloze Test Button
-              if (passage.clozeQuestions.isNotEmpty) ...[
-                InkWell(
-                  onTap: () => _showClozeModal(context, passage),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0x3386efac),
+                  // Chip: Ngữ pháp
+                  _buildLegendChip(
+                    label: 'Ngữ pháp',
+                    count: grammarCount,
+                    color: const Color(0xff89b4fa),
+                    isDashed: true,
+                    isSelected: _activeCategoryFilter == 'grammar',
+                    onTap: () {
+                      setState(() {
+                        _activeCategoryFilter =
+                            _activeCategoryFilter == 'grammar' ? null : 'grammar';
+                        _activeSpanIndex = 0;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 5),
+
+                  // Chip: Collocation
+                  _buildLegendChip(
+                    label: 'Collocation',
+                    count: collocCount,
+                    color: const Color(0xff86efac),
+                    isDashed: false,
+                    isSelected: _activeCategoryFilter == 'collocation',
+                    onTap: () {
+                      setState(() {
+                        _activeCategoryFilter =
+                            _activeCategoryFilter == 'collocation' ? null : 'collocation';
+                        _activeSpanIndex = 0;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 5),
+
+                  // Chip: CEFR B2
+                  _buildLegendChip(
+                    label: 'B2',
+                    count: b2Count,
+                    color: const Color(0xfff9e2af),
+                    isDashed: false,
+                    isSelected: _activeCategoryFilter == 'B2',
+                    onTap: () {
+                      setState(() {
+                        _activeCategoryFilter =
+                            _activeCategoryFilter == 'B2' ? null : 'B2';
+                        _activeSpanIndex = 0;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 5),
+
+                  // Chip: CEFR C1
+                  if (c1Count > 0) ...[
+                    _buildLegendChip(
+                      label: 'C1',
+                      count: c1Count,
+                      color: const Color(0xffcba6f7),
+                      isDashed: false,
+                      isSelected: _activeCategoryFilter == 'C1',
+                      onTap: () {
+                        setState(() {
+                          _activeCategoryFilter =
+                              _activeCategoryFilter == 'C1' ? null : 'C1';
+                          _activeSpanIndex = 0;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 5),
+                  ],
+
+                  const SizedBox(width: 3),
+
+                  // Cloze Test Button
+                  if (passage.clozeQuestions.isNotEmpty) ...[
+                    InkWell(
+                      onTap: () => _showClozeModal(context, passage),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0x8886efac)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.quiz_outlined, size: 12, color: Color(0xff86efac)),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${passage.clozeQuestions.length} Cloze',
-                          style: const TextStyle(
-                            color: Color(0xff86efac),
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0x3386efac),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0x8886efac)),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-              ],
-
-              // Button: Highlight trực tiếp lên file PDF
-              InkWell(
-                key: const Key('btn_export_pdf_highlights'),
-                onTap: () => PdfAnnotationExporter.applyHighlightDirectlyToPdf(context, studio),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0x3389b4fa),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xff89b4fa), width: 1.1),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.draw_rounded, size: 12, color: Color(0xff89b4fa)),
-                      SizedBox(width: 3),
-                      Text(
-                        'Highlight lên file',
-                        style: TextStyle(
-                          color: Color(0xff89b4fa),
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.quiz_outlined, size: 12, color: Color(0xff86efac)),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${passage.clozeQuestions.length} Cloze',
+                              style: const TextStyle(
+                                color: Color(0xff86efac),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
+                    ),
+                    const SizedBox(width: 5),
+                  ],
 
-              // Close / Dismiss Highlight Button
-              InkWell(
-                onTap: () => studio.removePdfDgnlPassage(passage.id),
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Color(0x28ffffff),
-                    shape: BoxShape.circle,
+                  // Button: Highlight trực tiếp lên file PDF
+                  InkWell(
+                    key: const Key('btn_export_pdf_highlights'),
+                    onTap: () => PdfAnnotationExporter.applyHighlightDirectlyToPdf(context, studio),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0x3389b4fa),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xff89b4fa), width: 1.1),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.draw_rounded, size: 12, color: Color(0xff89b4fa)),
+                          SizedBox(width: 3),
+                          Text(
+                            'Ghi vào PDF',
+                            style: TextStyle(
+                              color: Color(0xff89b4fa),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: const Icon(Icons.close, size: 12, color: Color(0xffa6adc8)),
-                ),
+                  const SizedBox(width: 5),
+
+                  // Close / Dismiss Highlight Button
+                  InkWell(
+                    onTap: () => studio.removePdfDgnlPassage(passage.id),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Color(0x28ffffff),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, size: 12, color: Color(0xffa6adc8)),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -806,7 +817,7 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
         decoration: BoxDecoration(
           color: isSelected ? color.withValues(alpha: 0.3) : color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(6),
@@ -814,36 +825,36 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
               ? null
               : Border.all(
                   color: isSelected ? color : color.withValues(alpha: 0.6),
-                  width: isSelected ? 1.5 : 1.0,
+                  width: isSelected ? 1.4 : 1.0,
                 ),
         ),
         child: CustomPaint(
           painter: isDashed
               ? _DashedBorderPainter(
                   color: isSelected ? color : color.withValues(alpha: 0.8),
-                  strokeWidth: isSelected ? 1.5 : 1.0,
+                  strokeWidth: isSelected ? 1.4 : 1.0,
                 )
               : null,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0.5),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 7,
-                  height: 7,
+                  width: 6,
+                  height: 6,
                   decoration: BoxDecoration(
                     color: color,
                     shape: isDashed ? BoxShape.rectangle : BoxShape.circle,
                     borderRadius: isDashed ? BorderRadius.circular(1) : null,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 3.5),
                 Text(
                   count > 0 ? '$label ($count)' : label,
                   style: TextStyle(
                     color: color,
-                    fontSize: 10.5,
+                    fontSize: 10,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   ),
                 ),
