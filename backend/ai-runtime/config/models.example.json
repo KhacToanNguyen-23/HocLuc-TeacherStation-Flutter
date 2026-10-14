@@ -1,0 +1,12 @@
+{
+  "root": "D:/AI-Training/models",
+  "asr": "PhoWhisper-small",
+  "translation": "vinai-translate-vi2en-v2",
+  "tts": "Kokoro-82M",
+  "device": "cpu",
+  "voice": "af_heart",
+  "threads": 4,
+  "prefer_int8": true,
+  "asr_device": "auto",
+  "tts_device": "auto"
+}

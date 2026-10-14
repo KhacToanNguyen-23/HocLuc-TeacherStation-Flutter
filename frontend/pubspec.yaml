@@ -18,6 +18,9 @@ dependencies:
   archive: ^4.0.0
   wgc_broadcaster:
     path: plugins/wgc_broadcaster
+  audio_bridge:
+    path: plugins/audio_bridge
+  web_socket_channel: ^3.0.3
   shared_preferences: ^2.5.6
   flutter_svg: ^2.0.17
   camera: ^0.12.1
@@ -26,6 +29,8 @@ dependencies:
   record: ^7.1.2
   syncfusion_flutter_pdf: ^35.1.40
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0

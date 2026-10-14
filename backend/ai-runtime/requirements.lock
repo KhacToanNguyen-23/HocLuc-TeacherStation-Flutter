@@ -1,0 +1,17 @@
+torch==2.8.0
+transformers==4.51.3
+kokoro==0.9.4
+numpy==1.26.4
+scipy==1.15.3
+soundfile==0.13.1
+sentencepiece==0.2.0
+accelerate==1.6.0
+protobuf==5.29.4
+fastapi==0.115.12
+uvicorn==0.34.2
+websockets==15.0.1
+pytest==8.3.5
+httpx==0.28.1
+faster-whisper==1.2.1
+ctranslate2==4.6.0
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl

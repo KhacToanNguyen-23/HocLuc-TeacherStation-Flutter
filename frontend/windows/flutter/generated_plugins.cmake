@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  audio_bridge
   camera_windows
   desktop_drop
   record_windows
