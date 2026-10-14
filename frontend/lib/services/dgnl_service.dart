@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -39,6 +40,35 @@ class DgnlAnalysisResult {
 
 class DgnlService {
   static const String baseUrl = 'http://127.0.0.1:18888';
+  static bool _sidecarSpawnAttempted = false;
+
+  /// Tự động kiểm tra và khởi chạy Python sidecar trên môi trường desktop
+  static Future<void> _ensureSidecarStarted() async {
+    if (kIsWeb || _sidecarSpawnAttempted) return;
+    _sidecarSpawnAttempted = true;
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/')).timeout(const Duration(milliseconds: 600));
+      if (res.statusCode == 200) return;
+    } catch (_) {}
+
+    try {
+      final possiblePaths = [
+        'plugins/english_assistant/engine/service.py',
+        '../plugins/english_assistant/engine/service.py',
+        '../../plugins/english_assistant/engine/service.py',
+      ];
+      for (final p in possiblePaths) {
+        final f = File(p);
+        if (f.existsSync()) {
+          Process.start('python', [f.absolute.path, '--port', '18888'], mode: ProcessStartMode.detached);
+          await Future.delayed(const Duration(milliseconds: 1000));
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('[DgnlService] Could not auto-spawn sidecar: $e');
+    }
+  }
 
   /// Phân tích ngữ liệu ĐGNL qua FastAPI backend (hoặc fallback offline)
   static Future<DgnlAnalysisResult> analyze(String text) async {
@@ -47,6 +77,8 @@ class DgnlService {
       return fallbackAnalyze('');
     }
 
+    await _ensureSidecarStarted();
+
     try {
       final res = await http
           .post(
@@ -54,7 +86,7 @@ class DgnlService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'text': clean}),
           )
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -131,7 +163,7 @@ class DgnlService {
     final highlights = <Map<String, dynamic>>[];
     final lower = text.toLowerCase();
 
-    // 1. Inversion / Grammar patterns
+    // 1. Grammar Patterns
     final grammarPatterns = [
       {
         'pattern': RegExp(r'\b(It\s+(?:is|was)\s+[^.]+?\s+(?:that|who))\b', caseSensitive: false),
@@ -144,19 +176,46 @@ class DgnlService {
         'note': 'Trạng từ phủ định đứng đầu câu đòi hỏi đảo trợ động từ.',
       },
       {
-        'pattern': RegExp(r'\b(used to suffer|used to\s+[a-z]+)\b', caseSensitive: false),
-        'type': 'Cấu trúc Used to + V',
+        'pattern': RegExp(r'\b(used\s+to\s+[a-z]+)\b', caseSensitive: false),
+        'type': 'Cấu trúc Thói quen quá khứ (Used to + V)',
         'note': 'Thói quen trong quá khứ không còn ở hiện tại.',
       },
       {
-        'pattern': RegExp(r'\b(is going to be banned|are going to be \w+ed)\b', caseSensitive: false),
-        'type': 'Bị động tương lai gần',
-        'note': 'Cấu trúc be going to + be + V3/ed.',
+        'pattern': RegExp(
+          r'\b((?:is|are|am|was|were|been|being)\s+(?:going\s+to\s+be\s+[a-z]+|[a-z]+ed|[a-z]+en|[a-z]+wn|shown|asked|banned|built|made|held|written|known|given|taught|caught|found|bought|sold|brought|programmed))\b',
+          caseSensitive: false,
+        ),
+        'type': 'Câu bị động (Passive Voice)',
+        'note': 'Cấu trúc bị động phân hóa cao trong đề thi ĐGNL.',
       },
       {
-        'pattern': RegExp(r'\b(Having\s+[a-z]+ed|Having\s+completed|Having\s+done)\b', caseSensitive: false),
+        'pattern': RegExp(r'\b(Having\s+(?:been\s+)?[a-z]+(?:ed|en|wn))\b', caseSensitive: false),
         'type': 'Mệnh đề phân từ hoàn thành',
         'note': 'Hành động xảy ra trước hành động chính.',
+      },
+      {
+        'pattern': RegExp(
+          r'\b((?:in|of|by|at|for|from|with|without|about|instead\s+of)\s+[a-z]+ing)\b',
+          caseSensitive: false,
+        ),
+        'type': 'Danh động từ sau giới từ (Prep + V-ing)',
+        'note': 'Kiến thức ngữ pháp phân loại hay gặp trong các câu trắc nghiệm chia dạng từ.',
+      },
+      {
+        'pattern': RegExp(
+          r'\b((?:who|whom|which|that|whose|where|when)\s+[a-z]+(?:s|ed|d|ould|ight)?(?:\s+[a-z]+)?)\b',
+          caseSensitive: false,
+        ),
+        'type': 'Mệnh đề quan hệ (Relative Clause)',
+        'note': 'Cấu trúc câu phức phân hóa cao trong phần nối câu và tìm lỗi sai.',
+      },
+      {
+        'pattern': RegExp(
+          r'\b(no\s+matter\s+(?:what|how|who|where|when)|although|even\s+though|despite|in\s+spite\s+of)\b',
+          caseSensitive: false,
+        ),
+        'type': 'Mệnh đề Nhượng bộ (Concession Clause)',
+        'note': 'Thường xuyên xuất hiện trong phần viết lại câu đồng nghĩa.',
       },
     ];
 
@@ -176,7 +235,7 @@ class DgnlService {
       }
     }
 
-    // 2. Collocations
+    // 2. Academic Collocations
     final collocs = [
       {'phrase': 'passive smoking', 'note': 'Thuật ngữ học thuật: Hút thuốc thụ động.'},
       {'phrase': 'heavy smoker', 'note': 'Cụm cố định: Người nghiện thuốc lá nặng.'},
@@ -192,6 +251,18 @@ class DgnlService {
       {'phrase': 'make a decision', 'note': 'Collocation chuẩn: Đưa ra quyết định.'},
       {'phrase': 'play a vital role', 'note': 'Collocation chuẩn: Đóng vai trò thiết yếu.'},
       {'phrase': 'at home', 'note': 'Cụm trạng từ: Tại nhà.'},
+      {'phrase': 'incapable of', 'note': 'Collocation tính từ + giới từ: Không có khả năng.'},
+      {'phrase': 'end in failure', 'note': 'Collocation học thuật: Kết thúc trong thất bại.'},
+      {'phrase': 'set out to', 'note': 'Cụm động từ: Bắt đầu dự định làm gì.'},
+      {'phrase': 'proved to be', 'note': 'Collocation: Chứng tỏ là.'},
+      {'phrase': 'different from', 'note': 'Tính từ đi kèm giới từ: Khác biệt với.'},
+      {'phrase': 'careful not to', 'note': 'Cấu trúc tính từ: Cẩn trọng không làm gì.'},
+      {'phrase': 'deliberately chosen', 'note': 'Collocation trạng từ + phân từ: Cố ý lựa chọn.'},
+      {'phrase': 'two-way communication', 'note': 'Thuật ngữ ngôn ngữ học: Giao tiếp hai chiều.'},
+      {'phrase': 'turn-taking pattern', 'note': 'Thuật ngữ ngôn ngữ: Quy tắc luân phiên lượt lời.'},
+      {'phrase': 'pay attention to', 'note': 'Collocation cố định: Chú ý đến.'},
+      {'phrase': 'draw attention to', 'note': 'Collocation cố định: Thu hút sự chú ý.'},
+      {'phrase': 'keep track of', 'note': 'Collocation cố định: Theo dõi, ghi nhớ.'},
     ];
 
     for (final c in collocs) {
@@ -216,7 +287,11 @@ class DgnlService {
     final b2Words = [
       'banned', 'majority', 'enclosed', 'polluting', 'passive', 'smoking', 'environments',
       'environment', 'increased', 'risk', 'disease', 'cancer', 'medical', 'suffer', 'lungs',
-      'alternative', 'technological', 'breakthrough', 'preliminary', 'investigation', 'inconvenient'
+      'alternative', 'technological', 'breakthrough', 'preliminary', 'investigation', 'inconvenient',
+      'deliberately', 'incapable', 'imitate', 'communicate', 'communication', 'graduate', 'attempt',
+      'pupil', 'unusual', 'programmed', 'ability', 'disagree', 'researchers', 'failure', 'experiment',
+      'material', 'correctly', 'label', 'code', 'success', 'pattern', 'reason', 'creature', 'scientist',
+      'scientists', 'fellow', 'especially'
     ];
     for (final bw in b2Words) {
       final reg = RegExp('\\b$bw\\b', caseSensitive: false);
@@ -234,7 +309,10 @@ class DgnlService {
       }
     }
 
-    final c1Words = ['unprecedented', 'feasible', 'profound', 'subsequent', 'scientific', 'detrimental', 'inevitable'];
+    final c1Words = [
+      'unprecedented', 'feasible', 'profound', 'subsequent', 'scientific', 'detrimental',
+      'inevitable', 'exaggerate', 'deliberately', 'inconvenient', 'exaggerated', 'philosophical'
+    ];
     for (final cw in c1Words) {
       final reg = RegExp('\\b$cw\\b', caseSensitive: false);
       for (final m in reg.allMatches(text)) {
