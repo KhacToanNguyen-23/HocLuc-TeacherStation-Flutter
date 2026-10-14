@@ -8,6 +8,8 @@ import 'interactive_chalkboard.dart';
 import 'floating_pdf_window.dart';
 import 'floating_pip.dart';
 import 'floating_timer.dart';
+import '../services/meet_automation_service.dart';
+import 'studio/studio_admission_banner.dart';
 import 'studio/studio_document_drawer.dart';
 import 'plugin_host_drawer.dart';
 import 'floating_plugin_window.dart';
@@ -135,6 +137,9 @@ class StageContainer extends StatelessWidget {
                                   Positioned.fill(
                                     child: FloatingPip(studio: studio),
                                   ),
+
+                                if (interactive)
+                                  StudioAdmissionBanner(meetService: MeetAutomationService()),
 
                                 // Floating Countdown Timer Pill
                                 if (interactive &&
