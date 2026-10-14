@@ -522,8 +522,8 @@
   {
     "id": "phase-01-commit-local-meet-features",
     "title": "Commit Local Zero-Click Meet Automation & In-App Student Admission",
-    "status": "active",
-    "evidence": "",
+    "status": "passing",
+    "evidence": "Commit 0673d8d created with clean working tree; 27/27 tests passed.",
     "user_visible_behavior": "Local uncommitted work for Zero-Click Google Meet and student admission drawer is committed into a clean git state.",
     "verification_command": "flutter test test/meet_automation_service_test.dart test/classroom_lobby_screen_test.dart",
     "notes": "Covers stories: P1",
