@@ -22,15 +22,31 @@ class AudioTranslationStudioButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(children: [
-                  const Expanded(child: Text('Dịch giọng nói offline', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700))),
-                  IconButton(tooltip: 'Đóng', onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close)),
-                ]),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Dịch giọng nói offline',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Đóng',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 AudioTranslationControls(
                   audio: studio.audio,
                   onPreferencesChanged: () => studio.change(() {
-                    studio.language = studio.audio.language == 'en' ? 'English' : 'Tiếng Việt';
+                    studio.language = studio.audio.language == 'en'
+                        ? 'English'
+                        : 'Tiếng Việt';
                     studio.denoise = false;
                   }),
                 ),
