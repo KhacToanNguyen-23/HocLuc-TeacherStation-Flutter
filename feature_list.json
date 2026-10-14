@@ -532,8 +532,8 @@
   {
     "id": "phase-02-rebase-and-merge-origin-develop",
     "title": "Rebase with origin/develop (Lesson Planning by normanqt2005)",
-    "status": "active",
-    "evidence": "",
+    "status": "passing",
+    "evidence": "Rebase on top of 7dab0ac cleanly completed; 30/30 unit tests passed across lobby, studio, and meet automation.",
     "user_visible_behavior": "Lesson planning mode and classroom controls coexist harmoniously in Studio TopBar based on isPlanning flag.",
     "verification_command": "flutter test test/classroom_lobby_screen_test.dart test/studio_students_drawer_test.dart",
     "notes": "Covers stories: P1",
