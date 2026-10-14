@@ -58,7 +58,11 @@ class FakeService extends LocalService {
     Map<String, dynamic>? data,
   }) async => {'installed': true};
   @override
-  Future<Map<String, dynamic>> post(String path, {Map<String, dynamic>? data}) {
+  Future<Map<String, dynamic>> post(
+    String path, {
+    Map<String, dynamic>? data,
+    Duration timeout = const Duration(seconds: 10),
+  }) {
     posts++;
     return pending.future;
   }
