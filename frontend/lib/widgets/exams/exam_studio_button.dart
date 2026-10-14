@@ -16,14 +16,21 @@ class ExamStudioButton extends StatelessWidget {
       builder: (dialogContext) => SimpleDialog(
         title: const Text('Đề thi & năng lực'),
         children: [
-          for (final item in const [(0, 'Ngân hàng câu hỏi'), (1, 'Tạo đề thi'), (2, 'Thư viện đề')])
+          for (final item in const [
+            (0, 'Ngân hàng câu hỏi'),
+            (1, 'Tạo đề thi'),
+            (2, 'Thư viện đề'),
+          ])
             SimpleDialogOption(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                Navigator.of(context).push<void>(MaterialPageRoute(
-                  builder: (_) => ExamWorkspaceScreen(api: api, initialPage: item.$1),
-                ));
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ExamWorkspaceScreen(api: api, initialPage: item.$1),
+                  ),
+                );
               },
               child: Text(item.$2),
             ),

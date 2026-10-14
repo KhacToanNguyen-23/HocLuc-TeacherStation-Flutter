@@ -8,7 +8,7 @@ import 'package:teaching_companion/screens/classroom_dashboard_screen.dart';
 import 'package:teaching_companion/screens/exams/exam_workspace_screen.dart';
 import 'package:teaching_companion/screens/login_screen.dart';
 import 'package:teaching_companion/widgets/dashboard/exam_dashboard_card.dart';
-import 'package:teaching_companion/widgets/studio/studio_top_bar.dart';
+import 'package:teaching_companion/widgets/exams/exam_studio_button.dart';
 import 'package:teaching_companion/models/studio_state.dart';
 import 'package:teaching_companion/services/exam_api.dart';
 import 'package:teaching_companion/services/google_meet_auth_service.dart';
@@ -235,38 +235,29 @@ void main() {
       expect(find.text('Ma trận'), findsNothing);
     },
   );
-  testWidgets(
-    'Teaching toolbar exposes exam tools without changing the board',
-    (tester) async {
-      final studio = StudioState();
-      addTearDown(studio.dispose);
-      bool opened = false;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StudioTopBar(
-              studio: studio,
-              width: 800,
-              hasLessons: false,
-              onToggleLessons: () {},
-              onOpenSettings: (_) {},
-              onRename: () {},
-              onPreview: () {},
-              onSave: () {},
-              onRetryConnect: () {},
-              onOpenExams: () => opened = true,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      final oldView = studio.view;
-      await tester.tap(find.text('Đề thi'));
-      expect(opened, isTrue);
-      expect(studio.view, oldView);
-      expect(tester.takeException(), isNull);
-    },
-  );
+  testWidgets('Studio exam popup navigates without changing the board', (
+    tester,
+  ) async {
+    signIn();
+    final client = api();
+    addTearDown(client.dispose);
+    final studio = StudioState();
+    addTearDown(studio.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(floatingActionButton: ExamStudioButton(api: client)),
+      ),
+    );
+    final oldView = studio.view;
+    await tester.tap(find.byTooltip('Đề thi & năng lực'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SimpleDialog), findsOneWidget);
+    await tester.tap(find.text('Ngân hàng câu hỏi'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ExamWorkspaceScreen), findsOneWidget);
+    expect(studio.view, oldView);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets(
     'Native module keeps usable navigation at mobile and desktop widths',
     (tester) async {
