@@ -565,14 +565,12 @@ class StudioState extends ChangeNotifier {
   bool isSnippingActive = false;
   String snipTarget = 'dgnl';
 
-  bool _wasDrawerOpenBeforeSnip = false;
   bool _wasFloatingBeforeSnip = false;
   void Function(String text, String target)? onSnippetCapturedForPlugin;
   VoidCallback? onSaveHighlightedPdfRequested;
   VoidCallback? onApplyHighlightToPdfRequested;
 
   void startSnipping({String target = 'dgnl'}) {
-    _wasDrawerOpenBeforeSnip = showPluginDrawer;
     _wasFloatingBeforeSnip = pluginFloating;
     showPluginDrawer = false;
     pluginFloating = false;
@@ -583,9 +581,7 @@ class StudioState extends ChangeNotifier {
 
   void stopSnipping() {
     isSnippingActive = false;
-    if (_wasDrawerOpenBeforeSnip && snipTarget != 'dgnl') {
-      showPluginDrawer = true;
-    }
+    showPluginDrawer = false;
     if (_wasFloatingBeforeSnip) {
       pluginFloating = true;
     }

@@ -8,8 +8,6 @@ import 'interactive_chalkboard.dart';
 import 'floating_pdf_window.dart';
 import 'floating_pip.dart';
 import 'studio/studio_document_drawer.dart';
-import 'plugin_host_drawer.dart';
-import 'floating_plugin_window.dart';
 import 'subject_tool_palette.dart';
 import 'presentation_surface.dart';
 import 'region_snipping_overlay.dart';
@@ -146,12 +144,6 @@ class StageContainer extends StatelessWidget {
                                 // Floating In-Board Subject Tool Palette Dock
                                 if (interactive && studio.activePlugin != null)
                                   SubjectToolPalette(studio: studio),
-
-                                // Hybrid Plugin Host (Drawer Panel & Floating Window)
-                                if (interactive) ...[
-                                  PluginHostDrawer(studio: studio),
-                                  FloatingPluginWindow(studio: studio),
-                                ],
 
                                 // PrtSc Drag Snipping Overlay
                                 if (interactive && studio.isSnippingActive)

@@ -60,52 +60,36 @@ class SubjectToolPalette extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Drag Handle & Subject Badge (Click to toggle Assistant Panel)
-                    Tooltip(
-                      message: studio.showPluginDrawer
-                          ? 'Thu gọn bảng trợ giảng'
-                          : 'Mở bảng điều khiển Trợ giảng Tiếng Anh',
-                      child: InkWell(
-                        key: const Key('subject_badge_button'),
-                        onTap: () {
-                          studio.openPlugin(
-                            plugin,
-                            openModal: !studio.showPluginDrawer,
-                          );
-                        },
+                    // Drag Handle & Subject Badge
+                    Container(
+                      key: const Key('subject_badge_button'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0x28d4e8a6),
                         borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                        border: Border.all(color: const Color(0x44d4e8a6)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.drag_indicator,
+                            size: 13,
+                            color: Color(0xffa5b5a8),
                           ),
-                          decoration: BoxDecoration(
-                            color: studio.showPluginDrawer
-                                ? const Color(0x55d4e8a6)
-                                : const Color(0x28d4e8a6),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0x44d4e8a6)),
+                          const SizedBox(width: 4),
+                          Text(
+                            plugin.manifest.name,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xffd4e8a6),
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.drag_indicator,
-                                size: 13,
-                                color: Color(0xffa5b5a8),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                plugin.manifest.name,
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xffd4e8a6),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 8),
