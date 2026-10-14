@@ -12,8 +12,8 @@ class LobbyMeetRoomCard extends StatelessWidget {
     required this.mediaService,
     required this.onCopyLink,
     required this.onGenerateNewMeet,
-    required this.onOpenChrome,
-    required this.onPasteFromClipboard,
+    this.onOpenChrome,
+    this.onPasteFromClipboard,
     required this.onShowCustomLinkDialog,
     required this.onEnterStudio,
     this.onCancel,
@@ -25,8 +25,8 @@ class LobbyMeetRoomCard extends StatelessWidget {
   final TeacherMediaService mediaService;
   final VoidCallback onCopyLink;
   final VoidCallback onGenerateNewMeet;
-  final VoidCallback onOpenChrome;
-  final VoidCallback onPasteFromClipboard;
+  final VoidCallback? onOpenChrome;
+  final VoidCallback? onPasteFromClipboard;
   final VoidCallback onShowCustomLinkDialog;
   final VoidCallback onEnterStudio;
   final VoidCallback? onCancel;
@@ -195,27 +195,16 @@ class LobbyMeetRoomCard extends StatelessWidget {
                         onPressed: isCreatingMeet ? null : onGenerateNewMeet,
                         icon: isCreatingMeet
                             ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Icon(Icons.video_call_rounded, size: 15),
-                        label: const Text('Tạo link mới', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                            : const Icon(Icons.video_call_rounded, size: 16),
+                        label: Text(
+                          isCreatingMeet ? 'Đang tạo phòng ngầm...' : 'Tự động tạo phòng Meet',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.blue600,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                           elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: onOpenChrome,
-                        icon: const Icon(Icons.open_in_browser_rounded, size: 14),
-                        label: const Text('Mở Chrome', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.slate700,
-                          side: const BorderSide(color: AppColors.slate300),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                       ),
@@ -223,20 +212,13 @@ class LobbyMeetRoomCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: onPasteFromClipboard,
-                      icon: const Icon(Icons.paste_rounded, size: 14),
-                      label: const Text('Dán từ Clipboard', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                    ),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: onShowCustomLinkDialog,
-                      icon: const Icon(Icons.edit_outlined, size: 14),
-                      label: const Text('Dán link có sẵn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: onShowCustomLinkDialog,
+                    icon: const Icon(Icons.link_rounded, size: 14),
+                    label: const Text('Dán link phòng có sẵn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                  ),
                 ),
               ],
             ],

@@ -7,6 +7,7 @@ import '../models/meet_events.dart';
 import 'google_meet_auth_service.dart';
 import 'local_service.dart';
 import 'meet_bridge_script.dart';
+import 'webview_environment_service.dart';
 
 enum MeetStatus {
   idle,
@@ -33,6 +34,8 @@ class MeetAutomationService extends ChangeNotifier {
   String? _meetingUrl;
   String? _errorMessage;
   bool _isBroadcasting = false;
+  bool _autoAdmitEnabled = true;
+  bool _needsGoogleLogin = false;
   StreamSubscription<String>? _urlSubscription;
   StreamSubscription<dynamic>? _webMessageSubscription;
 
@@ -48,6 +51,7 @@ class MeetAutomationService extends ChangeNotifier {
   String? get meetingUrl => _meetingUrl;
   String? get errorMessage => _errorMessage;
   bool get isBroadcasting => _isBroadcasting;
+  bool get needsGoogleLogin => _needsGoogleLogin;
   bool get hasRoom => _meetingUrl != null && _status != MeetStatus.idle && _status != MeetStatus.error;
   win.WebviewController? get webviewController => _controller;
 
@@ -58,6 +62,17 @@ class MeetAutomationService extends ChangeNotifier {
   bool get isBridgeReady => _isBridgeReady;
   bool get hasHocLucCam => _hasHocLucCam;
   bool get hasHocLucMic => _hasHocLucMic;
+  bool get autoAdmitEnabled => _autoAdmitEnabled;
+
+  set autoAdmitEnabled(bool val) {
+    if (_autoAdmitEnabled != val) {
+      _autoAdmitEnabled = val;
+      notifyListeners();
+      if (_autoAdmitEnabled && _pendingAdmitCount > 0) {
+        unawaited(admitAllPending());
+      }
+    }
+  }
 
   /// Gán link phòng Meet thật (từ người dùng dán hoặc từ Google API)
   void setMeetingUrl(String url) {
@@ -118,19 +133,25 @@ class MeetAutomationService extends ChangeNotifier {
   }
 
   /// Tự động khởi tạo phòng Google Meet thật (meet.google.com/xxx-yyyy-zzz)
-  /// và tự động tham gia vào phòng với tài khoản Google đang đăng nhập.
-  Future<String?> generateAndJoinRealMeetRoom({Duration timeout = const Duration(seconds: 25)}) async {
+  /// và tự động tham gia vào phòng với tư cách Host.
+  Future<String?> generateAndJoinRealMeetRoom({
+    String? existingUrl,
+    Duration timeout = const Duration(seconds: 25),
+  }) async {
     if (kIsWeb) {
       return null;
     }
 
     final previousUrl = _meetingUrl;
     _meetingUrl = null;
+    _needsGoogleLogin = false;
     _status = MeetStatus.creating;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      await WebviewEnvironmentService.ensureInitialized();
+
       if (_controller != null) {
         try {
           _controller!.dispose();
@@ -181,14 +202,14 @@ class MeetAutomationService extends ChangeNotifier {
         }
       });
 
-      final teacherEmail = GoogleMeetAuthService().teacherEmail;
-      final targetUrl = (teacherEmail != null && teacherEmail.isNotEmpty)
-          ? 'https://meet.google.com/new?authuser=$teacherEmail&hs=193'
+      final targetUrl = (existingUrl != null && existingUrl.trim().isNotEmpty)
+          ? existingUrl.trim()
           : 'https://meet.google.com/new?hs=193';
+      debugPrint('[MeetAutomation] Loading target URL: $targetUrl');
       await controller.loadUrl(targetUrl);
 
-      // Liên tục tiêm script trích xuất URL và bypass modal cấp quyền media
-      autoClickTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) async {
+      // Liên tục tiêm script trích xuất URL và bypass modal cấp quyền media / tự click tham gia
+      autoClickTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
         if (_controller == null) {
           timer.cancel();
           return;
@@ -200,6 +221,12 @@ class MeetAutomationService extends ChangeNotifier {
               var m = href.match(/meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})/i);
               var code = m ? m[1].toLowerCase() : '';
 
+              // Kiểm tra xem đã vào phòng chưa (nút kết thúc cuộc gọi đỏ)
+              var inCall = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
+              if (inCall) {
+                return 'IN_CALL:' + code;
+              }
+
               var buttons = Array.from(document.querySelectorAll('button'));
               var permBtn = buttons.find(function(b) {
                 var t = (b.innerText || b.textContent || '').trim().toLowerCase();
@@ -210,22 +237,25 @@ class MeetAutomationService extends ChangeNotifier {
                        t.includes('tiếp tục mà không') ||
                        t.includes('continue without');
               }) || document.querySelector('button[data-id="EBS5Fd"]');
-              if (permBtn) {
+              if (permBtn && !permBtn.disabled) {
                 permBtn.click();
               }
 
               var joinBtn = buttons.find(function(b) {
                 var t = (b.innerText || b.textContent || '').trim().toLowerCase();
                 var a = (b.getAttribute('aria-label') || '').toLowerCase();
-                return t.includes('tham gia ngay') || 
-                       t.includes('join now') || 
-                       t.includes('chuyển vào đây') || 
-                       t.includes('switch here') ||
-                       t.includes('yêu cầu tham gia') ||
-                       t.includes('ask to join') ||
-                       a.includes('tham gia ngay') ||
-                       a.includes('join now');
-              }) || document.querySelector('button[jsname="Qx7uuf"]');
+                var js = b.getAttribute('jsname') || '';
+                var isJoin = t.includes('tham gia ngay') || 
+                             t.includes('join now') || 
+                             t.includes('chuyển vào đây') || 
+                             t.includes('switch here') ||
+                             t.includes('yêu cầu tham gia') ||
+                             t.includes('ask to join') ||
+                             a.includes('tham gia ngay') ||
+                             a.includes('join now') ||
+                             js === 'Qx7uuf';
+                return isJoin && !b.disabled && b.offsetParent !== null;
+              });
               if (joinBtn) {
                 joinBtn.click();
               }
@@ -236,7 +266,12 @@ class MeetAutomationService extends ChangeNotifier {
 
           if (res != null && res.isNotEmpty && res != '""') {
             final cleaned = res.replaceAll('"', '').trim();
-            if (RegExp(r'^[a-z]{3}-[a-z]{4}-[a-z]{3}$').hasMatch(cleaned)) {
+            if (cleaned.startsWith('IN_CALL:')) {
+              final callCode = cleaned.replaceFirst('IN_CALL:', '').trim();
+              if (callCode.isNotEmpty) {
+                onMeetingUrlDetected('https://meet.google.com/$callCode');
+              }
+            } else if (RegExp(r'^[a-z]{3}-[a-z]{4}-[a-z]{3}$').hasMatch(cleaned)) {
               onMeetingUrlDetected('https://meet.google.com/$cleaned');
             }
           }
@@ -267,7 +302,10 @@ class MeetAutomationService extends ChangeNotifier {
     }
   }
 
-  /// Xử lý message nhận từ script tiêm trong WebView2
+  /// Xử lý message nhận từ script tiêm trong WebView2 (hỗ trợ gọi trong test)
+  @visibleForTesting
+  void handleWebMessageForTesting(dynamic rawData) => _handleWebMessage(rawData);
+
   void _handleWebMessage(dynamic rawData) {
     try {
       final Map<String, dynamic> data = rawData is String
@@ -301,6 +339,9 @@ class MeetAutomationService extends ChangeNotifier {
         final event = MeetAdmissionEvent.fromJson(payload.cast<String, dynamic>());
         _pendingAdmitCount = event.pendingCount;
         notifyListeners();
+        if (_autoAdmitEnabled && _pendingAdmitCount > 0) {
+          unawaited(admitAllPending());
+        }
       } else if (type == 'MEET_MEDIA_DEVICE_SELECTED' && payload is Map) {
         _hasHocLucCam = payload['hasHocLucCam'] == true;
         _hasHocLucMic = payload['hasHocLucMic'] == true;
@@ -432,6 +473,21 @@ class MeetAutomationService extends ChangeNotifier {
     }
   }
 
+  /// Mời học sinh ra khỏi phòng học (Kick out)
+  Future<void> removeParticipant(String id, String name) async {
+    _participants.removeWhere((p) => p.id == id);
+    _raisedHands.remove(name);
+    notifyListeners();
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    try {
+      final safeName = name.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+      await ctrl.executeScript('window.MeetBridge && window.MeetBridge.removeParticipant("$safeName");');
+    } catch (e) {
+      debugPrint('[MeetAutomation] Error executing removeParticipant: $e');
+    }
+  }
+
   /// Xóa sạch dữ liệu phiên học khi rời phòng
   void clearMeetingEvents() {
     _messages.clear();
@@ -508,6 +564,24 @@ class MeetAutomationService extends ChangeNotifier {
           debugPrint('[MeetAutomation] Bridge inject error at ${delay}s: $err');
         }
       });
+    }
+  }
+
+  /// Đảm bảo Host đã thực sự ở trong phòng cuộc gọi (IN_CALL)
+  /// Thường được gọi khi chuyển từ Lobby sang Studio
+  Future<void> ensureHostJoined() async {
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    try {
+      await ctrl.executeScript(r'''
+        (function() {
+          if (window.MeetBridge && typeof window.MeetBridge.attemptAutoJoin === 'function') {
+            window.MeetBridge.attemptAutoJoin();
+          }
+        })();
+      ''');
+    } catch (e) {
+      debugPrint('[MeetAutomation] ensureHostJoined error: $e');
     }
   }
 

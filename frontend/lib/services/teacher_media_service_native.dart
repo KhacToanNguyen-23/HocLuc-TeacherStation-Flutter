@@ -101,6 +101,7 @@ class TeacherMediaService extends ChangeNotifier {
           orElse: () => _cameras.first,
         );
         _selectedCamera = camera.name;
+        await _releaseCamera();
         final controller = CameraController(
           camera,
           ResolutionPreset.medium,

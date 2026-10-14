@@ -104,9 +104,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify that offline action buttons are shown
-      expect(find.text('Mở Chrome'), findsOneWidget);
-      expect(find.text('Dán từ Clipboard'), findsOneWidget);
+      // Verify that offline automated action buttons are shown
+      expect(find.text('Tự động tạo phòng Meet'), findsOneWidget);
+      expect(find.text('Dán link phòng có sẵn'), findsOneWidget);
 
       // Tap enter classroom button
       await tester.tap(find.text('BẮT ĐẦU VÀO PHÒNG GIẢNG DẠY'));
@@ -114,10 +114,10 @@ void main() {
 
       // Verify that warning dialog popped up
       expect(find.text('Chưa có link Google Meet'), findsOneWidget);
-      expect(find.text('Vẫn vào (Dạy ngoại tuyến)'), findsOneWidget);
+      expect(find.text('Vào dạy ngoại tuyến'), findsOneWidget);
 
       // Tap still proceed offline
-      await tester.tap(find.text('Vẫn vào (Dạy ngoại tuyến)'));
+      await tester.tap(find.text('Vào dạy ngoại tuyến'));
       await tester.pumpAndSettle();
 
       expect(find.byType(StudioScreen), findsOneWidget);

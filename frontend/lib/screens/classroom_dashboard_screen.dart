@@ -435,42 +435,46 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
 
     setState(() => _isStarting = true);
 
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const PopScope(
-        canPop: false,
-        child: Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
+    void showLoadingDialog() {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const PopScope(
+          canPop: false,
+          child: Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
+                    ),
                   ),
-                ),
-                SizedBox(width: 20),
-                Text(
-                  'Đang tạo lớp học...',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.slate900,
+                  SizedBox(width: 20),
+                  Text(
+                    'Đang chuẩn bị phòng Google Meet...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.slate900,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    }
+
+    showLoadingDialog();
 
     String? realMeetUrl;
     try {
@@ -480,11 +484,20 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     } finally {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
-        setState(() => _isStarting = false);
       }
     }
 
     if (mounted) {
+      setState(() => _isStarting = false);
+      if (realMeetUrl == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Chưa thể kết nối phòng Google Meet tự động. Vui lòng kiểm tra lại tài khoản Google.'),
+            backgroundColor: Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       await Navigator.of(context).push<void>(
         MaterialPageRoute(
           builder: (_) => ClassroomLobbyScreen(

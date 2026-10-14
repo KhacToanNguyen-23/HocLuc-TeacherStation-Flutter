@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_windows/webview_windows.dart' as win;
 import '../../constants/theme.dart';
 import '../../services/google_meet_auth_service.dart';
+import '../../services/webview_environment_service.dart';
 import '../../services/url_opener.dart';
 
 /// Modal dialog providing authentic Google Sign-In via native Edge WebView2 on Windows,
@@ -59,6 +60,7 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
 
   Future<void> _initWebView() async {
     try {
+      await WebviewEnvironmentService.ensureInitialized();
       final controller = win.WebviewController();
       await controller.initialize();
 

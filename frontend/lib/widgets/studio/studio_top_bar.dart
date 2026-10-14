@@ -442,16 +442,36 @@ class StudioTopBar extends StatelessWidget {
             ),
           if (!isPlanningMode && width > 800 && onToggleStudents != null) ...[
             const SizedBox(width: 3),
-            IconButton(
-              tooltip: 'Danh sách học sinh',
-              iconSize: 18,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: onToggleStudents,
-              style: IconButton.styleFrom(
-                backgroundColor: hasStudents ? const Color(0xffedf2e5) : Colors.transparent,
-              ),
-              icon: Icon(hasStudents ? Icons.groups : Icons.groups_outlined, color: pine),
+            ListenableBuilder(
+              listenable: MeetAutomationService(),
+              builder: (context, _) {
+                final pendingCount = MeetAutomationService().pendingAdmitCount;
+                Widget icon = Icon(
+                  hasStudents ? Icons.groups : Icons.groups_outlined,
+                  color: pine,
+                );
+                if (pendingCount > 0) {
+                  icon = Badge.count(
+                    count: pendingCount,
+                    backgroundColor: const Color(0xFFDC2626),
+                    textColor: Colors.white,
+                    child: icon,
+                  );
+                }
+                return IconButton(
+                  tooltip: pendingCount > 0
+                      ? 'Danh sách học sinh ($pendingCount đang chờ duyệt)'
+                      : 'Danh sách học sinh',
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: onToggleStudents,
+                  style: IconButton.styleFrom(
+                    backgroundColor: hasStudents ? const Color(0xffedf2e5) : Colors.transparent,
+                  ),
+                  icon: icon,
+                );
+              },
             ),
           ],
           if (width > 800 && onTogglePlugins != null) ...[

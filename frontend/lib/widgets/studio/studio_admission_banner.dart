@@ -87,6 +87,52 @@ class StudioAdmissionBanner extends StatelessWidget {
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: () {
+                      meetService.autoAdmitEnabled = !meetService.autoAdmitEnabled;
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: meetService.autoAdmitEnabled
+                            ? const Color(0xFFF59E0B).withValues(alpha: 0.2)
+                            : Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: meetService.autoAdmitEnabled
+                              ? const Color(0xFFFBBF24)
+                              : Colors.white.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            meetService.autoAdmitEnabled
+                                ? Icons.flash_on_rounded
+                                : Icons.flash_off_rounded,
+                            size: 13,
+                            color: meetService.autoAdmitEnabled
+                                ? const Color(0xFFFBBF24)
+                                : AppColors.slate400,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            meetService.autoAdmitEnabled ? 'Tự động: BẬT' : 'Tự động: TẮT',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: meetService.autoAdmitEnabled
+                                  ? const Color(0xFFFBBF24)
+                                  : AppColors.slate300,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

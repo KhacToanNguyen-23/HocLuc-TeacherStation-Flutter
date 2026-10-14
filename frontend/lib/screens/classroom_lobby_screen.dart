@@ -10,6 +10,7 @@ import '../services/url_opener.dart';
 import '../widgets/lobby/lobby_header.dart';
 import '../widgets/lobby/lobby_media_preview.dart';
 import '../widgets/lobby/lobby_meet_room_card.dart';
+import '../widgets/auth/google_webview_login_dialog.dart';
 import 'studio_screen.dart';
 
 /// Classroom Lobby screen coordinating hardware pre-flight checks,
@@ -168,7 +169,14 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
   Future<void> _handleGenerateNewMeetRoom() async {
     setState(() => _isCreatingMeet = true);
     try {
-      final realUrl = await _meetService.generateAndJoinRealMeetRoom();
+      var realUrl = await _meetService.generateAndJoinRealMeetRoom();
+
+      if (realUrl == null && _meetService.needsGoogleLogin && mounted) {
+        final loginResult = await GoogleWebviewLoginDialog.show(context);
+        if (loginResult != null && mounted) {
+          realUrl = await _meetService.generateAndJoinRealMeetRoom();
+        }
+      }
 
       if (realUrl != null && isRealGoogleMeetUrl(realUrl)) {
         final formatted = extractRealGoogleMeetUrl(realUrl)!;
@@ -190,18 +198,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     } finally {
       if (mounted) setState(() => _isCreatingMeet = false);
     }
-  }
-
-  void _openChromeToCreateRoom() {
-    openExternalUrl('https://meet.google.com/new');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang mở Google Chrome. Sau khi tạo phòng, hãy sao chép link và bấm "Dán từ Clipboard"!'),
-        backgroundColor: Color(0xFF0284C7),
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 4),
-      ),
-    );
   }
 
   Future<void> _pasteMeetingLinkFromClipboard() async {
@@ -290,16 +286,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 14),
-                  OutlinedButton.icon(
-                    onPressed: () => _openChromeToCreateRoom(),
-                    icon: const Icon(Icons.open_in_browser_rounded, size: 16),
-                    label: const Text('Mở Chrome tạo phòng mới ngay'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0284C7),
-                      side: const BorderSide(color: Color(0xFFBAE6FD)),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -346,21 +332,17 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
               Text('Chưa có link Google Meet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
+          content: const Text(
+            'Bạn có thể vào dạy ngoại tuyến hoặc để ứng dụng tự động tạo một phòng Google Meet mới.',
+            style: TextStyle(fontSize: 13, color: AppColors.slate700),
+          ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _proceedToStudio(meetingUrl: null);
               },
-              child: const Text('Vẫn vào (Dạy ngoại tuyến)', style: TextStyle(color: Color(0xFF64748B))),
-            ),
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _openChromeToCreateRoom();
-              },
-              icon: const Icon(Icons.open_in_browser_rounded, size: 16),
-              label: const Text('Mở Chrome tạo'),
+              child: const Text('Vào dạy ngoại tuyến', style: TextStyle(color: Color(0xFF64748B))),
             ),
             ElevatedButton.icon(
               onPressed: () {
@@ -368,7 +350,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                 _handleGenerateNewMeetRoom();
               },
               icon: const Icon(Icons.video_call_rounded, size: 16),
-              label: const Text('Tạo phòng Google'),
+              label: const Text('Tự động tạo phòng Meet'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0284C7),
                 foregroundColor: Colors.white,
@@ -388,6 +370,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
       _meetService.setMeetingUrl(meetingUrl);
       _syncClassroomToBackend(meetingUrl);
     }
+    _meetService.ensureHostJoined();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => StudioScreen(
@@ -445,7 +428,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                           mediaService: _mediaService,
                           onCopyLink: _copyMeetingLink,
                           onGenerateNewMeet: _handleGenerateNewMeetRoom,
-                          onOpenChrome: _openChromeToCreateRoom,
                           onPasteFromClipboard: _pasteMeetingLinkFromClipboard,
                           onShowCustomLinkDialog: _showCustomLinkDialog,
                           onEnterStudio: _enterTeachingStudio,
@@ -479,7 +461,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                             mediaService: _mediaService,
                             onCopyLink: _copyMeetingLink,
                             onGenerateNewMeet: _handleGenerateNewMeetRoom,
-                            onOpenChrome: _openChromeToCreateRoom,
                             onPasteFromClipboard: _pasteMeetingLinkFromClipboard,
                             onShowCustomLinkDialog: _showCustomLinkDialog,
                             onEnterStudio: _enterTeachingStudio,

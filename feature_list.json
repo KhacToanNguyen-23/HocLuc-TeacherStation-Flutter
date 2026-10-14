@@ -269,164 +269,314 @@
     "notes": "Covers stories: P1, P2",
     "priority": "P1"
   },
-    {
-      "id": "phase-01-media-device-service",
-      "title": "Hardware Media Device Discovery & PCM Capture Service",
-      "status": "passing",
-      "evidence": "Tests: 5 passed in test/media_device_service_test.dart, analyzer 0 issues",
-      "user_visible_behavior": "App discovers connected physical webcams and microphones, captures live frames and audio PCM streams, and exposes volume levels.",
-      "verification_command": "flutter test test/media_device_service_test.dart",
-      "notes": "Covers stories: P1",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-02-lobby-and-studio-preview",
-      "title": "Classroom Lobby & Studio PIP Live Preview UI",
-      "status": "passing",
-      "evidence": "Tests: 2 passed in test/media_preview_ui_test.dart, all existing lobby & PIP tests pass, analyzer 0 issues",
-      "user_visible_behavior": "Teacher sees live camera feed in Lobby preview card and Studio PIP, with real-time audio volume meter and interactive mute toggles.",
-      "verification_command": "flutter test test/media_preview_ui_test.dart",
-      "notes": "Covers stories: P1",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-03-virtual-cam-and-mic-engine",
-      "title": "DirectShow VirtualCam & Virtual Audio Loopback Native Engine",
-      "status": "passing",
-      "evidence": "Tests: 5 passed in test/virtual_media_bridge_test.dart, analyzer 0 issues",
-      "user_visible_behavior": "Teacher station streams camera frames and mic audio to Windows virtual devices 'HocLuc Studio Camera' and 'HocLuc Virtual Mic' at low latency (< 30ms).",
-      "verification_command": "flutter test test/virtual_media_bridge_test.dart",
-      "notes": "Covers stories: P1, P2",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-04-meet-bridge-automation",
-      "title": "Google Meet Device Selection Automation & Mute Sync",
-      "status": "passing",
-      "evidence": "Tests: 5 passed in test/meet_bridge_parser_test.dart, full suite 102/102 passed, analyzer 0 issues",
-      "user_visible_behavior": "Google Meet inside WebView2 automatically selects HocLuc virtual devices upon joining, and mute/unmute actions stay synchronized.",
-      "verification_command": "flutter test test/meet_bridge_parser_test.dart",
-      "notes": "Covers stories: P1",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-01-dgnl-engine-rules-data",
-      "title": "Dữ liệu Từ điển CEFR, Collocations & Quy tắc Ngữ pháp spaCy",
-      "status": "passing",
-      "evidence": "Tests: 2 passed in test_rules.py (datasets and matchers verified)",
-      "user_visible_behavior": "Bộ dữ liệu nhẹ CEFR Lexicon và Academic Collocations kèm các mẫu Matcher cấu trúc ngữ pháp ĐGNL (Đảo ngữ, Phân từ, Câu chẻ) sẵn sàng trong engine.",
-      "verification_command": "python -c \"import json; print('Rules & datasets valid')\"",
-      "notes": "Covers stories: P1",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-02-dgnl-backend-api",
-      "title": "Mở rộng FastAPI Engine (/api/dgnl/analyze & /api/dgnl/generate-cloze)",
-      "status": "passing",
-      "evidence": "Tests: 2 passed in test_api.py (latency 17ms, cloze generated)",
-      "user_visible_behavior": "API bóc tách highlight đa tầng, tính chỉ số Lexical Coverage / Density chuẩn đề ĐGNL và tự động sinh bài tập trắc nghiệm đục lỗ Cloze Test trong <150ms.",
-      "verification_command": "python -c \"import requests; print('Endpoints verified')\"",
-      "notes": "Covers stories: P1",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-03-dgnl-plugin-ui",
-      "title": "Giao diện Webview ĐGNL, Multi-layer Highlight & Soạn Đề Cloze",
-      "status": "passing",
-      "evidence": "Tests: 4 passed in english_assistant_e2e_test.dart (UI dual tabs, multi-layer highlight & cloze generator verified)",
-      "user_visible_behavior": "Tab Ôn thi ĐGNL hiển thị bôi màu đa tầng trực quan, thước đo chuẩn độ khó đề thi, danh sách câu hỏi Cloze có thể thử làm bài và ghim lên bảng phấn.",
-      "verification_command": "flutter test",
-      "notes": "Covers stories: P1, P2",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-04-packaging-verification",
-      "title": "Đóng gói Plugin .hlep & Kiểm thử E2E Toàn diện",
-      "status": "passing",
-      "evidence": "Tests: 4 passed in english_assistant_e2e_test.dart, 2 python test suites passed, english_assistant.hlep created (16.9MB)",
-      "user_visible_behavior": "Gói plugin english_assistant.hlep bản 1.1.0 hoàn chỉnh, hoạt động trơn tru cả S-V-O và module ĐGNL, phản hồi <150ms, ghim bài tập lên bảng vẽ mượt mà.",
-      "verification_command": "flutter test && flutter analyze",
-      "notes": "Covers stories: P1, P2",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-01-backend-planning-api",
-      "title": "Backend Planning Service & REST API",
-      "status": "passing",
-      "evidence": "mvn test-compile succeeded with 0 errors (BUILD SUCCESS), Planning, PlanningService and PlanningController compiled cleanly",
-      "user_visible_behavior": "Backend Spring Boot cung cấp API quản lý danh sách và nội dung chi tiết bài giảng kế hoạch (CRUD) kèm tính năng sao chép sang phòng học trực tiếp.",
-      "verification_command": "mvn test-compile",
-      "notes": "Covers stories: P1 (FR-04, FR-05)",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-02-frontend-service-and-models",
-      "title": "Frontend Planning Model & Service Client",
-      "status": "passing",
-      "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), PlanningMeta and LocalService planning methods verified",
-      "user_visible_behavior": "Ứng dụng Flutter có model dữ liệu PlanningMeta và các hàm gọi API trong LocalService để giao tiếp với backend.",
-      "verification_command": "flutter analyze",
-      "notes": "Covers stories: P1 (FR-04, FR-05)",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-03-dashboard-planning-tab",
-      "title": "Dashboard 3-Tab Navigation & Planning List",
-      "status": "passing",
-      "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), 3-tab layout, tab button switcher, and PlanningListCard integrated in ClassroomDashboardScreen",
-      "user_visible_behavior": "Khu vực dưới của Dashboard chuyển thành 3 tab ngang [Phòng học] - [Kế hoạch bài giảng] - [Lịch sử]. Tab kế hoạch bài giảng hiển thị danh sách, nút soạn mới, soạn tiếp, dạy ngay và xóa.",
-      "verification_command": "flutter analyze",
-      "notes": "Covers stories: P1, P2 (FR-01, FR-02)",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-04-studio-planning-mode",
-      "title": "Studio Planning Preparation Mode",
-      "status": "passing",
-      "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), StudioTopBar planning badge, Save & Exit confirmation, and direct classroom creation from planning verified",
-      "user_visible_behavior": "Mở bảng vẽ Teaching Studio ở chế độ Soạn bài: ẩn link Meet, thanh top bar có nút 'Lưu & Thoát' và nút nổi bật 'Tạo phòng học' để sẵn sàng dạy trực tiếp.",
-      "verification_command": "flutter analyze",
-      "notes": "Covers stories: P1 (FR-03)",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-05-e2e-integration-and-clone",
-      "title": "E2E Clone to Classroom Integration & Verification",
-      "status": "passing",
-      "evidence": "Tests: 96/96 passed in flutter test, mvn test BUILD SUCCESS 7/7 passed, flutter analyze 0 issues found",
-      "user_visible_behavior": "Giáo viên bấm 'Tạo phòng học' từ planning: hệ thống nhân bản dữ liệu sang phòng học mới với đầy đủ trang vẽ và tài liệu; các nét vẽ trong giờ học không làm thay đổi bài giảng gốc.",
-      "verification_command": "flutter test && flutter analyze",
-      "notes": "Covers stories: P1, P2 (FR-05, All Acceptance Criteria)",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-01-visual-channel-separation",
-      "title": "Visual Channel Separation & Span Conflict Resolution",
-      "status": "passing",
-      "evidence": "Tests: 6 passed, 0 failed in test/dgnl_snip_highlight_test.dart, flutter analyze 0 issues found",
-      "user_visible_behavior": "Các điểm ngữ pháp, cụm collocation và từ vựng lồng nhau hiển thị bằng các kênh đồ họa độc lập (khung viền nét đứt ngoài cùng, nền pastel mềm bên trong) không bị đè màu làm tối chữ.",
-      "verification_command": "flutter test test/dgnl_snip_highlight_test.dart",
-      "notes": "Covers stories: P1, P2",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-02-offline-deep-grammar-engine",
-      "title": "Offline Deep Grammar Engine & Academic Collocation Filtering",
-      "status": "passing",
-      "evidence": "Tests: test_rules.py and test_api.py passed in 68.3ms (<150ms target), flutter test 6/6 passed",
-      "user_visible_behavior": "Engine Python phân tích ngữ liệu ngoại tuyến với spaCy en_core_web_md và DependencyMatcher, bắt chính xác 6+ cấu trúc ngữ pháp và lọc sạch cụm rác bằng Academic Collocation List.",
-      "verification_command": "pytest plugins/english_assistant/engine/tests/",
-      "notes": "Covers stories: P1, P2",
-      "priority": "P1"
-    },
-    {
-      "id": "phase-03-pdf-export-and-regression-suite",
-      "title": "PDF Physical Export Alignment & Regression Suite",
-      "status": "passing",
-      "evidence": "Tests: 9 passed, 0 failed in test/dgnl_snip_highlight_test.dart; python tests/test_rules.py and test_api.py passed (86.8ms); flutter analyze 0 issues found",
-      "user_visible_behavior": "Khi bấm Highlight lên file, vệt màu và viền nét đứt được xuất vĩnh viễn vào file PDF vật lý và lưu vào nét vẽ giáo án, giữ nguyên định dạng không chồng đè màu khi in hoặc mở bằng phần mềm ngoài.",
-      "verification_command": "flutter test test/dgnl_snip_highlight_test.dart && flutter analyze lib test/dgnl_snip_highlight_test.dart",
-      "notes": "Covers stories: P1, All Success Criteria",
-      "priority": "P1"
-    }
-  ]
+  {
+    "id": "phase-01-media-device-service",
+    "title": "Hardware Media Device Discovery & PCM Capture Service",
+    "status": "passing",
+    "evidence": "Tests: 5 passed in test/media_device_service_test.dart, analyzer 0 issues",
+    "user_visible_behavior": "App discovers connected physical webcams and microphones, captures live frames and audio PCM streams, and exposes volume levels.",
+    "verification_command": "flutter test test/media_device_service_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-lobby-and-studio-preview",
+    "title": "Classroom Lobby & Studio PIP Live Preview UI",
+    "status": "passing",
+    "evidence": "Tests: 2 passed in test/media_preview_ui_test.dart, all existing lobby & PIP tests pass, analyzer 0 issues",
+    "user_visible_behavior": "Teacher sees live camera feed in Lobby preview card and Studio PIP, with real-time audio volume meter and interactive mute toggles.",
+    "verification_command": "flutter test test/media_preview_ui_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-virtual-cam-and-mic-engine",
+    "title": "DirectShow VirtualCam & Virtual Audio Loopback Native Engine",
+    "status": "passing",
+    "evidence": "Tests: 5 passed in test/virtual_media_bridge_test.dart, analyzer 0 issues",
+    "user_visible_behavior": "Teacher station streams camera frames and mic audio to Windows virtual devices 'HocLuc Studio Camera' and 'HocLuc Virtual Mic' at low latency (< 30ms).",
+    "verification_command": "flutter test test/virtual_media_bridge_test.dart",
+    "notes": "Covers stories: P1, P2",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-04-meet-bridge-automation",
+    "title": "Google Meet Device Selection Automation & Mute Sync",
+    "status": "passing",
+    "evidence": "Tests: 5 passed in test/meet_bridge_parser_test.dart, full suite 102/102 passed, analyzer 0 issues",
+    "user_visible_behavior": "Google Meet inside WebView2 automatically selects HocLuc virtual devices upon joining, and mute/unmute actions stay synchronized.",
+    "verification_command": "flutter test test/meet_bridge_parser_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-01-dgnl-engine-rules-data",
+    "title": "Dữ liệu Từ điển CEFR, Collocations & Quy tắc Ngữ pháp spaCy",
+    "status": "passing",
+    "evidence": "Tests: 2 passed in test_rules.py (datasets and matchers verified)",
+    "user_visible_behavior": "Bộ dữ liệu nhẹ CEFR Lexicon và Academic Collocations kèm các mẫu Matcher cấu trúc ngữ pháp ĐGNL (Đảo ngữ, Phân từ, Câu chẻ) sẵn sàng trong engine.",
+    "verification_command": "python -c \"import json; print('Rules & datasets valid')\"",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-dgnl-backend-api",
+    "title": "Mở rộng FastAPI Engine (/api/dgnl/analyze & /api/dgnl/generate-cloze)",
+    "status": "passing",
+    "evidence": "Tests: 2 passed in test_api.py (latency 17ms, cloze generated)",
+    "user_visible_behavior": "API bóc tách highlight đa tầng, tính chỉ số Lexical Coverage / Density chuẩn đề ĐGNL và tự động sinh bài tập trắc nghiệm đục lỗ Cloze Test trong <150ms.",
+    "verification_command": "python -c \"import requests; print('Endpoints verified')\"",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-dgnl-plugin-ui",
+    "title": "Giao diện Webview ĐGNL, Multi-layer Highlight & Soạn Đề Cloze",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in english_assistant_e2e_test.dart (UI dual tabs, multi-layer highlight & cloze generator verified)",
+    "user_visible_behavior": "Tab Ôn thi ĐGNL hiển thị bôi màu đa tầng trực quan, thước đo chuẩn độ khó đề thi, danh sách câu hỏi Cloze có thể thử làm bài và ghim lên bảng phấn.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1, P2",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-04-packaging-verification",
+    "title": "Đóng gói Plugin .hlep & Kiểm thử E2E Toàn diện",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in english_assistant_e2e_test.dart, 2 python test suites passed, english_assistant.hlep created (16.9MB)",
+    "user_visible_behavior": "Gói plugin english_assistant.hlep bản 1.1.0 hoàn chỉnh, hoạt động trơn tru cả S-V-O và module ĐGNL, phản hồi <150ms, ghim bài tập lên bảng vẽ mượt mà.",
+    "verification_command": "flutter test && flutter analyze",
+    "notes": "Covers stories: P1, P2",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-01-backend-planning-api",
+    "title": "Backend Planning Service & REST API",
+    "status": "passing",
+    "evidence": "mvn test-compile succeeded with 0 errors (BUILD SUCCESS), Planning, PlanningService and PlanningController compiled cleanly",
+    "user_visible_behavior": "Backend Spring Boot cung cấp API quản lý danh sách và nội dung chi tiết bài giảng kế hoạch (CRUD) kèm tính năng sao chép sang phòng học trực tiếp.",
+    "verification_command": "mvn test-compile",
+    "notes": "Covers stories: P1 (FR-04, FR-05)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-frontend-service-and-models",
+    "title": "Frontend Planning Model & Service Client",
+    "status": "passing",
+    "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), PlanningMeta and LocalService planning methods verified",
+    "user_visible_behavior": "Ứng dụng Flutter có model dữ liệu PlanningMeta và các hàm gọi API trong LocalService để giao tiếp với backend.",
+    "verification_command": "flutter analyze",
+    "notes": "Covers stories: P1 (FR-04, FR-05)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-dashboard-planning-tab",
+    "title": "Dashboard 3-Tab Navigation & Planning List",
+    "status": "passing",
+    "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), 3-tab layout, tab button switcher, and PlanningListCard integrated in ClassroomDashboardScreen",
+    "user_visible_behavior": "Khu vực dưới của Dashboard chuyển thành 3 tab ngang [Phòng học] - [Kế hoạch bài giảng] - [Lịch sử]. Tab kế hoạch bài giảng hiển thị danh sách, nút soạn mới, soạn tiếp, dạy ngay và xóa.",
+    "verification_command": "flutter analyze",
+    "notes": "Covers stories: P1, P2 (FR-01, FR-02)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-04-studio-planning-mode",
+    "title": "Studio Planning Preparation Mode",
+    "status": "passing",
+    "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), StudioTopBar planning badge, Save & Exit confirmation, and direct classroom creation from planning verified",
+    "user_visible_behavior": "Mở bảng vẽ Teaching Studio ở chế độ Soạn bài: ẩn link Meet, thanh top bar có nút 'Lưu & Thoát' và nút nổi bật 'Tạo phòng học' để sẵn sàng dạy trực tiếp.",
+    "verification_command": "flutter analyze",
+    "notes": "Covers stories: P1 (FR-03)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-05-e2e-integration-and-clone",
+    "title": "E2E Clone to Classroom Integration & Verification",
+    "status": "passing",
+    "evidence": "Tests: 96/96 passed in flutter test, mvn test BUILD SUCCESS 7/7 passed, flutter analyze 0 issues found",
+    "user_visible_behavior": "Giáo viên bấm 'Tạo phòng học' từ planning: hệ thống nhân bản dữ liệu sang phòng học mới với đầy đủ trang vẽ và tài liệu; các nét vẽ trong giờ học không làm thay đổi bài giảng gốc.",
+    "verification_command": "flutter test && flutter analyze",
+    "notes": "Covers stories: P1, P2 (FR-05, All Acceptance Criteria)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-01-visual-channel-separation",
+    "title": "Visual Channel Separation & Span Conflict Resolution",
+    "status": "passing",
+    "evidence": "Tests: 6 passed, 0 failed in test/dgnl_snip_highlight_test.dart, flutter analyze 0 issues found",
+    "user_visible_behavior": "Các điểm ngữ pháp, cụm collocation và từ vựng lồng nhau hiển thị bằng các kênh đồ họa độc lập (khung viền nét đứt ngoài cùng, nền pastel mềm bên trong) không bị đè màu làm tối chữ.",
+    "verification_command": "flutter test test/dgnl_snip_highlight_test.dart",
+    "notes": "Covers stories: P1, P2",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-offline-deep-grammar-engine",
+    "title": "Offline Deep Grammar Engine & Academic Collocation Filtering",
+    "status": "passing",
+    "evidence": "Tests: test_rules.py and test_api.py passed in 68.3ms (<150ms target), flutter test 6/6 passed",
+    "user_visible_behavior": "Engine Python phân tích ngữ liệu ngoại tuyến với spaCy en_core_web_md và DependencyMatcher, bắt chính xác 6+ cấu trúc ngữ pháp và lọc sạch cụm rác bằng Academic Collocation List.",
+    "verification_command": "pytest plugins/english_assistant/engine/tests/",
+    "notes": "Covers stories: P1, P2",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-pdf-export-and-regression-suite",
+    "title": "PDF Physical Export Alignment & Regression Suite",
+    "status": "passing",
+    "evidence": "Tests: 9 passed, 0 failed in test/dgnl_snip_highlight_test.dart; python tests/test_rules.py and test_api.py passed (86.8ms); flutter analyze 0 issues found",
+    "user_visible_behavior": "Khi bấm Highlight lên file, vệt màu và viền nét đứt được xuất vĩnh viễn vào file PDF vật lý và lưu vào nét vẽ giáo án, giữ nguyên định dạng không chồng đè màu khi in hoặc mở bằng phần mềm ngoài.",
+    "verification_command": "flutter test test/dgnl_snip_highlight_test.dart && flutter analyze lib test/dgnl_snip_highlight_test.dart",
+    "notes": "Covers stories: P1, All Success Criteria",
+    "priority": "P1"
+  },
+  {
+    "id": "persistent-google-session",
+    "title": "Persistent WebView2 Environment & Google Profile Session",
+    "status": "passing",
+    "evidence": "Tests: 2 passed in test/webview_environment_service_test.dart",
+    "user_visible_behavior": "Teacher logs in once with Google in app, session persists forever without re-authenticating across app restarts.",
+    "verification_command": "flutter test test/webview_environment_service_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "host-room-generation-without-chrome",
+    "title": "Headless Meet Host Room Generation & Auto-Join",
+    "status": "passing",
+    "evidence": "Tests: 5 passed in test/meet_automation_service_test.dart",
+    "user_visible_behavior": "Teacher clicks Start in Dashboard, app creates real Google Meet room in <= 5s and joins as Host headlessly without opening external Chrome.",
+    "verification_command": "flutter test test/meet_automation_service_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "in-app-student-admission",
+    "title": "In-App Student Knock Alert & Admission Banner",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in classroom_lobby_screen_test.dart & studio_admission_banner_test.dart",
+    "user_visible_behavior": "When students knock, StudioAdmissionBanner shows pending count and teacher admits all in 1 click directly on app canvas.",
+    "verification_command": "flutter test test/studio_admission_banner_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "removal-of-manual-workarounds",
+    "title": "Removal of Chrome External Launchers & Clipboard Paste",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in classroom_lobby_screen_test.dart",
+    "user_visible_behavior": "ClassroomLobbyScreen removes manual Chrome launch and paste buttons, providing an entirely automated lobby.",
+    "verification_command": "flutter test test/classroom_lobby_screen_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "auto-admit-students-toggle",
+    "title": "Auto-Admit Students Background Automation Toggle",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in test/studio_admission_banner_test.dart",
+    "user_visible_behavior": "Teacher can enable Auto-Admit so students knocking are admitted instantly in < 1s without requiring any banner clicks.",
+    "verification_command": "flutter test test/studio_admission_banner_test.dart",
+    "notes": "Covers stories: P2",
+    "priority": "P2"
+  },
+  {
+    "id": "camera-device-isolation-and-login-gate",
+    "title": "Camera Device Isolation & Interactive One-Time Google Login Gate",
+    "status": "passing",
+    "evidence": "Tests: 111 passed, 0 failed in full flutter test suite",
+    "user_visible_behavior": "Teacher clicks Start in Dashboard: if Google session needed, one-time login modal appears; otherwise generates real Meet room in <= 5s, passes link into Lobby with working webcam preview (no conflict), and enters Studio without blocking modals.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1 (One-Time Login Gate, Camera Device Freedom, Seamless Lobby Flow)",
+    "priority": "P1"
+  },
+  {
+    "id": "fix-meet-redirect-and-session-persistence",
+    "title": "Fix Meet Redirect Chain & Seamless Session Persistence",
+    "status": "passing",
+    "evidence": "Tests: 111 passed, 0 failed in full flutter test suite",
+    "user_visible_behavior": "Teacher clicks Start in Dashboard, WebView2 naturally follows Google Meet cookie verification redirect, generates real room URL (meet.google.com/xxx-yyyy-zzz) in 2-3s without aborting, and seamlessly populates Lobby with no repetitive login modals.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1 (Browser Session Persistence, Auto Room Creation, Seamless Lobby Transition)",
+    "priority": "P1"
+  },
+  {
+    "id": "fix-student-admission-and-host-join",
+    "title": "Fix In-App Student Admission Banner & Host Join Verification",
+    "status": "passing",
+    "evidence": "Tests: 111 passed, 0 failed in full flutter test suite including studio_admission_banner_test.dart and meet_bridge_parser_test.dart",
+    "user_visible_behavior": "When students knock on Google Meet link, StudioAdmissionBanner slides down over the studio canvas with pending count, Cho vào tất cả button, and Auto-Admit toggle; teacher admits students in 1-click without leaving the app.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1 (In-App Admission, Host In-Call Reliability, Auto-Admit)",
+    "priority": "P1"
+  },
+  {
+    "id": "in-drawer-student-admission-waiting-room",
+    "title": "In-Drawer Student Admission Waiting Room & Robust DOM Knock Scanner",
+    "status": "passing",
+    "evidence": "Tests: 113 passed, 0 failed in full flutter test suite including studio_students_drawer_test.dart and studio_admission_banner_test.dart",
+    "user_visible_behavior": "When students knock, StudioStudentsDrawer displays a prominent Waiting Room card at the top with pending count, Cho vào tất cả button, and Auto-admit switch, while meet_bridge_script detects fixed-position admit toasts without offsetParent filtering.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1 (In-Drawer Admission, Fixed-Position Toast Recognition, Auto-Admit)",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-01-commit-local-meet-features",
+    "title": "Commit Local Zero-Click Meet Automation & In-App Student Admission",
+    "status": "active",
+    "evidence": "",
+    "user_visible_behavior": "Local uncommitted work for Zero-Click Google Meet and student admission drawer is committed into a clean git state.",
+    "verification_command": "flutter test test/meet_automation_service_test.dart test/classroom_lobby_screen_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-rebase-and-merge-origin-develop",
+    "title": "Rebase with origin/develop (Lesson Planning by normanqt2005)",
+    "status": "not_started",
+    "evidence": "",
+    "user_visible_behavior": "Lesson planning mode and classroom controls coexist harmoniously in Studio TopBar based on isPlanning flag.",
+    "verification_command": "flutter test test/classroom_lobby_screen_test.dart test/studio_students_drawer_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-merge-ghp1991-camera-and-screen-stream",
+    "title": "Merge fix/camera-innit-fix (GHP1991)",
+    "status": "not_started",
+    "evidence": "",
+    "user_visible_behavior": "Webcam contention on Windows is resolved and teacher can choose to stream whiteboard or entire app window.",
+    "verification_command": "flutter test test/camera_initialization_test.dart test/camera_broadcast_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-04-merge-thinh-exam-platform",
+    "title": "Merge feat/vact-hsa-exam-platform (Nguyen Duc Thinh)",
+    "status": "not_started",
+    "evidence": "",
+    "user_visible_behavior": "V-ACT/HSA exam platform and question bank are accessible from Studio Document Drawer with Flyway DB migrations.",
+    "verification_command": "flutter test test/exam_integration_test.dart test/webview_exam_session_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-05-merge-thinh-local-ai-speech",
+    "title": "Merge feat/local-ai-speech-translation (Nguyen Duc Thinh)",
+    "status": "not_started",
+    "evidence": "",
+    "user_visible_behavior": "Local AI offline speech recognition and English-Vietnamese live subtitle controls are integrated with native C++ WASAPI bridge.",
+    "verification_command": "flutter test test/audio_translation_test.dart test/audio_translation_preview_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-06-system-verification-and-ci",
+    "title": "Full System Verification & Release to origin/develop",
+    "status": "not_started",
+    "evidence": "",
+    "user_visible_behavior": "All frontend and backend test suites pass, Windows native build succeeds, and unified develop branch is pushed.",
+    "verification_command": "flutter test && flutter build windows --debug",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  }
+]

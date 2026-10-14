@@ -49,10 +49,18 @@ class MeetBridgeScript {
              aria.includes('join now');
     }) || document.querySelector('button[jsname="Qx7uuf"]');
 
-    if (joinBtn) {
-      joinBtn.click();
+    // Kiểm tra xem đã vào phòng chưa (nút kết thúc cuộc gọi đỏ)
+    var inCall = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
+    if (inCall) {
       sendToFlutter('MEET_JOINED', { status: 'joined', url: window.location.href });
       return true;
+    }
+
+    if (joinBtn && !joinBtn.disabled) {
+      try {
+        joinBtn.click();
+      } catch(e) {}
+      // Không dừng interval ngay, để lần tick sau kiểm tra xem inCall đã xuất hiện chưa
     }
     return false;
   }
@@ -89,7 +97,54 @@ class MeetBridgeScript {
     });
   }
 
+  function ensurePeoplePanelOpen() {
+    var inCall = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
+    if (!inCall) return;
+
+    var panel = document.querySelector('[aria-label*="mọi người" i][role="tabpanel"], div[jsname="AznF2e"], [data-tab-id="1"]');
+    var isPanelVisible = panel && panel.offsetParent !== null;
+    if (!isPanelVisible) {
+      var peopleBtn = document.querySelector('button[aria-label*="mọi người" i], button[aria-label*="people" i], button[data-panel-id="1"]');
+      if (peopleBtn && !peopleBtn.disabled) {
+        peopleBtn.click();
+      }
+    }
+  }
+
+  var lastParticipantsKey = '';
+  function scanParticipants() {
+    var nodes = Array.from(document.querySelectorAll('[data-participant-id]'));
+    if (nodes.length === 0) return;
+
+    var participants = [];
+    nodes.forEach(function(node) {
+      var id = node.getAttribute('data-participant-id') || '';
+      var text = (node.innerText || '').trim();
+      var lines = text.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+      var name = lines[0] || '';
+      if (!name) return;
+      if (name.toLowerCase() === 'bạn' || text.toLowerCase().includes('(chủ phòng)')) return;
+
+      var isMuted = !!node.querySelector('[data-is-muted="true"], [aria-label*="đã tắt tiếng" i], [aria-label*="mic is off" i]');
+      var isHandRaised = !!node.querySelector('[data-is-hand-raised="true"], [aria-label*="giơ tay" i], [aria-label*="raised hand" i]');
+      participants.push({
+        id: id || ('p_' + name),
+        name: name,
+        isMuted: isMuted,
+        isHandRaised: isHandRaised,
+        isSpeaking: false
+      });
+    });
+
+    var key = participants.map(function(p) { return p.name + ':' + p.isMuted + ':' + p.isHandRaised; }).join(',');
+    if (key !== lastParticipantsKey) {
+      lastParticipantsKey = key;
+      sendToFlutter('PARTICIPANTS_UPDATE', participants);
+    }
+  }
+
   var lastHandsCount = -1;
+  var lastAdmitCount = -1;
   function scanHandsAndKnocks() {
     var handElements = Array.from(document.querySelectorAll('[aria-label*="giơ tay" i], [aria-label*="raised hand" i], [data-is-hand-raised="true"]'));
     var handCount = handElements.length;
@@ -102,20 +157,55 @@ class MeetBridgeScript {
       sendToFlutter('RAISE_HANDS_UPDATE', { count: handCount, names: raisedNames });
     }
 
-    var admitButtons = Array.from(document.querySelectorAll('button')).filter(function(b) {
+    var rawAdmitButtons = Array.from(document.querySelectorAll('button, [role="button"], [jsaction*="admit" i]')).filter(function(b) {
+      if (b.disabled || b.getAttribute('aria-disabled') === 'true') return false;
       var t = (b.innerText || b.textContent || '').trim().toLowerCase();
       var a = (b.getAttribute('aria-label') || '').toLowerCase();
-      return t.includes('chấp nhận') || t.includes('admit') || a.includes('chấp nhận') || a.includes('admit');
+      var js = (b.getAttribute('jsaction') || '').toLowerCase();
+      if (t.includes('từ chối') || a.includes('từ chối') || t.includes('deny') || a.includes('deny')) return false;
+      if (t.includes('rời khỏi') || a.includes('rời khỏi') || t.includes('leave')) return false;
+      return t.includes('cho phép') || t.includes('chấp nhận') || t.includes('cho vào') ||
+             t.includes('admit') || t.includes('allow') ||
+             a.includes('cho phép') || a.includes('chấp nhận') || a.includes('admit') || a.includes('allow') ||
+             js.includes('admit');
     });
 
-    if (admitButtons.length > 0) {
-      sendToFlutter('ADMIT_REQUEST', { pendingCount: admitButtons.length });
+    // Khử lồng nhau: nếu thẻ con đã khớp thì loại thẻ cha, tránh 1 nút bị đếm thành 2-4 lần
+    var admitButtons = rawAdmitButtons.filter(function(b) {
+      return !rawAdmitButtons.some(function(other) {
+        return other !== b && other.contains(b);
+      });
+    });
+
+    var admitAllBtn = admitButtons.find(function(b) {
+      var t = (b.innerText || b.textContent || '').trim().toLowerCase();
+      var a = (b.getAttribute('aria-label') || '').toLowerCase();
+      return t.includes('tất cả') || t.includes('all') || a.includes('tất cả') || a.includes('all');
+    });
+
+    var count = admitButtons.length;
+    if (admitAllBtn && count > 1) {
+      count = count - 1;
+    }
+    if (count === 0) {
+      var allText = (document.body ? document.body.innerText : '').toLowerCase();
+      if (allText.includes('muốn tham gia cuộc gọi này') || 
+          allText.includes('wants to join this call') || 
+          allText.includes('người khác đang chờ')) {
+        count = 1;
+      }
+    }
+
+    if (count !== lastAdmitCount) {
+      lastAdmitCount = count;
+      sendToFlutter('ADMIT_REQUEST', { pendingCount: count });
     }
   }
 
   var observer = new MutationObserver(function() {
     scanChatMessages();
     scanHandsAndKnocks();
+    scanParticipants();
   });
 
   observer.observe(document.body, {
@@ -130,17 +220,76 @@ class MeetBridgeScript {
     }
   }, 1000);
 
+  setInterval(function() {
+    ensurePeoplePanelOpen();
+    scanParticipants();
+    scanHandsAndKnocks();
+  }, 1000);
+
   window.MeetBridge = {
     admitAll: function() {
-      var buttons = Array.from(document.querySelectorAll('button')).filter(function(b) {
+      var buttons = Array.from(document.querySelectorAll('button, [role="button"], [jsaction*="admit" i]')).filter(function(b) {
+        if (b.disabled || b.getAttribute('aria-disabled') === 'true') return false;
         var t = (b.innerText || b.textContent || '').trim().toLowerCase();
         var a = (b.getAttribute('aria-label') || '').toLowerCase();
-        return t.includes('chấp nhận tất cả') || t.includes('admit all') || 
-               t.includes('chấp nhận') || t.includes('admit') ||
-               a.includes('chấp nhận tất cả') || a.includes('admit all');
+        var js = (b.getAttribute('jsaction') || '').toLowerCase();
+        if (t.includes('từ chối') || a.includes('từ chối') || t.includes('deny') || a.includes('deny')) return false;
+        if (t.includes('rời khỏi') || a.includes('rời khỏi') || t.includes('leave')) return false;
+        return t.includes('cho phép') || t.includes('chấp nhận') || t.includes('cho vào') ||
+               t.includes('admit') || t.includes('allow') ||
+               a.includes('cho phép') || a.includes('chấp nhận') || a.includes('admit') || a.includes('allow') ||
+               js.includes('admit');
       });
-      buttons.forEach(function(btn) { btn.click(); });
+
+      var admitAllBtn = buttons.find(function(b) {
+        var t = (b.innerText || b.textContent || '').trim().toLowerCase();
+        var a = (b.getAttribute('aria-label') || '').toLowerCase();
+        return t.includes('tất cả') || t.includes('all') || a.includes('tất cả') || a.includes('all');
+      });
+
+      if (admitAllBtn) {
+        try { admitAllBtn.click(); } catch(e) {}
+      } else {
+        buttons.forEach(function(btn) { 
+          try { btn.click(); } catch(e) {}
+        });
+      }
+      lastAdmitCount = 0;
+      sendToFlutter('ADMIT_REQUEST', { pendingCount: 0 });
       return buttons.length;
+    },
+
+    removeParticipant: function(targetName) {
+      if (!targetName) return false;
+      var clean = targetName.trim().toLowerCase();
+      var nodes = Array.from(document.querySelectorAll('[data-participant-id], div[role="listitem"]'));
+      var targetNode = nodes.find(function(n) {
+        return (n.innerText || '').toLowerCase().includes(clean);
+      });
+      if (targetNode) {
+        var menuBtn = targetNode.querySelector('button[aria-label*="thao tác khác" i], button[aria-label*="more actions" i], button[aria-label*="thêm" i]');
+        if (menuBtn) {
+          menuBtn.click();
+          setTimeout(function() {
+            var removeBtn = Array.from(document.querySelectorAll('[role="menuitem"], button')).find(function(m) {
+              var t = (m.innerText || m.textContent || '').toLowerCase();
+              return t.includes('xóa khỏi cuộc gọi') || t.includes('remove from the call') || t.includes('xóa');
+            });
+            if (removeBtn) {
+              removeBtn.click();
+              setTimeout(function() {
+                var confirmBtn = Array.from(document.querySelectorAll('button')).find(function(c) {
+                  var t = (c.innerText || c.textContent || '').toLowerCase();
+                  return t.includes('xóa') || t.includes('remove');
+                });
+                if (confirmBtn) confirmBtn.click();
+              }, 400);
+            }
+          }, 300);
+          return true;
+        }
+      }
+      return false;
     },
 
     muteAll: function() {

@@ -102,29 +102,133 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                 ),
               ),
 
+              // Waiting Room Card (when students are knocking)
+              if (widget.meetService.pendingAdmitCount > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFD97706),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.person_add_alt_1_rounded,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Đang chờ duyệt (${widget.meetService.pendingAdmitCount})',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF92400E),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Học sinh đang đợi bạn cho phép vào lớp qua Google Meet.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFB45309),
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () => widget.meetService.admitAllPending(),
+                            icon: const Icon(Icons.check_rounded, size: 14),
+                            label: const Text('Cho vào tất cả'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2563EB),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Tự động duyệt học sinh',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF78350F),
+                                ),
+                              ),
+                            ),
+                            Transform.scale(
+                              scale: 0.75,
+                              child: Switch(
+                                value: widget.meetService.autoAdmitEnabled,
+                                activeColor: const Color(0xFF2563EB),
+                                onChanged: (val) {
+                                  widget.meetService.autoAdmitEnabled = val;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
               const Divider(height: 16, color: AppColors.line),
 
               // Student List
               Expanded(
                 child: participants.isEmpty
                     ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.groups_outlined, size: 40, color: AppColors.slate300),
-                              SizedBox(height: 12),
+                              Icon(Icons.groups_outlined, size: 36, color: AppColors.slate300),
+                              SizedBox(height: 10),
                               Text(
                                 'Đang đợi học sinh tham gia...',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.slate600),
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.slate600),
                               ),
                               SizedBox(height: 4),
                               Text(
                                 'Chia sẻ link lớp học để học sinh vào phòng',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 11, color: AppColors.slate400),
+                                style: TextStyle(fontSize: 10.5, color: AppColors.slate400),
                               ),
                             ],
                           ),
@@ -265,6 +369,53 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
             tooltip: p.isMuted ? 'Mở mic cho học sinh' : 'Tắt mic học sinh',
             visualDensity: VisualDensity.compact,
             onPressed: () => widget.meetService.toggleMuteParticipant(p.id),
+          ),
+
+          // Kick / Remove from call Button
+          IconButton(
+            icon: const Icon(
+              Icons.person_remove_outlined,
+              size: 16,
+              color: AppColors.rose500,
+            ),
+            tooltip: 'Mời học sinh ra khỏi phòng',
+            visualDensity: VisualDensity.compact,
+            onPressed: () => _confirmRemoveParticipant(p),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmRemoveParticipant(MeetParticipant p) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.rose600, size: 22),
+            SizedBox(width: 8),
+            Text('Mời ra khỏi phòng', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text('Bạn có chắc chắn muốn mời học sinh "${p.name}" ra khỏi lớp học Google Meet không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.rose600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              widget.meetService.removeParticipant(p.id, p.name);
+            },
+            child: const Text('Mời ra'),
           ),
         ],
       ),

@@ -14,6 +14,10 @@ void main() {
       expect(MeetBridgeScript.script, contains('muteAll'));
       expect(MeetBridgeScript.script, contains('startPresenting'));
       expect(MeetBridgeScript.script, contains('sendChat'));
+      expect(MeetBridgeScript.script, contains('cho phép'));
+      expect(MeetBridgeScript.script, contains('chấp nhận'));
+      expect(MeetBridgeScript.script, contains('rời khỏi'));
+      expect(MeetBridgeScript.script, contains('leave call'));
     });
 
     test('Parses CHAT_MESSAGE json from bridge', () {

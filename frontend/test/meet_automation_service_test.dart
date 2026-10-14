@@ -9,6 +9,7 @@ void main() {
       expect(service.raisedHands, isEmpty);
       expect(service.pendingAdmitCount, equals(0));
       expect(service.isBridgeReady, isFalse);
+      expect(service.needsGoogleLogin, isFalse);
     });
 
     test('Direct URL sets status to ready', () {
@@ -38,5 +39,35 @@ void main() {
       expect(service.pendingAdmitCount, equals(0));
       expect(service.isBridgeReady, isFalse);
     });
+
+    test('autoAdmitEnabled toggle updates property and notifies listeners', () {
+      final service = MeetAutomationService();
+      expect(service.autoAdmitEnabled, isTrue);
+      
+      var notified = false;
+      void listener() => notified = true;
+      service.addListener(listener);
+
+      service.autoAdmitEnabled = false;
+      expect(service.autoAdmitEnabled, isFalse);
+      expect(notified, isTrue);
+
+      service.removeListener(listener);
+    });
+
+    test('removeParticipant removes participant and notifies listeners', () async {
+      final service = MeetAutomationService();
+      service.handleWebMessageForTesting({
+        'type': 'PARTICIPANTS_UPDATE',
+        'payload': [
+          {'id': 'p1', 'name': 'Nguyễn Văn A', 'isMuted': false, 'isHandRaised': true, 'isSpeaking': false},
+        ],
+      });
+      expect(service.participants.length, equals(1));
+
+      await service.removeParticipant('p1', 'Nguyễn Văn A');
+      expect(service.participants, isEmpty);
+    });
   });
 }
+
