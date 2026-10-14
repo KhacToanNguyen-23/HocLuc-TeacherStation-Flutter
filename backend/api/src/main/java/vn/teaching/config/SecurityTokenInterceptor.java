@@ -15,12 +15,12 @@ public class SecurityTokenInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // ExamWebConfig verifies bearer ownership for all exam routes.
+        if (request.getRequestURI().startsWith("/api/exams/")) return true;
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
         String path = request.getRequestURI();
-        // ExamWebConfig verifies the bearer session for every exam route.
-        if (path.startsWith("/api/exams/")) return true;
         if (path.equals("/api/bootstrap") || path.startsWith("/api/auth/") || !path.startsWith("/api/")) {
             return true;
         }
