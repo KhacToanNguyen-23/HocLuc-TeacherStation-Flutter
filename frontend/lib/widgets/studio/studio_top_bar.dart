@@ -25,9 +25,10 @@ class StudioTopBar extends StatelessWidget {
     this.hasPlugins = false,
     this.onLeaveClassroom,
     this.isPlanningMode = false,
+    bool? isPlanning,
     this.onExitPlanning,
     this.onCreateClassroomFromPlanning,
-  });
+  }) : isPlanning = isPlanning ?? isPlanningMode;
 
   final StudioState studio;
   final double width;
@@ -36,6 +37,7 @@ class StudioTopBar extends StatelessWidget {
   final bool hasStudents;
   final bool hasPlugins;
   final bool isPlanningMode;
+  final bool isPlanning;
   final VoidCallback onToggleLessons;
   final VoidCallback onToggleInspector;
   final VoidCallback onRename;
@@ -438,7 +440,7 @@ class StudioTopBar extends StatelessWidget {
                 color: pine,
               ),
             ),
-          if (width > 800 && onToggleStudents != null) ...[
+          if (!isPlanningMode && width > 800 && onToggleStudents != null) ...[
             const SizedBox(width: 3),
             IconButton(
               tooltip: 'Danh sách học sinh',

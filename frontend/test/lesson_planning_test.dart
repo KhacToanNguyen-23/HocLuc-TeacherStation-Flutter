@@ -184,8 +184,9 @@ void main() {
       expect(find.text('Lưu bài soạn'), findsOneWidget);
       expect(find.text('Tạo phòng học'), findsOneWidget);
 
-      // Verify Leave Room button is absent
+      // Verify Leave Room and Student list button are absent in planning mode
       expect(find.text('Rời phòng'), findsNothing);
+      expect(find.byTooltip('Danh sách học sinh'), findsNothing);
 
       // Tap Thoát
       await tester.tap(find.text('Thoát'));
@@ -198,6 +199,62 @@ void main() {
       // Tap Tạo phòng học
       await tester.tap(find.text('Tạo phòng học'));
       expect(launched, isTrue);
+    });
+
+    testWidgets('StudioTopBar Live Classroom Mode displays Students toggle and Leave button',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 1024);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final studio = StudioState();
+      bool leaveCalled = false;
+      bool studentsToggled = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 1280,
+              height: 60,
+              child: StudioTopBar(
+                studio: studio,
+                width: 1280,
+                hasLessons: false,
+                hasInspector: false,
+                onToggleLessons: () {},
+                onToggleInspector: () {},
+                onRename: () {},
+                onPreview: () {},
+                onSave: () {},
+                onRetryConnect: () {},
+                isPlanning: false,
+                onToggleStudents: () => studentsToggled = true,
+                onLeaveClassroom: () => leaveCalled = true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Verify Student list toggle button exists in live mode
+      expect(find.byTooltip('Danh sách học sinh'), findsOneWidget);
+      await tester.tap(find.byTooltip('Danh sách học sinh'));
+      expect(studentsToggled, isTrue);
+
+      // Verify Leave button exists in live mode
+      expect(find.text('Rời phòng'), findsOneWidget);
+      await tester.tap(find.text('Rời phòng'));
+      expect(leaveCalled, isTrue);
+
+      // Verify Planning buttons do not exist in live mode
+      expect(find.text('Kế hoạch bài giảng'), findsNothing);
+      expect(find.text('Thoát'), findsNothing);
+      expect(find.text('Lưu bài soạn'), findsNothing);
+      expect(find.text('Tạo phòng học'), findsNothing);
     });
   });
 }
