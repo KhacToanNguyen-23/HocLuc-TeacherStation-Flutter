@@ -4,16 +4,20 @@ import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
 import '../presentation_surface.dart';
 import '../floating_pip.dart';
+import '../../services/meet_automation_service.dart';
+import 'studio_admission_overlay.dart';
 
 class StudioQuestionView extends StatelessWidget {
   const StudioQuestionView({
     super.key,
     required this.studio,
     this.interactive = true,
+    this.meetService,
   });
 
   final StudioState studio;
   final bool interactive;
+  final MeetAutomationService? meetService;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +27,10 @@ class StudioQuestionView extends StatelessWidget {
           constraints.maxWidth,
           constraints.maxHeight * 16 / 9,
         );
-        return Center(
+        return StudioAdmissionOverlay(
+          interactive: interactive,
+          meetService: meetService,
+          child: Center(
           child: SizedBox(
             width: width,
             height: width * 9 / 16,
@@ -115,6 +122,7 @@ class StudioQuestionView extends StatelessWidget {
                   Positioned.fill(child: FloatingPip(studio: studio)),
               ],
             ),
+          ),
           ),
         );
       },

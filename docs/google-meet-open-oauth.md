@@ -75,3 +75,7 @@ node test/meet_admission_bridge.browser.cjs
 ```
 
 Tài liệu Google: [Desktop OAuth và PKCE](https://developers.google.com/identity/protocols/oauth2/native-app), [spaces.create](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces/create), [SpaceConfig và AccessType](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces).
+
+### Admission notices across teaching views
+
+Teacher admission notices are shown above both the board and question views. Preview views (`interactive: false`) exclude these controls. The question view uses a separate overlay outside PresentationSurface, so board-video capture remains free of admission controls. Each Cho vào action keeps its request visible while awaiting a correlated Meet confirmation; an unconfirmed result retains the notice and retry/fallback controls.
