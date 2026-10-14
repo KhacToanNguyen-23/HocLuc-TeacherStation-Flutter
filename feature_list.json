@@ -542,8 +542,8 @@
   {
     "id": "phase-03-merge-ghp1991-camera-and-screen-stream",
     "title": "Merge fix/camera-innit-fix (GHP1991)",
-    "status": "active",
-    "evidence": "",
+    "status": "passing",
+    "evidence": "Merged origin/fix/camera-innit-fix cleanly with 0 conflicts; all 5 camera broadcast and initialization tests passed.",
     "user_visible_behavior": "Webcam contention on Windows is resolved and teacher can choose to stream whiteboard or entire app window.",
     "verification_command": "flutter test test/camera_initialization_test.dart test/camera_broadcast_test.dart",
     "notes": "Covers stories: P1",
