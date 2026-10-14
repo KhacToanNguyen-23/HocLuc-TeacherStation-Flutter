@@ -3,6 +3,7 @@ import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
 import 'studio_document_pages_list.dart';
 import 'studio_document_files_list.dart';
+import '../exams/exam_studio_button.dart';
 import '../../services/plugin_manager.dart';
 
 class StudioDocumentDrawer extends StatelessWidget {
@@ -133,6 +134,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                           children: [
                           StudioDocumentPagesList(studio: studio),
                           StudioDocumentFilesList(studio: studio),
+                          const ExamStudioButton(),
                           const SizedBox(height: 12),
                           ListenableBuilder(
                             listenable: PluginManager.instance,

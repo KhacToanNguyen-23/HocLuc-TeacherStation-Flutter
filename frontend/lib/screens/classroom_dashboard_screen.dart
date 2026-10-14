@@ -4,6 +4,7 @@ import '../services/google_meet_auth_service.dart';
 import '../services/local_service.dart';
 import '../services/meet_automation_service.dart';
 import '../widgets/dashboard/dashboard_action_card.dart';
+import '../widgets/dashboard/exam_dashboard_card.dart';
 import '../widgets/dashboard/dashboard_empty_card.dart';
 import '../widgets/dashboard/join_classroom_dialog.dart';
 import '../widgets/dashboard/schedule_classroom_dialog.dart';
@@ -12,10 +13,14 @@ import 'login_screen.dart';
 import 'studio_screen.dart';
 import '../models/planning_meta.dart';
 import '../widgets/dashboard/planning_list_card.dart';
+import 'exams/exam_workspace_screen.dart';
+import '../services/exam_api.dart';
+import '../services/exam_session_service.dart';
 
 /// Classroom Dashboard Screen styled to match the layout in Image 2 with Educational Green theme.
 class ClassroomDashboardScreen extends StatefulWidget {
-  const ClassroomDashboardScreen({super.key});
+  const ClassroomDashboardScreen({super.key, this.examApi});
+  final ExamApi? examApi;
 
   @override
   State<ClassroomDashboardScreen> createState() => _ClassroomDashboardScreenState();
@@ -528,6 +533,12 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     ScheduleClassroomDialog.show(context);
   }
 
+  void _openExams(int page) {
+    Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => ExamWorkspaceScreen(api: widget.examApi, initialPage: page),
+    ));
+  }
+
   Future<void> _handleLogout() async {
     await MeetAutomationService().leaveClassroom();
     _authService.signOut();
@@ -591,6 +602,19 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                     ),
                   ),
                   const Spacer(),
+                  if (isCompact) IconButton(
+                    tooltip: 'Đề thi & năng lực',
+                    icon: const Icon(Icons.assignment_outlined, color: AppColors.sky600),
+                    onPressed: () => _openExams(0),
+                  ) else Tooltip(
+                    message: 'Đề thi & năng lực',
+                    child: TextButton.icon(
+                      onPressed: () => _openExams(0),
+                      icon: const Icon(Icons.assignment_outlined, size: 20),
+                      label: const Text('Đề thi & năng lực'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
 
                   // Avatar Dropdown Menu: Cài đặt & Đăng xuất
                   ListenableBuilder(
@@ -774,6 +798,15 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                         ],
 
                         const SizedBox(height: 16),
+
+                        ListenableBuilder(
+                          listenable: Listenable.merge([_authService, ExamSessionService()]),
+                          builder: (context, _) => ExamDashboardCard(
+                            onOpen: _openExams,
+                            isAdmin: ExamSessionService().role == 'ADMIN',
+                          ),
+                        ),
+                        const SizedBox(height: 24),
 
                         // Tab Bar: 3 Horizontal Tabs
                         Row(
