@@ -9,10 +9,14 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.authService,
     required this.onBack,
+    this.onOpenMeet,
+    this.onCreateOpenMeet,
   });
 
   final GoogleMeetAuthService authService;
   final VoidCallback onBack;
+  final VoidCallback? onOpenMeet;
+  final VoidCallback? onCreateOpenMeet;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 1);
@@ -72,7 +76,7 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
             return Padding(
               padding: const EdgeInsets.only(right: 16),
               child: InkWell(
-                onTap: () => GoogleOAuthConnectDialog.show(context, authService: authService),
+                onTap: onOpenMeet ?? () => GoogleOAuthConnectDialog.show(context, authService: authService),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -93,7 +97,7 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isSignedIn ? 'Google: $email' : 'Chưa liên kết Google',
+                        onOpenMeet != null ? 'Mở Google Meet' : isSignedIn ? 'Google: $email' : 'Chưa liên kết Google',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -106,6 +110,13 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
             );
           },
+        ),
+        if (onCreateOpenMeet != null) PopupMenuButton<String>(
+          tooltip: 'Tuỳ chọn phòng học',
+          onSelected: (value) {
+            if (value == 'open') onCreateOpenMeet!();
+          },
+          itemBuilder: (_) => const [PopupMenuItem(value: 'open', child: Text('Tạo phòng cho phép vào trực tiếp'))],
         ),
       ],
     );

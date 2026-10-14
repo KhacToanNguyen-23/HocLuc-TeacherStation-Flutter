@@ -7,7 +7,6 @@ import '../widgets/dashboard/dashboard_action_card.dart';
 import '../widgets/dashboard/dashboard_empty_card.dart';
 import '../widgets/dashboard/join_classroom_dialog.dart';
 import '../widgets/dashboard/schedule_classroom_dialog.dart';
-import '../widgets/auth/google_oauth_connect_dialog.dart';
 import 'classroom_lobby_screen.dart';
 import 'login_screen.dart';
 import 'studio_screen.dart';
@@ -395,14 +394,6 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
 
   Future<void> _startClassroom() async {
     if (_isStarting) return;
-    if (!_authService.isGoogleAuthenticated) {
-      final connected = await GoogleOAuthConnectDialog.show(
-        context,
-        authService: _authService,
-      );
-      if (connected != true || !mounted) return;
-    }
-
     // Nếu đang có phòng cũ đang chạy, hỏi giáo viên trước khi tạo phòng mới
     if (_activeRoom != null && _activeRoom!['status'] == 'ONGOING') {
       final shouldProceed = await showDialog<bool>(
@@ -417,7 +408,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
           ),
           content: Text(
             'Bạn đang có buổi học "${_activeRoom!['title'] ?? 'Hiện tại'}" chưa kết thúc.\n'
-            'Tạo phòng mới sẽ đóng phòng học cũ và bắt đầu một link Google Meet mới 100%. Bạn có muốn tiếp tục?',
+            'Buổi học cũ trên HocLuc sẽ kết thúc. Bạn sẽ tạo phòng mới trong panel Google Meet. Bạn có muốn tiếp tục?',
             style: const TextStyle(fontSize: 13, height: 1.4),
           ),
           actions: [
@@ -452,76 +443,13 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     if (!mounted) return;
 
     setState(() => _isStarting = true);
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const PopScope(
-        canPop: false,
-        child: Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(16)),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
-                  ),
-                ),
-                SizedBox(width: 20),
-                Text(
-                  'Đang tạo lớp học...',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.slate900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    String? realMeetUrl;
     try {
-      realMeetUrl = await MeetAutomationService().generateAndJoinRealMeetRoom();
-    } catch (e) {
-      debugPrint('[Dashboard] Error starting meet room: $e');
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => const ClassroomLobbyScreen(autoCreateMeet: true),
+      ));
+      if (mounted) await _loadRoomsAndHistory();
     } finally {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-        setState(() => _isStarting = false);
-      }
-    }
-
-    if (mounted) {
-      if (realMeetUrl == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              MeetAutomationService().errorMessage ??
-                  'Không tạo được phòng Google Meet. Hãy thử lại.',
-            ),
-          ),
-        );
-        return;
-      }
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => ClassroomLobbyScreen(initialMeetingUrl: realMeetUrl),
-        ),
-      );
-      _loadRoomsAndHistory();
+      if (mounted) setState(() => _isStarting = false);
     }
   }
 

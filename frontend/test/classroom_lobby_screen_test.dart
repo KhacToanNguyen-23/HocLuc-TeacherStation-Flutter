@@ -38,7 +38,7 @@ void main() {
       // 1. Verify Top Bar & Google Account Status
       expect(find.text('LOBBY'), findsOneWidget);
       expect(find.text('Chuẩn bị phòng giảng dạy'), findsOneWidget);
-      expect(find.text('Chưa liên kết Google'), findsOneWidget);
+      expect(find.text('Mở Google Meet'), findsOneWidget);
 
       // 2. Verify Hardware Section (Left)
       expect(find.text('Kiểm tra Thiết bị & Hình ảnh'), findsOneWidget);

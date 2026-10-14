@@ -1,6 +1,8 @@
+import 'meet_admission_bridge_script.dart';
+
 /// Dart wrapper providing the Google Meet Bridge Script for WebView2 injection.
 class MeetBridgeScript {
-  static const String script = '''
+  static const String script = MeetAdmissionBridgeScript.script + r'''
 (function() {
   if (window.__meetBridgeInstalled) {
     return;
@@ -102,15 +104,7 @@ class MeetBridgeScript {
       sendToFlutter('RAISE_HANDS_UPDATE', { count: handCount, names: raisedNames });
     }
 
-    var admitButtons = Array.from(document.querySelectorAll('button')).filter(function(b) {
-      var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-      var a = (b.getAttribute('aria-label') || '').toLowerCase();
-      return t.includes('chấp nhận') || t.includes('admit') || a.includes('chấp nhận') || a.includes('admit');
-    });
-
-    if (admitButtons.length > 0) {
-      sendToFlutter('ADMIT_REQUEST', { pendingCount: admitButtons.length });
-    }
+    // Admission snapshots/actions are handled by the identity-aware adapter.
   }
 
   var observer = new MutationObserver(function() {
@@ -134,15 +128,8 @@ class MeetBridgeScript {
 
   window.MeetBridge = {
     admitAll: function() {
-      var buttons = Array.from(document.querySelectorAll('button')).filter(function(b) {
-        var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-        var a = (b.getAttribute('aria-label') || '').toLowerCase();
-        return t.includes('chấp nhận tất cả') || t.includes('admit all') || 
-               t.includes('chấp nhận') || t.includes('admit') ||
-               a.includes('chấp nhận tất cả') || a.includes('admit all');
-      });
-      buttons.forEach(function(btn) { btn.click(); });
-      return buttons.length;
+      // Never click every button that happens to contain "admit".
+      return false;
     },
 
     muteAll: function() {

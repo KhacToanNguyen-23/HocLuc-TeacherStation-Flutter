@@ -5,8 +5,28 @@ import 'package:teaching_companion/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/screens/login_screen.dart';
 import 'package:teaching_companion/widgets/dashboard/join_classroom_dialog.dart';
 import 'package:teaching_companion/widgets/dashboard/schedule_classroom_dialog.dart';
+import 'package:teaching_companion/screens/classroom_lobby_screen.dart';
+import 'package:teaching_companion/widgets/auth/google_oauth_connect_dialog.dart';
 
 void main() {
+  testWidgets('Start opens cookie-based lobby without requiring an OAuth grant', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() => tester.view.resetPhysicalSize());
+    final auth = GoogleMeetAuthService();
+    auth.signOut();
+    auth.signInWithOtpSession(token:'local-account',name:'Giáo viên');
+    expect(auth.isGoogleAuthenticated,isFalse);
+    await tester.pumpWidget(const MaterialApp(home:ClassroomDashboardScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bắt đầu').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(ClassroomLobbyScreen),findsOneWidget);
+    expect(find.byType(GoogleOAuthConnectDialog),findsNothing);
+    expect(tester.widget<ClassroomLobbyScreen>(find.byType(ClassroomLobbyScreen)).autoCreateMeet,isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+    auth.signOut();
+  }, variant: TargetPlatformVariant.only(TargetPlatform.linux));
   group('Classroom Dashboard & Auth Gate tests', () {
     testWidgets('CompanionApp switches between LoginScreen and ClassroomDashboardScreen', (tester) async {
       tester.view.physicalSize = const Size(1280, 800);

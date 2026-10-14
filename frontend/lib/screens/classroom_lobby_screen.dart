@@ -25,6 +25,7 @@ class ClassroomLobbyScreen extends StatefulWidget {
     this.mediaService,
     this.authService,
     this.meetService,
+    this.autoCreateMeet = false,
   });
 
   final String? initialMeetingUrl;
@@ -32,6 +33,7 @@ class ClassroomLobbyScreen extends StatefulWidget {
   final TeacherMediaService? mediaService;
   final GoogleMeetAuthService? authService;
   final MeetAutomationService? meetService;
+  final bool autoCreateMeet;
 
   @override
   State<ClassroomLobbyScreen> createState() => _ClassroomLobbyScreenState();
@@ -93,6 +95,8 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
       if (_meetService.accessType == 'OPEN') {
         WidgetsBinding.instance.addPostFrameCallback((_) => _showMeetPanel());
       }
+    } else if (widget.autoCreateMeet && !kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _handleGenerateNewMeetRoom(); });
     }
   }
 
@@ -166,7 +170,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
   }
 
   void _showMeetPanel() {
-    if (mounted && !kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+    if (mounted) {
       unawaited(GoogleMeetPanelDialog.show(context, meetService: _meetService));
     }
   }
@@ -185,6 +189,22 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
   }
 
   Future<void> _handleGenerateNewMeetRoom() async {
+    if (_isCreatingMeet) return;
+    setState(() => _isCreatingMeet = true);
+    try {
+      await GoogleMeetPanelDialog.show(context, meetService: _meetService, createRoom: true);
+      if (!mounted) return;
+      final url = _meetService.meetingUrl;
+      if (url != null && isRealGoogleMeetUrl(url)) {
+        setState(() => _currentMeetingUrl = url);
+        await _syncClassroomToBackend(url);
+      }
+    } finally {
+      if (mounted) setState(() => _isCreatingMeet = false);
+    }
+  }
+
+  Future<void> _handleGenerateOpenApiMeetRoom() async {
     if (_isCreatingMeet) return;
     if (!_authService.isGoogleAuthenticated) {
       final connected = await GoogleOAuthConnectDialog.show(
@@ -456,6 +476,11 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
         backgroundColor: const Color(0xFFF8FAFC),
         appBar: LobbyHeader(
           authService: _authService,
+        onOpenMeet: () {
+          if (_currentMeetingUrl == null) { _handleGenerateNewMeetRoom(); }
+          else { _showMeetPanel(); }
+        },
+        onCreateOpenMeet: _handleGenerateOpenApiMeetRoom,
           onBack: _handleCancelLobby,
         ),
       body: SafeArea(

@@ -7,17 +7,20 @@ import '../../services/url_opener.dart';
 /// Official Meet UI is the authority for admission and participant controls.
 /// OAuth does not sign the teacher into this separate WebView browser session.
 class GoogleMeetPanelDialog extends StatefulWidget {
-  const GoogleMeetPanelDialog({super.key, required this.meetService});
+  const GoogleMeetPanelDialog({super.key, required this.meetService, this.createRoom = false});
   final MeetAutomationService meetService;
+  final bool createRoom;
 
   static Future<void> show(
     BuildContext context, {
     MeetAutomationService? meetService,
+    bool createRoom = false,
   }) {
     return showDialog<void>(
       context: context,
       builder: (_) => GoogleMeetPanelDialog(
         meetService: meetService ?? MeetAutomationService(),
+        createRoom: createRoom,
       ),
     );
   }
@@ -28,6 +31,7 @@ class GoogleMeetPanelDialog extends StatefulWidget {
 
 class _GoogleMeetPanelDialogState extends State<GoogleMeetPanelDialog> {
   bool _loading = true;
+  bool _startedCreation = false;
   String? _error;
 
   @override
@@ -42,7 +46,12 @@ class _GoogleMeetPanelDialogState extends State<GoogleMeetPanelDialog> {
       _error = null;
     });
     try {
-      await widget.meetService.openMeetingPanel();
+      if (widget.createRoom && !_startedCreation) {
+        await widget.meetService.beginCookieRoomCreation();
+        _startedCreation = true;
+      } else if (!widget.meetService.isCreatingCookieRoom) {
+        await widget.meetService.openMeetingPanel();
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _error = e.toString().replaceFirst('Bad state: ', ''));
@@ -50,6 +59,14 @@ class _GoogleMeetPanelDialogState extends State<GoogleMeetPanelDialog> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    // Keep the controller/page alive after an established room is hidden.
+    // Cancelling a login before obtaining a room must not leave "creating" stuck.
+    widget.meetService.cancelCookieRoomCreation();
+    super.dispose();
   }
 
   Future<win.WebviewPermissionDecision> _permission(
@@ -93,7 +110,7 @@ class _GoogleMeetPanelDialogState extends State<GoogleMeetPanelDialog> {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final service = widget.meetService;
-    final email = GoogleMeetAuthService().googleEmail;
+    final email = service.accessType == 'OPEN' ? GoogleMeetAuthService().googleEmail : null;
     final controller = service.webviewController;
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
@@ -147,7 +164,7 @@ class _GoogleMeetPanelDialogState extends State<GoogleMeetPanelDialog> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   email == null
-                      ? 'Dùng giao diện Google Meet để quản lý quyền tham gia và học sinh.'
+                      ? 'Đăng nhập Google trong panel nếu cần và chọn Tham gia ngay. Sau đó dùng Meet để quản lý học sinh.'
                       : 'Đăng nhập trong panel bằng $email để quản lý phòng. Chọn Tham gia ngay khi sẵn sàng.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),

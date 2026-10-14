@@ -70,6 +70,22 @@ class MeetAdmissionEvent {
   }
 }
 
+/// IDs belong to one bridge document and one concrete requesting DOM row.
+/// A display name alone is never used to select the Admit button.
+class MeetAdmissionRequest {
+  final String id;
+  final String name;
+  final String detail;
+
+  const MeetAdmissionRequest({required this.id, required this.name, this.detail = ''});
+
+  factory MeetAdmissionRequest.fromJson(Map<String, dynamic> json) => MeetAdmissionRequest(
+    id: json['id'] as String? ?? '',
+    name: json['name'] as String? ?? '',
+    detail: json['detail'] as String? ?? '',
+  );
+}
+
 class MeetParticipant {
   final String id;
   final String name;

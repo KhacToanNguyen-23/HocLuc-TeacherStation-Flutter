@@ -18,6 +18,7 @@ import '../widgets/studio/studio_question_view.dart';
 import '../widgets/studio/studio_rename_dialog.dart';
 import '../widgets/studio/studio_students_drawer.dart';
 import '../widgets/studio/studio_top_bar.dart';
+import '../widgets/studio/studio_admission_banner.dart';
 import '../services/plugin_manager.dart';
 import '../widgets/studio/studio_plugins_marketplace_panel.dart';
 
@@ -723,6 +724,7 @@ class _StudioScreenState extends State<StudioScreen> {
                           );
                         },
                       ),
+                      StudioAdmissionBanner(meetService: MeetAutomationService()),
                     ],
                   ),
                 ),

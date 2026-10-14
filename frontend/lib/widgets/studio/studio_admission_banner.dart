@@ -1,98 +1,167 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../constants/theme.dart';
+import '../../models/meet_events.dart';
 import '../../services/meet_automation_service.dart';
+import 'google_meet_panel_dialog.dart';
 
-/// Floating toast banner alerting teacher when students knock to join the Google Meet room.
+/// The teacher approves on the board. Only a confirmed Meet result removes the
+/// acted-on request; unknown identities and failures retain an in-app fallback.
 class StudioAdmissionBanner extends StatelessWidget {
-  const StudioAdmissionBanner({
-    super.key,
-    required this.meetService,
-  });
-
+  const StudioAdmissionBanner({super.key, required this.meetService});
   final MeetAutomationService meetService;
 
   @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: meetService,
-      builder: (context, _) {
-        final count = meetService.pendingAdmitCount;
-        if (count <= 0) return const SizedBox.shrink();
-
-        return Positioned(
-          top: 12,
-          right: 20,
-          child: Material(
-            color: Colors.transparent,
-            elevation: 8,
-            shadowColor: Colors.black.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.sky600, width: 1.5),
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: meetService,
+    builder: (context, _) {
+      if (meetService.pendingAdmitCount <= 0) return const SizedBox.shrink();
+      return Positioned.fill(
+        child: LayoutBuilder(
+          builder: (context, box) => Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: SizedBox(
+                width: math.min(430.0, math.max(0.0, box.maxWidth - 24)),
+                child: Material(
+                  elevation: 4,
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: math.min(
+                        360.0,
+                        math.max(0.0, box.maxHeight - 24),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'Yêu cầu vào lớp',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          for (final request in meetService.admissionRequests)
+                            _requestTile(context, request),
+                          if (meetService.unknownAdmissionCount > 0) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Có ${meetService.unknownAdmissionCount} yêu cầu chưa đọc được tên. Hãy kiểm tra trong Meet.',
+                            ),
+                            TextButton(
+                              onPressed: () => GoogleMeetPanelDialog.show(
+                                context,
+                                meetService: meetService,
+                              ),
+                              child: const Text('Mở panel Meet'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+
+  Widget _requestTile(BuildContext context, MeetAdmissionRequest request) {
+    final busy = meetService.isAdmitting(request.id);
+    final error = meetService.admissionError(request.id);
+    return Padding(
+      key: ValueKey('admission-${request.id}'),
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            request.name,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          if (request.detail.isNotEmpty)
+            Text(request.detail, style: Theme.of(context).textTheme.bodySmall),
+          if (error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                error,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          if (busy)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: AppColors.sky600,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.person_add_alt_1_rounded,
-                      color: Colors.white,
-                      size: 15,
-                    ),
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Có $count học sinh xin vào lớp',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const Text(
-                        'Yêu cầu tham gia từ Google Meet',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          color: AppColors.slate400,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 14),
-                  ElevatedButton(
-                    onPressed: () => meetService.admitAllPending(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.emerald600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      visualDensity: VisualDensity.compact,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: const Text(
-                      'Cho vào tất cả',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Đang chờ Meet xác nhận…',
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
               ),
             ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              FilledButton(
+                onPressed: busy
+                    ? null
+                    : () async {
+                        final admitted = await meetService.admitRequest(
+                          request.id,
+                        );
+                        if (context.mounted && admitted) {
+                          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Meet đã xác nhận ${request.name} vào phòng.',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                child: Text(error == null ? 'Cho vào' : 'Kiểm tra lại'),
+              ),
+              TextButton(
+                onPressed: busy
+                    ? null
+                    : () => GoogleMeetPanelDialog.show(
+                        context,
+                        meetService: meetService,
+                      ),
+                child: const Text('Mở Meet'),
+              ),
+              if (error != null)
+                TextButton(
+                  onPressed: busy
+                      ? null
+                      : () => meetService.dismissAdmissionNotice(request.id),
+                  child: const Text('Đóng thông báo'),
+                ),
+            ],
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }
