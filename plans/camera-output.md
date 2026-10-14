@@ -1,10 +1,12 @@
 # Windows camera output
 
-The app renders the teaching stage and a movable, resizable physical-webcam
-overlay into a dedicated Flutter repaint boundary. App navigation, document
-drawers, webcam controls, and broadcast controls remain outside that boundary.
-The board's own zoom strip and the PDF window's teaching UI are included.
-Floating plugin windows and the teacher's timer remain local in this version.
+The capture-area selector switches between **Toàn bộ ứng dụng** (entire app,
+the default) and **Chỉ bảng** (board only), including while broadcasting.
+Entire-app mode captures the Flutter app content, including toolbars, drawers,
+floating plugin windows, timers, menus, and dialogs. It excludes the operating
+system title bar, separate native windows, and other desktop applications.
+Board-only mode captures the teaching stage and webcam overlay, with the board's
+zoom strip and PDF teaching UI, while keeping surrounding controls local.
 
 `CameraBroadcastService` captures the visible composition, fits it into a fixed
 1280×720 frame, and sends raw RGBA bytes to the Windows plugin. It targets 30 FPS,
@@ -27,9 +29,12 @@ proof that anyone in a meeting is viewing the stream.
 3. Show the webcam with the camera icon. Choose a physical camera using the
    settings icon. Drag the webcam to move it; drag its lower-right handle to
    resize it. Camera-off releases the physical device and shows a placeholder.
-4. Click **Phát camera ảo**. Open Google Meet's Settings → Video and select
+4. Choose **Toàn bộ ứng dụng** or **Chỉ bảng** in the bottom-left controls,
+   then click **Phát camera ảo**. Open Google Meet's Settings → Video and select
    **Unity Video Capture**. Keep Meet's microphone set to your physical mic.
-5. Open the studio preview to inspect the exact outgoing frame. Stop with
+5. The board preview is live. The entire-app preview shows a snapshot taken when
+   opened, preventing recursive capture of its own video preview. Non-16:9 app
+   windows are fitted into 720p with padding rather than cropped. Stop with
    **Dừng camera ảo**. Leaving the studio releases the camera and output.
 
 Only Windows supports virtual output. The existing browser preview is separate.
@@ -41,7 +46,8 @@ resizing; they are not saved between application sessions yet.
 
 Run `flutter test` and `flutter analyze lib test plugins/wgc_broadcaster/lib`
 from `frontend`. The camera regression tests cover failed startup, RGBA frame
-transport, and overlay bounds; the lobby tests cover actual camera state and
+transport, overlay bounds, and capture-area pixels (app chrome appears only in
+entire-app mode); the lobby tests cover actual camera state and
 deferred audio.
 
 Live verification with a physical webcam and independent UnityCapture receiver

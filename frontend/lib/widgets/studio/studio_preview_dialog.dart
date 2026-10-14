@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
 import '../stage_container.dart';
@@ -56,6 +57,10 @@ class StudioPreviewDialog extends StatelessWidget {
                 builder: (_, _) {
                   final frame = CameraBroadcastService().preview;
                   if (frame != null) {
+                    if (CameraBroadcastService().captureArea ==
+                        CameraCaptureArea.app) {
+                      return const _AppFrameSnapshot();
+                    }
                     return RawImage(image: frame, fit: BoxFit.contain);
                   }
                   if (studio.view == 'question') {
@@ -73,4 +78,40 @@ class StudioPreviewDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+// A live app preview would capture itself recursively. Keep a snapshot instead.
+class _AppFrameSnapshot extends StatefulWidget {
+  const _AppFrameSnapshot();
+  @override
+  State<_AppFrameSnapshot> createState() => _AppFrameSnapshotState();
+}
+
+class _AppFrameSnapshotState extends State<_AppFrameSnapshot> {
+  ui.Image? _image;
+  @override
+  void initState() {
+    super.initState();
+    _image = CameraBroadcastService().preview?.clone();
+  }
+
+  @override
+  void dispose() {
+    _image?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      const Text(
+        'Toàn bộ ứng dụng · ảnh chụp lúc mở xem trước',
+        style: TextStyle(color: Colors.white70),
+      ),
+      const SizedBox(height: 12),
+      Expanded(
+        child: RawImage(image: _image, fit: BoxFit.contain),
+      ),
+    ],
+  );
 }
