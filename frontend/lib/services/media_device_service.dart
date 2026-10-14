@@ -8,10 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'virtual_media_bridge.dart';
 
-enum MediaDeviceKind {
-  videoInput,
-  audioInput,
-}
+enum MediaDeviceKind { videoInput, audioInput }
 
 class MediaDeviceInfo {
   const MediaDeviceInfo({
@@ -73,6 +70,7 @@ class MediaDeviceService extends ChangeNotifier {
 
   /// Initialize hardware media devices. Accepts mock parameters for testing.
   Future<void> init({
+    bool initializeCamera = true,
     List<MediaDeviceInfo>? mockCameras,
     List<MediaDeviceInfo>? mockMicrophones,
   }) async {
@@ -98,12 +96,12 @@ class MediaDeviceService extends ChangeNotifier {
     }
 
     // Real Hardware Detection on Windows
-    await _initPhysicalHardware();
+    await _initPhysicalHardware(initializeCamera: initializeCamera);
     _isInitialized = true;
     notifyListeners();
   }
 
-  Future<void> _initPhysicalHardware() async {
+  Future<void> _initPhysicalHardware({required bool initializeCamera}) async {
     // Register Windows Camera platform plugin if running on Windows desktop
     if (!kIsWeb && Platform.isWindows) {
       try {
@@ -128,14 +126,18 @@ class MediaDeviceService extends ChangeNotifier {
           );
         }
         _selectedCamera = _cameras.first;
-        final firstCam = available.first;
-        final id = await CameraPlatform.instance.createCameraWithSettings(
-          firstCam,
-          const MediaSettings(resolutionPreset: ResolutionPreset.medium),
-        );
-        await CameraPlatform.instance.initializeCamera(id);
-        _activeCameraId = id;
-        _isCameraActive = true;
+        // The lobby owns its webcam through TeacherMediaService. It only needs
+        // device discovery and microphone capture from this service.
+        if (initializeCamera) {
+          final firstCam = available.first;
+          final id = await CameraPlatform.instance.createCameraWithSettings(
+            firstCam,
+            const MediaSettings(resolutionPreset: ResolutionPreset.medium),
+          );
+          await CameraPlatform.instance.initializeCamera(id);
+          _activeCameraId = id;
+          _isCameraActive = true;
+        }
         notifyListeners();
       }
     } catch (e) {
@@ -166,11 +168,11 @@ class MediaDeviceService extends ChangeNotifier {
         _amplitudeSubscription = recorder
             .onAmplitudeChanged(const Duration(milliseconds: 60))
             .listen((amp) {
-          if (_isMicMuted || !_isMicActive) return;
-          // amp.current ranges between -160 dBFS to 0 dBFS. Human voice is usually -50 to -5.
-          final normalized = ((amp.current + 45.0) / 45.0).clamp(0.0, 1.0);
-          simulateAudioLevel(normalized);
-        });
+              if (_isMicMuted || !_isMicActive) return;
+              // amp.current ranges between -160 dBFS to 0 dBFS. Human voice is usually -50 to -5.
+              final normalized = ((amp.current + 45.0) / 45.0).clamp(0.0, 1.0);
+              simulateAudioLevel(normalized);
+            });
 
         // Start stream to capture microphone input
         final stream = await recorder.startStream(
@@ -285,7 +287,11 @@ class MediaDeviceService extends ChangeNotifier {
       (c) => c.label == cameraName || c.id == cameraName,
       orElse: () => _cameras.isNotEmpty
           ? _cameras.first
-          : const MediaDeviceInfo(id: 'default', label: 'Default', kind: MediaDeviceKind.videoInput),
+          : const MediaDeviceInfo(
+              id: 'default',
+              label: 'Default',
+              kind: MediaDeviceKind.videoInput,
+            ),
     );
     _selectedCamera = target;
 

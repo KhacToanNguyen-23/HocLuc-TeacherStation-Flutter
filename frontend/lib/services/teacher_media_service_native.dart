@@ -49,10 +49,9 @@ class TeacherMediaService extends ChangeNotifier {
 
   String? get selectedCamera => _selectedCamera;
 
-  List<String> get availableCameras =>
-      _cameras.isNotEmpty
-          ? _cameras.map((c) => c.name).toList()
-          : _deviceService.cameras.map((c) => c.label).toList();
+  List<String> get availableCameras => _cameras.isNotEmpty
+      ? _cameras.map((c) => c.name).toList()
+      : _deviceService.cameras.map((c) => c.label).toList();
 
   List<String> get availableMicrophones =>
       _deviceService.microphones.map((m) => m.label).toList();
@@ -81,7 +80,7 @@ class TeacherMediaService extends ChangeNotifier {
     // Initialize audio device & level stream
     try {
       if (!_deviceService.isInitialized) {
-        await _deviceService.init();
+        await _deviceService.init(initializeCamera: false);
       }
     } catch (_) {}
 
@@ -187,7 +186,9 @@ class TeacherMediaService extends ChangeNotifier {
 
   Widget buildCameraPreview() {
     final controller = _controller;
-    if (isCameraActive && controller != null && controller.value.isInitialized) {
+    if (isCameraActive &&
+        controller != null &&
+        controller.value.isInitialized) {
       final size = controller.value.previewSize ?? const Size(640, 480);
       return ClipRect(
         child: FittedBox(
