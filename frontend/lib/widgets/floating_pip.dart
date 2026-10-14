@@ -7,8 +7,10 @@ import 'presentation_surface.dart';
 
 /// Interactive controls sit above the clean webcam in PresentationSurface.
 class FloatingPip extends StatelessWidget {
-  const FloatingPip({super.key, required this.studio});
+  const FloatingPip({super.key, required this.studio,
+    this.showDeviceControls = true, this.controlsOnly = false});
   final StudioState studio;
+  final bool showDeviceControls, controlsOnly;
   @override
   Widget build(BuildContext context) {
     final media = TeacherMediaService();
@@ -21,7 +23,7 @@ class FloatingPip extends StatelessWidget {
           final rect = cameraRect(size, studio);
           return Stack(
             children: [
-              if (studio.showCameraPip)
+              if (!controlsOnly && studio.showCameraPip)
                 Positioned.fromRect(
                   rect: rect,
                   child: GestureDetector(
@@ -113,13 +115,14 @@ class FloatingPip extends StatelessWidget {
                     ),
                   ),
                 ),
-              Positioned(
-                bottom: 12,
-                left: 12,
-                right: 160,
+              if (showDeviceControls || controlsOnly) Positioned(
+                top: controlsOnly ? 0 : null,
+                bottom: controlsOnly ? 0 : 12,
+                left: controlsOnly ? 0 : 12,
+                right: controlsOnly ? 0 : 160,
                 child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Container(
+                  alignment: controlsOnly ? Alignment.topLeft : Alignment.bottomLeft,
+                  child: SingleChildScrollView(child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 6,
@@ -216,6 +219,7 @@ class FloatingPip extends StatelessWidget {
                             ),
                           ),
                       ],
+                    ),
                     ),
                   ),
                 ),

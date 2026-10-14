@@ -11,10 +11,16 @@ class InteractiveChalkboard extends StatefulWidget {
     super.key,
     required this.studio,
     this.interactive = true,
+    this.showGrid = true,
+    this.isFullscreen = false,
+    this.onToggleFullscreen,
   });
 
   final StudioState studio;
   final bool interactive;
+  final bool showGrid;
+  final bool isFullscreen;
+  final VoidCallback? onToggleFullscreen;
 
   @override
   State<InteractiveChalkboard> createState() => _InteractiveChalkboardState();
@@ -90,8 +96,10 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                const Positioned.fill(
-                  child: CustomPaint(painter: GridPainter()),
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: GridPainter(showGrid: widget.showGrid),
+                  ),
                 ),
                 Positioned.fill(
                   child: StrokeCanvas(
@@ -148,11 +156,18 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
             ),
           ),
           // Mini Zoom Bar overlay at bottom-right of board
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: _buildMiniZoomBar(isPanMode),
-          ),
+          if (widget.interactive)
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: _buildMiniZoomBar(isPanMode),
+            ),
+          if (widget.interactive)
+            Positioned(
+              left: 16,
+              bottom: MediaQuery.sizeOf(context).width < 600 ? 60 : 16,
+              child: _buildPageNavigation(),
+            ),
         ],
       ),
     );
@@ -249,8 +264,93 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
               child: Icon(Icons.add, size: 16, color: Colors.white70),
             ),
           ),
+          if (widget.onToggleFullscreen != null) ...[
+            Container(
+              width: 1,
+              height: 18,
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              color: Colors.white24,
+            ),
+            IconButton(
+              tooltip: widget.isFullscreen
+                  ? 'Thoát toàn màn hình bảng'
+                  : 'Toàn màn hình bảng',
+              onPressed: widget.onToggleFullscreen,
+              style: IconButton.styleFrom(
+                minimumSize: const Size(32, 32),
+                padding: EdgeInsets.zero,
+              ),
+              icon: Icon(
+                widget.isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                size: 20,
+                color: Colors.white70,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+
+  Widget _buildPageNavigation() => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+    decoration: BoxDecoration(
+      color: const Color(0xee1e2d27),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: Colors.white24),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: 'Bảng trước',
+          onPressed: widget.studio.page > 0 ? widget.studio.prevPage : null,
+          style: IconButton.styleFrom(
+            minimumSize: const Size(32, 32),
+            padding: EdgeInsets.zero,
+            foregroundColor: Colors.white,
+            disabledForegroundColor: Colors.white24,
+          ),
+          icon: const Icon(Icons.chevron_left, size: 20),
+        ),
+        Text(
+          'Bảng ${widget.studio.page + 1} / ${widget.studio.pages.length}',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Bảng tiếp theo',
+          onPressed: widget.studio.page < widget.studio.pages.length - 1
+              ? () => widget.studio.setPage(widget.studio.page + 1)
+              : null,
+          style: IconButton.styleFrom(
+            minimumSize: const Size(32, 32),
+            padding: EdgeInsets.zero,
+            foregroundColor: Colors.white,
+            disabledForegroundColor: Colors.white24,
+          ),
+          icon: const Icon(Icons.chevron_right, size: 20),
+        ),
+        Container(
+          width: 1,
+          height: 18,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          color: Colors.white24,
+        ),
+        IconButton(
+          tooltip: 'Thêm bảng',
+          onPressed: widget.studio.addPage,
+          style: IconButton.styleFrom(
+            minimumSize: const Size(32, 32),
+            padding: EdgeInsets.zero,
+            foregroundColor: Colors.white,
+          ),
+          icon: const Icon(Icons.add, size: 20),
+        ),
+      ],
+    ),
+  );
 }

@@ -19,10 +19,16 @@ class StageContainer extends StatelessWidget {
     super.key,
     required this.studio,
     this.interactive = true,
+    this.showGrid = true,
+    this.isFullscreen = false,
+    this.onToggleFullscreen,
   });
 
   final StudioState studio;
   final bool interactive;
+  final bool showGrid;
+  final bool isFullscreen;
+  final VoidCallback? onToggleFullscreen;
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +139,7 @@ class StageContainer extends StatelessWidget {
                                 // Floating Draggable Camera PIP Card
                                 if (interactive)
                                   Positioned.fill(
-                                    child: FloatingPip(studio: studio),
+                                    child: FloatingPip(studio: studio, showDeviceControls: false),
                                   ),
 
                                 // Floating Countdown Timer Pill
@@ -191,7 +197,13 @@ class StageContainer extends StatelessWidget {
   }
 
   Widget _buildChalkboard() {
-    return InteractiveChalkboard(studio: studio, interactive: interactive);
+    return InteractiveChalkboard(
+      studio: studio,
+      interactive: interactive,
+      showGrid: showGrid,
+      isFullscreen: isFullscreen,
+      onToggleFullscreen: onToggleFullscreen,
+    );
   }
 }
 

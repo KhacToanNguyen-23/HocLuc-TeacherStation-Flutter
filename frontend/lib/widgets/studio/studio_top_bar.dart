@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
 import '../../services/meet_automation_service.dart';
 import '../../services/url_opener.dart';
 import '../create_classroom_dialog.dart';
+
+enum StudioSettingsSection { room, media, display, shortcuts }
 
 class StudioTopBar extends StatelessWidget {
   const StudioTopBar({
@@ -12,17 +15,14 @@ class StudioTopBar extends StatelessWidget {
     required this.studio,
     required this.width,
     required this.hasLessons,
-    required this.hasInspector,
     required this.onToggleLessons,
-    required this.onToggleInspector,
+    required this.onOpenSettings,
     required this.onRename,
     required this.onPreview,
     required this.onSave,
     required this.onRetryConnect,
     this.onToggleStudents,
-    this.onTogglePlugins,
     this.hasStudents = false,
-    this.hasPlugins = false,
     this.onLeaveClassroom,
     this.isPlanningMode = false,
     this.onExitPlanning,
@@ -31,572 +31,401 @@ class StudioTopBar extends StatelessWidget {
 
   final StudioState studio;
   final double width;
-  final bool hasLessons;
-  final bool hasInspector;
-  final bool hasStudents;
-  final bool hasPlugins;
+  final bool hasLessons, hasStudents;
   final bool isPlanningMode;
-  final VoidCallback onToggleLessons;
-  final VoidCallback onToggleInspector;
-  final VoidCallback onRename;
-  final VoidCallback onPreview;
-  final VoidCallback onSave;
-  final VoidCallback onRetryConnect;
-  final VoidCallback? onToggleStudents;
-  final VoidCallback? onTogglePlugins;
-  final VoidCallback? onLeaveClassroom;
-  final VoidCallback? onExitPlanning;
-  final VoidCallback? onCreateClassroomFromPlanning;
+  final VoidCallback? onExitPlanning, onCreateClassroomFromPlanning;
+  final VoidCallback onToggleLessons,
+      onRename,
+      onPreview,
+      onSave,
+      onRetryConnect;
+  final ValueChanged<StudioSettingsSection> onOpenSettings;
+  final VoidCallback? onToggleStudents, onLeaveClassroom;
 
   @override
-  Widget build(BuildContext context) {
-    const pine = AppColors.pine;
-    const muted = AppColors.muted;
-    const line = AppColors.line;
-
-    return Container(
-      height: 54,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+  Widget build(BuildContext context) => Material(
+    color: Colors.white,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: line)),
+        border: Border(bottom: BorderSide(color: AppColors.line)),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: AppColors.sky600,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: Text(
-                'm',
-                style: TextStyle(
-                  fontFamily: 'Literata',
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+      child: width < 1000
+          ? Column(
+              children: [
+                SizedBox(height: 44, child: _identity(context)),
+                const SizedBox(height: 4),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: _actions(),
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          IconButton(
-            tooltip: hasLessons ? 'Đóng mục bài giảng' : 'Mở mục bài giảng',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-            onPressed: onToggleLessons,
-            icon: Icon(
-              hasLessons ? Icons.view_sidebar : Icons.view_sidebar_outlined,
-              color: pine,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Flexible(
-            child: InkWell(
-              onTap: onRename,
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Text.rich(
-                  TextSpan(
-                    text: studio.title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: pine,
-                    ),
-                    children: const [
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: Padding(
-                          padding: EdgeInsets.only(left: 3),
-                          child: Icon(Icons.edit_outlined, size: 12, color: muted),
-                        ),
-                      ),
-                    ],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          if (!studio.online)
-            Tooltip(
-              message: studio.error ?? 'Chưa kết nối Java. Bấm để thử lại.',
-              child: InkWell(
-                onTap: studio.loading ? null : onRetryConnect,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xffffeed9),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xffffcc80)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.wifi_off, size: 11, color: Color(0xffe65100)),
-                      SizedBox(width: 4),
-                      Text(
-                        'Thử lại',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xffe65100),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              ],
             )
-          else if (studio.saving)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 7,
-                    height: 7,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
-                    ),
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    'Đang lưu...',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1D4ED8),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else if (studio.dirty)
-            Tooltip(
-              message: 'Có thay đổi chưa lưu. Bấm để lưu (Ctrl+S)',
-              child: InkWell(
-                onTap: onSave,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xfffff7ed),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xfffed7aa)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.circle, size: 6, color: Color(0xffea580c)),
-                      SizedBox(width: 4),
-                      Text(
-                        'Chưa lưu',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xffc2410c),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else if (studio.savedAt.isNotEmpty)
-            Tooltip(
-              message: 'Tất cả thay đổi đã được lưu an toàn',
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF16A34A)),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Đã lưu ${studio.savedAt}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF15803D),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          : Row(
+              children: [
+                Expanded(child: _identity(context)),
+                const SizedBox(width: 12),
+                _actions(),
+              ],
             ),
-          const SizedBox(width: 8),
-          if (isPlanningMode)
-            Container(
-              margin: const EdgeInsets.only(left: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFBBF7D0)),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.edit_calendar_rounded, size: 13, color: Color(0xFF16A34A)),
-                  SizedBox(width: 5),
-                  Text(
-                    'Kế hoạch bài giảng',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF15803D),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            ListenableBuilder(
-              listenable: MeetAutomationService(),
-              builder: (context, _) {
-                final meetService = MeetAutomationService();
-                final url = meetService.meetingUrl;
-              if (url != null) {
-                return Container(
-                  margin: const EdgeInsets.only(left: 4),
-                  padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xffeff6ff),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xffbfdbfe)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.link_rounded, size: 15, color: Color(0xFF2563EB)),
-                      const SizedBox(width: 5),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: width > 1150 ? 150 : 90),
-                        child: Text(
-                          url.replaceFirst(RegExp(r'^https?:\/\/'), ''),
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1D4ED8),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Tooltip(
-                        message: 'Sao chép link Meet gửi học sinh',
-                        child: InkWell(
-                          onTap: () {
-                            Clipboard.setData(ClipboardData(text: url));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Đã sao chép link lớp học Google Meet!'),
-                                duration: Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(4),
-                          child: const Padding(
-                            padding: EdgeInsets.all(3),
-                            child: Icon(Icons.copy_rounded, size: 14, color: Color(0xFF2563EB)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Tooltip(
-                        message: 'Mở Google Meet trên tab mới',
-                        child: InkWell(
-                          onTap: () => openExternalUrl(url),
-                          borderRadius: BorderRadius.circular(4),
-                          child: const Padding(
-                            padding: EdgeInsets.all(3),
-                            child: Icon(Icons.open_in_new_rounded, size: 14, color: Color(0xFF2563EB)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
+    ),
+  );
 
-              return SizedBox(
-                height: 38,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    showDialog<void>(
-                      context: context,
-                      builder: (_) => const CreateClassroomDialog(),
-                    );
-                  },
-                  icon: const Icon(Icons.add_rounded, size: 17),
-                  label: Text(width > 900 ? 'Tạo lớp học' : ''),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: width > 900 ? 14 : 10),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                    elevation: 1,
-                    textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          const Spacer(),
-          IconButton(
-            tooltip: 'Bảng giảng',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () => studio.setView('board'),
-            style: IconButton.styleFrom(
-              backgroundColor: studio.view == 'board'
-                  ? const Color(0xffedf2e5)
-                  : Colors.transparent,
-            ),
-            icon: Icon(
-              Icons.dashboard_outlined,
-              color: studio.view == 'board' ? pine : muted,
+  Widget _identity(BuildContext context) => Row(
+    children: [
+      Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: AppColors.sky600,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: const Center(
+          child: Text(
+            'm',
+            style: TextStyle(
+              fontFamily: 'Literata',
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(width: 3),
-          IconButton(
-            tooltip: 'Câu hỏi',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () =>
-                studio.setView(studio.view == 'question' ? 'board' : 'question'),
-            style: IconButton.styleFrom(
-              backgroundColor: studio.view == 'question'
-                  ? const Color(0xffedf2e5)
-                  : Colors.transparent,
-            ),
-            icon: Icon(
-              Icons.quiz_outlined,
-              color: studio.view == 'question' ? pine : muted,
-            ),
-          ),
-          const SizedBox(width: 3),
-          IconButton(
-            tooltip: 'Xem khung trình bày',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: onPreview,
-            icon: const Icon(Icons.slideshow_outlined, color: pine),
-          ),
-          const SizedBox(width: 3),
-          IconButton(
-            tooltip: 'Thiết bị và API AI',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: onToggleInspector,
-            icon: Icon(
-              hasInspector ? Icons.tune : Icons.tune_outlined,
-              color: hasInspector ? pine : muted,
-            ),
-          ),
-          if (!isPlanningMode)
-            IconButton(
-              tooltip: studio.saving ? 'Đang lưu…' : 'Lưu bài giảng',
-              iconSize: 18,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: studio.saving || studio.loading ? null : onSave,
-              icon: Icon(
-                studio.saving ? Icons.hourglass_top_rounded : Icons.save_outlined,
-                color: pine,
-              ),
-            ),
-          if (width > 800 && onToggleStudents != null) ...[
-            const SizedBox(width: 3),
-            IconButton(
-              tooltip: 'Danh sách học sinh',
-              iconSize: 18,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: onToggleStudents,
-              style: IconButton.styleFrom(
-                backgroundColor: hasStudents ? const Color(0xffedf2e5) : Colors.transparent,
-              ),
-              icon: Icon(hasStudents ? Icons.groups : Icons.groups_outlined, color: pine),
-            ),
-          ],
-          if (width > 800 && onTogglePlugins != null) ...[
-            const SizedBox(width: 3),
-            IconButton(
-              tooltip: 'Hoạt động & Tiện ích môn',
-              iconSize: 18,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: onTogglePlugins,
-              style: IconButton.styleFrom(
-                backgroundColor: hasPlugins ? const Color(0xffedf2e5) : Colors.transparent,
-              ),
-              icon: Icon(hasPlugins ? Icons.extension : Icons.extension_outlined, color: pine),
-            ),
-          ],
-          if (isPlanningMode) ...[
-            if (onExitPlanning != null) ...[
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 38,
-                child: OutlinedButton.icon(
-                  onPressed: onExitPlanning,
-                  icon: const Icon(Icons.arrow_back_rounded, size: 17),
-                  label: Text(
-                    width > 850 ? 'Thoát' : '',
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.1,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.slate700,
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: AppColors.slate300, width: 1.2),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: width > 950 ? 15 : 11,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(width: 8),
-            SizedBox(
-              height: 38,
-              child: ElevatedButton.icon(
-                onPressed: studio.saving || studio.loading ? null : onSave,
-                icon: studio.saving
-                    ? const SizedBox(
-                        width: 15,
-                        height: 15,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.save_rounded, size: 18, color: Colors.white),
-                label: Text(
-                  studio.saving
-                      ? 'Đang lưu…'
-                      : (width > 900 ? 'Lưu bài soạn' : 'Lưu'),
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: -0.1,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF059669),
-                  foregroundColor: Colors.white,
-                  elevation: 1,
-                  shadowColor: const Color(0xFF059669).withValues(alpha: 0.35),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: width > 950 ? 15 : 11,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                ),
-              ),
-            ),
-            if (onCreateClassroomFromPlanning != null) ...[
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 38,
-                child: ElevatedButton.icon(
-                  onPressed: onCreateClassroomFromPlanning,
-                  icon: const Icon(Icons.videocam_rounded, size: 19, color: Colors.white),
-                  label: Text(
-                    width > 850 ? 'Tạo phòng học' : '',
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: -0.1,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.sky600,
-                    foregroundColor: Colors.white,
-                    elevation: 1,
-                    shadowColor: AppColors.sky600.withValues(alpha: 0.35),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: width > 950 ? 15 : 11,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                  ),
-                ),
-              ),
-            ],
-          ] else if (onLeaveClassroom != null) ...[
-            const SizedBox(width: 8),
-            SizedBox(
-              height: 38,
-              child: ElevatedButton.icon(
-                onPressed: onLeaveClassroom,
-                icon: const Icon(Icons.call_end_rounded, size: 18, color: Colors.white),
-                label: Text(
-                  width > 850 ? 'Rời phòng' : '',
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: -0.1,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626),
-                  foregroundColor: Colors.white,
-                  elevation: 1,
-                  shadowColor: const Color(0xFFDC2626).withValues(alpha: 0.35),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: width > 950 ? 15 : 11,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                ),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
-    );
-  }
+      const SizedBox(width: 4),
+      _icon(
+        tooltip: hasLessons ? 'Đóng quản lý bảng' : 'Quản lý các bảng',
+        icon: Icons.view_sidebar_outlined,
+        onPressed: onToggleLessons,
+        selected: hasLessons,
+      ),
+      Expanded(
+        child: InkWell(
+          onTap: onRename,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    studio.title,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.edit_outlined,
+                  size: 14,
+                  color: AppColors.muted,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      if (isPlanningMode && width >= 1000)
+        const Text('Kế hoạch bài giảng', style: TextStyle(fontSize: 11)),
+      if (!studio.online)
+        Tooltip(
+          message: studio.error ?? 'Chưa kết nối. Bấm để thử lại.',
+          child: TextButton(
+            onPressed: studio.loading ? null : onRetryConnect,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xffe65100),
+              backgroundColor: const Color(0xfffff7ed),
+              minimumSize: const Size(44, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Color(0xfffed7aa)),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.wifi_off, size: 15),
+                if (width >= 1440) ...[
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Chưa kết nối · Thử lại',
+                    style: TextStyle(fontSize: 11),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        )
+      else if (studio.dirty)
+        const Tooltip(
+          message: 'Có thay đổi chưa lưu',
+          child: Padding(
+            padding: EdgeInsets.all(8),
+            child: Icon(Icons.circle, size: 8, color: Color(0xffea580c)),
+          ),
+        ),
+      const SizedBox(width: 6),
+      ListenableBuilder(
+        listenable: MeetAutomationService(),
+        builder: (context, _) {
+          if (isPlanningMode) return const SizedBox.shrink();
+          final url = MeetAutomationService().meetingUrl;
+          if (url == null) {
+            return Tooltip(
+              message: 'Tạo lớp học',
+              child: TextButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => const CreateClassroomDialog(),
+                ),
+                child: width >= 1440
+                    ? const Text('Tạo lớp học', style: TextStyle(fontSize: 12))
+                    : const Icon(Icons.add_link_rounded, size: 20),
+              ),
+            );
+          }
+          return Container(
+            padding: const EdgeInsets.only(left: 6),
+            decoration: BoxDecoration(
+              color: AppColors.blue50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.blue100),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (width >= 1440) ...[
+                  const Icon(
+                    Icons.link_rounded,
+                    size: 16,
+                    color: AppColors.blue600,
+                  ),
+                  const SizedBox(width: 5),
+                  SizedBox(
+                    width: width >= 1440 ? 150 : 90,
+                    child: Text(
+                      url.replaceFirst(RegExp(r'^https?://'), ''),
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.blue700,
+                      ),
+                    ),
+                  ),
+                  _icon(
+                    tooltip: 'Sao chép link Meet gửi học sinh',
+                    icon: Icons.copy_rounded,
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: url));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Đã sao chép link lớp học Google Meet!',
+                          ),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                _icon(
+                  tooltip: 'Mở Google Meet trên tab mới',
+                  icon: Icons.open_in_new_rounded,
+                  onPressed: () => openExternalUrl(url),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ],
+  );
+
+  Widget _actions() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (isPlanningMode) ...[
+        _tab('Thoát', 'Thoát soạn bài', false, onExitPlanning ?? () {}),
+        _tab(
+          'Tạo phòng học',
+          'Tạo phòng học',
+          false,
+          onCreateClassroomFromPlanning ?? () {},
+        ),
+        _tab('Lưu bài soạn', 'Lưu bài soạn', false, onSave),
+      ],
+      _tab(
+        'Bảng',
+        'Bảng giảng',
+        studio.view == 'board' && !studio.showQuestionsDrawer,
+        () {
+          studio.setQuestionsDrawer(false);
+          studio.setView('board');
+        },
+      ),
+      _tab('Tài liệu', 'Tài liệu', studio.showQuestionsDrawer, () {
+        studio.setView('board');
+        studio.toggleQuestionsDrawer();
+      }),
+      _tab('Câu hỏi', 'Câu hỏi', studio.view == 'question', () {
+        studio.setQuestionsDrawer(false);
+        studio.setView(studio.view == 'question' ? 'board' : 'question');
+      }),
+      const SizedBox(width: 4),
+      _icon(
+        tooltip: 'Xem khung trình bày',
+        icon: Icons.preview_outlined,
+        onPressed: onPreview,
+      ),
+      if (onToggleStudents != null)
+        _icon(
+          tooltip: 'Danh sách học sinh',
+          icon: Icons.groups_outlined,
+          onPressed: onToggleStudents,
+          selected: hasStudents,
+        ),
+      if (!isPlanningMode)
+        _icon(
+          tooltip: studio.saving
+              ? 'Đang lưu…'
+              : (isPlanningMode ? 'Lưu bài soạn' : 'Lưu bài giảng'),
+          icon: studio.saving
+              ? Icons.hourglass_top_rounded
+              : Icons.save_outlined,
+          onPressed: studio.saving || studio.loading ? null : onSave,
+        ),
+      PopupMenuButton<StudioSettingsSection>(
+        tooltip: 'Cài đặt khác',
+        position: PopupMenuPosition.under,
+        offset: const Offset(0, 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: Colors.white,
+        elevation: 4,
+        onSelected: onOpenSettings,
+        itemBuilder: (_) => [
+          const PopupMenuItem<StudioSettingsSection>(
+            enabled: false,
+            child: Text(
+              'Cài đặt',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.pine,
+              ),
+            ),
+          ),
+          const PopupMenuDivider(),
+          for (final (value, label, icon) in [
+            (
+              StudioSettingsSection.room,
+              'Cài đặt phòng học',
+              Icons.settings_outlined,
+            ),
+            (
+              StudioSettingsSection.media,
+              'Âm thanh & video',
+              Icons.videocam_outlined,
+            ),
+            (
+              StudioSettingsSection.display,
+              'Cài đặt hiển thị',
+              Icons.desktop_windows_outlined,
+            ),
+            (
+              StudioSettingsSection.shortcuts,
+              'Phím tắt',
+              Icons.keyboard_outlined,
+            ),
+          ])
+            PopupMenuItem(
+              value: value,
+              child: Row(
+                children: [
+                  Icon(icon, size: 20, color: AppColors.pine),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(label, style: const TextStyle(fontSize: 13)),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: AppColors.muted,
+                  ),
+                ],
+              ),
+            ),
+        ],
+        child: const SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(Icons.more_vert, size: 22, color: AppColors.pine),
+        ),
+      ),
+      if (!isPlanningMode && onLeaveClassroom != null) ...[
+        Container(
+          width: 1,
+          height: 24,
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          color: AppColors.line,
+        ),
+        IconButton(
+          tooltip: 'Rời phòng',
+          onPressed: onLeaveClassroom,
+          style: IconButton.styleFrom(
+            backgroundColor: const Color(0xffdc2626),
+            foregroundColor: Colors.white,
+            minimumSize: const Size(44, 44),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          icon: const Icon(Icons.logout_rounded, size: 24),
+        ),
+      ],
+    ],
+  );
+
+  Widget _tab(
+    String label,
+    String tooltip,
+    bool active,
+    VoidCallback onPressed,
+  ) => Tooltip(
+    message: tooltip,
+    child: TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: active ? AppColors.sky600 : AppColors.pine,
+        backgroundColor: active ? AppColors.sky100 : Colors.transparent,
+        minimumSize: const Size(44, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+      ),
+    ),
+  );
+
+  Widget _icon({
+    required String tooltip,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool selected = false,
+  }) => IconButton(
+    tooltip: tooltip,
+    onPressed: onPressed,
+    style: IconButton.styleFrom(
+      minimumSize: const Size(44, 44),
+      backgroundColor: selected ? AppColors.sky100 : Colors.transparent,
+      foregroundColor: selected ? AppColors.sky600 : AppColors.pine,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ),
+    icon: Icon(icon, size: 20),
+  );
 }

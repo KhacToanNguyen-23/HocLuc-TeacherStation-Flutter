@@ -72,7 +72,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Hoạt động & Tiện ích'), findsOneWidget);
+      expect(find.text('Extension'), findsOneWidget);
       expect(find.text('Chưa có tiện ích bổ sung'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.close_rounded));

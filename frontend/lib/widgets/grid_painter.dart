@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 const Color chalkboardBg = Color(0xff14221d);
-const Color chalkboardGrid = Color(0x1fffffff);
-const Color chalkboardSubGrid = Color(0x0fffffff);
+const Color chalkboardGrid = Color(0x14ffffff);
+const Color chalkboardSubGrid = Color(0x04ffffff);
 
 class GridPainter extends CustomPainter {
   const GridPainter({

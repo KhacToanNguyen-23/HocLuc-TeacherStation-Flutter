@@ -1,3 +1,4 @@
+import 'media_broadcast_controls.dart';
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
@@ -62,6 +63,7 @@ class StudioNotesSettingsTab extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         _sectionLabel('ĐẦU RA CHO MEETING'),
+        MediaBroadcastControlsButton(studio: studio),
         const SizedBox(height: 10),
         Container(
           height: 110,

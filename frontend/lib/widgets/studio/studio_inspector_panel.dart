@@ -14,6 +14,7 @@ class StudioInspectorPanel extends StatefulWidget {
     required this.questionController,
     required this.endpointController,
     required this.onPreview,
+    this.initialTab = 0,
   });
 
   final StudioState studio;
@@ -21,15 +22,22 @@ class StudioInspectorPanel extends StatefulWidget {
   final TextEditingController questionController;
   final TextEditingController endpointController;
   final VoidCallback onPreview;
+  final int initialTab;
 
   @override
   State<StudioInspectorPanel> createState() => _StudioInspectorPanelState();
 }
 
 class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
-  int _selectedTab = 0; // 0: Live Meet Cockpit, 1: Thiết bị & Ghi chú
+  late int _selectedTab;
   final MeetAutomationService _meetService = MeetAutomationService();
   final GoogleMeetAuthService _authService = GoogleMeetAuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTab = widget.initialTab;
+  }
 
   Widget _buildTabBar() {
     return ListenableBuilder(
@@ -54,7 +62,9 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: _selectedTab == 0 ? Colors.white : Colors.transparent,
+                        color: _selectedTab == 0
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: _selectedTab == 0
                             ? [
@@ -94,7 +104,10 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                           if (handCount > 0) ...[
                             const SizedBox(width: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 1,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xfff97316),
                                 borderRadius: BorderRadius.circular(10),
@@ -120,7 +133,9 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: _selectedTab == 1 ? Colors.white : Colors.transparent,
+                        color: _selectedTab == 1
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: _selectedTab == 1
                             ? [

@@ -3,7 +3,7 @@ import '../../constants/theme.dart';
 import '../../models/subject_plugin.dart';
 import '../../services/plugin_manager.dart';
 
-/// Right-side Activities Panel matching Google Meet Add-ons UX.
+/// Extension catalog shared by the hover flyout and the full catalog panel.
 /// Displays unified list of available and installed subject plugins with zero mock data.
 class StudioPluginsMarketplacePanel extends StatelessWidget {
   const StudioPluginsMarketplacePanel({
@@ -41,18 +41,22 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
+                    color: AppColors.sky50,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                    border: Border.all(color: AppColors.sky100),
                   ),
                   child: const Center(
-                    child: Icon(Icons.extension_rounded, size: 18, color: Color(0xFF16A34A)),
+                    child: Icon(
+                      Icons.extension_outlined,
+                      size: 18,
+                      color: AppColors.sky600,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
-                    'Hoạt động & Tiện ích',
+                    'Extension',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -62,7 +66,11 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.slate600),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: AppColors.slate600,
+                  ),
                   tooltip: 'Đóng tiện ích',
                   onPressed: onClose,
                 ),
@@ -84,11 +92,17 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: plugins.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final plugin = plugins[index];
                     final isInstalled = manager.isInstalled(plugin.id);
-                    return _buildPluginCard(context, manager, plugin, isInstalled);
+                    return _buildPluginCard(
+                      context,
+                      manager,
+                      plugin,
+                      isInstalled,
+                    );
                   },
                 );
               },
@@ -132,7 +146,7 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Hệ thống Extension Microkernel sẵn sàng kết nối tiện ích bộ môn THPT và kỳ thi ĐGNL.',
+              'Các extension được bổ sung sẽ xuất hiện tại đây.',
               style: TextStyle(
                 fontSize: 11.5,
                 color: AppColors.slate500,
@@ -198,7 +212,10 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     plugin.summary,
-                    style: const TextStyle(fontSize: 11, color: AppColors.slate500),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.slate500,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -213,11 +230,19 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.sky600,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
               ),
-              child: const Text('Cài đặt', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+              child: const Text(
+                'Cài đặt',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              ),
             )
           else ...[
             ElevatedButton(
@@ -225,15 +250,27 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF16A34A),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
               ),
-              child: const Text('Mở', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+              child: const Text(
+                'Mở',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              ),
             ),
             const SizedBox(width: 4),
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFF94A3B8)),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                size: 18,
+                color: Color(0xFF94A3B8),
+              ),
               tooltip: 'Gỡ tiện ích',
               onPressed: () => manager.uninstall(plugin.id),
             ),

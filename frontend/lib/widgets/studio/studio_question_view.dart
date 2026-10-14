@@ -112,7 +112,12 @@ class StudioQuestionView extends StatelessWidget {
                   ),
                 ),
                 if (interactive)
-                  Positioned.fill(child: FloatingPip(studio: studio)),
+                  Positioned.fill(
+                    child: FloatingPip(
+                      studio: studio,
+                      showDeviceControls: false,
+                    ),
+                  ),
               ],
             ),
           ),

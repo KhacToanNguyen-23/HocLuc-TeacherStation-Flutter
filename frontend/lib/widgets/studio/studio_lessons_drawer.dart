@@ -50,7 +50,7 @@ class StudioLessonsDrawer extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'P.${studio.page + 1}/3',
+                'P.${studio.page + 1}/${studio.pages.length}',
                 style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
@@ -69,11 +69,10 @@ class StudioLessonsDrawer extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          for (final (index, label) in [
-            (0, 'Khám phá hàm số'),
-            (1, 'Giải thích bảng'),
-            (2, 'Luyện tập'),
-          ])
+          for (final index in List.generate(
+            studio.pages.length,
+            (index) => index,
+          ))
             Padding(
               padding: const EdgeInsets.only(bottom: 5),
               child: InkWell(
@@ -84,7 +83,10 @@ class StudioLessonsDrawer extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: studio.page == index && studio.view == 'board'
                         ? const Color(0xfff0f4e8)
@@ -124,7 +126,9 @@ class StudioLessonsDrawer extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          label,
+                          index < studio.pageTitles.length
+                              ? studio.pageTitles[index]
+                              : 'Bảng ${index + 1}',
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11,
@@ -201,7 +205,10 @@ class StudioLessonsDrawer extends StatelessWidget {
                         onTap: () => PluginManager().openPlugin(p),
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),

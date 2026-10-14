@@ -34,7 +34,9 @@ void main() {
   });
 
   group('PlanningListCard Widget Tests', () {
-    testWidgets('renders empty state when plannings list is empty', (tester) async {
+    testWidgets('renders empty state when plannings list is empty', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -66,7 +68,9 @@ void main() {
       expect(createdNew, isTrue);
     });
 
-    testWidgets('renders list of planning cards and handles callbacks', (tester) async {
+    testWidgets('renders list of planning cards and handles callbacks', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -137,67 +141,69 @@ void main() {
   });
 
   group('StudioTopBar Planning Mode Tests', () {
-    testWidgets('displays Planning badge and action buttons without Leave Room button', (tester) async {
-      tester.view.physicalSize = const Size(1280, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'displays Planning badge and action buttons without Leave Room button',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      final studio = StudioState()
-        ..online = true
-        ..loading = false;
-      bool exited = false;
-      bool launched = false;
-      bool saved = false;
+        final studio = StudioState()
+          ..online = true
+          ..loading = false;
+        bool exited = false;
+        bool launched = false;
+        bool saved = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 1280,
-              height: 60,
-              child: StudioTopBar(
-                studio: studio,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
                 width: 1280,
-                hasLessons: false,
-                hasInspector: false,
-                onToggleLessons: () {},
-                onToggleInspector: () {},
-                onRename: () {},
-                onPreview: () {},
-                onSave: () => saved = true,
-                onRetryConnect: () {},
-                isPlanningMode: true,
-                onExitPlanning: () => exited = true,
-                onCreateClassroomFromPlanning: () => launched = true,
+                height: 60,
+                child: StudioTopBar(
+                  studio: studio,
+                  width: 1280,
+                  hasLessons: false,
+                  onToggleLessons: () {},
+                  onOpenSettings: (_) {},
+                  onRename: () {},
+                  onPreview: () {},
+                  onSave: () => saved = true,
+                  onRetryConnect: () {},
+                  isPlanningMode: true,
+                  onExitPlanning: () => exited = true,
+                  onCreateClassroomFromPlanning: () => launched = true,
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Verify planning badge
-      expect(find.text('Kế hoạch bài giảng'), findsOneWidget);
+        // Verify planning badge
+        expect(find.text('Kế hoạch bài giảng'), findsOneWidget);
 
-      // Verify Thoát, Lưu bài soạn, and Tạo phòng học buttons
-      expect(find.text('Thoát'), findsOneWidget);
-      expect(find.text('Lưu bài soạn'), findsOneWidget);
-      expect(find.text('Tạo phòng học'), findsOneWidget);
+        // Verify Thoát, Lưu bài soạn, and Tạo phòng học buttons
+        expect(find.text('Thoát'), findsOneWidget);
+        expect(find.text('Lưu bài soạn'), findsOneWidget);
+        expect(find.text('Tạo phòng học'), findsOneWidget);
 
-      // Verify Leave Room button is absent
-      expect(find.text('Rời phòng'), findsNothing);
+        // Verify Leave Room button is absent
+        expect(find.text('Rời phòng'), findsNothing);
 
-      // Tap Thoát
-      await tester.tap(find.text('Thoát'));
-      expect(exited, isTrue);
+        // Tap Thoát
+        await tester.tap(find.text('Thoát'));
+        expect(exited, isTrue);
 
-      // Tap Lưu bài soạn
-      await tester.tap(find.text('Lưu bài soạn'));
-      expect(saved, isTrue);
+        // Tap Lưu bài soạn
+        await tester.tap(find.text('Lưu bài soạn'));
+        expect(saved, isTrue);
 
-      // Tap Tạo phòng học
-      await tester.tap(find.text('Tạo phòng học'));
-      expect(launched, isTrue);
-    });
+        // Tap Tạo phòng học
+        await tester.tap(find.text('Tạo phòng học'));
+        expect(launched, isTrue);
+      },
+    );
   });
 }
