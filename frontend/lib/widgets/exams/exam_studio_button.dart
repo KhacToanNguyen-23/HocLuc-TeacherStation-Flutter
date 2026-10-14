@@ -17,9 +17,9 @@ class ExamStudioButton extends StatelessWidget {
         title: const Text('Đề thi & năng lực'),
         children: [
           for (final item in const [
-            (0, 'Ngân hàng câu hỏi'),
-            (1, 'Tạo đề thi'),
-            (2, 'Thư viện đề'),
+            (1, 'Ngân hàng câu hỏi'),
+            (2, 'Tạo đề thi'),
+            (3, 'Thư viện đề'),
           ])
             SimpleDialogOption(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),

@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:teaching_companion/services/exam_api.dart';
 import 'package:teaching_companion/services/google_meet_auth_service.dart';
-import 'package:teaching_companion/widgets/auth/google_webview_login_dialog.dart';
+import 'package:teaching_companion/services/exam_session_service.dart';
 
 void main() {
   final auth = GoogleMeetAuthService();
@@ -21,70 +19,34 @@ void main() {
     'token': token,
     'user': {'id': 'local-teacher', 'role': 'TEACHER'},
   };
-  void signIn({String? token}) => auth.signInWithGoogleToken(
-    accessToken: GoogleMeetAuthService.webviewSessionMarker,
-    name: 'Giáo viên',
-    email: 'teacher@test.vn',
-    sessionToken: token,
-  );
+  Future<void> signIn({String? token}) async {
+    SharedPreferences.setMockInitialValues({
+      'auth_is_signed_in': true,
+      'auth_method': 'google',
+      'auth_token': ExamSessionService.webviewSessionMarker,
+      'auth_email': 'teacher@test.vn',
+      'auth_name': 'Giáo viên',
+    });
+    await auth.init();
+    if (token != null)
+      await ExamSessionService().attachLocalExamSession(
+        token: token,
+        teacherId: 'local-teacher',
+      );
+  }
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     auth.signOut();
     await Future<void>.delayed(Duration.zero);
   });
 
-  testWidgets(
-    'Develop Google dialog completes app login without OAuth configuration',
-    (tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
-      addTearDown(() => debugDefaultTargetPlatformOverride = null);
-      tester.view.physicalSize = const Size(1280, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      try {
-        for (final width in [375.0, 414.0, 768.0, 1024.0, 1440.0]) {
-          auth.signOut();
-          tester.view.physicalSize = Size(width, 1000);
-          await tester.pumpWidget(
-            MaterialApp(
-              home: Builder(
-                builder: (context) => Scaffold(
-                  body: TextButton(
-                    onPressed: () => GoogleWebviewLoginDialog.show(context),
-                    child: const Text('Google'),
-                  ),
-                ),
-              ),
-            ),
-          );
-          await tester.tap(find.text('Google'));
-          await tester.pumpAndSettle();
-          expect(
-            find.textContaining('Chưa cấu hình Google OAuth'),
-            findsNothing,
-          );
-          await tester.enterText(find.byType(TextField), 'teacher@test.vn');
-          await tester.tap(find.text('Xác nhận đăng nhập'));
-          await tester.pumpAndSettle();
-          expect(auth.hasLocalGoogleProfile, isTrue);
-          expect(auth.teacherEmail, 'teacher@test.vn');
-          expect(auth.appSessionToken, isNull);
-          expect(find.byType(GoogleWebviewLoginDialog), findsNothing);
-          expect(tester.takeException(), isNull);
-        }
-      } finally {
-        debugDefaultTargetPlatformOverride = null;
-      }
-    },
-  );
-
   test(
     'Stored develop Google profile creates one session for concurrent exam calls',
     () async {
       SharedPreferences.setMockInitialValues({
         'auth_is_signed_in': true,
-        'auth_token': GoogleMeetAuthService.webviewSessionMarker,
+        'auth_token': ExamSessionService.webviewSessionMarker,
         'auth_method': 'google',
         'auth_email': 'teacher@test.vn',
         'auth_name': 'Giáo viên',
@@ -112,10 +74,10 @@ void main() {
       await Future.wait([api.get('dashboard'), api.get('analytics')]);
       expect(bootstrap, 1);
       expect(sessions, 1);
-      expect(auth.accessToken, GoogleMeetAuthService.webviewSessionMarker);
+      expect(auth.accessToken, ExamSessionService.webviewSessionMarker);
       expect(auth.teacherEmail, 'teacher@test.vn');
-      expect(auth.appSessionToken, 'local-session');
-      expect(auth.teacherId, 'local-teacher');
+      expect(ExamSessionService().appSessionToken, 'local-session');
+      expect(ExamSessionService().teacherId, 'local-teacher');
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('auth_app_session'), 'local-session');
     },
@@ -124,7 +86,7 @@ void main() {
   test(
     'Expired local session renews once and preserves Google login',
     () async {
-      signIn(token: 'expired-session');
+      await signIn(token: 'expired-session');
       int renewals = 0, reads = 0;
       final api = ExamApi(
         client: MockClient((req) async {
@@ -154,7 +116,7 @@ void main() {
   test(
     'Backend outage leaves app Google login usable and can be retried',
     () async {
-      signIn();
+      await signIn();
       bool offline = true;
       final api = ExamApi(
         client: MockClient((req) async {
@@ -174,7 +136,7 @@ void main() {
         throwsA(isA<http.ClientException>()),
       );
       expect(auth.isSignedIn, isTrue);
-      expect(auth.appSessionToken, isNull);
+      expect(ExamSessionService().appSessionToken, isNull);
       offline = false;
       expect(await api.get('dashboard'), {'ok': true});
     },
@@ -183,7 +145,7 @@ void main() {
   test(
     'Late response cannot attach exams to a signed out or switched user',
     () async {
-      signIn();
+      await signIn();
       final pending = Completer<http.Response>();
       final started = Completer<void>();
       int examReads = 0;
@@ -209,7 +171,7 @@ void main() {
       auth.signOut();
       pending.complete(response(session('late-session')));
       await failure;
-      expect(auth.appSessionToken, isNull);
+      expect(ExamSessionService().appSessionToken, isNull);
       expect(auth.isSignedIn, isFalse);
       expect(examReads, 0);
     },

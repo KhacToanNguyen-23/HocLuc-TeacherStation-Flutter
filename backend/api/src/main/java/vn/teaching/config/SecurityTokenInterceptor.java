@@ -19,7 +19,9 @@ public class SecurityTokenInterceptor implements HandlerInterceptor {
             return true;
         }
         String path = request.getRequestURI();
-        if (path.equals("/api/bootstrap") || path.startsWith("/api/auth/") || path.startsWith("/api/exams/") || !path.startsWith("/api/")) {
+        // ExamWebConfig verifies the bearer session for every exam route.
+        if (path.startsWith("/api/exams/")) return true;
+        if (path.equals("/api/bootstrap") || path.startsWith("/api/auth/") || !path.startsWith("/api/")) {
             return true;
         }
 

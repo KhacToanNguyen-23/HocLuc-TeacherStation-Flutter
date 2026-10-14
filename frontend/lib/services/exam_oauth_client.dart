@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'google_meet_auth_service.dart';
+import 'exam_session_service.dart';
 import 'local_service.dart';
 
-class GoogleOAuthClient {
-  GoogleOAuthClient({http.Client? client, String? base})
+class ExamOAuthClient {
+  ExamOAuthClient({http.Client? client, String? base})
     : client = client ?? http.Client(),
       base = base ?? LocalService().base;
   final http.Client client;
@@ -40,12 +41,16 @@ class GoogleOAuthClient {
       throw StateError('Chưa có phiên Google được xác minh.');
     }
     final user = response['user'] as Map;
-    auth.signInWithGoogleToken(
-      accessToken: response['googleAccessToken'] as String,
-      sessionToken: response['token'] as String,
-      teacherId: user['id'] as String,
+    auth.signInWithOtpSession(
+      token: response['token'] as String,
       name: user['name'] as String,
       email: user['email'] as String,
+    );
+    final session = ExamSessionService();
+    session.providerAccessToken = response['googleAccessToken'] as String;
+    session.attachLocalExamSession(
+      token: response['token'] as String,
+      teacherId: user['id'] as String,
       role: user['role'] as String,
     );
   }

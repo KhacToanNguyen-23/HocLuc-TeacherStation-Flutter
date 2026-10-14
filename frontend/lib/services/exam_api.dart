@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import 'google_meet_auth_service.dart';
+import 'exam_session_service.dart';
 import 'local_service.dart';
 
 class ExamApiException implements Exception {
@@ -15,16 +15,17 @@ class ExamApiException implements Exception {
 
 /// One backend session from the existing app login, never another login form.
 class ExamApi {
-  ExamApi({http.Client? client, String? base, GoogleMeetAuthService? auth})
+  ExamApi({http.Client? client, String? base, ExamSessionService? auth})
     : client = client ?? http.Client(),
       base = base ?? LocalService().base,
-      auth = auth ?? GoogleMeetAuthService();
+      auth = auth ?? ExamSessionService();
   final http.Client client;
   final String base;
-  final GoogleMeetAuthService auth;
+  final ExamSessionService auth;
   Future<void>? _localSessionFuture;
 
   Future<void> _ensureLocalSession({String? rejectedToken}) async {
+    await auth.restore();
     if (!auth.hasLocalGoogleProfile) return;
     if (auth.appSessionToken != null &&
         auth.appSessionToken!.isNotEmpty &&

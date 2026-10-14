@@ -11,8 +11,9 @@ import 'package:teaching_companion/widgets/dashboard/exam_dashboard_card.dart';
 import 'package:teaching_companion/widgets/exams/exam_studio_button.dart';
 import 'package:teaching_companion/models/studio_state.dart';
 import 'package:teaching_companion/services/exam_api.dart';
+import 'package:teaching_companion/services/exam_session_service.dart';
 import 'package:teaching_companion/services/google_meet_auth_service.dart';
-import 'package:teaching_companion/services/google_oauth_client.dart';
+import 'package:teaching_companion/services/exam_oauth_client.dart';
 import 'package:teaching_companion/services/local_service.dart';
 
 void main() {
@@ -61,11 +62,10 @@ void main() {
     token: 'shared-app-session',
     name: 'Giáo viên',
     email: 'teacher@test.vn',
-    teacherId: 'teacher-a',
   );
   test('Google access token and shared application token stay separate', () {
     final auth = GoogleMeetAuthService();
-    final google = GoogleOAuthClient(
+    final google = ExamOAuthClient(
       client: MockClient((_) async => http.Response('{}', 200)),
     );
     expect(() => google.accept({'status': 'PENDING'}, auth), throwsStateError);
@@ -81,11 +81,11 @@ void main() {
         'role': 'TEACHER',
       },
     }, auth);
-    expect(auth.accessToken, 'google-provider-access');
-    expect(auth.appSessionToken, 'shared-app-session');
-    expect(auth.teacherId, 'teacher-a');
+    expect(ExamSessionService().providerAccessToken, 'google-provider-access');
+    expect(ExamSessionService().appSessionToken, 'shared-app-session');
+    expect(ExamSessionService().teacherId, 'teacher-a');
     auth.signOut();
-    expect(auth.appSessionToken, isNull);
+    expect(ExamSessionService().appSessionToken, isNull);
     google.dispose();
   });
   test(

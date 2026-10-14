@@ -15,6 +15,7 @@ import '../models/planning_meta.dart';
 import '../widgets/dashboard/planning_list_card.dart';
 import 'exams/exam_workspace_screen.dart';
 import '../services/exam_api.dart';
+import '../services/exam_session_service.dart';
 
 /// Classroom Dashboard Screen styled to match the layout in Image 2 with Educational Green theme.
 class ClassroomDashboardScreen extends StatefulWidget {
@@ -786,10 +787,10 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                         const SizedBox(height: 16),
 
                         ListenableBuilder(
-                          listenable: _authService,
+                          listenable: Listenable.merge([_authService, ExamSessionService()]),
                           builder: (context, _) => ExamDashboardCard(
                             onOpen: _openExams,
-                            isAdmin: _authService.role == 'ADMIN',
+                            isAdmin: ExamSessionService().role == 'ADMIN',
                           ),
                         ),
                         const SizedBox(height: 24),
