@@ -193,7 +193,7 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                               scale: 0.75,
                               child: Switch(
                                 value: widget.meetService.autoAdmitEnabled,
-                                activeColor: const Color(0xFF2563EB),
+                                activeThumbColor: const Color(0xFF2563EB),
                                 onChanged: (val) {
                                   widget.meetService.autoAdmitEnabled = val;
                                 },

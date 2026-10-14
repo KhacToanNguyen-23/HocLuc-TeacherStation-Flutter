@@ -6,7 +6,6 @@ import '../services/google_meet_auth_service.dart';
 import '../services/local_service.dart';
 import '../services/meet_automation_service.dart';
 import '../services/teacher_media_service.dart';
-import '../services/url_opener.dart';
 import '../widgets/lobby/lobby_header.dart';
 import '../widgets/lobby/lobby_media_preview.dart';
 import '../widgets/lobby/lobby_meet_room_card.dart';
