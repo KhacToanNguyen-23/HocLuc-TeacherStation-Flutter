@@ -74,3 +74,7 @@ Gói này khác `Build-Windows.ps1` WebView2/Flutter web. Chưa hỗ trợ pipel
 ```
 
 Integration smoke gọi API Java thật, kiểm tra pipeline WAV/WebSocket và dừng worker của nó; không kiểm tra micro/playback/Meet. Báo cáo acceptance nằm trong `docs/ai-speech-acceptance.md`.
+
+## Independent integration with develop
+
+This branch contains only the offline speech pipeline and starts from develop; no exam database migrations or exam UI are included. Open Studio settings, Âm thanh & video, then Dịch giọng nói offline to use the translation popup. The shared media service is observed through its ChangeNotifier rather than replacing its native camera/microphone implementation. The local audio_bridge dependency is declared in frontend/pubspec.yaml. Run flutter pub get from frontend to regenerate Windows registration and CMake files, preserving camera_windows and record_windows.
