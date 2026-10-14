@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'google_meet_auth_service.dart';
@@ -30,7 +31,17 @@ class ExamSessionService extends ChangeNotifier {
     _role = 'TEACHER';
     providerAccessToken = null;
     _restored = false;
+    if (!identity.isSignedIn) unawaited(_clearPersistedSession(_revision));
     notifyListeners();
+  }
+
+  Future<void> _clearPersistedSession(int revision) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (revision != _revision) return;
+    await prefs.remove('auth_exam_profile');
+    await prefs.remove('auth_app_session');
+    await prefs.remove('auth_teacher_id');
+    await prefs.remove('auth_role');
   }
 
   bool get isSignedIn => identity.isSignedIn;

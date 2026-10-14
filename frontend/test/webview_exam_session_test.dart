@@ -28,11 +28,12 @@ void main() {
       'auth_name': 'Giáo viên',
     });
     await auth.init();
-    if (token != null)
+    if (token != null) {
       await ExamSessionService().attachLocalExamSession(
         token: token,
         teacherId: 'local-teacher',
       );
+    }
   }
 
   setUp(() async {
@@ -178,7 +179,7 @@ void main() {
   );
 
   test('PDF upload obtains local session before sending file bytes', () async {
-    signIn();
+    await signIn();
     final client = MockClient.streaming((req, body) async {
       if (req.url.path == '/api/bootstrap') {
         return http.StreamedResponse(
