@@ -76,6 +76,11 @@ void main() {
     testWidgets(
       '2. Full Studio flow: Open plugin, bridge message, sticker on canvas, save/load',
       (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         final studio = StudioState();
         final zipBytes = createEnglishAssistantZip();
         await PluginManager.instance.installPluginFromBytes(
@@ -173,6 +178,11 @@ void main() {
     testWidgets(
       '3. DrawerQuestions has "Cài thêm tiện ích môn" quick install option',
       (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         final studio = StudioState();
         PluginManager.instance.uninstallPlugin('com.hocluc.plugin.english');
 
