@@ -16,6 +16,46 @@ import 'package:perfect_freehand/perfect_freehand.dart';
 
 enum StudioViewportMode { fullBoard, fullPdf, split }
 
+class PdfDgnlHighlightSpan {
+  final String text;
+  final String category; // 'grammar', 'collocation', 'vocabulary'
+  final String level; // 'B2', 'C1', 'C2'
+  final String type;
+  final String note;
+  final List<Rect> normalizedRects;
+
+  const PdfDgnlHighlightSpan({
+    required this.text,
+    required this.category,
+    this.level = 'B2',
+    required this.type,
+    required this.note,
+    required this.normalizedRects,
+  });
+}
+
+class PdfDgnlPassage {
+  final String id;
+  final int pageNumber;
+  final String rawText;
+  final Rect normalizedBounds;
+  final List<PdfDgnlHighlightSpan> spans;
+  final Map<String, dynamic> metrics;
+  final List<Map<String, dynamic>> clozeQuestions;
+  bool isVisible;
+
+  PdfDgnlPassage({
+    required this.id,
+    required this.pageNumber,
+    required this.rawText,
+    required this.normalizedBounds,
+    required this.spans,
+    required this.metrics,
+    required this.clozeQuestions,
+    this.isVisible = true,
+  });
+}
+
 class BoardStroke {
   BoardStroke(this.color, this.width, this.points, {this.isEraser = false});
   final Color color;
@@ -291,6 +331,227 @@ class StudioState extends ChangeNotifier {
     notifyListeners();
   }
 
+  dynamic pdfViewerController;
+  GlobalKey? pdfViewerKey;
+
+  final List<PdfDgnlPassage> _pdfDgnlPassages = [];
+  List<PdfDgnlPassage> get pdfDgnlPassages => _pdfDgnlPassages;
+
+  List<PdfDgnlPassage> getPdfDgnlPassagesForPage(int pageNumber) =>
+      _pdfDgnlPassages.where((p) => p.pageNumber == pageNumber && p.isVisible).toList();
+
+  void addPdfDgnlPassage(PdfDgnlPassage passage) {
+    _pdfDgnlPassages.removeWhere((p) =>
+        p.pageNumber == passage.pageNumber &&
+        p.normalizedBounds.overlaps(passage.normalizedBounds));
+    _pdfDgnlPassages.add(passage);
+    notifyListeners();
+  }
+
+  void removePdfDgnlPassage(String id) {
+    _pdfDgnlPassages.removeWhere((p) => p.id == id);
+    notifyListeners();
+  }
+
+  void togglePdfDgnlPassageVisibility(String id) {
+    for (final p in _pdfDgnlPassages) {
+      if (p.id == id) {
+        p.isVisible = !p.isVisible;
+        break;
+      }
+    }
+    notifyListeners();
+  }
+
+  void clearPdfDgnlPassages() {
+    _pdfDgnlPassages.clear();
+    notifyListeners();
+  }
+
+  /// Tự động định vị và tạo Highlight trực tiếp trên đề PDF từ kết quả phân tích DGNL
+  Future<void> highlightPdfPassageFromAnalysis(
+    String rawText,
+    List<Map<String, dynamic>> rawHighlights, {
+    Map<String, dynamic> metrics = const {},
+  }) async {
+    final ctrl = pdfViewerController;
+    if (ctrl == null || !ctrl.isReady || ctrl.pages.isEmpty) return;
+
+    final targetPageNum = pdfPage.clamp(1, ctrl.pages.length);
+    final page = ctrl.pages[targetPageNum - 1];
+
+    try {
+      final pageText = await page.loadText();
+      if (pageText == null || pageText.fullText.isEmpty) return;
+
+      final full = pageText.fullText;
+      final fullLower = full.toLowerCase();
+
+      final snippetClean = rawText.replaceAll(RegExp(r'\s+'), ' ').trim();
+      final snippetWords = snippetClean.split(' ');
+      final leadPhrase = snippetWords.take(5).join(' ').toLowerCase();
+
+      int passStartIdx = fullLower.indexOf(leadPhrase);
+      if (passStartIdx == -1 && snippetWords.isNotEmpty) {
+        passStartIdx = fullLower.indexOf(snippetWords.first.toLowerCase());
+      }
+      passStartIdx = passStartIdx.clamp(0, math.max(0, full.length - 1));
+
+      final passEndIdx = math.min(full.length - 1, passStartIdx + snippetClean.length);
+      final passCharBoxes = <Rect>[];
+      for (int i = passStartIdx; i <= passEndIdx && i < pageText.charRects.length; i++) {
+        final r = pageText.charRects[i];
+        final rFlutter = r.toRect(page: page);
+        passCharBoxes.add(Rect.fromLTRB(
+          (rFlutter.left / page.width).clamp(0.0, 1.0),
+          (rFlutter.top / page.height).clamp(0.0, 1.0),
+          (rFlutter.right / page.width).clamp(0.0, 1.0),
+          (rFlutter.bottom / page.height).clamp(0.0, 1.0),
+        ));
+      }
+
+      Rect passBounds = const Rect.fromLTWH(0.05, 0.2, 0.9, 0.5);
+      if (passCharBoxes.isNotEmpty) {
+        double minX = passCharBoxes.first.left;
+        double maxX = passCharBoxes.first.right;
+        double minY = passCharBoxes.first.top;
+        double maxY = passCharBoxes.first.bottom;
+        for (final b in passCharBoxes) {
+          minX = math.min(minX, b.left);
+          maxX = math.max(maxX, b.right);
+          minY = math.min(minY, b.top);
+          maxY = math.max(maxY, b.bottom);
+        }
+        passBounds = Rect.fromLTRB(
+          (minX - 0.02).clamp(0.0, 1.0),
+          (minY - 0.01).clamp(0.0, 1.0),
+          (maxX + 0.02).clamp(0.0, 1.0),
+          (maxY + 0.01).clamp(0.0, 1.0),
+        );
+      }
+
+      final spans = <PdfDgnlHighlightSpan>[];
+      for (final hl in rawHighlights) {
+        final hlText = hl['text']?.toString().trim() ?? '';
+        if (hlText.isEmpty) continue;
+        final category = hl['category']?.toString() ?? 'grammar';
+        final level = hl['level']?.toString() ?? 'B2';
+        final type = hl['type']?.toString() ?? category.toUpperCase();
+        final note = hl['note']?.toString() ?? '';
+
+        final hlLower = hlText.toLowerCase();
+        int sIdx = passStartIdx;
+        while ((sIdx = fullLower.indexOf(hlLower, sIdx)) != -1 && sIdx <= passEndIdx + 300) {
+          final eIdx = sIdx + hlLower.length;
+          final matchedBoxes = <Rect>[];
+          for (int ci = sIdx; ci < eIdx && ci < pageText.charRects.length; ci++) {
+            final r = pageText.charRects[ci];
+            final rFlutter = r.toRect(page: page);
+            matchedBoxes.add(Rect.fromLTRB(
+              (rFlutter.left / page.width).clamp(0.0, 1.0),
+              (rFlutter.top / page.height).clamp(0.0, 1.0),
+              (rFlutter.right / page.width).clamp(0.0, 1.0),
+              (rFlutter.bottom / page.height).clamp(0.0, 1.0),
+            ));
+          }
+
+          if (matchedBoxes.isNotEmpty) {
+            final lines = <List<Rect>>[];
+            for (final b in matchedBoxes) {
+              bool added = false;
+              for (final line in lines) {
+                final ref = line.first;
+                if ((ref.top - b.top).abs() < 0.015 || (b.top <= ref.bottom && b.bottom >= ref.top)) {
+                  line.add(b);
+                  added = true;
+                  break;
+                }
+              }
+              if (!added) lines.add([b]);
+            }
+            final lineRects = <Rect>[];
+            for (final line in lines) {
+              double lx1 = line.first.left, lx2 = line.first.right;
+              double ly1 = line.first.top, ly2 = line.first.bottom;
+              for (final r in line) {
+                lx1 = math.min(lx1, r.left);
+                lx2 = math.max(lx2, r.right);
+                ly1 = math.min(ly1, r.top);
+                ly2 = math.max(ly2, r.bottom);
+              }
+              lineRects.add(Rect.fromLTRB(lx1, (ly1 - 0.001).clamp(0.0, 1.0), lx2, (ly2 + 0.001).clamp(0.0, 1.0)));
+            }
+
+            spans.add(PdfDgnlHighlightSpan(
+              text: hlText,
+              category: category,
+              level: level,
+              type: type,
+              note: note,
+              normalizedRects: lineRects,
+            ));
+          }
+          sIdx = eIdx;
+        }
+      }
+
+      final passage = PdfDgnlPassage(
+        id: 'dgnl-${DateTime.now().millisecondsSinceEpoch}',
+        pageNumber: targetPageNum.toInt(),
+        rawText: snippetClean,
+        normalizedBounds: passBounds,
+        spans: spans,
+        metrics: metrics,
+        clozeQuestions: const [],
+      );
+
+      addPdfDgnlPassage(passage);
+    } catch (e) {
+      debugPrint('[StudioState] highlightPdfPassageFromAnalysis error: $e');
+    }
+  }
+
+  bool isSnippingActive = false;
+  String snipTarget = 'dgnl';
+
+  bool _wasDrawerOpenBeforeSnip = false;
+  bool _wasFloatingBeforeSnip = false;
+  void Function(String text, String target)? onSnippetCapturedForPlugin;
+
+  void startSnipping({String target = 'dgnl'}) {
+    _wasDrawerOpenBeforeSnip = showPluginDrawer;
+    _wasFloatingBeforeSnip = pluginFloating;
+    showPluginDrawer = false;
+    pluginFloating = false;
+    isSnippingActive = true;
+    snipTarget = target;
+    notifyListeners();
+  }
+
+  void stopSnipping() {
+    isSnippingActive = false;
+    if (_wasDrawerOpenBeforeSnip && snipTarget != 'dgnl') {
+      showPluginDrawer = true;
+    }
+    if (_wasFloatingBeforeSnip) {
+      pluginFloating = true;
+    }
+    notifyListeners();
+  }
+
+  void sendSnippetToPlugin(String text, {String? target}) {
+    final t = target ?? snipTarget;
+    stopSnipping();
+    final clean = text.trim();
+    if (clean.isNotEmpty) {
+      if (activePlugin != null && _wasFloatingBeforeSnip) {
+        pluginFloating = true;
+      }
+      onSnippetCapturedForPlugin?.call(clean, t);
+      notifyListeners();
+    }
+  }
+
   void handlePluginMessage(dynamic message) {
     Map<String, dynamic>? data;
     if (message is String) {
@@ -303,6 +564,27 @@ class StudioState extends ChangeNotifier {
 
     if (data == null) return;
     final action = data['action'] as String? ?? data['type'] as String?;
+
+    if (action == 'START_SNIP_SELECTION') {
+      final target = (data['target'] as String?) ?? 'dgnl';
+      startSnipping(target: target);
+      return;
+    }
+
+    if (action == 'HIGHLIGHT_PDF_PASSAGE') {
+      final payload = (data['payload'] as Map<String, dynamic>?) ?? data;
+      final rawText = (payload['text'] as String?)?.trim() ?? '';
+      final rawHighlights = (payload['highlights'] as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .toList() ??
+          [];
+      final metrics = (payload['metrics'] as Map<String, dynamic>?) ?? {};
+      if (rawText.isNotEmpty) {
+        highlightPdfPassageFromAnalysis(rawText, rawHighlights, metrics: metrics);
+      }
+      return;
+    }
+
     if (action == 'INSERT_ANNOTATION') {
       final payload = (data['payload'] as Map<String, dynamic>?) ?? data;
       final rawText =
@@ -1525,6 +1807,15 @@ class StudioState extends ChangeNotifier {
       'pdfChalkAnnotations': pdfChalkAnnotations.map(
         (k, v) => MapEntry(k.toString(), v.map((s) => s.toJson()).toList()),
       ),
+      'pdfFilePath': pdfFilePath,
+      'pdfPage': pdfPage,
+      'pdfWindowMaximized': _pdfWindowMaximized,
+      'hasCustomPdfWindowPos': hasCustomPdfWindowPos,
+      'pdfWindowX': _pdfWindowPosition?.dx,
+      'pdfWindowY': _pdfWindowPosition?.dy,
+      'hasCustomPdfWindowSize': hasCustomPdfWindowSize,
+      'pdfWindowW': _pdfWindowSize?.width,
+      'pdfWindowH': _pdfWindowSize?.height,
     };
   }
 
@@ -1540,6 +1831,31 @@ class StudioState extends ChangeNotifier {
       question = json['question'] as String? ?? question;
     }
     if (json.containsKey('page')) page = (json['page'] as num?)?.toInt() ?? 0;
+    if (json.containsKey('pdfFilePath') && json['pdfFilePath'] is String) {
+      final p = json['pdfFilePath'] as String;
+      if (p.isNotEmpty) {
+        setPdfFile(p);
+      }
+    }
+    if (json.containsKey('pdfPage') && json['pdfPage'] is num) {
+      pdfPage = (json['pdfPage'] as num).toInt();
+    }
+    if (json.containsKey('pdfWindowMaximized') &&
+        json['pdfWindowMaximized'] is bool) {
+      _pdfWindowMaximized = json['pdfWindowMaximized'] as bool;
+    }
+    if (json.containsKey('hasCustomPdfWindowPos') &&
+        json['hasCustomPdfWindowPos'] == true) {
+      final x = (json['pdfWindowX'] as num?)?.toDouble() ?? 0.0;
+      final y = (json['pdfWindowY'] as num?)?.toDouble() ?? 0.0;
+      setPdfWindowPosition(Offset(x, y));
+    }
+    if (json.containsKey('hasCustomPdfWindowSize') &&
+        json['hasCustomPdfWindowSize'] == true) {
+      final w = (json['pdfWindowW'] as num?)?.toDouble() ?? 540.0;
+      final h = (json['pdfWindowH'] as num?)?.toDouble() ?? 720.0;
+      setPdfWindowSize(Size(w, h));
+    }
     if (json.containsKey('pageTitles') && json['pageTitles'] is List) {
       pageTitles
         ..clear()

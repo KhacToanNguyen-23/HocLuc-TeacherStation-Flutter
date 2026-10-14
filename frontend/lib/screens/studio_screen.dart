@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/camera_broadcast_service.dart';
 import '../services/teacher_media_service.dart';
 import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../screens/classroom_dashboard_screen.dart';
+import '../screens/classroom_lobby_screen.dart';
 import '../services/local_service.dart';
 import '../services/meet_automation_service.dart';
 import '../widgets/stage_container.dart';
@@ -25,11 +27,15 @@ class StudioScreen extends StatefulWidget {
     this.initialState,
     this.lessonTitle,
     this.meetingUrl,
+    this.isPlanningMode = false,
+    this.planningId,
   });
 
   final StudioState? initialState;
   final String? lessonTitle;
   final String? meetingUrl;
+  final bool isPlanningMode;
+  final String? planningId;
 
   @override
   State<StudioScreen> createState() => _StudioScreenState();
@@ -45,13 +51,21 @@ class _StudioScreenState extends State<StudioScreen> {
   bool showInspector = false;
   bool showStudentsDrawer = false;
   bool showPluginsMarketplace = false;
+  String? _currentPlanningId;
 
   @override
   void initState() {
     super.initState();
+    _currentPlanningId = widget.planningId;
     PluginManager().init();
     studio = widget.initialState ?? StudioState();
-    if (widget.initialState == null) studio.initialize();
+    if (widget.initialState == null) {
+      if (widget.isPlanningMode && widget.planningId != null) {
+        _loadPlanning(widget.planningId!);
+      } else {
+        studio.initialize();
+      }
+    }
 
     if (widget.lessonTitle != null && widget.lessonTitle!.trim().isNotEmpty) {
       studio.title = widget.lessonTitle!.trim();
@@ -61,6 +75,30 @@ class _StudioScreenState extends State<StudioScreen> {
     }
 
     studio.addListener(syncControllers);
+  }
+
+  Future<void> _loadPlanning(String id) async {
+    try {
+      _currentPlanningId = id;
+      await studio.service.connect();
+      final content = await studio.service.getPlanningContent(id);
+      if (content != null) {
+        studio.change(() {
+          studio.restoreFromJson(content);
+          if (widget.lessonTitle != null && widget.lessonTitle!.trim().isNotEmpty) {
+            studio.title = widget.lessonTitle!.trim();
+          }
+          studio.online = true;
+          studio.loading = false;
+          studio.dirty = false;
+        }, persist: false);
+        syncControllers();
+        return;
+      }
+    } catch (e) {
+      debugPrint('[StudioScreen] Failed to load planning: $e');
+    }
+    studio.initialize();
   }
 
   void syncControllers() {
@@ -91,12 +129,239 @@ class _StudioScreenState extends State<StudioScreen> {
   }
 
   Future<void> save() async {
+    if (widget.isPlanningMode) {
+      if (studio.saving) return;
+      studio.change(() => studio.saving = true, persist: false);
+      String? errorMessage;
+      try {
+        final lessonSnapshot = studio.exportLessonJson();
+        final targetId = _currentPlanningId ?? widget.planningId;
+        debugPrint('[StudioScreen] Starting save planning: title="${studio.title}", targetId=$targetId, pdf=${studio.pdfFilePath}, page=${studio.pdfPage}');
+
+        bool success = false;
+        if (targetId != null) {
+          final res = await studio.service.updatePlanning(
+            id: targetId,
+            title: studio.title,
+            subject: studio.subject,
+            content: lessonSnapshot,
+          );
+          success = res != null;
+          if (!success) {
+            errorMessage = 'Backend từ chối cập nhật bài giảng "$targetId"';
+          }
+        } else {
+          final res = await studio.service.createPlanning(
+            title: studio.title,
+            subject: studio.subject,
+            content: lessonSnapshot,
+          );
+          success = res != null;
+          if (res != null) {
+            _currentPlanningId = res.id;
+            debugPrint('[StudioScreen] Saved new planning with id: ${res.id}');
+          } else {
+            errorMessage = 'Backend từ chối tạo bài giảng mới';
+          }
+        }
+        studio.change(() {
+          studio.dirty = !success;
+          if (success) {
+            final now = DateTime.now();
+            studio.savedAt =
+                '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+          }
+        }, persist: false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    success ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      success
+                          ? 'Đã lưu kế hoạch bài giảng "${studio.title}" thành công.'
+                          : 'Không lưu được bài giảng: ${errorMessage ?? 'Kiểm tra terminal log'}.',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: success ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e, st) {
+        debugPrint('[StudioScreen] Save planning exception: $e\n$st');
+        if (mounted) message('Lỗi khi lưu bài giảng: $e');
+      } finally {
+        studio.change(() => studio.saving = false, persist: false);
+      }
+      return;
+    }
+
     final success = await studio.save();
     if (mounted) {
       message(
         success
             ? 'Đã lưu bài giảng và cấu hình trên máy.'
             : 'Không lưu được. Kiểm tra dịch vụ Java rồi thử lại.',
+      );
+    }
+  }
+
+  Future<void> _handleExitPlanning() async {
+    if (studio.dirty) {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Thoát chế độ soạn bài?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          content: const Text(
+            'Bạn có thay đổi chưa lưu trên bảng vẽ bài giảng. Bạn có muốn lưu trước khi thoát không?',
+            style: TextStyle(fontSize: 13, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop('cancel'),
+              child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop('discard'),
+              child: const Text('Không lưu', style: TextStyle(color: Color(0xFFDC2626))),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop('save'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.sky600,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Lưu & Thoát'),
+            ),
+          ],
+        ),
+      );
+
+      if (choice == 'cancel' || choice == null) return;
+      if (choice == 'save') {
+        await save();
+        if (studio.dirty) return;
+      }
+    }
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _handleCreateClassroomFromPlanning() async {
+    if (studio.dirty) {
+      await save();
+    }
+
+    if (!mounted) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.videocam_rounded, size: 20, color: AppColors.sky600),
+            SizedBox(width: 8),
+            Text('Tạo phòng học từ bài giảng?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Hệ thống sẽ nhân bản nội dung bài giảng "${studio.title}" sang một phòng học trực tuyến mới để bạn bắt đầu dạy ngay.\n\nBài giảng kế hoạch gốc vẫn sẽ được giữ nguyên vẹn.',
+          style: const TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.sky600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Tạo & Bắt đầu dạy'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
+                  ),
+                ),
+                SizedBox(width: 20),
+                Text(
+                  'Đang nhân bản bài giảng & tạo phòng học...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.slate900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    String? realMeetUrl;
+    try {
+      final planId = _currentPlanningId ?? widget.planningId;
+      if (planId != null) {
+        await studio.service.clonePlanningToClassroom(planId);
+      }
+      realMeetUrl = await MeetAutomationService().generateAndJoinRealMeetRoom();
+    } catch (e) {
+      debugPrint('[StudioScreen] Error launching classroom from planning: $e');
+    } finally {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+
+    if (mounted) {
+      await Navigator.of(context).pushReplacement<void, void>(
+        MaterialPageRoute(
+          builder: (_) => ClassroomLobbyScreen(
+            initialMeetingUrl: realMeetUrl,
+            initialLessonTitle: studio.title,
+          ),
+        ),
       );
     }
   }
@@ -251,21 +516,38 @@ class _StudioScreenState extends State<StudioScreen> {
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: studio,
     builder: (context, _) {
-      return Scaffold(
-        body: LayoutBuilder(
-          builder: (context, box) {
-            final hasInspector = showInspector && box.maxWidth >= 1250;
-            final hasLessons = showLessons && box.maxWidth >= 1000;
+      return PopScope(
+        canPop: !widget.isPlanningMode || !studio.dirty,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop && widget.isPlanningMode) {
+            _handleExitPlanning();
+          }
+        },
+        child: CallbackShortcuts(
+          bindings: <ShortcutActivator, VoidCallback>{
+            const SingleActivator(LogicalKeyboardKey.keyS, control: true): save,
+            const SingleActivator(LogicalKeyboardKey.keyS, meta: true): save,
+          },
+          child: Focus(
+            autofocus: true,
+            child: Scaffold(
+          body: LayoutBuilder(
+            builder: (context, box) {
+              final hasInspector = showInspector && box.maxWidth >= 1250;
+              final hasLessons = showLessons && box.maxWidth >= 1000;
 
-            return Column(
-              children: [
-                StudioTopBar(
-                  studio: studio,
-                  width: box.maxWidth,
-                  hasLessons: hasLessons,
-                  hasInspector: hasInspector,
-                  hasStudents: showStudentsDrawer,
-                  hasPlugins: showPluginsMarketplace,
+              return Column(
+                children: [
+                  StudioTopBar(
+                    studio: studio,
+                    width: box.maxWidth,
+                    hasLessons: hasLessons,
+                    hasInspector: hasInspector,
+                    hasStudents: showStudentsDrawer,
+                    hasPlugins: showPluginsMarketplace,
+                    isPlanningMode: widget.isPlanningMode,
+                    onExitPlanning: _handleExitPlanning,
+                    onCreateClassroomFromPlanning: _handleCreateClassroomFromPlanning,
                   onToggleLessons: () {
                     if (box.maxWidth < 1000) {
                       openLessons();
@@ -304,7 +586,7 @@ class _StudioScreenState extends State<StudioScreen> {
                       }
                     });
                   },
-                  onLeaveClassroom: _handleLeaveClassroom,
+                  onLeaveClassroom: widget.isPlanningMode ? null : _handleLeaveClassroom,
                   onRename: rename,
                   onPreview: preview,
                   onSave: save,
@@ -448,7 +730,10 @@ class _StudioScreenState extends State<StudioScreen> {
             );
           },
         ),
-      );
-    },
-  );
+      ),
+    ),
+  ),
+);
+  },
+);
 }

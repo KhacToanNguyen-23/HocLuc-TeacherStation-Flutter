@@ -127,6 +127,7 @@ class DashboardEmptyCard extends StatelessWidget {
 
   Widget _buildIllustration(String type) {
     final isRooms = type == 'rooms';
+    final isPlanning = type == 'planning';
 
     return Stack(
       alignment: Alignment.center,
@@ -136,17 +137,21 @@ class DashboardEmptyCard extends StatelessWidget {
           width: 90,
           height: 90,
           decoration: BoxDecoration(
-            color: AppColors.sky50, // Nordic Sky Tint
+            color: isPlanning ? const Color(0xFFF0FDF4) : AppColors.sky50, // Soft Mint or Sky
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFFBAE6FD),
+              color: isPlanning ? const Color(0xFFBBF7D0) : const Color(0xFFBAE6FD),
               width: 1.5,
             ),
           ),
         ),
         // Central educational icon
         Icon(
-          isRooms ? Icons.public_rounded : Icons.history_edu_rounded,
+          isRooms
+              ? Icons.public_rounded
+              : isPlanning
+                  ? Icons.menu_book_rounded
+                  : Icons.history_edu_rounded,
           size: 44,
           color: AppColors.slate900,
         ),
@@ -157,12 +162,16 @@ class DashboardEmptyCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: AppColors.sky600,
+              color: isPlanning ? const Color(0xFF16A34A) : AppColors.sky600,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2),
             ),
             child: Icon(
-              isRooms ? Icons.send_rounded : Icons.search_rounded,
+              isRooms
+                  ? Icons.send_rounded
+                  : isPlanning
+                      ? Icons.add_rounded
+                      : Icons.search_rounded,
               size: 13,
               color: Colors.white,
             ),
