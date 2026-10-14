@@ -57,15 +57,45 @@ class PdfDgnlPassage {
 }
 
 class BoardStroke {
-  BoardStroke(this.color, this.width, this.points, {this.isEraser = false});
+  BoardStroke(
+    this.color,
+    this.width,
+    this.points, {
+    this.isEraser = false,
+    this.rect,
+    this.isHollow = false,
+  });
   final Color color;
   final double width;
   final List<Offset> points;
   final bool isEraser;
+  final Rect? rect;
+  final bool isHollow;
   Path? _cachedPath;
   Size? _cachedSize;
 
   Path getPath([Size? size]) {
+    if (rect != null) {
+      if (size != null) {
+        if (_cachedSize == size && _cachedPath != null) return _cachedPath!;
+        _cachedSize = size;
+        _cachedPath = Path()
+          ..addRRect(RRect.fromRectAndRadius(
+            Rect.fromLTWH(
+              rect!.left * size.width,
+              rect!.top * size.height,
+              rect!.width * size.width,
+              rect!.height * size.height,
+            ),
+            const Radius.circular(3),
+          ));
+        return _cachedPath!;
+      } else {
+        return Path()
+          ..addRRect(RRect.fromRectAndRadius(rect!, const Radius.circular(3)));
+      }
+    }
+
     if (size == null) {
       if (_cachedPath != null && _cachedSize == null) return _cachedPath!;
       if (points.isEmpty) return Path();
@@ -149,15 +179,36 @@ class BoardStroke {
     'width': width,
     'isEraser': isEraser,
     'points': points.map((p) => [p.dx, p.dy]).toList(),
+    if (rect != null)
+      'rect': [rect!.left, rect!.top, rect!.width, rect!.height],
+    if (isHollow)
+      'isHollow': true,
   };
-  static BoardStroke fromJson(Map<String, dynamic> json) => BoardStroke(
-    Color((json['color'] as num).toInt()),
-    (json['width'] as num).toDouble(),
-    (json['points'] as List)
-        .map((p) => Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()))
-        .toList(),
-    isEraser: json['isEraser'] as bool? ?? false,
-  );
+
+  static BoardStroke fromJson(Map<String, dynamic> json) {
+    Rect? r;
+    if (json.containsKey('rect') && json['rect'] is List) {
+      final rl = json['rect'] as List;
+      if (rl.length == 4) {
+        r = Rect.fromLTWH(
+          (rl[0] as num).toDouble(),
+          (rl[1] as num).toDouble(),
+          (rl[2] as num).toDouble(),
+          (rl[3] as num).toDouble(),
+        );
+      }
+    }
+    return BoardStroke(
+      Color((json['color'] as num).toInt()),
+      (json['width'] as num).toDouble(),
+      (json['points'] as List)
+          .map((p) => Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()))
+          .toList(),
+      isEraser: json['isEraser'] as bool? ?? false,
+      rect: r,
+      isHollow: json['isHollow'] == true,
+    );
+  }
 }
 
 class ImportedDocument {
@@ -517,6 +568,8 @@ class StudioState extends ChangeNotifier {
   bool _wasDrawerOpenBeforeSnip = false;
   bool _wasFloatingBeforeSnip = false;
   void Function(String text, String target)? onSnippetCapturedForPlugin;
+  VoidCallback? onSaveHighlightedPdfRequested;
+  VoidCallback? onApplyHighlightToPdfRequested;
 
   void startSnipping({String target = 'dgnl'}) {
     _wasDrawerOpenBeforeSnip = showPluginDrawer;
@@ -582,6 +635,16 @@ class StudioState extends ChangeNotifier {
       if (rawText.isNotEmpty) {
         highlightPdfPassageFromAnalysis(rawText, rawHighlights, metrics: metrics);
       }
+      return;
+    }
+
+    if (action == 'APPLY_HIGHLIGHT_TO_PDF') {
+      onApplyHighlightToPdfRequested?.call();
+      return;
+    }
+
+    if (action == 'SAVE_HIGHLIGHTED_PDF') {
+      onSaveHighlightedPdfRequested?.call();
       return;
     }
 
@@ -1324,6 +1387,11 @@ class StudioState extends ChangeNotifier {
   String savedAt = '';
   int _revision = 0;
   int get revision => _revision;
+  void bumpRevision() {
+    _revision++;
+    dirty = true;
+    notifyListeners();
+  }
   List<BoardStroke> get strokes {
     while (pages.length <= _page) {
       pages.add([]);
@@ -1371,6 +1439,13 @@ class StudioState extends ChangeNotifier {
         activeDocId = existing.id;
       }
     }
+    dirty = true;
+    _revision++;
+    notifyListeners();
+  }
+
+  void updatePdfBytesInPlace(Uint8List newBytes) {
+    pdfBytes = newBytes;
     dirty = true;
     _revision++;
     notifyListeners();

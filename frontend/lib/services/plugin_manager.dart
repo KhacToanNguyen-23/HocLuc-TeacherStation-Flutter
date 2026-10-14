@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -194,10 +195,10 @@ class PluginManager extends ChangeNotifier {
     final manifestJson = jsonEncode({
       'id': 'com.hocluc.plugin.english',
       'name': 'Trợ giảng Tiếng Anh',
-      'version': '1.0.0',
+      'version': '1.1.0',
       'author': 'Học Lực Studio',
       'description':
-          'Bóc tách S-V-O và bắt lỗi thì/ngữ pháp bằng spaCy & LanguageTool.',
+          'Bóc tách Cú pháp S-V-O, Phân tích Ngữ liệu chuẩn đề ĐGNL và Tạo bài tập Cloze Test.',
       'main': 'ui/index.html',
       'icon': 'icon.png',
       'placement': 'drawer_panel',
@@ -211,7 +212,47 @@ class PluginManager extends ChangeNotifier {
       'permissions': ['board:insert_annotation', 'board:read_text'],
     });
 
-    const indexHtml = '''<!DOCTYPE html>
+    // Check if real ui/index.html & ui/app.js can be read from disk
+    String? indexHtmlContent;
+    String? appJsContent;
+    String? styleCssContent;
+
+    if (!kIsWeb) {
+      final htmlCandidates = [
+        File('../plugins/english_assistant/ui/index.html'),
+        File('plugins/english_assistant/ui/index.html'),
+      ];
+      for (final f in htmlCandidates) {
+        if (f.existsSync()) {
+          indexHtmlContent = f.readAsStringSync();
+          break;
+        }
+      }
+
+      final jsCandidates = [
+        File('../plugins/english_assistant/ui/app.js'),
+        File('plugins/english_assistant/ui/app.js'),
+      ];
+      for (final f in jsCandidates) {
+        if (f.existsSync()) {
+          appJsContent = f.readAsStringSync();
+          break;
+        }
+      }
+
+      final cssCandidates = [
+        File('../plugins/english_assistant/ui/style.css'),
+        File('plugins/english_assistant/ui/style.css'),
+      ];
+      for (final f in cssCandidates) {
+        if (f.existsSync()) {
+          styleCssContent = f.readAsStringSync();
+          break;
+        }
+      }
+    }
+
+    const defaultIndexHtml = '''<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
@@ -221,11 +262,15 @@ class PluginManager extends ChangeNotifier {
 <body>
   <div class="header">
     <h3>🇬🇧 Trợ Giảng Tiếng Anh</h3>
-    <span class="badge">S-V-O + Grammar</span>
+    <span class="badge">S-V-O & ĐGNL 1.1.0</span>
   </div>
-  <textarea id="inputSentence" placeholder="Nhập câu tiếng Anh cần giảng giải... (ví dụ: The smart student reads a book eagerly in the classroom.)"></textarea>
+  <div class="tabs-nav">
+    <button id="tabBtnSvo" class="tab-button active">🔤 Cú pháp S-V-O</button>
+    <button id="tabBtnDgnl" class="tab-button">🎯 Ôn thi ĐGNL & Cloze</button>
+  </div>
+  <textarea id="inputSentence" placeholder="Nhập câu tiếng Anh cần giảng giải..."></textarea>
   <div class="actions">
-    <button id="btnAnalyze" class="btn-primary">⚡ Phân tích cú pháp</button>
+    <button id="btnAnalyze" class="btn-primary">⚡ Phân tích</button>
   </div>
   <div id="results" class="results-box"></div>
   <button id="btnPinToBoard" class="btn-pin" style="display:none;">📌 Ghim lên bảng phấn</button>
@@ -233,54 +278,9 @@ class PluginManager extends ChangeNotifier {
 </body>
 </html>''';
 
-    const appJs = '''
-const input = document.getElementById('inputSentence');
-const btnAnalyze = document.getElementById('btnAnalyze');
-const btnPin = document.getElementById('btnPinToBoard');
-const resultsBox = document.getElementById('results');
-
-let currentAnalysis = null;
-
-btnAnalyze?.addEventListener('click', async () => {
-  const text = input.value.trim();
-  if (!text) return;
-  // Offline / Demo parsing logic
-  const words = text.split(/\\s+/);
-  const tokens = words.map((w, i) => {
-    const clean = w.replace(/[^a-zA-Z]/g, '');
-    let role = null;
-    if (i === 0 || clean.toLowerCase() === 'student' || clean.toLowerCase() === 'teacher') role = 'subject';
-    else if (clean.toLowerCase() === 'reads' || clean.toLowerCase() === 'writes' || clean.toLowerCase() === 'teaches') role = 'verb';
-    else if (clean.toLowerCase() === 'book' || clean.toLowerCase() === 'lesson') role = 'object';
-    return { text: w, role: role };
-  });
-  currentAnalysis = {
-    text: text,
-    tokens: tokens,
-    grammarIssue: 'Sentence is grammatically sound.'
-  };
-  resultsBox.innerHTML = '<p><b>Đã phân tích thành công!</b></p>';
-  btnPin.style.display = 'block';
-});
-
-btnPin?.addEventListener('click', () => {
-  if (!currentAnalysis) return;
-  const msg = {
-    type: 'INSERT_ANNOTATION',
-    action: 'INSERT_ANNOTATION',
-    pluginId: 'com.hocluc.plugin.english',
-    text: currentAnalysis.text,
-    tokens: currentAnalysis.tokens,
-    grammarIssue: currentAnalysis.grammarIssue
-  };
-  if (window.chrome && window.chrome.webview) {
-    window.chrome.webview.postMessage(msg);
-  }
-  if (window.parent) {
-    window.parent.postMessage(msg, '*');
-  }
-});
-''';
+    final finalIndexHtml = indexHtmlContent ?? defaultIndexHtml;
+    final finalAppJs = appJsContent ?? '// english assistant app.js';
+    final finalStyleCss = styleCssContent ?? 'body { font-family: sans-serif; }';
 
     archive.addFile(
       ArchiveFile(
@@ -290,9 +290,26 @@ btnPin?.addEventListener('click', () => {
       ),
     );
     archive.addFile(
-      ArchiveFile('ui/index.html', indexHtml.length, utf8.encode(indexHtml)),
+      ArchiveFile(
+        'ui/index.html',
+        finalIndexHtml.length,
+        utf8.encode(finalIndexHtml),
+      ),
     );
-    archive.addFile(ArchiveFile('ui/app.js', appJs.length, utf8.encode(appJs)));
+    archive.addFile(
+      ArchiveFile(
+        'ui/app.js',
+        finalAppJs.length,
+        utf8.encode(finalAppJs),
+      ),
+    );
+    archive.addFile(
+      ArchiveFile(
+        'ui/style.css',
+        finalStyleCss.length,
+        utf8.encode(finalStyleCss),
+      ),
+    );
     archive.addFile(ArchiveFile('icon.png', 4, [0x89, 0x50, 0x4E, 0x47]));
 
     final zipBytes = ZipEncoder().encode(archive);

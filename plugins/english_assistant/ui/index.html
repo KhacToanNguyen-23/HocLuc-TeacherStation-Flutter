@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trợ giảng Tiếng Anh</title>
+  <title>Trợ giảng Tiếng Anh & Luyện thi ĐGNL</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,41 +12,178 @@
       <span>🇬🇧</span>
       <h2>Trợ Giảng Tiếng Anh</h2>
     </div>
-    <span class="badge" id="backendBadge">Local spaCy</span>
+    <span class="badge" id="backendBadge">spaCy Local</span>
   </div>
 
-  <div class="quick-samples">
-    <button class="sample-chip" data-sample="The smart student reads a book eagerly in the classroom.">Student reads a book</button>
-    <button class="sample-chip" data-sample="She plays the piano beautifully every evening.">Plays piano</button>
-    <button class="sample-chip" data-sample="The teacher explained the difficult lesson clearly.">Explained lesson</button>
+  <!-- Tab Switcher -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tabBtnSvo" data-tab="svo">
+      <span>🔤</span>
+      <span>Cú pháp S-V-O</span>
+    </button>
+    <button class="tab-btn" id="tabBtnDgnl" data-tab="dgnl">
+      <span>🎯</span>
+      <span>Ôn thi ĐGNL & Cloze</span>
+    </button>
   </div>
 
-  <textarea id="inputSentence" class="input-box" placeholder="Nhập câu tiếng Anh cần phân tích cú pháp..."></textarea>
-
-  <button id="btnAnalyze" class="btn-primary">
-    <span>⚡</span>
-    <span>Phân tích cú pháp S-V-O</span>
-  </button>
-
-  <div id="resultsCard" class="results-card" style="display: none;">
-    <div class="legend">
-      <div class="legend-item"><span class="dot dot-subject"></span> S (Chủ ngữ)</div>
-      <div class="legend-item"><span class="dot dot-verb"></span> V (Động từ)</div>
-      <div class="legend-item"><span class="dot dot-object"></span> O (Tân ngữ)</div>
+  <!-- TAB 1: S-V-O SYNTAX -->
+  <div id="tabContentSvo" class="tab-content active">
+    <div class="quick-samples">
+      <button class="sample-chip" data-sample="The smart student reads a book eagerly in the classroom.">Student reads a book</button>
+      <button class="sample-chip" data-sample="She plays the piano beautifully every evening.">Plays piano</button>
+      <button class="sample-chip" data-sample="The teacher explained the difficult lesson clearly.">Explained lesson</button>
     </div>
 
-    <div id="tokensContainer" class="tokens-container"></div>
-
-    <div id="grammarAlert" class="grammar-alert success">
-      <span>✓</span>
-      <span id="grammarMessage">Câu chuẩn xác ngữ pháp.</span>
+    <div class="snip-banner">
+      <button id="btnSnipSvo" class="btn-snip" title="Kéo khoanh vùng câu trên đề PDF hoặc bảng như PrtSc">
+        <span class="snip-icon">📸</span>
+        <span>Kéo chụp câu trên đề (PrtSc)</span>
+      </button>
+      <span class="snip-hint">Khoanh vùng trên đề để tự động nhận dạng S-V-O</span>
     </div>
+
+    <textarea id="inputSentence" class="input-box" placeholder="Nhập câu tiếng Anh cần phân tích cú pháp..."></textarea>
+
+    <button id="btnAnalyze" class="btn-primary">
+      <span>⚡</span>
+      <span>Phân tích cú pháp S-V-O</span>
+    </button>
+
+    <div id="resultsCard" class="results-card" style="display: none;">
+      <div class="legend">
+        <div class="legend-item"><span class="dot dot-subject"></span> S (Chủ ngữ)</div>
+        <div class="legend-item"><span class="dot dot-verb"></span> V (Động từ)</div>
+        <div class="legend-item"><span class="dot dot-object"></span> O (Tân ngữ)</div>
+      </div>
+
+      <div id="tokensContainer" class="tokens-container"></div>
+
+      <div id="grammarAlert" class="grammar-alert success">
+        <span>✓</span>
+        <span id="grammarMessage">Câu chuẩn xác ngữ pháp.</span>
+      </div>
+    </div>
+
+    <button id="btnPinToBoard" class="btn-pin" style="display: none;">
+      <span>📌</span>
+      <span>Ghim lên bảng phấn</span>
+    </button>
   </div>
 
-  <button id="btnPinToBoard" class="btn-pin" style="display: none;">
-    <span>📌</span>
-    <span>Ghim lên bảng phấn</span>
-  </button>
+  <!-- TAB 2: DGNL ASSESSMENT & CLOZE GENERATOR -->
+  <div id="tabContentDgnl" class="tab-content">
+    <div class="quick-samples">
+      <button class="sample-chip-dgnl" data-sample="Hardly had the committee made a decision when an unprecedented crisis occurred. The government needs to take these environmental factors into account. Having completed the preliminary investigation, researchers proposed a feasible alternative.">Ngữ liệu ĐGNL 1 (Đảo ngữ & Khủng hoảng)</button>
+      <button class="sample-chip-dgnl" data-sample="No sooner had the technological breakthrough emerged than it began to exert a profound influence on communication. It was this innovative framework that paved the way for subsequent scientific achievements.">Ngữ liệu ĐGNL 2 (Công nghệ & Ảnh hưởng)</button>
+    </div>
+
+    <div class="snip-banner snip-banner-dgnl">
+      <button id="btnSnipDgnl" class="btn-snip btn-snip-dgnl" title="Kéo chọn đoạn văn đọc hiểu trên đề PDF như PrtSc">
+        <span class="snip-icon">📸</span>
+        <span>Kéo chụp đoạn văn trên đề (PrtSc)</span>
+      </button>
+      <span class="snip-hint">Khoanh vùng trên đề để tự động quét & highlight điểm nổi bật</span>
+    </div>
+
+    <textarea id="inputDgnl" class="input-box dgnl-input" placeholder="Dán hoặc bấm 'Kéo chụp đoạn văn trên đề' để quét tự động..."></textarea>
+
+    <div class="action-btn-row">
+      <button id="btnAnalyzeDgnl" class="btn-primary btn-dgnl-primary">
+        <span>⚡</span>
+        <span>Phân tích Ngữ liệu ĐGNL</span>
+      </button>
+      <button id="btnHighlightPdf" class="btn-secondary" style="border-color: #86efac; color: #86efac;" title="Đẩy highlight đa tầng hiển thị trực tiếp lên văn bản của tệp đề PDF">
+        <span>🖌️</span>
+        <span>Highlight trên đề</span>
+      </button>
+      <button id="btnApplyPdfHighlight" class="btn-secondary" style="border-color: #89b4fa; color: #89b4fa;" title="Ghi thẳng lớp Highlight chuẩn ISO vào tài liệu PDF đang mở (không cần lưu tệp mới)">
+        <span>🖍️</span>
+        <span>Highlight thẳng lên file</span>
+      </button>
+      <button id="btnGenerateCloze" class="btn-secondary btn-dgnl-secondary">
+        <span>📝</span>
+        <span>Tạo Cloze Test</span>
+      </button>
+    </div>
+
+    <!-- Pedagogical Metrics Card -->
+    <div id="metricsCard" class="metrics-card" style="display: none;">
+      <div class="metrics-header">
+        <span class="metrics-title">📊 Chỉ số sư phạm chuẩn đề ĐGNL</span>
+        <span id="evaluationBadge" class="eval-badge">Chuẩn ĐGNL</span>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <span class="metric-val" id="valTotalWords">0</span>
+          <span class="metric-lbl">Tổng từ</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-val" id="valLexicalDensity">0%</span>
+          <span class="metric-lbl">Mật độ thực từ (LD)</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-val" id="valB2C1Rate">0%</span>
+          <span class="metric-lbl">Tỷ lệ B2–C1</span>
+        </div>
+      </div>
+
+      <!-- CEFR Multi-bar -->
+      <div class="cefr-bar-container">
+        <div class="cefr-bar-labels">
+          <span id="lblA1B1">A1-B1: 0%</span>
+          <span id="lblB2">B2: 0%</span>
+          <span id="lblC1C2">C1-C2: 0%</span>
+        </div>
+        <div class="progress-stacked">
+          <div id="barA1B1" class="bar-segment bar-a1b1" style="width: 70%"></div>
+          <div id="barB2" class="bar-segment bar-b2" style="width: 20%"></div>
+          <div id="barC1C2" class="bar-segment bar-c1c2" style="width: 10%"></div>
+        </div>
+      </div>
+
+      <div id="evaluationText" class="evaluation-callout">
+        Đoạn văn đạt chuẩn phân hóa đề thi ĐGNL.
+      </div>
+    </div>
+
+    <!-- Multi-layer Highlight Viewer -->
+    <div id="highlightCard" class="highlight-card" style="display: none;">
+      <div class="highlight-card-header">
+        <span class="highlight-title">🔍 Bóc tách Đa tầng (Multi-layer Spans)</span>
+        <div class="dgnl-legend">
+          <span class="legend-chip chip-grammar"><span class="border-sample"></span> Ngữ pháp</span>
+          <span class="legend-chip chip-collocation"><span class="bg-sample bg-colloc"></span> Collocation</span>
+          <span class="legend-chip chip-b2"><span class="bg-sample bg-b2"></span> CEFR B2</span>
+          <span class="legend-chip chip-c1"><span class="bg-sample bg-c1"></span> CEFR C1</span>
+        </div>
+      </div>
+
+      <div id="renderedText" class="rendered-text-container"></div>
+
+      <div id="spanDetailBox" class="span-detail-box" style="display: none;">
+        <div class="span-detail-header">
+          <strong id="spanDetailType">Ngữ pháp</strong>
+          <span id="spanDetailBadge" class="badge">Đặc biệt</span>
+        </div>
+        <p id="spanDetailNote" class="span-detail-note"></p>
+      </div>
+    </div>
+
+    <!-- Cloze Test Generator Card -->
+    <div id="clozeCard" class="cloze-card" style="display: none;">
+      <div class="cloze-card-header">
+        <div class="cloze-title-group">
+          <span>📝</span>
+          <span class="cloze-title">Bài tập Trắc nghiệm Đục lỗ (Cloze Test)</span>
+        </div>
+        <button id="btnCopyCloze" class="btn-chip-copy" title="Sao chép toàn bộ đề">📋 Sao chép</button>
+      </div>
+
+      <div id="clozeContainer" class="cloze-container"></div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

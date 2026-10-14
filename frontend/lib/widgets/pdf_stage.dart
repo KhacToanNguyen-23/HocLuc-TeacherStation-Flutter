@@ -8,6 +8,7 @@ import '../models/studio_state.dart';
 import 'grid_painter.dart';
 import 'stroke_canvas.dart';
 import 'smart_chalk_overlay.dart';
+import 'pdf_dgnl_passage_overlay.dart';
 
 class PdfStage extends StatefulWidget {
   const PdfStage({super.key, required this.studio, this.interactive = true});
@@ -21,6 +22,7 @@ class PdfStage extends StatefulWidget {
 
 class _PdfStageState extends State<PdfStage> {
   final PdfViewerController _pdfController = PdfViewerController();
+  final GlobalKey _pdfViewerKey = GlobalKey();
   bool _isDragging = false;
   bool _lastFitWidth = true;
   int _lastPage = 1;
@@ -30,6 +32,8 @@ class _PdfStageState extends State<PdfStage> {
   @override
   void initState() {
     super.initState();
+    widget.studio.pdfViewerController = _pdfController;
+    widget.studio.pdfViewerKey = _pdfViewerKey;
     _lastFitWidth = widget.studio.pdfFitWidth;
     _lastPage = widget.studio.pdfPage;
     _lastZoomAction = widget.studio.pdfZoomAction;
@@ -42,11 +46,17 @@ class _PdfStageState extends State<PdfStage> {
     if (oldWidget.studio != widget.studio) {
       oldWidget.studio.removeListener(_onStudioChanged);
       widget.studio.addListener(_onStudioChanged);
+      widget.studio.pdfViewerController = _pdfController;
+      widget.studio.pdfViewerKey = _pdfViewerKey;
     }
   }
 
   @override
   void dispose() {
+    if (widget.studio.pdfViewerController == _pdfController) {
+      widget.studio.pdfViewerController = null;
+      widget.studio.pdfViewerKey = null;
+    }
     widget.studio.removeListener(_onStudioChanged);
     super.dispose();
   }
@@ -113,6 +123,8 @@ class _PdfStageState extends State<PdfStage> {
 
   @override
   Widget build(BuildContext context) {
+    widget.studio.pdfViewerController = _pdfController;
+    widget.studio.pdfViewerKey = _pdfViewerKey;
     final studio = widget.studio;
     final hasPdf = studio.pdfFilePath != null || studio.pdfBytes != null;
 
@@ -404,6 +416,14 @@ class _PdfStageState extends State<PdfStage> {
                             id,
                           ),
                         ),
+                        // In-Document DGNL Multi-layer Highlight Overlay
+                        Positioned.fill(
+                          child: PdfDgnlPassageOverlay(
+                            studio: studio,
+                            pageNumber: page.pageNumber,
+                            pageRect: pageRect,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -416,6 +436,7 @@ class _PdfStageState extends State<PdfStage> {
     );
 
     _cachedPdfViewer = RepaintBoundary(
+      key: _pdfViewerKey,
       child: studio.pdfBytes != null
           ? PdfViewer.data(
               studio.pdfBytes!,

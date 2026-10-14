@@ -3,8 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
 
 class FlatHost extends StatefulWidget {
-  const FlatHost({super.key, required this.url});
+  const FlatHost({
+    super.key,
+    required this.url,
+    this.onMessage,
+    this.onControllerReady,
+  });
   final String url;
+  final ValueChanged<dynamic>? onMessage;
+  final ValueChanged<void Function(String js)>? onControllerReady;
   @override
   State<FlatHost> createState() => _FlatHostState();
 }

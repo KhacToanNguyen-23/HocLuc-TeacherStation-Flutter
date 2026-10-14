@@ -699,5 +699,34 @@ def legacy_analyze(req: LegacyAnalyzeRequest):
         "grammarIssue": res.grammar_issue,
     }
 
+# ----------------------------------------------------
+# DGNL Assessment & Cloze Generation Integration
+# ----------------------------------------------------
+try:
+    from dgnl_analyzer import DgnlEngine
+    dgnl_engine = DgnlEngine(nlp_instance=nlp)
+except Exception as e:
+    print(f"Notice: DgnlEngine initialization exception: {e}")
+    dgnl_engine = None
+
+class DgnlAnalyzeRequest(BaseModel):
+    text: str
+
+class DgnlClozeRequest(BaseModel):
+    text: str
+    selected_types: Optional[List[str]] = None
+
+@app.post("/api/dgnl/analyze")
+def dgnl_analyze(req: DgnlAnalyzeRequest):
+    if not dgnl_engine:
+        return {"error": "DGNL engine is not initialized", "metrics": {}, "highlights": []}
+    return dgnl_engine.analyze(req.text)
+
+@app.post("/api/dgnl/generate-cloze")
+def dgnl_generate_cloze(req: DgnlClozeRequest):
+    if not dgnl_engine:
+        return {"cloze_tests": []}
+    return {"cloze_tests": dgnl_engine.generate_cloze(req.text, req.selected_types)}
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=18888, log_level="info")

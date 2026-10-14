@@ -170,6 +170,13 @@ mixin StudioStageMixin on StudioCanvasMixin {
     notifyListeners();
   }
 
+  void updatePdfBytesInPlace(Uint8List newBytes) {
+    pdfBytes = newBytes;
+    dirty = true;
+    revision++;
+    notifyListeners();
+  }
+
   void setPdfPage(int p) {
     final next = p.clamp(1, pdfTotalPages > 0 ? pdfTotalPages : 1);
     if (next != pdfPage) {

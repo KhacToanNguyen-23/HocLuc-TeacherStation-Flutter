@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
 import 'flat_host.dart';
@@ -73,6 +74,47 @@ class PluginHostDrawer extends StatelessWidget {
                           ),
                         ),
                       ),
+                      // Quick Scan Paragraph on PDF
+                      Tooltip(
+                        message: 'Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng (PrtSc)',
+                        child: InkWell(
+                          onTap: () => studio.startSnipping(target: 'dgnl'),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0x3d89b4fa),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0x8889b4fa),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(
+                                  Icons.crop_free,
+                                  size: 13,
+                                  color: Color(0xff89b4fa),
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Quét đoạn văn',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xffcdd6f4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       IconButton(
                         icon: const Icon(Icons.open_in_new, size: 16),
                         tooltip: 'Tách thành cửa sổ nổi',
@@ -110,8 +152,17 @@ class PluginHostDrawer extends StatelessWidget {
 
   Widget _buildPluginContent(dynamic plugin) {
     if (plugin == null) return const SizedBox.shrink();
-    // If running with a local server or html file
     final entry = plugin.manifest.uiEntry as String;
-    return FlatHost(url: entry);
+    return FlatHost(
+      url: entry,
+      onMessage: studio.handlePluginMessage,
+      onControllerReady: (sendJs) {
+        studio.onSnippetCapturedForPlugin = (text, target) {
+          sendJs(
+            "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)});",
+          );
+        };
+      },
+    );
   }
 }

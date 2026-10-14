@@ -52,3 +52,4 @@ local.properties
 
 # Local dev scripts
 dev-*.bat
+scratch/

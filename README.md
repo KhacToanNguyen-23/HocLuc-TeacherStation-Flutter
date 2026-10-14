@@ -135,8 +135,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Windows.ps1
 | :--- | :---: | :--- |
 | **Authentication Flow** | ✅ Ready | Password auth, OTP registration, Google sign-in & 1-click Demo |
 | **Classroom Dashboard** | ✅ Ready | Classroom management, active sessions, avatar dropdown |
+| **Lesson Planning** | ✅ Ready | Dedicated planning tab, whiteboard prep mode & 1-click clone to classroom |
 | **Ergonomic Studio Stage** | ✅ Ready | 16:9 stage switcher, drawing tools, quiz timer, split views |
-| **Spring Boot Companion API** | ✅ Ready | Session bootstrap (`/api/bootstrap`), auth endpoints, storage |
+| **Spring Boot Companion API** | ✅ Ready | Session bootstrap (`/api/bootstrap`), auth endpoints, planning CRUD, storage |
 | **Local Data Persistence** | ✅ Ready | Lessons and teacher settings saved via loopback REST API |
 | **WGC Screen Capture Plugin** | 🔄 In Progress | C++ Windows.Graphics.Capture plugin for target window extraction |
 | **Virtual Camera Output** | 📋 Planned | DirectShow / UnityCapture virtual camera bridge to Google Meet |

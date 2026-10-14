@@ -262,14 +262,17 @@ class CommittedStrokesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final stroke in strokes) {
-      if (stroke.points.isEmpty) continue;
+      if (stroke.points.isEmpty && stroke.rect == null) continue;
 
-      final isHighlight = stroke.width > 6;
+      final isHighlight = stroke.width > 6 || stroke.rect != null;
       final paint = Paint()
-        ..color = isHighlight
-            ? stroke.color.withValues(alpha: 0.35)
-            : stroke.color
-        ..style = PaintingStyle.fill;
+        ..color = stroke.isHollow
+            ? stroke.color.withValues(alpha: 0.95)
+            : (isHighlight
+                ? stroke.color.withValues(alpha: stroke.rect != null ? 0.38 : 0.35)
+                : stroke.color)
+        ..style = stroke.isHollow ? PaintingStyle.stroke : PaintingStyle.fill
+        ..strokeWidth = stroke.isHollow ? (stroke.width <= 3.0 ? stroke.width : 1.6) : stroke.width;
 
       final path = stroke.getPath(size);
       canvas.drawPath(path, paint);

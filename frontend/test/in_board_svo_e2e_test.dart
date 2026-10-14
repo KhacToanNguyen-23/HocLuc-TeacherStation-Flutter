@@ -13,6 +13,10 @@ void main() {
       (tester) async {
         final studio = StudioState();
 
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
         // 1. Activate English assistant plugin
         final englishPlugin = InstalledPlugin(
           manifest: PluginManifest(

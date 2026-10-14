@@ -7,12 +7,13 @@ import 'pdf_stage.dart';
 import 'interactive_chalkboard.dart';
 import 'floating_pdf_window.dart';
 import 'floating_pip.dart';
-import 'floating_timer.dart';
 import 'studio/studio_document_drawer.dart';
 import 'plugin_host_drawer.dart';
 import 'floating_plugin_window.dart';
 import 'subject_tool_palette.dart';
 import 'presentation_surface.dart';
+import 'region_snipping_overlay.dart';
+import '../services/pdf_annotation_exporter.dart';
 
 class StageContainer extends StatelessWidget {
   const StageContainer({
@@ -26,6 +27,11 @@ class StageContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    studio.onApplyHighlightToPdfRequested = () =>
+        PdfAnnotationExporter.applyHighlightDirectlyToPdf(context, studio);
+    studio.onSaveHighlightedPdfRequested = () =>
+        PdfAnnotationExporter.saveHighlightedPdf(context, studio);
+
     return ListenableBuilder(
       listenable: studio,
       builder: (context, _) {
@@ -136,14 +142,6 @@ class StageContainer extends StatelessWidget {
                                     child: FloatingPip(studio: studio),
                                   ),
 
-                                // Floating Countdown Timer Pill
-                                if (interactive &&
-                                    (studio.timerRunning || studio.seconds > 0))
-                                  Positioned(
-                                    top: 14,
-                                    left: 14,
-                                    child: FloatingTimer(studio: studio),
-                                  ),
 
                                 // Floating In-Board Subject Tool Palette Dock
                                 if (interactive && studio.activePlugin != null)
@@ -154,6 +152,12 @@ class StageContainer extends StatelessWidget {
                                   PluginHostDrawer(studio: studio),
                                   FloatingPluginWindow(studio: studio),
                                 ],
+
+                                // PrtSc Drag Snipping Overlay
+                                if (interactive && studio.isSnippingActive)
+                                  Positioned.fill(
+                                    child: RegionSnippingOverlay(studio: studio),
+                                  ),
                               ],
                             ),
                           ),

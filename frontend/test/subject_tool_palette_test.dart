@@ -76,6 +76,10 @@ void main() {
     testWidgets(
       'tapping eye toggle button switches chalkAnnotationsVisible state',
       (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
         studio.openPlugin(dummyPlugin);
 
         await tester.pumpWidget(
@@ -104,6 +108,10 @@ void main() {
     testWidgets(
       'tapping close button calls closePlugin and clears activeSubjectTool',
       (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
         studio.openPlugin(dummyPlugin);
         studio.setActiveSubjectTool('svo');
 

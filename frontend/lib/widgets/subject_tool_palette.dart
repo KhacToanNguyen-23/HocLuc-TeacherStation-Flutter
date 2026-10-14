@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
+import '../services/pdf_annotation_exporter.dart';
 
 class SubjectToolPalette extends StatelessWidget {
   const SubjectToolPalette({super.key, required this.studio});
@@ -59,38 +60,162 @@ class SubjectToolPalette extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Drag Handle & Subject Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0x28d4e8a6),
+                    // Drag Handle & Subject Badge (Click to toggle Assistant Panel)
+                    Tooltip(
+                      message: studio.showPluginDrawer
+                          ? 'Thu gọn bảng trợ giảng'
+                          : 'Mở bảng điều khiển Trợ giảng Tiếng Anh',
+                      child: InkWell(
+                        key: const Key('subject_badge_button'),
+                        onTap: () {
+                          studio.openPlugin(
+                            plugin,
+                            openModal: !studio.showPluginDrawer,
+                          );
+                        },
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0x44d4e8a6)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.drag_indicator,
-                            size: 13,
-                            color: Color(0xffa5b5a8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            plugin.manifest.name,
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xffd4e8a6),
-                            ),
+                          decoration: BoxDecoration(
+                            color: studio.showPluginDrawer
+                                ? const Color(0x55d4e8a6)
+                                : const Color(0x28d4e8a6),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0x44d4e8a6)),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.drag_indicator,
+                                size: 13,
+                                color: Color(0xffa5b5a8),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                plugin.manifest.name,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xffd4e8a6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
+
+                    // Quick Scan Paragraph on PDF/Chalkboard (Kéo chụp & Highlight trực tiếp)
+                    Tooltip(
+                      message:
+                          'Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng trực tiếp trên file (PrtSc)',
+                      child: InkWell(
+                        key: const Key('quick_snip_dgnl_button'),
+                        onTap: () => studio.startSnipping(target: 'dgnl'),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0x4489b4fa), Color(0x44f5c2e7)],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xff89b4fa),
+                              width: 1.3,
+                            ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x3389b4fa),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(
+                                Icons.crop_free,
+                                size: 14,
+                                color: Color(0xff89b4fa),
+                              ),
+                              SizedBox(width: 5),
+                              Text(
+                                'Quét đoạn văn',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xffcdd6f4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (studio.pdfDgnlPassages.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Tooltip(
+                        message:
+                            'Áp lớp Highlight chuẩn trực tiếp vào file PDF đang mở (không cần lưu tệp mới)',
+                        child: InkWell(
+                          key: const Key('btn_palette_save_pdf_highlight'),
+                          onTap: () =>
+                              PdfAnnotationExporter.applyHighlightDirectlyToPdf(context, studio),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0x3386efac),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xff86efac),
+                                width: 1.2,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x2286efac),
+                                  blurRadius: 6,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(
+                                  Icons.draw_rounded,
+                                  size: 14,
+                                  color: Color(0xff86efac),
+                                ),
+                                SizedBox(width: 5),
+                                Text(
+                                  'Highlight lên file',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xff86efac),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(width: 6),
 
                     // S-V-O Tool Toggle Button
                     Tooltip(
