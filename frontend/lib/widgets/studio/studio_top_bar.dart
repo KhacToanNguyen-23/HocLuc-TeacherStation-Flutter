@@ -24,6 +24,9 @@ class StudioTopBar extends StatelessWidget {
     this.hasStudents = false,
     this.hasPlugins = false,
     this.onLeaveClassroom,
+    this.isPlanningMode = false,
+    this.onExitPlanning,
+    this.onCreateClassroomFromPlanning,
   });
 
   final StudioState studio;
@@ -32,6 +35,7 @@ class StudioTopBar extends StatelessWidget {
   final bool hasInspector;
   final bool hasStudents;
   final bool hasPlugins;
+  final bool isPlanningMode;
   final VoidCallback onToggleLessons;
   final VoidCallback onToggleInspector;
   final VoidCallback onRename;
@@ -41,6 +45,8 @@ class StudioTopBar extends StatelessWidget {
   final VoidCallback? onToggleStudents;
   final VoidCallback? onTogglePlugins;
   final VoidCallback? onLeaveClassroom;
+  final VoidCallback? onExitPlanning;
+  final VoidCallback? onCreateClassroomFromPlanning;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +55,7 @@ class StudioTopBar extends StatelessWidget {
     const line = AppColors.line;
 
     return Container(
-      height: 48,
+      height: 54,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -94,24 +100,27 @@ class StudioTopBar extends StatelessWidget {
               onTap: onRename,
               borderRadius: BorderRadius.circular(6),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        studio.title,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: pine,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Text.rich(
+                  TextSpan(
+                    text: studio.title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: pine,
+                    ),
+                    children: const [
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Padding(
+                          padding: EdgeInsets.only(left: 3),
+                          child: Icon(Icons.edit_outlined, size: 12, color: muted),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.edit_outlined, size: 13, color: muted),
-                  ],
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ),
@@ -148,36 +157,127 @@ class StudioTopBar extends StatelessWidget {
                 ),
               ),
             )
-          else if (studio.dirty)
+          else if (studio.saving)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xfffff7ed),
+                color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xfffed7aa)),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.circle, size: 6, color: Color(0xffea580c)),
+                  SizedBox(
+                    width: 7,
+                    height: 7,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+                    ),
+                  ),
                   SizedBox(width: 4),
                   Text(
-                    'Chưa lưu',
+                    'Đang lưu...',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xffc2410c),
+                      color: Color(0xFF1D4ED8),
                     ),
                   ),
                 ],
               ),
+            )
+          else if (studio.dirty)
+            Tooltip(
+              message: 'Có thay đổi chưa lưu. Bấm để lưu (Ctrl+S)',
+              child: InkWell(
+                onTap: onSave,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xfffff7ed),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xfffed7aa)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.circle, size: 6, color: Color(0xffea580c)),
+                      SizedBox(width: 4),
+                      Text(
+                        'Chưa lưu',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xffc2410c),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else if (studio.savedAt.isNotEmpty)
+            Tooltip(
+              message: 'Tất cả thay đổi đã được lưu an toàn',
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF16A34A)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Đã lưu ${studio.savedAt}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF15803D),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           const SizedBox(width: 8),
-          ListenableBuilder(
-            listenable: MeetAutomationService(),
-            builder: (context, _) {
-              final meetService = MeetAutomationService();
-              final url = meetService.meetingUrl;
+          if (isPlanningMode)
+            Container(
+              margin: const EdgeInsets.only(left: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.edit_calendar_rounded, size: 13, color: Color(0xFF16A34A)),
+                  SizedBox(width: 5),
+                  Text(
+                    'Kế hoạch bài giảng',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF15803D),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ListenableBuilder(
+              listenable: MeetAutomationService(),
+              builder: (context, _) {
+                final meetService = MeetAutomationService();
+                final url = meetService.meetingUrl;
               if (url != null) {
                 return Container(
                   margin: const EdgeInsets.only(left: 4),
@@ -242,25 +342,29 @@ class StudioTopBar extends StatelessWidget {
                 );
               }
 
-              return ElevatedButton.icon(
-                onPressed: () {
-                  showDialog<void>(
-                    context: context,
-                    builder: (_) => const CreateClassroomDialog(),
-                  );
-                },
-                icon: const Icon(Icons.add_rounded, size: 14),
-                label: const Text('Tạo lớp học'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+              return SizedBox(
+                height: 38,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (_) => const CreateClassroomDialog(),
+                    );
+                  },
+                  icon: const Icon(Icons.add_rounded, size: 17),
+                  label: Text(width > 900 ? 'Tạo lớp học' : ''),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: width > 900 ? 14 : 10),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                    elevation: 1,
+                    textStyle: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               );
@@ -322,17 +426,18 @@ class StudioTopBar extends StatelessWidget {
               color: hasInspector ? pine : muted,
             ),
           ),
-          IconButton(
-            tooltip: studio.saving ? 'Đang lưu…' : 'Lưu bài giảng',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: studio.saving || studio.loading ? null : onSave,
-            icon: Icon(
-              studio.saving ? Icons.hourglass_top_rounded : Icons.save_outlined,
-              color: pine,
+          if (!isPlanningMode)
+            IconButton(
+              tooltip: studio.saving ? 'Đang lưu…' : 'Lưu bài giảng',
+              iconSize: 18,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: studio.saving || studio.loading ? null : onSave,
+              icon: Icon(
+                studio.saving ? Icons.hourglass_top_rounded : Icons.save_outlined,
+                color: pine,
+              ),
             ),
-          ),
           if (width > 800 && onToggleStudents != null) ...[
             const SizedBox(width: 3),
             IconButton(
@@ -361,26 +466,132 @@ class StudioTopBar extends StatelessWidget {
               icon: Icon(hasPlugins ? Icons.extension : Icons.extension_outlined, color: pine),
             ),
           ],
-          if (onLeaveClassroom != null) ...[
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: onLeaveClassroom,
-              icon: const Icon(Icons.call_end_rounded, size: 14, color: Colors.white),
-              label: Text(
-                width > 900 ? 'Rời phòng' : '',
-                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: EdgeInsets.symmetric(
-                  horizontal: width > 900 ? 10 : 8,
-                  vertical: 7,
+          if (isPlanningMode) ...[
+            if (onExitPlanning != null) ...[
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 38,
+                child: OutlinedButton.icon(
+                  onPressed: onExitPlanning,
+                  icon: const Icon(Icons.arrow_back_rounded, size: 17),
+                  label: Text(
+                    width > 850 ? 'Thoát' : '',
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.slate700,
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.slate300, width: 1.2),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: width > 950 ? 15 : 11,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                  ),
                 ),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ],
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 38,
+              child: ElevatedButton.icon(
+                onPressed: studio.saving || studio.loading ? null : onSave,
+                icon: studio.saving
+                    ? const SizedBox(
+                        width: 15,
+                        height: 15,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.save_rounded, size: 18, color: Colors.white),
+                label: Text(
+                  studio.saving
+                      ? 'Đang lưu…'
+                      : (width > 900 ? 'Lưu bài soạn' : 'Lưu'),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF059669),
+                  foregroundColor: Colors.white,
+                  elevation: 1,
+                  shadowColor: const Color(0xFF059669).withValues(alpha: 0.35),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: width > 950 ? 15 : 11,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                ),
+              ),
+            ),
+            if (onCreateClassroomFromPlanning != null) ...[
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 38,
+                child: ElevatedButton.icon(
+                  onPressed: onCreateClassroomFromPlanning,
+                  icon: const Icon(Icons.videocam_rounded, size: 19, color: Colors.white),
+                  label: Text(
+                    width > 850 ? 'Tạo phòng học' : '',
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.sky600,
+                    foregroundColor: Colors.white,
+                    elevation: 1,
+                    shadowColor: AppColors.sky600.withValues(alpha: 0.35),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: width > 950 ? 15 : 11,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                  ),
+                ),
+              ),
+            ],
+          ] else if (onLeaveClassroom != null) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 38,
+              child: ElevatedButton.icon(
+                onPressed: onLeaveClassroom,
+                icon: const Icon(Icons.call_end_rounded, size: 18, color: Colors.white),
+                label: Text(
+                  width > 850 ? 'Rời phòng' : '',
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626),
+                  foregroundColor: Colors.white,
+                  elevation: 1,
+                  shadowColor: const Color(0xFFDC2626).withValues(alpha: 0.35),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: width > 950 ? 15 : 11,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                ),
               ),
             ),
           ],

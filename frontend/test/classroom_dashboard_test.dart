@@ -40,10 +40,15 @@ void main() {
       expect(find.text('Bắt đầu'), findsWidgets);
       expect(find.text('Lên lịch'), findsOneWidget);
 
-      // Verify 2 bottom columns (single words)
-      expect(find.text('Phòng học'), findsOneWidget);
+      // Verify tabs and default tab 0 (Phòng học)
+      expect(find.text('Phòng học'), findsWidgets);
       expect(find.text('Chưa có phòng học'), findsOneWidget);
+      expect(find.text('Kế hoạch bài giảng'), findsOneWidget);
       expect(find.text('Lịch sử'), findsOneWidget);
+
+      // Switch to History tab (tab 2)
+      await tester.tap(find.text('Lịch sử'));
+      await tester.pumpAndSettle();
       expect(find.text('Chưa có lịch sử'), findsOneWidget);
 
       // 4. Test Join dialog

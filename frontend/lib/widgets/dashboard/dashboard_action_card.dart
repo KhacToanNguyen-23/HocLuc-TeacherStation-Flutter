@@ -44,7 +44,7 @@ class _DashboardActionCardState extends State<DashboardActionCard> {
           curve: Curves.easeOutCubic,
           // Hover hiện lên (nhấc nhẹ 3px lên trên)
           transform: Matrix4.translationValues(0, _isHovered ? -3 : 0, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -68,8 +68,8 @@ class _DashboardActionCardState extends State<DashboardActionCard> {
               // Icon container
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: _isHovered ? AppColors.sky100 : AppColors.sky50,
                   borderRadius: BorderRadius.circular(12),
@@ -81,7 +81,7 @@ class _DashboardActionCardState extends State<DashboardActionCard> {
                 child: Center(
                   child: Icon(
                     widget.icon,
-                    size: 22,
+                    size: 24,
                     color: sky,
                   ),
                 ),
@@ -101,7 +101,7 @@ class _DashboardActionCardState extends State<DashboardActionCard> {
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 16,
                               fontWeight: FontWeight.w800,
                               color: _isHovered ? sky : slate,
                               letterSpacing: -0.2,

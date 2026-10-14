@@ -9,6 +9,9 @@ import '../widgets/dashboard/join_classroom_dialog.dart';
 import '../widgets/dashboard/schedule_classroom_dialog.dart';
 import 'classroom_lobby_screen.dart';
 import 'login_screen.dart';
+import 'studio_screen.dart';
+import '../models/planning_meta.dart';
+import '../widgets/dashboard/planning_list_card.dart';
 
 /// Classroom Dashboard Screen styled to match the layout in Image 2 with Educational Green theme.
 class ClassroomDashboardScreen extends StatefulWidget {
@@ -24,6 +27,23 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   bool _isStarting = false;
   String _selectedRoomFilter = 'Tất cả';
 
+  int _selectedTabIndex = 0; // 0: Phòng học, 1: Kế hoạch bài giảng, 2: Lịch sử
+  List<PlanningMeta> _plannings = [];
+  bool _loadingPlannings = false;
+  String _selectedSubjectFilter = 'Tất cả';
+  final List<String> _subjectOptions = [
+    'Tất cả',
+    'Tiếng Anh',
+    'Toán',
+    'Ngữ văn',
+    'Vật lý',
+    'Hóa học',
+    'Sinh học',
+    'Lịch sử',
+    'Địa lý',
+    'Chung',
+  ];
+
   Map<String, dynamic>? _activeRoom;
   List<dynamic> _historyList = [];
 
@@ -31,6 +51,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   void initState() {
     super.initState();
     _loadRoomsAndHistory();
+    _loadPlannings();
   }
 
   Future<void> _loadRoomsAndHistory() async {
@@ -42,6 +63,333 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
         _historyList = history;
       });
     }
+  }
+
+  Future<void> _loadPlannings() async {
+    setState(() => _loadingPlannings = true);
+    final list = await _localService.getPlannings();
+    if (mounted) {
+      setState(() {
+        _plannings = list;
+        _loadingPlannings = false;
+      });
+    }
+  }
+
+  Future<void> _handleCreateNewPlanning() async {
+    final titleController = TextEditingController(text: 'Kế hoạch bài giảng mới');
+    String selectedSub = 'Tiếng Anh';
+
+    final shouldCreate = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.edit_calendar_rounded, size: 20, color: AppColors.sky600),
+              SizedBox(width: 8),
+              Text('Soạn kế hoạch bài giảng mới', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Tên kế hoạch bài giảng', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.slate700)),
+              const SizedBox(height: 6),
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Nhập tên bài giảng...',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text('Môn học', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.slate700)),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.slate300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedSub,
+                    isExpanded: true,
+                    items: _subjectOptions.where((s) => s != 'Tất cả').map((s) {
+                      return DropdownMenuItem<String>(value: s, child: Text(s));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setDlgState(() => selectedSub = val);
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.sky600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Bắt đầu soạn'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (shouldCreate != true || !mounted) return;
+
+    final title = titleController.text.trim().isNotEmpty ? titleController.text.trim() : 'Kế hoạch bài giảng mới';
+    final newPlan = await _localService.createPlanning(title: title, subject: selectedSub);
+
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => StudioScreen(
+          isPlanningMode: true,
+          planningId: newPlan?.id,
+          lessonTitle: title,
+        ),
+      ),
+    );
+    _loadPlannings();
+  }
+
+  Future<void> _handleEditPlanning(PlanningMeta plan) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => StudioScreen(
+          isPlanningMode: true,
+          planningId: plan.id,
+          lessonTitle: plan.title,
+        ),
+      ),
+    );
+    _loadPlannings();
+  }
+
+  Future<void> _handleLaunchFromPlanning(PlanningMeta plan) async {
+    if (_isStarting) return;
+
+    if (_activeRoom != null && _activeRoom!['status'] == 'ONGOING') {
+      final shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Tạo phòng học mới?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          content: Text(
+            'Bạn đang có buổi học "${_activeRoom!['title'] ?? 'Hiện tại'}" chưa kết thúc.\n'
+            'Bắt đầu buổi dạy từ "${plan.title}" sẽ đóng phòng học cũ và mở phòng học trực tuyến mới. Bạn có muốn tiếp tục?',
+            style: const TextStyle(fontSize: 13, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.sky600,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Đóng cũ & Bắt đầu dạy'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldProceed != true) return;
+
+      await _localService.endClassroom(classroomId: _activeRoom!['id']?.toString());
+      await MeetAutomationService().leaveClassroom();
+    }
+
+    if (!mounted) return;
+    setState(() => _isStarting = true);
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const PopScope(
+        canPop: false,
+        child: Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
+                  ),
+                ),
+                SizedBox(width: 20),
+                Text(
+                  'Đang nhân bản bài giảng & tạo lớp học...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.slate900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    String? realMeetUrl;
+    try {
+      await _localService.clonePlanningToClassroom(plan.id);
+      realMeetUrl = await MeetAutomationService().generateAndJoinRealMeetRoom();
+    } catch (e) {
+      debugPrint('[Dashboard] Error launching from planning: $e');
+    } finally {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isStarting = false);
+      }
+    }
+
+    if (mounted) {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => ClassroomLobbyScreen(
+            initialMeetingUrl: realMeetUrl,
+            initialLessonTitle: plan.title,
+          ),
+        ),
+      );
+      _loadRoomsAndHistory();
+      _loadPlannings();
+    }
+  }
+
+  Future<void> _handleDeletePlanning(PlanningMeta plan) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Xóa kế hoạch bài giảng?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa bài giảng "${plan.title}"?\nThao tác này không thể hoàn tác.',
+          style: const TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Xóa vĩnh viễn'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _localService.deletePlanning(plan.id);
+      _loadPlannings();
+    }
+  }
+
+  Widget _buildTabButton({
+    required int index,
+    required String title,
+    required IconData icon,
+    int? badgeCount,
+  }) {
+    final isSelected = _selectedTabIndex == index;
+    return InkWell(
+      onTap: () {
+        setState(() => _selectedTabIndex = index);
+        if (index == 1) _loadPlannings();
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.sky600 : Colors.transparent,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.sky600.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 19,
+              color: isSelected ? AppColors.sky600 : AppColors.slate600,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? AppColors.sky600 : AppColors.slate700,
+              ),
+            ),
+            if (badgeCount != null && badgeCount > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.sky50 : AppColors.slate200,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? AppColors.sky600 : AppColors.slate600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _startClassroom() async {
@@ -412,27 +760,55 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                           ),
                         ],
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                        // 2. Bottom Two Equal Columns
+                        // Tab Bar: 3 Horizontal Tabs
+                        Row(
+                          children: [
+                            _buildTabButton(
+                              index: 0,
+                              title: 'Phòng học',
+                              icon: Icons.meeting_room_outlined,
+                              badgeCount: _activeRoom != null ? 1 : null,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildTabButton(
+                              index: 1,
+                              title: 'Kế hoạch bài giảng',
+                              icon: Icons.menu_book_outlined,
+                              badgeCount: _plannings.isNotEmpty ? _plannings.length : null,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildTabButton(
+                              index: 2,
+                              title: 'Lịch sử',
+                              icon: Icons.history_rounded,
+                              badgeCount: _historyList.isNotEmpty ? _historyList.length : null,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Tab Content View
                         SizedBox(
                           height: 380,
-                          child: isCompact
-                              ? Column(
-                                  children: [
-                                    Expanded(child: _buildRoomListCard()),
-                                    const SizedBox(height: 16),
-                                    Expanded(child: _buildHistoryCard()),
-                                  ],
-                                )
-                              : Row(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(child: _buildRoomListCard()),
-                                    const SizedBox(width: 20),
-                                    Expanded(child: _buildHistoryCard()),
-                                  ],
-                                ),
+                          child: _selectedTabIndex == 0
+                              ? _buildRoomListCard()
+                              : _selectedTabIndex == 1
+                                  ? PlanningListCard(
+                                      plannings: _plannings,
+                                      isLoading: _loadingPlannings,
+                                      selectedSubject: _selectedSubjectFilter,
+                                      subjectOptions: _subjectOptions,
+                                      onSubjectChanged: (val) {
+                                        if (val != null) setState(() => _selectedSubjectFilter = val);
+                                      },
+                                      onCreateNew: _handleCreateNewPlanning,
+                                      onEdit: _handleEditPlanning,
+                                      onLaunch: _handleLaunchFromPlanning,
+                                      onDelete: _handleDeletePlanning,
+                                    )
+                                  : _buildHistoryCard(),
                         ),
                       ],
                     ),
@@ -465,10 +841,10 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
             backgroundColor: AppColors.sky600,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             elevation: 0,
           ),
-          child: const Text('Bắt đầu', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          child: const Text('Bắt đầu', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
         ),
       );
     }
@@ -560,13 +936,13 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () => _rejoinClassroom(meetUrl),
-                          icon: const Icon(Icons.login_rounded, size: 16),
-                          label: const Text('Vào lại phòng', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                          icon: const Icon(Icons.login_rounded, size: 18),
+                          label: const Text('Vào lại phòng', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.sky600,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
                             elevation: 0,
                           ),
                         ),
@@ -578,9 +954,9 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                           foregroundColor: AppColors.slate700,
                           side: const BorderSide(color: AppColors.slate300),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
                         ),
-                        child: const Text('Tạo mới', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        child: const Text('Tạo mới', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
