@@ -572,7 +572,7 @@
   {
     "id": "phase-06-system-verification-and-ci",
     "title": "Full System Verification & Release to origin/develop",
-    "status": "not_started",
+    "status": "active",
     "evidence": "",
     "user_visible_behavior": "All frontend and backend test suites pass, Windows native build succeeds, and unified develop branch is pushed.",
     "verification_command": "flutter test && flutter build windows --debug",
