@@ -7,17 +7,14 @@ import '../models/meet_events.dart';
 import 'google_meet_auth_service.dart';
 import 'local_service.dart';
 import 'meet_bridge_script.dart';
+import 'meet_admission_bridge_script.dart';
 import 'webview_environment_service.dart';
 
-enum MeetStatus {
-  idle,
-  creating,
-  ready,
-  error,
-}
+enum MeetStatus { idle, creating, ready, error }
 
 class MeetAutomationService extends ChangeNotifier {
-  static final MeetAutomationService _instance = MeetAutomationService._internal();
+  static final MeetAutomationService _instance =
+      MeetAutomationService._internal();
   factory MeetAutomationService() => _instance;
   MeetAutomationService._internal() {
     CameraBroadcastService().addListener(() {
@@ -30,11 +27,12 @@ class MeetAutomationService extends ChangeNotifier {
   }
 
   win.WebviewController? _controller;
+  String? _controllerMeetingUrl;
+  Future<void>? _hostJoining;
   MeetStatus _status = MeetStatus.idle;
   String? _meetingUrl;
   String? _errorMessage;
   bool _isBroadcasting = false;
-  bool _autoAdmitEnabled = true;
   bool _needsGoogleLogin = false;
   StreamSubscription<String>? _urlSubscription;
   StreamSubscription<dynamic>? _webMessageSubscription;
@@ -47,39 +45,64 @@ class MeetAutomationService extends ChangeNotifier {
   bool _hasHocLucCam = false;
   bool _hasHocLucMic = false;
 
+  final Map<String, MeetAdmissionRequest> _admissionRequests = {};
+  final Map<String, _AdmissionAttempt> _admissionAttempts = {};
+  final Map<String, String> _admissionErrors = {};
+  String? _admissionDocumentId;
+  int _admissionSequence = -1;
+  int _admissionAttemptCounter = 0;
+  int _unknownAdmissionCount = 0;
+  Duration _admissionTimeout = const Duration(seconds: 10);
+  Future<String> Function(String)? _testExecuteScript;
+
+  Future<void>? _admissionBatch;
+  int _admissionGeneration = 0;
+  StreamSubscription<win.LoadingState>? _loadingSubscription;
+
+  @visibleForTesting
+  MeetAutomationService.forTesting({
+    Future<String> Function(String)? executeScript,
+    Duration admissionTimeout = const Duration(seconds: 10),
+  }) {
+    _testExecuteScript = executeScript;
+    _admissionTimeout = admissionTimeout;
+  }
+
+  bool get isAdmittingAll => _admissionBatch != null;
+
   MeetStatus get status => _status;
   String? get meetingUrl => _meetingUrl;
   String? get errorMessage => _errorMessage;
   bool get isBroadcasting => _isBroadcasting;
   bool get needsGoogleLogin => _needsGoogleLogin;
-  bool get hasRoom => _meetingUrl != null && _status != MeetStatus.idle && _status != MeetStatus.error;
+  bool get hasRoom =>
+      _meetingUrl != null &&
+      _status != MeetStatus.idle &&
+      _status != MeetStatus.error;
   win.WebviewController? get webviewController => _controller;
 
   List<MeetChatMessage> get messages => List.unmodifiable(_messages);
   List<String> get raisedHands => List.unmodifiable(_raisedHands);
   List<MeetParticipant> get participants => List.unmodifiable(_participants);
   int get pendingAdmitCount => _pendingAdmitCount;
+  List<MeetAdmissionRequest> get admissionRequests =>
+      List.unmodifiable(_admissionRequests.values);
+  int get unknownAdmissionCount => _unknownAdmissionCount;
+  bool isAdmitting(String id) => _admissionAttempts.containsKey(id);
+  String? admissionError(String id) => _admissionErrors[id];
   bool get isBridgeReady => _isBridgeReady;
   bool get hasHocLucCam => _hasHocLucCam;
   bool get hasHocLucMic => _hasHocLucMic;
-  bool get autoAdmitEnabled => _autoAdmitEnabled;
-
-  set autoAdmitEnabled(bool val) {
-    if (_autoAdmitEnabled != val) {
-      _autoAdmitEnabled = val;
-      notifyListeners();
-      if (_autoAdmitEnabled && _pendingAdmitCount > 0) {
-        unawaited(admitAllPending());
-      }
-    }
-  }
 
   /// Gán link phòng Meet thật (từ người dùng dán hoặc từ Google API)
   void setMeetingUrl(String url) {
     var cleanUrl = url.trim();
-    if (cleanUrl.isNotEmpty && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+    if (cleanUrl.isNotEmpty &&
+        !cleanUrl.startsWith('http://') &&
+        !cleanUrl.startsWith('https://')) {
       cleanUrl = 'https://$cleanUrl';
     }
+    if (_meetingUrl != (cleanUrl.isEmpty ? null : cleanUrl)) _resetAdmissions();
     _meetingUrl = cleanUrl.isEmpty ? null : cleanUrl;
     _status = _meetingUrl != null ? MeetStatus.ready : MeetStatus.idle;
     _errorMessage = null;
@@ -106,15 +129,22 @@ class MeetAutomationService extends ChangeNotifier {
         final token = GoogleMeetAuthService().accessToken;
         if (token != null) reqData['accessToken'] = token;
 
-        final response = await localService.post('classroom/create', data: reqData);
+        final response = await localService.post(
+          'classroom/create',
+          data: reqData,
+        );
         if (response['success'] == true && response['meetingUrl'] != null) {
           setMeetingUrl(response['meetingUrl'] as String);
           return;
         } else {
-          debugPrint('[MeetAutomation] Backend returned response without meetingUrl: $response');
+          debugPrint(
+            '[MeetAutomation] Backend returned response without meetingUrl: $response',
+          );
         }
       } catch (e) {
-        debugPrint('[MeetAutomation] Backend service create classroom failed: $e');
+        debugPrint(
+          '[MeetAutomation] Backend service create classroom failed: $e',
+        );
       }
 
       // 2. Trên Web: Không gán link giả abc-defg-hij nữa
@@ -143,7 +173,8 @@ class MeetAutomationService extends ChangeNotifier {
     }
 
     final previousUrl = _meetingUrl;
-    _meetingUrl = null;
+    _resetAdmissions();
+    _meetingUrl = existingUrl;
     _needsGoogleLogin = false;
     _status = MeetStatus.creating;
     _errorMessage = null;
@@ -161,7 +192,9 @@ class MeetAutomationService extends ChangeNotifier {
 
       final version = await win.WebviewController.getWebViewVersion();
       if (version == null) {
-        throw StateError('Chưa cài đặt Microsoft Edge WebView2 Runtime trên máy tính.');
+        throw StateError(
+          'Chưa cài đặt Microsoft Edge WebView2 Runtime trên máy tính.',
+        );
       }
       _controller = win.WebviewController();
       await _controller!.initialize();
@@ -172,15 +205,32 @@ class MeetAutomationService extends ChangeNotifier {
       });
 
       final controller = _controller!;
+      notifyListeners();
+      await _loadingSubscription?.cancel();
+      _loadingSubscription = controller.loadingState.listen((state) {
+        if (_controller != controller) return;
+        if (state == win.LoadingState.loading) {
+          _resetAdmissions();
+          notifyListeners();
+        } else if (state == win.LoadingState.navigationCompleted) {
+          _scheduleAutoJoin(controller);
+        }
+      });
       final completer = Completer<String?>();
       Timer? autoClickTimer;
       Timer? timeoutTimer;
 
       void onMeetingUrlDetected(String realUrl) {
-        if (previousUrl != null && realUrl == previousUrl) {
-          debugPrint('[MeetAutomation] Skipping previous room URL lingering in WebView: $realUrl');
+        if (existingUrl == null &&
+            previousUrl != null &&
+            realUrl == previousUrl) {
+          debugPrint(
+            '[MeetAutomation] Skipping previous room URL lingering in WebView: $realUrl',
+          );
           return;
         }
+        if (_meetingUrl != realUrl) _resetAdmissions();
+        _controllerMeetingUrl = realUrl;
         _meetingUrl = realUrl;
         _status = MeetStatus.ready;
         notifyListeners();
@@ -195,9 +245,13 @@ class MeetAutomationService extends ChangeNotifier {
       _urlSubscription?.cancel();
       _urlSubscription = controller.url.listen((url) {
         debugPrint('[MeetAutomation] Navigation URL: $url');
-        final match = RegExp(r'meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})', caseSensitive: false).firstMatch(url);
+        final match = RegExp(
+          r'meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})',
+          caseSensitive: false,
+        ).firstMatch(url);
         if (match != null) {
-          final realUrl = 'https://meet.google.com/${match.group(1)!.toLowerCase()}';
+          final realUrl =
+              'https://meet.google.com/${match.group(1)!.toLowerCase()}';
           onMeetingUrlDetected(realUrl);
         }
       });
@@ -209,7 +263,9 @@ class MeetAutomationService extends ChangeNotifier {
       await controller.loadUrl(targetUrl);
 
       // Liên tục tiêm script trích xuất URL và bypass modal cấp quyền media / tự click tham gia
-      autoClickTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+      autoClickTimer = Timer.periodic(const Duration(milliseconds: 500), (
+        timer,
+      ) async {
         if (_controller == null) {
           timer.cancel();
           return;
@@ -271,7 +327,9 @@ class MeetAutomationService extends ChangeNotifier {
               if (callCode.isNotEmpty) {
                 onMeetingUrlDetected('https://meet.google.com/$callCode');
               }
-            } else if (RegExp(r'^[a-z]{3}-[a-z]{4}-[a-z]{3}$').hasMatch(cleaned)) {
+            } else if (RegExp(
+              r'^[a-z]{3}-[a-z]{4}-[a-z]{3}$',
+            ).hasMatch(cleaned)) {
               onMeetingUrlDetected('https://meet.google.com/$cleaned');
             }
           }
@@ -304,7 +362,8 @@ class MeetAutomationService extends ChangeNotifier {
 
   /// Xử lý message nhận từ script tiêm trong WebView2 (hỗ trợ gọi trong test)
   @visibleForTesting
-  void handleWebMessageForTesting(dynamic rawData) => _handleWebMessage(rawData);
+  void handleWebMessageForTesting(dynamic rawData) =>
+      _handleWebMessage(rawData);
 
   void _handleWebMessage(dynamic rawData) {
     try {
@@ -314,6 +373,69 @@ class MeetAutomationService extends ChangeNotifier {
 
       final type = data['type'] as String?;
       final payload = data['payload'];
+
+      if (type == 'ADMISSION_BRIDGE_READY') {
+        if (!_isCurrentMeetMessage(data)) return;
+        final documentId = data['documentId'] as String?;
+        if (documentId == null || documentId.isEmpty) return;
+        if (_admissionDocumentId != documentId) _resetAdmissions();
+        _admissionDocumentId = documentId;
+        notifyListeners();
+        return;
+      }
+      if (type == 'ADMISSION_QUEUE' && payload is Map) {
+        if (!_isCurrentMeetMessage(data) ||
+            data['documentId'] != _admissionDocumentId) {
+          return;
+        }
+        final sequence = (data['sequence'] as num?)?.toInt() ?? -1;
+        if (sequence <= _admissionSequence) return;
+        _admissionSequence = sequence;
+        final incoming = <String, MeetAdmissionRequest>{};
+        final rawRequests = payload['requests'];
+        if (rawRequests is List) {
+          for (final raw in rawRequests) {
+            if (raw is! Map) continue;
+            final request = MeetAdmissionRequest.fromJson(
+              raw.cast<String, dynamic>(),
+            );
+            if (request.id.isNotEmpty && request.name.isNotEmpty) {
+              incoming[request.id] = request;
+            }
+          }
+        }
+        // A disappearing knock is not proof that our click admitted somebody.
+        for (final entry in _admissionRequests.entries) {
+          if (_admissionAttempts.containsKey(entry.key) ||
+              _admissionErrors.containsKey(entry.key)) {
+            incoming.putIfAbsent(entry.key, () => entry.value);
+          }
+        }
+        _admissionRequests
+          ..clear()
+          ..addAll(incoming);
+        _unknownAdmissionCount =
+            ((payload['unknownCount'] as num?)?.toInt() ?? 0)
+                .clamp(0, 1000)
+                .toInt();
+        _updateAdmissionCount();
+        notifyListeners();
+        return;
+      }
+      if (type == 'ADMISSION_RESULT' && payload is Map) {
+        if (!_isCurrentMeetMessage(data) ||
+            data['documentId'] != _admissionDocumentId) {
+          return;
+        }
+        final requestId = payload['requestId'] as String?;
+        final attempt = _admissionAttempts[requestId];
+        if (attempt == null || attempt.id != payload['attemptId']) return;
+        _finishAdmission(
+          requestId!,
+          payload['status']?.toString() ?? 'UNCONFIRMED',
+        );
+        return;
+      }
 
       if (type == 'CHAT_MESSAGE' && payload is Map) {
         final chat = MeetChatMessage.fromJson(payload.cast<String, dynamic>());
@@ -325,23 +447,24 @@ class MeetAutomationService extends ChangeNotifier {
         _participants.clear();
         for (final p in payload) {
           if (p is Map) {
-            _participants.add(MeetParticipant.fromJson(p.cast<String, dynamic>()));
+            _participants.add(
+              MeetParticipant.fromJson(p.cast<String, dynamic>()),
+            );
           }
         }
         notifyListeners();
       } else if (type == 'RAISE_HANDS_UPDATE' && payload is Map) {
-        final event = MeetRaisedHandEvent.fromJson(payload.cast<String, dynamic>());
+        final event = MeetRaisedHandEvent.fromJson(
+          payload.cast<String, dynamic>(),
+        );
         _raisedHands
           ..clear()
           ..addAll(event.names);
         notifyListeners();
       } else if (type == 'ADMIT_REQUEST' && payload is Map) {
-        final event = MeetAdmissionEvent.fromJson(payload.cast<String, dynamic>());
-        _pendingAdmitCount = event.pendingCount;
-        notifyListeners();
-        if (_autoAdmitEnabled && _pendingAdmitCount > 0) {
-          unawaited(admitAllPending());
-        }
+        // The named bridge is the only authority for admission notifications.
+        // Legacy counts can include unrelated permission buttons.
+        return;
       } else if (type == 'MEET_MEDIA_DEVICE_SELECTED' && payload is Map) {
         _hasHocLucCam = payload['hasHocLucCam'] == true;
         _hasHocLucMic = payload['hasHocLucMic'] == true;
@@ -356,6 +479,153 @@ class MeetAutomationService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[MeetAutomation] Error parsing web message: $e');
     }
+  }
+
+  @visibleForTesting
+  void receiveBridgeMessage(Map<String, dynamic> data) =>
+      _handleWebMessage(data);
+
+  static bool isOfficialMeetingUrl(String? url) {
+    final uri = Uri.tryParse(url ?? '');
+    return uri != null &&
+        uri.scheme == 'https' &&
+        uri.host == 'meet.google.com' &&
+        RegExp(r'^/[a-z]{3}-[a-z]{4}-[a-z]{3}$').hasMatch(uri.path);
+  }
+
+  bool _isCurrentMeetMessage(Map<String, dynamic> data) {
+    final uri = Uri.tryParse(data['url']?.toString() ?? '');
+    final room = Uri.tryParse(_meetingUrl ?? '');
+    return uri != null &&
+        room != null &&
+        isOfficialMeetingUrl(_meetingUrl) &&
+        isOfficialMeetingUrl(uri.toString()) &&
+        uri.path == room.path;
+  }
+
+  Future<String> _executeAdmissionScript(String script) async {
+    if (_testExecuteScript != null) return _testExecuteScript!(script);
+    final controller = _controller;
+    if (controller == null) throw StateError('Chưa mở Google Meet trong app.');
+    final result = await controller.executeScript(script);
+    return result is String ? result : jsonEncode(result);
+  }
+
+  Future<bool> admitRequest(String requestId) {
+    final existing = _admissionAttempts[requestId];
+    if (existing != null) return existing.completer.future;
+    if (!_admissionRequests.containsKey(requestId) ||
+        _admissionDocumentId == null) {
+      return Future.value(false);
+    }
+    final selected = _admissionRequests[requestId]!;
+    if (selected.detail.isEmpty &&
+        _admissionRequests.values
+                .where(
+                  (r) =>
+                      r.name.trim().toLowerCase() ==
+                      selected.name.trim().toLowerCase(),
+                )
+                .length >
+            1) {
+      _admissionErrors[requestId] =
+          'Có nhiều người trùng tên và chưa đủ thông tin phân biệt. Hãy duyệt trong Meet.';
+      notifyListeners();
+      return Future.value(false);
+    }
+    final attempt = _AdmissionAttempt('attempt-${++_admissionAttemptCounter}');
+    _admissionAttempts[requestId] = attempt;
+    _admissionErrors.remove(requestId);
+    attempt.timer = Timer(
+      _admissionTimeout,
+      () => _finishAdmission(requestId, 'UNCONFIRMED'),
+    );
+    notifyListeners();
+    _sendAdmissionCommand(requestId, attempt);
+    return attempt.completer.future;
+  }
+
+  Future<void> _sendAdmissionCommand(
+    String requestId,
+    _AdmissionAttempt attempt,
+  ) async {
+    try {
+      final command = jsonEncode({
+        'requestId': requestId,
+        'attemptId': attempt.id,
+        'documentId': _admissionDocumentId,
+      });
+      final raw = await _executeAdmissionScript(
+        'window.MeetAdmissionBridge ? window.MeetAdmissionBridge.admit($command) : JSON.stringify({status:"NOT_READY"});',
+      );
+      var decoded = jsonDecode(raw);
+      if (decoded is String) decoded = jsonDecode(decoded);
+      if (_admissionAttempts[requestId] != attempt) return;
+      final status = decoded is Map ? decoded['status']?.toString() : null;
+      if (status != 'PENDING') {
+        _finishAdmission(
+          requestId,
+          status == 'CONFIRMED' ? 'UNCONFIRMED' : status ?? 'UNCONFIRMED',
+        );
+      }
+    } catch (_) {
+      if (_admissionAttempts[requestId] == attempt) {
+        _finishAdmission(requestId, 'NOT_READY');
+      }
+    }
+  }
+
+  void _finishAdmission(String id, String status) {
+    final attempt = _admissionAttempts.remove(id);
+    if (attempt == null) return;
+    attempt.timer?.cancel();
+    final confirmed = status == 'CONFIRMED';
+    if (confirmed) {
+      _admissionRequests.remove(id);
+      _admissionErrors.remove(id);
+    } else {
+      _admissionErrors[id] = switch (status) {
+        'NOT_FOUND' =>
+          'Yêu cầu đã thay đổi hoặc không còn ở vị trí cũ. Hãy kiểm tra trong Meet.',
+        'NOT_CLICKABLE' =>
+          'Meet chưa cho phép duyệt yêu cầu này. Hãy kiểm tra quyền chủ phòng.',
+        'STALE_DOCUMENT' => 'Phiên Meet đã thay đổi. Hãy kiểm tra lại yêu cầu.',
+        'NOT_READY' =>
+          'Chưa kết nối được nút duyệt trong Meet. Hãy mở panel Meet.',
+        _ =>
+          'Chưa xác nhận học sinh đã vào phòng. Hãy kiểm tra trong Meet trước khi thử lại.',
+      };
+    }
+    _updateAdmissionCount();
+    attempt.completer.complete(confirmed);
+    notifyListeners();
+  }
+
+  void dismissAdmissionNotice(String id) {
+    if (isAdmitting(id)) return;
+    _admissionRequests.remove(id);
+    _admissionErrors.remove(id);
+    _updateAdmissionCount();
+    notifyListeners();
+  }
+
+  void _updateAdmissionCount() =>
+      _pendingAdmitCount = _admissionRequests.length + _unknownAdmissionCount;
+
+  void _resetAdmissions() {
+    _admissionGeneration++;
+    _admissionBatch = null;
+    for (final attempt in _admissionAttempts.values) {
+      attempt.timer?.cancel();
+      if (!attempt.completer.isCompleted) attempt.completer.complete(false);
+    }
+    _admissionAttempts.clear();
+    _admissionRequests.clear();
+    _admissionErrors.clear();
+    _admissionDocumentId = null;
+    _admissionSequence = -1;
+    _unknownAdmissionCount = 0;
+    _pendingAdmitCount = 0;
   }
 
   /// Bắt đầu phát sóng stream màn hình bảng vẽ lên Virtual Camera
@@ -384,10 +654,14 @@ class MeetAutomationService extends ChangeNotifier {
     if (ctrl == null) return;
     try {
       if (micMuted != null) {
-        await ctrl.executeScript('window.MeetBridge && window.MeetBridge.setMicMute($micMuted);');
+        await ctrl.executeScript(
+          'window.MeetBridge && window.MeetBridge.setMicMute($micMuted);',
+        );
       }
       if (camMuted != null) {
-        await ctrl.executeScript('window.MeetBridge && window.MeetBridge.setCamMute($camMuted);');
+        await ctrl.executeScript(
+          'window.MeetBridge && window.MeetBridge.setCamMute($camMuted);',
+        );
       }
     } catch (e) {
       debugPrint('[MeetAutomation] syncMuteState error: $e');
@@ -411,9 +685,14 @@ class MeetAutomationService extends ChangeNotifier {
     notifyListeners();
 
     if (_controller != null) {
-      final escaped = clean.replaceAll(r'\', r'\\').replaceAll('"', r'\"').replaceAll('\n', r'\n');
+      final escaped = clean
+          .replaceAll(r'\', r'\\')
+          .replaceAll('"', r'\"')
+          .replaceAll('\n', r'\n');
       try {
-        await _controller!.executeScript('window.MeetBridge && window.MeetBridge.sendChat("$escaped");');
+        await _controller!.executeScript(
+          'window.MeetBridge && window.MeetBridge.sendChat("$escaped");',
+        );
       } catch (e) {
         debugPrint('[MeetAutomation] Error executing sendChat script: $e');
       }
@@ -421,27 +700,46 @@ class MeetAutomationService extends ChangeNotifier {
   }
 
   /// Duyệt tất cả học sinh đang chờ vào phòng
-  Future<void> admitAllPending() async {
-    _pendingAdmitCount = 0;
+  Future<void> admitAllPending() {
+    final running = _admissionBatch;
+    if (running != null) return running;
+    // Snapshot before notifying: newcomers always require a fresh teacher action.
+    final ids = _admissionRequests.keys.toList();
+    final generation = _admissionGeneration;
+    final completion = Completer<void>();
+    _admissionBatch = completion.future;
     notifyListeners();
-    if (_controller != null) {
+    () async {
       try {
-        await _controller!.executeScript('window.MeetBridge && window.MeetBridge.admitAll();');
-      } catch (e) {
-        debugPrint('[MeetAutomation] Error executing admitAll script: $e');
+        for (final id in ids) {
+          if (_admissionGeneration != generation) break;
+          await admitRequest(id);
+        }
+      } finally {
+        if (_admissionGeneration == generation) {
+          _admissionBatch = null;
+          notifyListeners();
+        }
+        completion.complete();
       }
-    }
+    }();
+    return completion.future;
   }
 
   /// Tắt tiếng micro của toàn bộ học sinh trong phòng
   Future<void> muteAllParticipants() async {
     for (int i = 0; i < _participants.length; i++) {
-      _participants[i] = _participants[i].copyWith(isMuted: true, isSpeaking: false);
+      _participants[i] = _participants[i].copyWith(
+        isMuted: true,
+        isSpeaking: false,
+      );
     }
     notifyListeners();
     if (_controller != null) {
       try {
-        await _controller!.executeScript('window.MeetBridge && window.MeetBridge.muteAll();');
+        await _controller!.executeScript(
+          'window.MeetBridge && window.MeetBridge.muteAll();',
+        );
       } catch (e) {
         debugPrint('[MeetAutomation] Error executing muteAll script: $e');
       }
@@ -482,7 +780,9 @@ class MeetAutomationService extends ChangeNotifier {
     if (ctrl == null) return;
     try {
       final safeName = name.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
-      await ctrl.executeScript('window.MeetBridge && window.MeetBridge.removeParticipant("$safeName");');
+      await ctrl.executeScript(
+        'window.MeetBridge && window.MeetBridge.removeParticipant("$safeName");',
+      );
     } catch (e) {
       debugPrint('[MeetAutomation] Error executing removeParticipant: $e');
     }
@@ -490,6 +790,7 @@ class MeetAutomationService extends ChangeNotifier {
 
   /// Xóa sạch dữ liệu phiên học khi rời phòng
   void clearMeetingEvents() {
+    _resetAdmissions();
     _messages.clear();
     _raisedHands.clear();
     _participants.clear();
@@ -501,17 +802,8 @@ class MeetAutomationService extends ChangeNotifier {
   /// Tạm dừng phiên giảng dạy (rời Studio tạm thời, giữ link Meet trên hệ thống)
   Future<void> pauseSession() async {
     await stopBroadcast();
-    _urlSubscription?.cancel();
-    _urlSubscription = null;
-    _webMessageSubscription?.cancel();
-    _webMessageSubscription = null;
-    if (_controller != null) {
-      try {
-        await _controller!.loadUrl('about:blank');
-      } catch (e) {
-        debugPrint('[MeetAutomation] Error pausing webview: $e');
-      }
-    }
+    // Keep the Meet document and listener alive while teaching elsewhere in
+    // the app. Only ending the classroom disconnects the admission queue.
     notifyListeners();
   }
 
@@ -521,6 +813,8 @@ class MeetAutomationService extends ChangeNotifier {
     clearMeetingEvents();
     _status = MeetStatus.idle;
     _meetingUrl = null;
+    _loadingSubscription?.cancel();
+    _loadingSubscription = null;
     _urlSubscription?.cancel();
     _urlSubscription = null;
     _webMessageSubscription?.cancel();
@@ -538,6 +832,7 @@ class MeetAutomationService extends ChangeNotifier {
         debugPrint('[MeetAutomation] Error disposing webview: $e');
       }
       _controller = null;
+      _controllerMeetingUrl = null;
     }
     notifyListeners();
   }
@@ -557,9 +852,10 @@ class MeetAutomationService extends ChangeNotifier {
   void _scheduleAutoJoin(win.WebviewController controller) {
     for (final delay in [1, 3, 5]) {
       Future.delayed(Duration(seconds: delay), () async {
-        if (_controller == null) return;
+        if (_controller != controller) return;
         try {
           await controller.executeScript(MeetBridgeScript.script);
+          await controller.executeScript(MeetAdmissionBridgeScript.script);
         } catch (err) {
           debugPrint('[MeetAutomation] Bridge inject error at ${delay}s: $err');
         }
@@ -569,10 +865,19 @@ class MeetAutomationService extends ChangeNotifier {
 
   /// Đảm bảo Host đã thực sự ở trong phòng cuộc gọi (IN_CALL)
   /// Thường được gọi khi chuyển từ Lobby sang Studio
-  Future<void> ensureHostJoined() async {
+  Future<void> ensureHostJoined() =>
+      _hostJoining ??= _connectHost().whenComplete(() => _hostJoining = null);
+
+  Future<void> _connectHost() async {
+    final url = _meetingUrl;
+    if (!isOfficialMeetingUrl(url)) return;
+    if (_controller == null || _controllerMeetingUrl != url) {
+      await generateAndJoinRealMeetRoom(existingUrl: url);
+    }
     final ctrl = _controller;
     if (ctrl == null) return;
     try {
+      _scheduleAutoJoin(ctrl);
       await ctrl.executeScript(r'''
         (function() {
           if (window.MeetBridge && typeof window.MeetBridge.attemptAutoJoin === 'function') {
@@ -587,9 +892,18 @@ class MeetAutomationService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _resetAdmissions();
+    _loadingSubscription?.cancel();
     _urlSubscription?.cancel();
     _webMessageSubscription?.cancel();
     _controller?.dispose();
     super.dispose();
   }
+}
+
+class _AdmissionAttempt {
+  _AdmissionAttempt(this.id);
+  final String id;
+  final Completer<bool> completer = Completer<bool>();
+  Timer? timer;
 }

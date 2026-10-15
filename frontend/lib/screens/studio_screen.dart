@@ -18,7 +18,6 @@ import '../widgets/studio/studio_question_view.dart';
 import '../widgets/studio/studio_rename_dialog.dart';
 import '../widgets/studio/studio_students_drawer.dart';
 import '../widgets/studio/studio_top_bar.dart';
-import '../widgets/studio/studio_admission_banner.dart';
 import '../services/plugin_manager.dart';
 import '../widgets/studio/studio_plugins_marketplace_panel.dart';
 
@@ -411,7 +410,7 @@ class _StudioScreenState extends State<StudioScreen> {
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Tạm rời phòng',
+                        'Về trang chủ, giữ kết nối Meet',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.slate900),
                       ),
                     ),
@@ -724,8 +723,6 @@ class _StudioScreenState extends State<StudioScreen> {
                           );
                         },
                       ),
-                      // Floating student admission banner
-                      StudioAdmissionBanner(meetService: MeetAutomationService()),
                     ],
                   ),
                 ),

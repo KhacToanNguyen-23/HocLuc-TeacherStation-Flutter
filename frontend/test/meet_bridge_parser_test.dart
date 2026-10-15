@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/models/meet_events.dart';
 import 'package:teaching_companion/services/meet_bridge_script.dart';
+import 'package:teaching_companion/services/meet_admission_bridge_script.dart';
 
 void main() {
   group('MeetBridgeScript and Parser Tests', () {
@@ -15,7 +16,8 @@ void main() {
       expect(MeetBridgeScript.script, contains('startPresenting'));
       expect(MeetBridgeScript.script, contains('sendChat'));
       expect(MeetBridgeScript.script, contains('cho phép'));
-      expect(MeetBridgeScript.script, contains('chấp nhận'));
+      expect(MeetAdmissionBridgeScript.script, contains('chấp nhận'));
+      expect(MeetBridgeScript.script, contains(r"text.split('\n')"));
       expect(MeetBridgeScript.script, contains('rời khỏi'));
       expect(MeetBridgeScript.script, contains('leave call'));
     });

@@ -36,10 +36,7 @@ class MeetRaisedHandEvent {
   final int count;
   final List<String> names;
 
-  const MeetRaisedHandEvent({
-    required this.count,
-    required this.names,
-  });
+  const MeetRaisedHandEvent({required this.count, required this.names});
 
   factory MeetRaisedHandEvent.fromJson(Map<String, dynamic> json) {
     final rawNames = json['names'];
@@ -64,9 +61,7 @@ class MeetAdmissionEvent {
   const MeetAdmissionEvent({required this.pendingCount});
 
   factory MeetAdmissionEvent.fromJson(Map<String, dynamic> json) {
-    return MeetAdmissionEvent(
-      pendingCount: json['pendingCount'] as int? ?? 1,
-    );
+    return MeetAdmissionEvent(pendingCount: json['pendingCount'] as int? ?? 1);
   }
 }
 
@@ -124,4 +119,23 @@ class MeetParticipant {
     'isHandRaised': isHandRaised,
     'isSpeaking': isSpeaking,
   };
+}
+
+class MeetAdmissionRequest {
+  final String id;
+  final String name;
+  final String detail;
+
+  const MeetAdmissionRequest({
+    required this.id,
+    required this.name,
+    this.detail = '',
+  });
+
+  factory MeetAdmissionRequest.fromJson(Map<String, dynamic> json) =>
+      MeetAdmissionRequest(
+        id: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        detail: json['detail'] as String? ?? '',
+      );
 }

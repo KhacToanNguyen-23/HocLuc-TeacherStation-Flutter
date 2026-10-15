@@ -5,6 +5,8 @@ import 'services/webview_environment_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/classroom_dashboard_screen.dart';
 import 'widgets/app_capture_surface.dart';
+import 'widgets/meet_admission_shell.dart';
+import 'services/meet_automation_service.dart';
 
 export 'constants/theme.dart';
 export 'screens/studio_screen.dart';
@@ -27,14 +29,17 @@ class CompanionApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mộc · Teaching Studio',
       debugShowCheckedModeBanner: false,
-      builder: (_, child) => AppCaptureSurface(child: child ?? const SizedBox.shrink()),
+      builder: (_, child) => AppCaptureSurface(
+        child: MeetAdmissionShell(
+          service: MeetAutomationService(),
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'Manrope',
         scaffoldBackgroundColor: AppColors.paper,
-        extensions: [
-          AppColorTheme.light(),
-        ],
+        extensions: [AppColorTheme.light()],
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.sky600,
           primary: AppColors.slate900,
