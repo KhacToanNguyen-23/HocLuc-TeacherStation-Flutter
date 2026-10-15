@@ -1,4 +1,5 @@
 #include "include/audio_bridge/audio_bridge_plugin_c_api.h"
+#include "microphone_control.h"
 #define WIN32_LEAN_AND_MEAN
 // clang-format off
 #include <windows.h>
@@ -149,6 +150,7 @@ public:
         &flutter::StandardMethodCodec::GetInstance());
     channel_->SetMethodCallHandler([this](const auto &call, auto reply) {
       try {
+        if (HandleSystemMicrophone(call, reply)) return;
         M args =
             call.arguments() && std::holds_alternative<M>(*call.arguments())
                 ? std::get<M>(*call.arguments())

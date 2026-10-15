@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:camera/camera.dart' as cam_lib;
 import 'package:flutter/material.dart';
 import 'media_device_service.dart';
+import 'system_microphone_service.dart';
 
 /// Manages physical webcam & microphone hardware integration.
 /// Combines CameraController / virtual output pipeline with MediaDeviceService audio metering.
@@ -11,9 +12,16 @@ class TeacherMediaService extends ChangeNotifier {
   factory TeacherMediaService() => _instance;
   TeacherMediaService._internal() {
     _deviceService.addListener(_onDeviceServiceChanged);
+    _systemMicrophone.addListener(() {
+      if (_systemMicrophone.ready) {
+        _deviceService.setMicrophoneMuted(_systemMicrophone.muted);
+      }
+      notifyListeners();
+    });
   }
 
   final MediaDeviceService _deviceService = MediaDeviceService();
+  final SystemMicrophoneService _systemMicrophone = SystemMicrophoneService();
   CameraController? _controller;
   Future<void>? _pending;
   List<CameraDescription> _cameras = [];
@@ -31,9 +39,10 @@ class TeacherMediaService extends ChangeNotifier {
   bool get isCameraActive =>
       _cameraEnabled && (_controller?.value.isInitialized ?? false);
 
-  bool get isMicActive =>
-      !_deviceService.isMicMuted &&
-      (_deviceService.isMicActive || !_deviceService.isInitialized);
+  bool get isMicActive => _systemMicrophone.supported
+      ? _systemMicrophone.ready && !_systemMicrophone.muted
+      : !_deviceService.isMicMuted &&
+            (_deviceService.isMicActive || !_deviceService.isInitialized);
 
   bool get supportsAudio => true;
 
@@ -41,7 +50,9 @@ class TeacherMediaService extends ChangeNotifier {
 
   bool get isInitializing => _pending != null;
 
-  double get audioLevel => _deviceService.currentAudioLevel;
+  double get audioLevel => _systemMicrophone.supported
+      ? (_systemMicrophone.ready ? _systemMicrophone.level : 0)
+      : _deviceService.currentAudioLevel;
 
   String? get errorMessage => _errorMessage;
 
@@ -53,8 +64,9 @@ class TeacherMediaService extends ChangeNotifier {
       ? _cameras.map((c) => c.name).toList()
       : _deviceService.cameras.map((c) => c.label).toList();
 
-  List<String> get availableMicrophones =>
-      _deviceService.microphones.map((m) => m.label).toList();
+  List<String> get availableMicrophones => _systemMicrophone.supported
+      ? _systemMicrophone.devices.map((m) => m.name).toList()
+      : _deviceService.microphones.map((m) => m.label).toList();
 
   Future<void> initMedia() {
     if (_pending != null) return _pending!.then((_) => initMedia());
@@ -76,6 +88,7 @@ class TeacherMediaService extends ChangeNotifier {
 
   Future<void> _initialize() async {
     _errorMessage = null;
+    await _systemMicrophone.refresh(discover: true);
 
     // Initialize audio device & level stream
     try {
@@ -163,7 +176,11 @@ class TeacherMediaService extends ChangeNotifier {
   }
 
   Future<void> toggleMic() async {
-    _deviceService.toggleMicrophoneMute();
+    if (_systemMicrophone.supported) {
+      await _systemMicrophone.toggleMute();
+    } else {
+      _deviceService.toggleMicrophoneMute();
+    }
     notifyListeners();
   }
 
@@ -172,6 +189,15 @@ class TeacherMediaService extends ChangeNotifier {
   }
 
   Future<void> switchMicrophone(String micLabel) async {
+    if (_systemMicrophone.supported) {
+      await _systemMicrophone.refresh(discover: true);
+      final device = _systemMicrophone.devices
+          .where((device) => device.name == micLabel || device.id == micLabel)
+          .firstOrNull;
+      if (device != null) {
+        await _systemMicrophone.selectDevice(device.id);
+      }
+    }
     _deviceService.switchMicrophone(micLabel);
     notifyListeners();
   }

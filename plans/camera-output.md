@@ -32,14 +32,19 @@ proof that anyone in a meeting is viewing the stream.
 4. Choose **Toàn bộ ứng dụng** or **Chỉ bảng** in the bottom-left controls,
    then click **Phát camera ảo**. Open Google Meet's Settings → Video and select
    **Unity Video Capture**. Keep Meet's microphone set to your physical mic.
+   Keep Meet's mic enabled; the studio's Windows mic button can mute/unmute
+   that same input device. Its tune/settings button selects the controlled
+   endpoint and adjusts its Windows input volume (affecting other apps too).
 5. The board preview is live. The entire-app preview shows a snapshot taken when
    opened, preventing recursive capture of its own video preview. Non-16:9 app
    windows are fitted into 720p with padding rather than cropped. Stop with
    **Dừng camera ảo**. Leaving the studio releases the camera and output.
 
 Only Windows supports virtual output. The existing browser preview is separate.
-Audio routing, voice effects, TTS, automatic Meet device selection, and custom
-driver branding are deferred. Layout coordinates remain stable during window
+The camera adapter does not provide virtual audio. See
+`in-app-microphone-controls.md` for Windows input controls; no additional driver
+is needed for them. Automatic Meet device selection and custom camera-driver
+branding are deferred. Layout coordinates remain stable during window
 resizing; they are not saved between application sessions yet.
 
 ## Verification

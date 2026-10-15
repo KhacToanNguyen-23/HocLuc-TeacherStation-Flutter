@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(audio_bridge LANGUAGES CXX)
 set(PLUGIN_NAME "audio_bridge_plugin")
-add_library(${PLUGIN_NAME} SHARED "audio_bridge.cpp" "include/audio_bridge/audio_bridge_plugin_c_api.h")
+add_library(${PLUGIN_NAME} SHARED "audio_bridge.cpp" "microphone_control.cpp" "include/audio_bridge/audio_bridge_plugin_c_api.h")
 apply_standard_settings(${PLUGIN_NAME})
 target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_17)
 target_compile_definitions(${PLUGIN_NAME} PRIVATE FLUTTER_PLUGIN_IMPL NOMINMAX)
