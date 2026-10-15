@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
+import '../../services/camera_broadcast_service.dart';
+import 'studio_camera_control_panel.dart';
 
 class StudioDrawingToolbar extends StatelessWidget {
   const StudioDrawingToolbar({
@@ -45,9 +47,12 @@ class StudioDrawingToolbar extends StatelessWidget {
               ])
                 IconButton(
                   tooltip: label,
-                  onPressed: () => studio.change(() => studio.tool = name, persist: false),
+                  onPressed: () =>
+                      studio.change(() => studio.tool = name, persist: false),
                   style: IconButton.styleFrom(
-                    backgroundColor: studio.tool == name ? AppColors.sky100 : Colors.transparent,
+                    backgroundColor: studio.tool == name
+                        ? AppColors.sky100
+                        : Colors.transparent,
                     minimumSize: const Size(36, 36),
                     padding: EdgeInsets.zero,
                   ),
@@ -70,7 +75,8 @@ class StudioDrawingToolbar extends StatelessWidget {
                 Tooltip(
                   message: label,
                   child: InkWell(
-                    onTap: () => studio.change(() => studio.ink = color, persist: false),
+                    onTap: () =>
+                        studio.change(() => studio.ink = color, persist: false),
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       width: 20,
@@ -80,7 +86,9 @@ class StudioDrawingToolbar extends StatelessWidget {
                         color: color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: studio.ink == color ? pine : const Color(0xffd5dcd2),
+                          color: studio.ink == color
+                              ? pine
+                              : const Color(0xffd5dcd2),
                           width: studio.ink == color ? 2.5 : 1.5,
                         ),
                         boxShadow: [
@@ -101,37 +109,89 @@ class StudioDrawingToolbar extends StatelessWidget {
               IconButton(
                 tooltip: 'Hoàn tác nét',
                 onPressed: studio.strokes.isEmpty ? null : studio.undo,
-                style: IconButton.styleFrom(minimumSize: const Size(36, 36), padding: EdgeInsets.zero),
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(36, 36),
+                  padding: EdgeInsets.zero,
+                ),
                 icon: const Icon(Icons.undo, size: 18),
               ),
               IconButton(
                 tooltip: 'Xóa nét trang này',
                 onPressed: studio.strokes.isEmpty ? null : studio.clearPage,
-                style: IconButton.styleFrom(minimumSize: const Size(36, 36), padding: EdgeInsets.zero),
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(36, 36),
+                  padding: EdgeInsets.zero,
+                ),
                 icon: const Icon(Icons.delete_outline, size: 18),
               ),
               const SizedBox(height: 6),
               Container(width: 24, height: 1, color: line),
               const SizedBox(height: 6),
-              IconButton(
-                tooltip: studio.showCameraPip ? 'Ẩn Webcam PIP' : 'Hiện Webcam PIP',
-                onPressed: studio.toggleCameraPip,
-                style: IconButton.styleFrom(
-                  backgroundColor: studio.showCameraPip ? const Color(0xffedf2e5) : Colors.transparent,
-                  minimumSize: const Size(36, 36),
-                  padding: EdgeInsets.zero,
-                ),
-                icon: Icon(
-                  studio.showCameraPip ? Icons.videocam : Icons.videocam_off_outlined,
-                  size: 18,
-                  color: pine,
-                ),
+              Builder(
+                builder: (btnContext) {
+                  final broadcast = CameraBroadcastService();
+                  return ListenableBuilder(
+                    listenable: Listenable.merge([studio, broadcast]),
+                    builder: (context, _) {
+                      final isBroadcasting = broadcast.isBroadcasting;
+                      final isPip = studio.showCameraPip;
+                      final isActive = isBroadcasting || isPip;
+
+                      return IconButton(
+                        tooltip: isBroadcasting
+                            ? 'Camera & Phát ảo (Đang phát Meet)'
+                            : 'Điều khiển Camera & Phát ảo',
+                        onPressed: () => _openVerticalCameraMenu(btnContext),
+                        style: IconButton.styleFrom(
+                          backgroundColor: isBroadcasting
+                              ? const Color(0xFFDCFCE7)
+                              : (isPip
+                                    ? const Color(0xffedf2e5)
+                                    : Colors.transparent),
+                          minimumSize: const Size(36, 36),
+                          padding: EdgeInsets.zero,
+                        ),
+                        icon: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Icon(
+                              isActive
+                                  ? Icons.videocam
+                                  : Icons.videocam_off_outlined,
+                              size: 18,
+                              color: isBroadcasting
+                                  ? const Color(0xFF16A34A)
+                                  : pine,
+                            ),
+                            if (isBroadcasting)
+                              Positioned(
+                                right: -2,
+                                top: -2,
+                                child: Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF16A34A),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
               IconButton(
-                tooltip: studio.showQuestionsDrawer ? 'Đóng khay tài liệu đã nhập' : 'Mở khay tài liệu đã nhập',
+                tooltip: studio.showQuestionsDrawer
+                    ? 'Đóng khay tài liệu đã nhập'
+                    : 'Mở khay tài liệu đã nhập',
                 onPressed: studio.toggleQuestionsDrawer,
                 style: IconButton.styleFrom(
-                  backgroundColor: studio.showQuestionsDrawer ? const Color(0xffedf2e5) : Colors.transparent,
+                  backgroundColor: studio.showQuestionsDrawer
+                      ? const Color(0xffedf2e5)
+                      : Colors.transparent,
                   minimumSize: const Size(36, 36),
                   padding: EdgeInsets.zero,
                 ),
@@ -234,23 +294,41 @@ class StudioDrawingToolbar extends StatelessWidget {
               const SizedBox(width: 6),
               Container(width: 1, height: 20, color: line),
               const SizedBox(width: 6),
-              IconButton(
-                tooltip: studio.showCameraPip
-                    ? 'Ẩn Webcam PIP'
-                    : 'Hiện Webcam PIP',
-                onPressed: studio.toggleCameraPip,
-                style: IconButton.styleFrom(
-                  backgroundColor: studio.showCameraPip
-                      ? const Color(0xffedf2e5)
-                      : Colors.transparent,
-                ),
-                icon: Icon(
-                  studio.showCameraPip
-                      ? Icons.videocam
-                      : Icons.videocam_off_outlined,
-                  size: 19,
-                  color: pine,
-                ),
+              Builder(
+                builder: (btnContext) {
+                  final broadcast = CameraBroadcastService();
+                  return ListenableBuilder(
+                    listenable: Listenable.merge([studio, broadcast]),
+                    builder: (context, _) {
+                      final isBroadcasting = broadcast.isBroadcasting;
+                      final isPip = studio.showCameraPip;
+                      final isActive = isBroadcasting || isPip;
+
+                      return IconButton(
+                        tooltip: isBroadcasting
+                            ? 'Camera & Phát ảo (Đang phát Meet)'
+                            : 'Điều khiển Camera & Phát ảo',
+                        onPressed: () => _openHorizontalCameraMenu(btnContext),
+                        style: IconButton.styleFrom(
+                          backgroundColor: isBroadcasting
+                              ? const Color(0xFFDCFCE7)
+                              : (isPip
+                                    ? const Color(0xffedf2e5)
+                                    : Colors.transparent),
+                        ),
+                        icon: Icon(
+                          isActive
+                              ? Icons.videocam
+                              : Icons.videocam_off_outlined,
+                          size: 19,
+                          color: isBroadcasting
+                              ? const Color(0xFF16A34A)
+                              : pine,
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
               IconButton(
                 tooltip: studio.showQuestionsDrawer
@@ -272,6 +350,65 @@ class StudioDrawingToolbar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _openVerticalCameraMenu(BuildContext context) {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final offset =
+        renderBox?.localToGlobal(Offset.zero) ?? const Offset(60, 200);
+
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.12),
+      builder: (ctx) {
+        final screenHeight = MediaQuery.of(ctx).size.height;
+        return Stack(
+          children: [
+            Positioned(
+              left: offset.dx + (renderBox?.size.width ?? 40) + 8,
+              top: (offset.dy - 60).clamp(16.0, screenHeight - 380),
+              child: Material(
+                color: Colors.transparent,
+                child: StudioCameraControlPanel(
+                  studio: studio,
+                  onClose: () => Navigator.of(ctx).pop(),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _openHorizontalCameraMenu(BuildContext context) {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final offset =
+        renderBox?.localToGlobal(Offset.zero) ?? const Offset(200, 500);
+
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.12),
+      builder: (ctx) {
+        final screenHeight = MediaQuery.of(ctx).size.height;
+        final screenWidth = MediaQuery.of(ctx).size.width;
+        return Stack(
+          children: [
+            Positioned(
+              left: (offset.dx - 120).clamp(16.0, screenWidth - 340),
+              top: (offset.dy - 340).clamp(16.0, screenHeight - 380),
+              child: Material(
+                color: Colors.transparent,
+                child: StudioCameraControlPanel(
+                  studio: studio,
+                  onClose: () => Navigator.of(ctx).pop(),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
