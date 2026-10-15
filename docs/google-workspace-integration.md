@@ -1,6 +1,6 @@
 # HocLuc: Classroom, Meet và Calendar
 
-Giáo viên mở biểu tượng **Lớp học & kết nối Google** trên dashboard. Luồng cũ tạo Meet bằng WebView và đăng nhập/đề thi vẫn dùng được khi chưa kết nối API.
+Giáo viên có thể đăng nhập bằng nút Google để kết nối API ngay từ đầu, hoặc mở **Lớp học & kết nối Google** trên dashboard. Đăng nhập email/OTP và đề thi giữ nguyên; tài khoản Google dùng OAuth, phiên Meet WebView được thiết lập khi cần dạy.
 
 ## Phân công
 
@@ -42,7 +42,7 @@ Khóa cần được cấp lại cho backend ở lần chạy tiếp theo bằng
 
 Flyway V3 bổ sung hai bảng riêng trong schema hiện có: `google_connections` chứa credentials mã hóa AES-GCM, `google_courses` lưu ánh xạ subject/course/space, trạng thái lời mời, quyền Meet và các lịch đã gửi. Không sửa migration cũ. OAuth state + PKCE + poll proof dùng một lần, hết hạn sau 5 phút; callback chỉ nhận từ loopback. Các thao tác khác cần companion session, email giáo viên và nguồn local. Đây là mô hình companion cá nhân trên một máy, không phải backend nhiều người dùng qua Internet.
 
-Refresh token chỉ được dùng ở backend. OAuth identity phải đúng email đang dùng trong HocLuc. Phiên WebView vẫn riêng; ứng dụng nhắc kiểm tra cùng tài khoản trước khi mở phòng, không tuyên bố xác minh danh tính WebView qua DOM.
+Refresh token chỉ được dùng ở backend. Danh tính OAuth đã được Google xác minh xác định tài khoản HocLuc; email cũ chỉ là gợi ý, không chặn chọn tài khoản khác. Phiên WebView vẫn riêng; ứng dụng nhắc kiểm tra cùng tài khoản trước khi mở phòng, không tuyên bố xác minh danh tính WebView qua DOM.
 
 ## Thao tác
 
@@ -75,6 +75,10 @@ Scope `meetings.space.created` chỉ dùng cho các phòng do ứng dụng tạo
 - Ngắt kết nối thu hồi OAuth rồi xóa token local; không xóa lớp, phòng hoặc lịch Google.
 
 ## Kiểm chứng
+
+Luồng Google thống nhất: nút Google ở màn đăng nhập mở OAuth trong trình duyệt hệ thống. Tài khoản có email đã được Google xác minh trở thành danh tính HocLuc; không cần đăng nhập WebView trước và không lưu Google token ở Flutter. Màn lớp dùng lại kết nối đã lưu, backend tự gia hạn access token. Nút “Cấp quyền lại” chủ động yêu cầu consent để sửa quyền bị thiếu/thu hồi. Đổi tài khoản trong OAuth cập nhật danh tính và tải lại lớp của tài khoản mới. Phiên đăng nhập Meet WebView vẫn độc lập; lần đầu có thể cần đăng nhập cùng tài khoản, các lần sau giữ cookie. Không chuyển token OAuth thành cookie Meet. Cloud ở chế độ Testing có thể cấp refresh token hết hạn sau 7 ngày.
+
+
 
 Backend tests dùng H2 trong RAM và GoogleGateway giả lập. Flutter tests dùng HTTP giả lập để kiểm tra trạng thái, lỗi và nhiều chiều rộng. Chúng không xác nhận cấu hình Cloud, email thực sự được giao, account picker WebView, chính sách Workspace hay vào Meet thực tế.
 

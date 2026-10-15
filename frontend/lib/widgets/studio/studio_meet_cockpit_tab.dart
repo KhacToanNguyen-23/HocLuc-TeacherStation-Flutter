@@ -140,6 +140,8 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
             IconButton(tooltip: 'Phóng lớn Meet trong ứng dụng', onPressed: _expandMeet, icon: const Icon(Icons.open_in_full, size: 18)),
           ]),
           if (meetService.linkedTeacherEmail != null) Text('Dùng tài khoản ${meetService.linkedTeacherEmail}', style: const TextStyle(fontSize: 11, color: AppColors.slate600)),
+          if (meetService.linkedTeacherEmail != null && !meetService.isHostJoined)
+            const Text('Lần đầu: nếu Meet yêu cầu đăng nhập, chọn tài khoản đã kết nối ở trên. Các lần sau dùng lại phiên đã lưu.', style: TextStyle(fontSize: 11, color: AppColors.slate600)),
         ])),
         Expanded(child: _meetExpanded ? const Center(child: Text('Meet đang mở trong cửa sổ lớn.')) : GoogleMeetView(service: meetService)),
       ]);

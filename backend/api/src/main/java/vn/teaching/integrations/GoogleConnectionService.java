@@ -14,7 +14,7 @@ public class GoogleConnectionService {
     private static final class Flow {
         final String verifier = random(), proof = random(), email;
         final long expires = System.currentTimeMillis() + 300_000;
-        boolean used; String error; boolean complete;
+        boolean used; String error; boolean complete; String connectedEmail;
         Flow(String email) { this.email = email; }
     }
     private final Map<String,Flow> flows = new ConcurrentHashMap<>();
@@ -29,11 +29,14 @@ public class GoogleConnectionService {
     }
     public Map<String,Object> status(String email) {
         boolean configured = !clientId.isBlank() && store.configured();
-        var subject = store.subject(normalizeEmail(email));
+        var subject = email == null || email.isBlank() ? Optional.<String>empty() : store.subject(normalizeEmail(email));
         return Map.of("configured", configured, "connected", configured && subject.isPresent(), "email", subject.isPresent() ? normalizeEmail(email) : "");
     }
     public Map<String,Object> start(String email) {
-        email = normalizeEmail(email);
+        return start(email,false);
+    }
+    public Map<String,Object> start(String email, boolean forceConsent) {
+        email = email == null || email.isBlank() ? "" : normalizeEmail(email);
         if (clientId.isBlank() || !store.configured()) throw new GoogleFailure(503,"GOOGLE_NOT_CONFIGURED","Ứng dụng chưa được cấu hình kết nối Google. Liên hệ người cài đặt HocLuc.");
         flows.entrySet().removeIf(e -> e.getValue().expires < System.currentTimeMillis());
         if (flows.size() >= 100) throw new GoogleFailure(429,"OAUTH_BUSY","Có quá nhiều phiên kết nối. Thử lại sau.");
@@ -42,7 +45,8 @@ public class GoogleConnectionService {
             .queryParam("client_id",clientId).queryParam("redirect_uri",redirect).queryParam("response_type","code")
             .queryParam("scope",SCOPES).queryParam("state",state).queryParam("code_challenge",hash(flow.verifier))
             .queryParam("code_challenge_method","S256").queryParam("access_type","offline")
-            .queryParam("prompt","consent select_account").queryParam("login_hint",email).build().encode().toUriString();
+            .queryParam("prompt",forceConsent || email.isBlank() || store.subject(email).isEmpty() ? "consent" : "select_account")
+            .queryParamIfPresent("login_hint",email.isBlank() ? Optional.empty() : Optional.of(email)).build().encode().toUriString();
         return Map.of("authorizationUrl",url,"state",state,"pollToken",flow.proof,"expiresAt",flow.expires);
     }
     public void callback(String state,String code,String error) {
@@ -61,8 +65,8 @@ public class GoogleConnectionService {
                 if (access.isBlank()) throw new GoogleFailure(400,"TOKEN_MISSING","Google không cấp token hợp lệ.");
                 var identity=google.call("GET","https://openidconnect.googleapis.com/v1/userinfo",access,null);
                 String email=normalizeEmail(string(identity,"email")), subject=string(identity,"sub");
-                if (!Boolean.TRUE.equals(identity.get("email_verified")) || subject.isBlank() || !email.equals(flow.email))
-                    throw new GoogleFailure(400,"ACCOUNT_MISMATCH","Hãy chọn đúng tài khoản " + flow.email + " đang dùng trong HocLuc.");
+                if (!Boolean.TRUE.equals(identity.get("email_verified")) || subject.isBlank())
+                    throw new GoogleFailure(400,"IDENTITY_UNVERIFIED","Google chưa xác minh danh tính tài khoản. Vui lòng chọn tài khoản Google hợp lệ.");
                 Set<String> scopes=new HashSet<>(Arrays.asList(string(tokens,"scope").split(" ")));
                 for (String required:SCOPES.split(" ")) {
                     if (required.startsWith("https://") && !scopes.contains(required))
@@ -74,7 +78,7 @@ public class GoogleConnectionService {
                 }
                 if (string(credentials,"refresh_token").isBlank()) throw new GoogleFailure(400,"REFRESH_MISSING","Google chưa cấp quyền duy trì kết nối. Vui lòng kết nối lại.");
                 credentials.put("expiresAt",System.currentTimeMillis()+((Number)tokens.getOrDefault("expires_in",3600)).longValue()*1000);
-                store.saveConnection(subject,email,credentials); flow.complete=true;
+                store.saveConnection(subject,email,credentials); flow.connectedEmail=email; flow.complete=true;
             } catch (GoogleFailure e) { flow.error=e.getMessage(); }
             catch (Exception e) { flow.error="Không hoàn tất kết nối Google. Vui lòng thử lại."; }
         }
@@ -87,7 +91,7 @@ public class GoogleConnectionService {
         synchronized(flow) {
             if(flow.error!=null) { flows.remove(state); throw new GoogleFailure(400,"OAUTH_FAILED",flow.error); }
             if(!flow.complete) return Map.of("status","PENDING");
-            flows.remove(state); return Map.of("status","COMPLETE","email",flow.email);
+            flows.remove(state); return Map.of("status","COMPLETE","email",flow.connectedEmail);
         }
     }
     public String subject(String email) { return store.subject(normalizeEmail(email)).orElseThrow(() -> new GoogleFailure(401,"CONNECT_GOOGLE","Vui lòng kết nối Google.")); }

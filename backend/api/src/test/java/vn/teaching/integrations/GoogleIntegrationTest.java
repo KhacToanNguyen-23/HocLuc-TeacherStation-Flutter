@@ -85,14 +85,44 @@ class GoogleIntegrationTest {
         when(google.token(argThat(f -> "refresh_token".equals(f.get("grant_type"))))).thenReturn(Map.of("access_token","new","expires_in",3600));
         assertEquals("new",connections.access(EMAIL)); assertEquals("new",connections.access(EMAIL)); verify(google,times(1)).token(anyMap());
     }
-    @Test void oauthRejectsWrongProofAndWrongAccount() {
+    @Test void oauthRejectsWrongProofAndAdoptsVerifiedSelectedAccount() {
         var flow=connections.start(EMAIL);
         assertThrows(GoogleFailure.class,()->connections.poll(flow.get("state").toString(),"wrong"));
         when(google.token(anyMap())).thenReturn(Map.of("access_token","a","refresh_token","r","scope",GoogleConnectionService.SCOPES));
         when(google.call(eq("GET"),contains("userinfo"),eq("a"),isNull())).thenReturn(Map.of("email_verified",true,"email","other@example.com","sub","other-sub"));
         connections.callback(flow.get("state").toString(),"code",null);
-        var failure=assertThrows(GoogleFailure.class,()->connections.poll(flow.get("state").toString(),flow.get("pollToken").toString()));
-        assertTrue(failure.getMessage().contains(EMAIL)); assertTrue(store.subject("other@example.com").isEmpty());
+        var result=connections.poll(flow.get("state").toString(),flow.get("pollToken").toString());
+        assertEquals("other@example.com",result.get("email")); assertTrue(store.subject("other@example.com").isPresent());
+    }
+    @Test void firstConnectionNeedsNoPriorAppIdentity() {
+        assertEquals(false,connections.status("").get("connected"));
+        var flow=connections.start("");
+        assertFalse(flow.get("authorizationUrl").toString().contains("login_hint"));
+        when(google.token(anyMap())).thenReturn(Map.of("access_token","a","refresh_token","r","scope",GoogleConnectionService.SCOPES));
+        when(google.call(eq("GET"),contains("userinfo"),eq("a"),isNull())).thenReturn(Map.of("email_verified",true,"email",EMAIL,"sub",SUBJECT));
+        connections.callback(flow.get("state").toString(),"code",null);
+        assertEquals(EMAIL,connections.poll(flow.get("state").toString(),flow.get("pollToken").toString()).get("email"));
+    }
+    @Test void savedConnectionOnlyForcesConsentOnExplicitRepair() {
+        assertFalse(connections.start(EMAIL).get("authorizationUrl").toString().contains("prompt=consent"));
+        assertTrue(connections.start(EMAIL,true).get("authorizationUrl").toString().contains("prompt=consent"));
+    }
+    @Test void localOAuthSetupDoesNotRequirePriorTeacherEmail() throws Exception {
+        mvc.perform(get("/api/integrations/google/status").header("X-Companion-Token",companionToken))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.configured").value(true)).andExpect(jsonPath("$.connected").value(false));
+        mvc.perform(post("/api/integrations/google/connect").header("X-Companion-Token",companionToken)
+            .contentType("application/json").content("{\"email\":\"\"}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.authorizationUrl").exists());
+        mvc.perform(post("/api/integrations/google/connect").contentType("application/json").content("{\"email\":\"\"}"))
+            .andExpect(status().isUnauthorized());
+    }
+    @Test void unverifiedIdentityCannotBecomeAppAccount() {
+        var flow=connections.start("");
+        when(google.token(anyMap())).thenReturn(Map.of("access_token","a","refresh_token","r","scope",GoogleConnectionService.SCOPES));
+        when(google.call(eq("GET"),contains("userinfo"),eq("a"),isNull())).thenReturn(Map.of("email_verified",false,"email","unverified@example.com","sub","unverified"));
+        connections.callback(flow.get("state").toString(),"code",null);
+        assertThrows(GoogleFailure.class,()->connections.poll(flow.get("state").toString(),flow.get("pollToken").toString()));
+        assertTrue(store.subject("unverified@example.com").isEmpty());
     }
     @Test void oauthCompletionIsOneTimeAndRequiresAllScopes() {
         var flow=connections.start(EMAIL);

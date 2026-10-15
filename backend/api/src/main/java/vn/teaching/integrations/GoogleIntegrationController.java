@@ -13,18 +13,17 @@ public class GoogleIntegrationController {
     private final GoogleConnectionService connections;
     private final GoogleClassService classes;
     public GoogleIntegrationController(GoogleConnectionService connections,GoogleClassService classes) { this.connections=connections; this.classes=classes; }
-    record Start(String email) { }
+    record Start(String email, Boolean forceConsent) { }
     record Poll(String state,String pollToken) { }
     record Create(String requestId,String title,String description,List<String> emails) { }
     record Invite(List<String> emails) { }
     record Schedule(String requestId,String start,String end) { }
-    @GetMapping("/status") public Object status(HttpServletRequest req) { return connections.status(email(req)); }
+    @GetMapping("/status") public Object status(HttpServletRequest req) { local(req); return connections.status(req.getHeader("X-Google-Teacher-Email")); }
     @PostMapping("/connect") public Object connect(HttpServletRequest req,@RequestBody Start body) {
-        String email=email(req);
-        if(!email.equals(GoogleConnectionService.normalizeEmail(body.email()))) throw new GoogleFailure(400,"ACCOUNT_MISMATCH","Chọn cùng tài khoản đang dùng trong HocLuc.");
-        return connections.start(email);
+        local(req);
+        return connections.start(body.email(),Boolean.TRUE.equals(body.forceConsent()));
     }
-    @PostMapping("/poll") public Object poll(HttpServletRequest req,@RequestBody Poll body) { email(req); return connections.poll(body.state(),body.pollToken()); }
+    @PostMapping("/poll") public Object poll(HttpServletRequest req,@RequestBody Poll body) { local(req); return connections.poll(body.state(),body.pollToken()); }
     @PostMapping("/disconnect") public Object disconnect(HttpServletRequest req) { connections.disconnect(email(req)); return Map.of("connected",false); }
     @GetMapping("/courses") public Object courses(HttpServletRequest req) { return Map.of("courses",classes.list(email(req))); }
     @PostMapping("/courses") public Object create(HttpServletRequest req,@RequestBody Create body) { return classes.create(email(req),body.requestId(),body.title(),body.description(),body.emails()); }

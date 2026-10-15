@@ -5,6 +5,7 @@ import '../constants/theme.dart';
 import '../services/google_meet_auth_service.dart';
 import '../services/google_workspace_api.dart';
 import '../services/url_opener.dart';
+import '../services/google_connection_flow.dart';
 import '../models/teaching_target.dart';
 import '../services/teaching_launcher.dart';
 
@@ -22,7 +23,7 @@ class GoogleWorkspaceScreen extends StatefulWidget {
 }
 
 class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
-  late final GoogleWorkspaceApi _api;
+  late GoogleWorkspaceApi _api;
   final _auth = GoogleMeetAuthService();
   Map<String, dynamic> _connection = {};
   List<Map<String, dynamic>> _courses = [];
@@ -58,6 +59,8 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   Future<void> _load() async {
     try {
       final connection = await _api.call('status');
+      if (!mounted) return;
+      setState(() => _connection = connection);
       var courses = <Map<String, dynamic>>[];
       if (connection['connected'] == true) {
         final result = await _api.call('courses');
@@ -99,40 +102,24 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
 
   Future<void> _connect() async {
     await _run(() async {
-      final flow = await _api.call(
-        'connect',
-        post: true,
-        body: {'email': _api.email},
-      );
       final generation = ++_connectGeneration;
-      await openExternalUrl(flow['authorizationUrl'] as String);
-      if (!mounted) return;
-      setState(() {
-        _polling = true;
-        _busy = false;
-      });
+      setState(() => _polling = true);
       try {
-        while (mounted &&
-            generation == _connectGeneration &&
-            DateTime.now().millisecondsSinceEpoch <
-                (flow['expiresAt'] as num)) {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          if (!mounted || generation != _connectGeneration) return;
-          final result = await _api.call(
-            'poll',
-            post: true,
-            body: {'state': flow['state'], 'pollToken': flow['pollToken']},
-          );
-          if (result['status'] == 'COMPLETE') {
-            await _load();
-            return;
+        final email = await GoogleConnectionFlow.connect(_api,
+          forceConsent: true,
+          isActive: () => mounted && generation == _connectGeneration);
+        if (!mounted || generation != _connectGeneration) return;
+        _auth.removeListener(_accountChanged);
+        try {
+          if (widget.api == null) {
+            _api.close();
+            _api = GoogleWorkspaceApi(email: email);
           }
+          await _auth.signInWithGoogleConnection(email);
+        } finally {
+          if (mounted) _auth.addListener(_accountChanged);
         }
-        if (mounted && generation == _connectGeneration) {
-          setState(
-            () => _error = 'Phiên kết nối đã hết hạn. Vui lòng thử lại.',
-          );
-        }
+        await _load();
       } finally {
         if (mounted) setState(() => _polling = false);
       }
@@ -553,7 +540,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                                   ),
                                   Text(
                                     _api.email.isEmpty
-                                        ? 'Đăng nhập HocLuc bằng tài khoản có email Google để kết nối.'
+                                        ? 'Chọn tài khoản Google để sử dụng HocLuc.'
                                         : _api.email,
                                   ),
                                 ],

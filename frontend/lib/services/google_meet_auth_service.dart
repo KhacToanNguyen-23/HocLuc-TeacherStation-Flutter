@@ -80,6 +80,28 @@ class GoogleMeetAuthService extends ChangeNotifier {
   }
 
   /// Đăng nhập tài khoản Google (lưu token và thông tin giáo viên)
+  Future<String> lastGoogleConnectionEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('google_connection_email') ?? '';
+  }
+
+  Future<void> signInWithGoogleConnection(String email) async {
+    _isSignedIn = true;
+    _teacherEmail = email;
+    _teacherName = email.split('@').first;
+    _teacherPhone = null;
+    _teacherAvatar = null;
+    _accessToken = null;
+    _authMethod = 'google_oauth';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('google_connection_email', email);
+    await prefs.remove(_kToken);
+    await prefs.remove(_kAvatar);
+    await prefs.remove(_kPhone);
+    await _persistSession();
+    notifyListeners();
+  }
+
   void signInWithGoogleToken({
     required String accessToken,
     String? name,
@@ -116,7 +138,7 @@ class GoogleMeetAuthService extends ChangeNotifier {
   }
 
   bool get isGoogleAuthenticated =>
-      _isSignedIn && (_authMethod == 'google' || _authMethod == 'demo');
+      _isSignedIn && (_authMethod == 'google' || _authMethod == 'google_oauth' || _authMethod == 'demo');
 
   /// Mô phỏng đăng nhập nhanh cho giáo viên (Quick Sign-in)
   void quickSignIn({String? email, String? name}) {
