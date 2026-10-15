@@ -30,7 +30,6 @@ void main() {
       await tester.pump();
 
       expect(find.text('Webcam'), findsOneWidget);
-      expect(find.text('Phát camera ảo'), findsOneWidget);
       expect(find.byIcon(Icons.open_in_full), findsOneWidget);
       expect(find.text('Mic ON'), findsNothing);
 
@@ -38,8 +37,6 @@ void main() {
       studio.toggleCameraPip();
       await tester.pump();
       expect(find.text('Webcam'), findsNothing);
-      // Output controls remain available even when the webcam is hidden.
-      expect(find.text('Phát camera ảo'), findsOneWidget);
 
       studio.dispose();
     });

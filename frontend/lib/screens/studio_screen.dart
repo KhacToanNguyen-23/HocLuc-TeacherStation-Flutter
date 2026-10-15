@@ -12,7 +12,6 @@ import '../services/meet_automation_service.dart';
 import '../widgets/stage_container.dart';
 import '../widgets/studio/studio_drawing_toolbar.dart';
 import '../widgets/studio/studio_inspector_panel.dart';
-import '../widgets/studio/studio_lessons_drawer.dart';
 import '../widgets/studio/studio_preview_dialog.dart';
 import '../widgets/studio/studio_question_view.dart';
 import '../widgets/studio/studio_rename_dialog.dart';
@@ -21,6 +20,7 @@ import '../widgets/studio/studio_top_bar.dart';
 import '../widgets/studio/studio_admission_banner.dart';
 import '../services/plugin_manager.dart';
 import '../widgets/studio/studio_plugins_marketplace_panel.dart';
+import '../widgets/studio/save_classroom_dialog.dart';
 
 class StudioScreen extends StatefulWidget {
   const StudioScreen({
@@ -48,7 +48,6 @@ class _StudioScreenState extends State<StudioScreen> {
   final question = TextEditingController();
   final endpoint = TextEditingController();
   bool initializedControllers = false;
-  bool showLessons = false;
   bool showInspector = false;
   bool showStudentsDrawer = false;
   bool showPluginsMarketplace = false;
@@ -86,7 +85,8 @@ class _StudioScreenState extends State<StudioScreen> {
       if (content != null) {
         studio.change(() {
           studio.restoreFromJson(content);
-          if (widget.lessonTitle != null && widget.lessonTitle!.trim().isNotEmpty) {
+          if (widget.lessonTitle != null &&
+              widget.lessonTitle!.trim().isNotEmpty) {
             studio.title = widget.lessonTitle!.trim();
           }
           studio.online = true;
@@ -137,7 +137,9 @@ class _StudioScreenState extends State<StudioScreen> {
       try {
         final lessonSnapshot = studio.exportLessonJson();
         final targetId = _currentPlanningId ?? widget.planningId;
-        debugPrint('[StudioScreen] Starting save planning: title="${studio.title}", targetId=$targetId, pdf=${studio.pdfFilePath}, page=${studio.pdfPage}');
+        debugPrint(
+          '[StudioScreen] Starting save planning: title="${studio.title}", targetId=$targetId, pdf=${studio.pdfFilePath}, page=${studio.pdfPage}',
+        );
 
         bool success = false;
         if (targetId != null) {
@@ -179,7 +181,9 @@ class _StudioScreenState extends State<StudioScreen> {
               content: Row(
                 children: [
                   Icon(
-                    success ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                    success
+                        ? Icons.check_circle_rounded
+                        : Icons.error_outline_rounded,
                     color: Colors.white,
                     size: 18,
                   ),
@@ -194,7 +198,9 @@ class _StudioScreenState extends State<StudioScreen> {
                   ),
                 ],
               ),
-              backgroundColor: success ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+              backgroundColor: success
+                  ? const Color(0xFF15803D)
+                  : const Color(0xFFDC2626),
               duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
             ),
@@ -209,14 +215,12 @@ class _StudioScreenState extends State<StudioScreen> {
       return;
     }
 
-    final success = await studio.save();
-    if (mounted) {
-      message(
-        success
-            ? 'Đã lưu bài giảng và cấu hình trên máy.'
-            : 'Không lưu được. Kiểm tra dịch vụ Java rồi thử lại.',
-      );
-    }
+    // Chế độ phòng học (Live Classroom Mode): Hiển thị lựa chọn lưu Slide và file PDF
+    SaveClassroomDialog.show(
+      context,
+      studio: studio,
+      onSaveSlide: () async => await studio.save(),
+    );
   }
 
   Future<void> _handleExitPlanning() async {
@@ -224,8 +228,13 @@ class _StudioScreenState extends State<StudioScreen> {
       final choice = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Thoát chế độ soạn bài?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Thoát chế độ soạn bài?',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           content: const Text(
             'Bạn có thay đổi chưa lưu trên bảng vẽ bài giảng. Bạn có muốn lưu trước khi thoát không?',
             style: TextStyle(fontSize: 13, height: 1.4),
@@ -233,11 +242,17 @@ class _StudioScreenState extends State<StudioScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop('cancel'),
-              child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+              child: const Text(
+                'Hủy',
+                style: TextStyle(color: AppColors.slate600),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop('discard'),
-              child: const Text('Không lưu', style: TextStyle(color: Color(0xFFDC2626))),
+              child: const Text(
+                'Không lưu',
+                style: TextStyle(color: Color(0xFFDC2626)),
+              ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop('save'),
@@ -277,7 +292,10 @@ class _StudioScreenState extends State<StudioScreen> {
           children: [
             Icon(Icons.videocam_rounded, size: 20, color: AppColors.sky600),
             SizedBox(width: 8),
-            Text('Tạo phòng học từ bài giảng?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              'Tạo phòng học từ bài giảng?',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Text(
@@ -287,7 +305,10 @@ class _StudioScreenState extends State<StudioScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppColors.slate600),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -310,7 +331,9 @@ class _StudioScreenState extends State<StudioScreen> {
         canPop: false,
         child: Dialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
             child: Row(
@@ -382,13 +405,23 @@ class _StudioScreenState extends State<StudioScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 12,
+        ),
         actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
         title: const Row(
           children: [
-            Icon(Icons.meeting_room_outlined, color: AppColors.slate900, size: 22),
+            Icon(
+              Icons.meeting_room_outlined,
+              color: AppColors.slate900,
+              size: 22,
+            ),
             SizedBox(width: 10),
-            Text('Rời khỏi lớp học', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            Text(
+              'Rời khỏi lớp học',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Column(
@@ -399,7 +432,10 @@ class _StudioScreenState extends State<StudioScreen> {
               onTap: () => Navigator.of(ctx).pop('pause'),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: const Color(0xFFBAE6FD)),
                   color: const Color(0xFFF0F9FF),
@@ -407,12 +443,20 @@ class _StudioScreenState extends State<StudioScreen> {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.pause_circle_outline_rounded, color: AppColors.sky600, size: 24),
+                    Icon(
+                      Icons.pause_circle_outline_rounded,
+                      color: AppColors.sky600,
+                      size: 24,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Tạm rời phòng',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.slate900),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.slate900,
+                        ),
                       ),
                     ),
                   ],
@@ -424,7 +468,10 @@ class _StudioScreenState extends State<StudioScreen> {
               onTap: () => Navigator.of(ctx).pop('end'),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: const Color(0xFFFECDD3)),
                   color: const Color(0xFFFFF1F2),
@@ -432,12 +479,20 @@ class _StudioScreenState extends State<StudioScreen> {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.stop_circle_outlined, color: AppColors.rose600, size: 24),
+                    Icon(
+                      Icons.stop_circle_outlined,
+                      color: AppColors.rose600,
+                      size: 24,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Kết thúc buổi học',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.rose600),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.rose600,
+                        ),
                       ),
                     ),
                   ],
@@ -449,7 +504,13 @@ class _StudioScreenState extends State<StudioScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(null),
-            child: const Text('Ở lại tiếp tục dạy', style: TextStyle(color: AppColors.slate600, fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Ở lại tiếp tục dạy',
+              style: TextStyle(
+                color: AppColors.slate600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -490,22 +551,6 @@ class _StudioScreenState extends State<StudioScreen> {
     ),
   );
 
-  void openLessons() => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    builder: (context) => SizedBox(
-      height: 380,
-      child: Material(
-        color: Colors.white,
-        child: StudioLessonsDrawer(
-          studio: studio,
-          onClose: () => Navigator.pop(context),
-          onPluginMessage: message,
-        ),
-      ),
-    ),
-  );
-
   Widget fittedStage({bool interactive = true}) {
     if (studio.view == 'question') {
       return StudioQuestionView(studio: studio, interactive: interactive);
@@ -532,211 +577,226 @@ class _StudioScreenState extends State<StudioScreen> {
           child: Focus(
             autofocus: true,
             child: Scaffold(
-          body: LayoutBuilder(
-            builder: (context, box) {
-              final hasInspector = showInspector && box.maxWidth >= 1250;
-              final hasLessons = showLessons && box.maxWidth >= 1000;
+              body: LayoutBuilder(
+                builder: (context, box) {
+                  final hasInspector = showInspector && box.maxWidth >= 1250;
 
-              return Column(
-                children: [
-                  StudioTopBar(
-                    studio: studio,
-                    width: box.maxWidth,
-                    hasLessons: hasLessons,
-                    hasInspector: hasInspector,
-                    hasStudents: showStudentsDrawer,
-                    hasPlugins: showPluginsMarketplace,
-                    isPlanningMode: widget.isPlanningMode,
-                    onExitPlanning: _handleExitPlanning,
-                    onCreateClassroomFromPlanning: _handleCreateClassroomFromPlanning,
-                  onToggleLessons: () {
-                    if (box.maxWidth < 1000) {
-                      openLessons();
-                    } else {
-                      setState(() => showLessons = !showLessons);
-                    }
-                  },
-                  onToggleInspector: () {
-                    if (box.maxWidth < 1250) {
-                      openInspector();
-                    } else {
-                      setState(() {
-                        showInspector = !showInspector;
-                        if (showInspector) {
-                          showStudentsDrawer = false;
-                          showPluginsMarketplace = false;
-                        }
-                      });
-                    }
-                  },
-                  onToggleStudents: () {
-                    setState(() {
-                      showStudentsDrawer = !showStudentsDrawer;
-                      if (showStudentsDrawer) {
-                        showInspector = false;
-                        showPluginsMarketplace = false;
-                      }
-                    });
-                  },
-                  onTogglePlugins: () {
-                    setState(() {
-                      showPluginsMarketplace = !showPluginsMarketplace;
-                      if (showPluginsMarketplace) {
-                        showInspector = false;
-                        showStudentsDrawer = false;
-                      }
-                    });
-                  },
-                  onLeaveClassroom: widget.isPlanningMode ? null : _handleLeaveClassroom,
-                  onRename: rename,
-                  onPreview: preview,
-                  onSave: save,
-                  onRetryConnect: () {
-                    initializedControllers = false;
-                    studio.initialize();
-                  },
-                ),
-                Expanded(
-                  child: Stack(
+                  return Column(
                     children: [
-                      Row(
-                        children: [
-                          if (hasLessons)
-                            SizedBox(
-                              width: 200,
-                              child: StudioLessonsDrawer(
-                                studio: studio,
-                                onClose: () => setState(() => showLessons = false),
-                                onPluginMessage: message,
-                                onOpenPluginsMarketplace: () {
-                                  setState(() {
-                                    showPluginsMarketplace = true;
-                                    showStudentsDrawer = false;
-                                    showInspector = false;
-                                  });
-                                },
-                              ),
-                            ),
-                          Expanded(
-                            child: Row(
+                      StudioTopBar(
+                        studio: studio,
+                        width: box.maxWidth,
+                        hasInspector: hasInspector,
+                        hasStudents: showStudentsDrawer,
+                        hasPlugins: showPluginsMarketplace,
+                        isPlanningMode: widget.isPlanningMode,
+                        onExitPlanning: _handleExitPlanning,
+                        onCreateClassroomFromPlanning:
+                            _handleCreateClassroomFromPlanning,
+                        onToggleInspector: () {
+                          if (box.maxWidth < 1250) {
+                            openInspector();
+                          } else {
+                            setState(() {
+                              showInspector = !showInspector;
+                              if (showInspector) {
+                                showStudentsDrawer = false;
+                                showPluginsMarketplace = false;
+                              }
+                            });
+                          }
+                        },
+                        onToggleStudents: () {
+                          setState(() {
+                            showStudentsDrawer = !showStudentsDrawer;
+                            if (showStudentsDrawer) {
+                              showInspector = false;
+                              showPluginsMarketplace = false;
+                            }
+                          });
+                        },
+                        onTogglePlugins: () {
+                          setState(() {
+                            showPluginsMarketplace = !showPluginsMarketplace;
+                            if (showPluginsMarketplace) {
+                              showInspector = false;
+                              showStudentsDrawer = false;
+                            }
+                          });
+                        },
+                        onLeaveClassroom: widget.isPlanningMode
+                            ? null
+                            : _handleLeaveClassroom,
+                        onRename: rename,
+                        onPreview: preview,
+                        onSave: save,
+                        onRetryConnect: () {
+                          initializedControllers = false;
+                          studio.initialize();
+                        },
+                      ),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Row(
                               children: [
                                 if (studio.view == 'board')
-                                  StudioDrawingToolbar(studio: studio, isVertical: true),
+                                  StudioDrawingToolbar(
+                                    studio: studio,
+                                    isVertical: true,
+                                  ),
                                 Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      4,
+                                      4,
+                                      10,
+                                      4,
+                                    ),
                                     child: fittedStage(),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                      // OVERLAY RIGHT PANELS (Hover đè lên mép phải màn hình, KHÔNG MỜ NỀN, KHÔNG BÓP UI)
-                      if (hasInspector || showStudentsDrawer || showPluginsMarketplace)
-                        Positioned(
-                          top: 0,
-                          bottom: 0,
-                          right: 0,
-                          child: Material(
-                            elevation: 16,
-                            shadowColor: Colors.black.withValues(alpha: 0.35),
-                            child: Container(
-                              width: 320,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                border: Border(left: BorderSide(color: AppColors.line)),
-                              ),
-                              child: showPluginsMarketplace
-                                  ? StudioPluginsMarketplacePanel(
-                                      onClose: () => setState(() => showPluginsMarketplace = false),
-                                    )
-                                  : showStudentsDrawer
-                                      ? StudioStudentsDrawer(
-                                          meetService: MeetAutomationService(),
-                                          onClose: () => setState(() => showStudentsDrawer = false),
-                                        )
-                                      : StudioInspectorPanel(
-                                          studio: studio,
-                                          notesController: notes,
-                                          questionController: question,
-                                          endpointController: endpoint,
-                                          onPreview: preview,
-                                        ),
-                            ),
-                          ),
-                        ),
-                      // Floating active plugin window
-                      ListenableBuilder(
-                        listenable: PluginManager(),
-                        builder: (context, _) {
-                          final active = PluginManager().activePlugin;
-                          if (active == null) return const SizedBox.shrink();
-
-                          return Positioned(
-                            top: 50,
-                            right: 40,
-                            child: Material(
-                              elevation: 12,
-                              borderRadius: BorderRadius.circular(16),
-                              clipBehavior: Clip.antiAlias,
-                              child: Container(
-                                width: 340,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.slate200),
+                            // OVERLAY RIGHT PANELS (Hover đè lên mép phải màn hình, KHÔNG MỜ NỀN, KHÔNG BÓP UI)
+                            if (hasInspector ||
+                                showStudentsDrawer ||
+                                showPluginsMarketplace)
+                              Positioned(
+                                top: 0,
+                                bottom: 0,
+                                right: 0,
+                                child: Material(
+                                  elevation: 16,
+                                  shadowColor: Colors.black.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                  child: Container(
+                                    width: 320,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border(
+                                        left: BorderSide(color: AppColors.line),
+                                      ),
+                                    ),
+                                    child: showPluginsMarketplace
+                                        ? StudioPluginsMarketplacePanel(
+                                            onClose: () => setState(
+                                              () => showPluginsMarketplace =
+                                                  false,
+                                            ),
+                                          )
+                                        : showStudentsDrawer
+                                        ? StudioStudentsDrawer(
+                                            meetService:
+                                                MeetAutomationService(),
+                                            onClose: () => setState(
+                                              () => showStudentsDrawer = false,
+                                            ),
+                                          )
+                                        : StudioInspectorPanel(
+                                            studio: studio,
+                                            notesController: notes,
+                                            questionController: question,
+                                            endpointController: endpoint,
+                                            onPreview: preview,
+                                          ),
+                                  ),
                                 ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                      color: const Color(0xFFF8FAFC),
-                                      child: Row(
+                              ),
+                            // Floating active plugin window
+                            ListenableBuilder(
+                              listenable: PluginManager(),
+                              builder: (context, _) {
+                                final active = PluginManager().activePlugin;
+                                if (active == null) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return Positioned(
+                                  top: 50,
+                                  right: 40,
+                                  child: Material(
+                                    elevation: 12,
+                                    borderRadius: BorderRadius.circular(16),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Container(
+                                      width: 340,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: AppColors.slate200,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(active.icon, size: 16, color: active.color),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              active.name,
-                                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 10,
+                                            ),
+                                            color: const Color(0xFFF8FAFC),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  active.icon,
+                                                  size: 16,
+                                                  color: active.color,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    active.name,
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.close_rounded,
+                                                    size: 18,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(),
+                                                  onPressed: () =>
+                                                      PluginManager()
+                                                          .closeActivePlugin(),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          IconButton(
-                                            icon: const Icon(Icons.close_rounded, size: 18),
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                            onPressed: () => PluginManager().closeActivePlugin(),
+                                          Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: active.buildWidget(context),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: active.buildWidget(context),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
+                            // Floating student admission banner
+                            StudioAdmissionBanner(
+                              meetService: MeetAutomationService(),
+                            ),
+                          ],
+                        ),
                       ),
-                      // Floating student admission banner
-                      StudioAdmissionBanner(meetService: MeetAutomationService()),
                     ],
-                  ),
-                ),
-              ],
-            );
-          },
+                  );
+                },
+              ),
+            ),
+          ),
         ),
-      ),
-    ),
-  ),
-);
-  },
-);
+      );
+    },
+  );
 }

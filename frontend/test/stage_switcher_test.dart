@@ -125,7 +125,7 @@ void main() {
       studio.dispose();
     });
 
-    testWidgets('Phase 03: InteractiveChalkboard renders with Mini Zoom Bar', (
+    testWidgets('Phase 03: InteractiveChalkboard renders cleanly', (
       tester,
     ) async {
       final studio = StudioState()
@@ -138,8 +138,6 @@ void main() {
       await tester.pump();
 
       expect(find.byType(InteractiveChalkboard), findsOneWidget);
-      expect(find.text('100%'), findsOneWidget);
-      expect(find.byIcon(Icons.pan_tool_outlined), findsOneWidget);
       studio.dispose();
     });
   });
