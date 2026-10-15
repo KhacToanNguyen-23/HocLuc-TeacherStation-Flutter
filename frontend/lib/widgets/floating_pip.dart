@@ -4,6 +4,7 @@ import '../models/studio_state.dart';
 import '../services/camera_broadcast_service.dart';
 import '../services/teacher_media_service.dart';
 import 'presentation_surface.dart';
+import 'system_microphone_controls.dart';
 
 /// Interactive controls sit above the clean webcam in PresentationSurface.
 class FloatingPip extends StatelessWidget {
@@ -133,6 +134,7 @@ class FloatingPip extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 4,
                       children: [
+                        const SystemMicrophoneControls(),
                         FilledButton.icon(
                           onPressed: broadcast.isStarting
                               ? null
