@@ -36,6 +36,7 @@ class PluginManifest {
     this.backendExecutable,
     this.backendPort,
     this.backend,
+    this.permissions = const [],
   });
 
   final String id;
@@ -51,6 +52,7 @@ class PluginManifest {
   final String? backendExecutable;
   final int? backendPort;
   final PluginBackend? backend;
+  final List<String> permissions;
 
   double get defaultWidth => uiDefaultWidth;
 
@@ -94,6 +96,7 @@ class PluginManifest {
       backendExecutable: backendExecutable,
       backendPort: backendPort,
       backend: backendObj,
+      permissions: (json['permissions'] as List?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 
@@ -104,6 +107,7 @@ class PluginManifest {
     'author': author,
     'description': description,
     'category': category,
+    'permissions': permissions,
     'ui': {
       'entry': uiEntry,
       'placement': uiPlacement,

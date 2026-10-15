@@ -9,6 +9,7 @@ import '../services/audio_translation_service.dart';
 import '../services/teacher_media_service.dart';
 import '../services/desktop_lifecycle.dart';
 import '../services/plugin_manager.dart';
+import '../services/host_bridge.dart';
 import 'board_sticker.dart';
 import 'smart_chalk_annotation.dart';
 import '../services/stroke_clusterer.dart';
@@ -615,87 +616,13 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  void handlePluginMessage(dynamic message) {
-    Map<String, dynamic>? data;
-    if (message is String) {
-      try {
-        data = jsonDecode(message) as Map<String, dynamic>;
-      } catch (_) {}
-    } else if (message is Map) {
-      data = Map<String, dynamic>.from(message);
-    }
-
-    if (data == null) return;
-    final action = data['action'] as String? ?? data['type'] as String?;
-
-    if (action == 'START_SNIP_SELECTION') {
-      final target = (data['target'] as String?) ?? 'dgnl';
-      startSnipping(target: target);
-      return;
-    }
-
-    if (action == 'HIGHLIGHT_PDF_PASSAGE') {
-      final payload = (data['payload'] as Map<String, dynamic>?) ?? data;
-      final rawText = (payload['text'] as String?)?.trim() ?? '';
-      final rawHighlights = (payload['highlights'] as List?)
-              ?.whereType<Map<String, dynamic>>()
-              .toList() ??
-          [];
-      final metrics = (payload['metrics'] as Map<String, dynamic>?) ?? {};
-      if (rawText.isNotEmpty) {
-        highlightPdfPassageFromAnalysis(rawText, rawHighlights, metrics: metrics);
-      }
-      return;
-    }
-
-    if (action == 'APPLY_HIGHLIGHT_TO_PDF') {
-      onApplyHighlightToPdfRequested?.call();
-      return;
-    }
-
-    if (action == 'SAVE_HIGHLIGHTED_PDF') {
-      onSaveHighlightedPdfRequested?.call();
-      return;
-    }
-
-    if (action == 'INSERT_ANNOTATION') {
-      final payload = (data['payload'] as Map<String, dynamic>?) ?? data;
-      final rawText =
-          (payload['raw_text'] as String?) ??
-          (payload['rawText'] as String?) ??
-          (payload['text'] as String?) ??
-          '';
-      final tokens =
-          (payload['tokens'] as List?)
-              ?.map((t) => Map<String, dynamic>.from(t as Map))
-              .toList() ??
-          const [];
-
-      List<String> issues = [];
-      if (payload['issues'] is List) {
-        issues = (payload['issues'] as List).map((e) => e.toString()).toList();
-      } else if (payload['grammarIssue'] != null) {
-        issues = [payload['grammarIssue'].toString()];
-      } else if (payload['grammar_issue'] != null) {
-        issues = [payload['grammar_issue'].toString()];
-      }
-
-      final sticker = BoardSticker(
-        id: 'sticker-${DateTime.now().millisecondsSinceEpoch}',
-        type: activePlugin?.manifest.id ?? 'generic_sticker',
-        normalizedRect: const Rect.fromLTWH(0.2, 0.25, 0.45, 0.22),
-        rawText: rawText,
-        tokens: tokens,
-        issues: issues,
-      );
-      addSticker(sticker);
-
-      // Auto slide plugin drawer closed when sticker is pinned to return 100% board space
-      if (showPluginDrawer && !pluginFloating) {
-        showPluginDrawer = false;
-        notifyListeners();
-      }
-    }
+  void handlePluginMessage(dynamic message, {void Function(String jsScript)? executeJs}) {
+    HostBridge.instance.handleMessage(
+      rawMessage: message,
+      studio: this,
+      manifest: activePlugin?.manifest,
+      executeJs: executeJs,
+    );
   }
 
   Offset? _pdfWindowPosition;

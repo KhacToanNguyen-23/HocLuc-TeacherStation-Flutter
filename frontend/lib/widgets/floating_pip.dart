@@ -214,7 +214,12 @@ class FloatingPip extends StatelessWidget {
                                   (camera) => PopupMenuItem(
                                     value: camera.name,
                                     child: Text(
-                                      '${camera.name == media.selectedCamera ? '✓ ' : ''}${camera.name}',
+                                      camera.name,
+                                      style: TextStyle(
+                                        fontWeight: camera.name == media.selectedCamera
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
                                     ),
                                   ),
                                 )

@@ -12,6 +12,11 @@ const btnSnipSvo = document.getElementById('btnSnipSvo');
 
 let currentAnalysis = null;
 
+// Lấy port động do Host cấp phát qua URL query (?port=xxxxx)
+const urlParams = new URLSearchParams(window.location.search);
+const backendPort = urlParams.get('port') || '18888';
+const backendBaseUrl = `http://127.0.0.1:${backendPort}`;
+
 // PrtSc Snipping Tool Trigger
 btnSnipSvo?.addEventListener('click', () => {
   postToHost({
@@ -56,7 +61,7 @@ async function triggerAnalyze() {
   btnAnalyze.innerHTML = '<span>⏳</span><span>Đang phân tích cú pháp...</span>';
 
   try {
-    const response = await fetch('http://127.0.0.1:18888/analyze', {
+    const response = await fetch(`${backendBaseUrl}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
@@ -66,7 +71,7 @@ async function triggerAnalyze() {
     if (response.ok) {
       const data = await response.json();
       currentAnalysis = data;
-      backendBadge.textContent = 'spaCy Online';
+      backendBadge.textContent = `spaCy (${backendPort})`;
       backendBadge.style.color = '#86efac';
       renderResults(data);
       return;
@@ -138,21 +143,40 @@ function renderResults(analysis) {
   btnPinToBoard.style.display = 'flex';
 }
 
-btnPinToBoard?.addEventListener('click', () => {
+btnPinToBoard?.addEventListener('click', async () => {
   if (!currentAnalysis) return;
-  const message = {
+
+  const annotationPayload = {
+    type: 'sticker',
+    data: {
+      pluginId: 'com.hocluc.plugin.english',
+      text: currentAnalysis.text,
+      tokens: currentAnalysis.tokens,
+      grammarIssue: currentAnalysis.grammarIssue,
+    }
+  };
+
+  // Sử dụng HocLuc SDK nếu khả dụng, fallback sang postToHost cũ
+  if (window.HocLuc && window.HocLuc.board) {
+    try {
+      await window.HocLuc.board.insertAnnotation(annotationPayload);
+      return;
+    } catch (e) {
+      console.warn('[EnglishAssistant] SDK insertAnnotation fallback:', e);
+    }
+  }
+
+  postToHost({
     type: 'INSERT_ANNOTATION',
     action: 'INSERT_ANNOTATION',
     pluginId: 'com.hocluc.plugin.english',
     text: currentAnalysis.text,
     tokens: currentAnalysis.tokens,
     grammarIssue: currentAnalysis.grammarIssue,
-  };
-  postToHost(message);
+  });
 });
 
 function postToHost(message) {
-  // Bridge to Windows WebView2 Host
   if (window.chrome && window.chrome.webview) {
     try {
       window.chrome.webview.postMessage(message);
@@ -164,7 +188,6 @@ function postToHost(message) {
       }
     }
   }
-  // Bridge to Web Iframe Host
   if (window.parent) {
     window.parent.postMessage(message, '*');
   }

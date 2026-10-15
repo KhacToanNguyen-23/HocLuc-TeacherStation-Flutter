@@ -175,7 +175,7 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
         : 'H';
 
     return Tooltip(
-      message: '${p.name}\n${p.isMuted ? "Đã tắt mic" : "Đang bật mic"}${p.isHandRaised ? " • Đang giơ tay ✋" : ""}',
+      message: '${p.name}\n${p.isMuted ? "Đã tắt mic" : "Đang bật mic"}${p.isHandRaised ? " • Đang giơ tay" : ""}',
       child: InkWell(
         onTap: () => widget.meetService.toggleMuteParticipant(p.id),
         borderRadius: BorderRadius.circular(8),
@@ -214,10 +214,21 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                     ),
                   ),
                   if (p.isHandRaised)
-                    const Positioned(
+                    Positioned(
                       right: -3,
                       top: -4,
-                      child: Text('✋', style: TextStyle(fontSize: 10)),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Color(0xfff97316),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.front_hand_outlined,
+                          size: 8,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                 ],
               ),

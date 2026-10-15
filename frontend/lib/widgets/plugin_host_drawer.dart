@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
+import '../services/plugin_manager.dart';
+import '../services/process_supervisor.dart';
 import 'flat_host.dart';
 
 class PluginHostDrawer extends StatelessWidget {
@@ -153,10 +156,26 @@ class PluginHostDrawer extends StatelessWidget {
   Widget _buildPluginContent(dynamic plugin) {
     if (plugin == null) return const SizedBox.shrink();
     final entry = plugin.manifest.uiEntry as String;
+    String targetUrl = entry;
+
+    if (plugin is InstalledPlugin && plugin.installDirectory != null) {
+      final f = File('${plugin.installDirectory!.path}/$entry');
+      if (f.existsSync()) {
+        targetUrl = f.absolute.uri.toString();
+      }
+    }
+
+    final port = ProcessSupervisor.instance.getPort(plugin.manifest.id);
+    if (port != null) {
+      targetUrl = targetUrl.contains('?') ? '$targetUrl&port=$port' : '$targetUrl?port=$port';
+    }
+
+    void Function(String)? executeJs;
     return FlatHost(
-      url: entry,
-      onMessage: studio.handlePluginMessage,
+      url: targetUrl,
+      onMessage: (msg) => studio.handlePluginMessage(msg, executeJs: executeJs),
       onControllerReady: (sendJs) {
+        executeJs = sendJs;
         studio.onSnippetCapturedForPlugin = (text, target) {
           sendJs(
             "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)});",

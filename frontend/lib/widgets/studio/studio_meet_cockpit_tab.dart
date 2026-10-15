@@ -261,7 +261,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
               ),
               child: Row(
                 children: [
-                  const Text('✋', style: TextStyle(fontSize: 15)),
+                  const Icon(Icons.front_hand_outlined, size: 16, color: Color(0xff9a3412)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'process_supervisor.dart';
 
 class DgnlAnalysisResult {
   final int totalWords;
@@ -39,35 +40,10 @@ class DgnlAnalysisResult {
 }
 
 class DgnlService {
-  static const String baseUrl = 'http://127.0.0.1:18888';
-  static bool _sidecarSpawnAttempted = false;
-
-  /// Tự động kiểm tra và khởi chạy Python sidecar trên môi trường desktop
-  static Future<void> _ensureSidecarStarted() async {
-    if (kIsWeb || _sidecarSpawnAttempted) return;
-    _sidecarSpawnAttempted = true;
-    try {
-      final res = await http.get(Uri.parse('$baseUrl/')).timeout(const Duration(milliseconds: 600));
-      if (res.statusCode == 200) return;
-    } catch (_) {}
-
-    try {
-      final possiblePaths = [
-        'plugins/english_assistant/engine/service.py',
-        '../plugins/english_assistant/engine/service.py',
-        '../../plugins/english_assistant/engine/service.py',
-      ];
-      for (final p in possiblePaths) {
-        final f = File(p);
-        if (f.existsSync()) {
-          Process.start('python', [f.absolute.path, '--port', '18888'], mode: ProcessStartMode.detached);
-          await Future.delayed(const Duration(milliseconds: 1000));
-          break;
-        }
-      }
-    } catch (e) {
-      debugPrint('[DgnlService] Could not auto-spawn sidecar: $e');
-    }
+  /// Base URL resolved dynamically from ProcessSupervisor if plugin sidecar is active
+  static String? get baseUrl {
+    final port = ProcessSupervisor.instance.getPort('com.hocluc.plugin.english');
+    return port != null ? 'http://127.0.0.1:$port' : null;
   }
 
   /// Phân tích ngữ liệu ĐGNL qua FastAPI backend (hoặc fallback offline)
@@ -77,16 +53,16 @@ class DgnlService {
       return fallbackAnalyze('');
     }
 
-    await _ensureSidecarStarted();
-
-    try {
-      final res = await http
-          .post(
-            Uri.parse('$baseUrl/api/dgnl/analyze'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'text': clean}),
-          )
-          .timeout(const Duration(seconds: 4));
+    final url = baseUrl;
+    if (url != null) {
+      try {
+        final res = await http
+            .post(
+              Uri.parse('$url/api/dgnl/analyze'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'text': clean}),
+            )
+            .timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -106,18 +82,19 @@ class DgnlService {
           }
         }
 
-        return DgnlAnalysisResult(
-          totalWords: onlineRes.totalWords > 0 ? onlineRes.totalWords : offlineRes.totalWords,
-          contentWords: onlineRes.contentWords > 0 ? onlineRes.contentWords : offlineRes.contentWords,
-          lexicalDensity: onlineRes.lexicalDensity > 0 ? onlineRes.lexicalDensity : offlineRes.lexicalDensity,
-          cefrProfile: onlineRes.cefrProfile.isNotEmpty ? onlineRes.cefrProfile : offlineRes.cefrProfile,
-          evaluation: onlineRes.evaluation,
-          status: onlineRes.status,
-          highlights: mergedHl,
-        );
+          return DgnlAnalysisResult(
+            totalWords: onlineRes.totalWords > 0 ? onlineRes.totalWords : offlineRes.totalWords,
+            contentWords: onlineRes.contentWords > 0 ? onlineRes.contentWords : offlineRes.contentWords,
+            lexicalDensity: onlineRes.lexicalDensity > 0 ? onlineRes.lexicalDensity : offlineRes.lexicalDensity,
+            cefrProfile: onlineRes.cefrProfile.isNotEmpty ? onlineRes.cefrProfile : offlineRes.cefrProfile,
+            evaluation: onlineRes.evaluation,
+            status: onlineRes.status,
+            highlights: mergedHl,
+          );
+        }
+      } catch (e) {
+        debugPrint('[DgnlService] Online analyze failed, using offline engine: $e');
       }
-    } catch (e) {
-      debugPrint('[DgnlService] Online analyze failed, using offline engine: $e');
     }
 
     return fallbackAnalyze(clean);

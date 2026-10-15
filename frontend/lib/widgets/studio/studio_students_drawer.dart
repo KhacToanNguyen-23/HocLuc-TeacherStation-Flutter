@@ -305,10 +305,21 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                 ),
               ),
               if (p.isHandRaised)
-                const Positioned(
+                Positioned(
                   right: -2,
                   top: -2,
-                  child: Text('✋', style: TextStyle(fontSize: 11)),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Color(0xfff97316),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.front_hand_outlined,
+                      size: 8,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
             ],
           ),

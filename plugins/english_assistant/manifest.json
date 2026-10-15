@@ -1,7 +1,8 @@
 {
+  "$schema": "https://hocluc.com/schemas/plugin.v2.json",
   "id": "com.hocluc.plugin.english",
   "name": "Trợ giảng Tiếng Anh",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "author": "Học Lực Studio",
   "description": "Bóc tách Cú pháp S-V-O, Phân tích Ngữ liệu chuẩn đề ĐGNL (CEFR B2-C1, Academic Collocations) và Tự động tạo bài tập trắc nghiệm đục lỗ (Cloze Test) bằng spaCy.",
   "main": "ui/index.html",
@@ -11,7 +12,6 @@
   "backend": {
     "type": "python",
     "entry": "engine/service.py",
-    "port": 18888,
     "health_endpoint": "/health"
   },
   "permissions": [

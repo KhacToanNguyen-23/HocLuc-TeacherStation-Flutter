@@ -99,13 +99,20 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                                 color: const Color(0xfff97316),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Text(
-                                '✋$handCount',
-                                style: const TextStyle(
-                                  fontSize: 8,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.front_hand_outlined, size: 9, color: Colors.white),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    '$handCount',
+                                    style: const TextStyle(
+                                      fontSize: 8,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],

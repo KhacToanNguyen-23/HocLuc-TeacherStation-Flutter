@@ -4,6 +4,7 @@ Provides spaCy S-V-O-A syntax parsing and OCR image processing.
 """
 
 import sys
+import os
 import io
 import re
 from typing import List, Optional
@@ -76,6 +77,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "plugin": "com.hocluc.plugin.english",
+        "version": "2.0.0",
+        "spacy_loaded": nlp is not None,
+    }
 
 import re
 
@@ -729,4 +739,15 @@ def dgnl_generate_cloze(req: DgnlClozeRequest):
     return {"cloze_tests": dgnl_engine.generate_cloze(req.text, req.selected_types)}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=18888, log_level="info")
+    import argparse
+    import os
+    parser = argparse.ArgumentParser(description="English Assistant Sidecar Engine")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("HOCLUC_PLUGIN_PORT", 18888)),
+        help="Port to bind"
+    )
+    args = parser.parse_args()
+    print(f"[EnglishAssistantEngine] Starting on 127.0.0.1:{args.port}...")
+    uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="info")

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:http/http.dart' as http;
 import '../models/board_sticker.dart';
+import 'process_supervisor.dart';
 
 class EnglishSentenceAnalyzer {
   static const Set<String> commonVerbs = {
@@ -310,10 +311,13 @@ class EnglishSentenceAnalyzer {
   static Future<List<Map<String, dynamic>>> analyzeTokensWithBackend(
     String text,
   ) async {
+    final port = ProcessSupervisor.instance.getPort('com.hocluc.plugin.english');
+    if (port == null) return analyze(text: text).tokens;
+
     try {
       final res = await http
           .post(
-            Uri.parse('http://127.0.0.1:18888/analyze-svo'),
+            Uri.parse('http://127.0.0.1:$port/analyze-svo'),
             body: {'text': text},
           )
           .timeout(const Duration(milliseconds: 5000));
@@ -356,8 +360,11 @@ class EnglishSentenceAnalyzer {
   static Future<Map<String, dynamic>?> analyzeWithOcr(
     Uint8List pngBytes,
   ) async {
+    final port = ProcessSupervisor.instance.getPort('com.hocluc.plugin.english');
+    if (port == null) return null;
+
     try {
-      final uri = Uri.parse('http://127.0.0.1:18888/analyze-svo');
+      final uri = Uri.parse('http://127.0.0.1:$port/analyze-svo');
       final request = http.MultipartRequest('POST', uri);
       request.files.add(
         http.MultipartFile.fromBytes(

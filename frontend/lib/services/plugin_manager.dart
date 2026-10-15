@@ -1,22 +1,25 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/plugin_manifest.dart';
 import '../models/subject_plugin.dart';
+import 'plugin_storage_manager.dart';
+import 'process_supervisor.dart';
 
 class InstalledPlugin extends SubjectPlugin {
   InstalledPlugin({
     required this.manifest,
-    required this.files,
+    this.installDirectory,
     this.sourceFilename = '',
-  });
+    Map<String, Uint8List>? files,
+  }) : files = files ?? const {};
 
   final PluginManifest manifest;
-  final Map<String, Uint8List> files;
+  final Directory? installDirectory;
   final String sourceFilename;
+  final Map<String, Uint8List> files;
 
   @override
   String get id => manifest.id;
@@ -39,13 +42,23 @@ class InstalledPlugin extends SubjectPlugin {
   }
 
   String? getFileString(String path) {
-    final bytes = files[path] ?? files['/$path'];
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    if (installDirectory != null) {
+      final f = File('${installDirectory!.path}/$cleanPath');
+      if (f.existsSync()) return f.readAsStringSync();
+    }
+    final bytes = files[cleanPath] ?? files['/$cleanPath'];
     if (bytes == null) return null;
     return utf8.decode(bytes);
   }
 
   Uint8List? getFileBytes(String path) {
-    return files[path] ?? files['/$path'];
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    if (installDirectory != null) {
+      final f = File('${installDirectory!.path}/$cleanPath');
+      if (f.existsSync()) return f.readAsBytesSync();
+    }
+    return files[cleanPath] ?? files['/$cleanPath'];
   }
 }
 
@@ -68,16 +81,14 @@ class PluginManager extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   SubjectPlugin? get activePlugin => _activePlugin;
 
-  /// All registered plugins available for installation
   List<SubjectPlugin> get availablePlugins => _registry.values.toList();
 
-  /// Plugins currently installed by the teacher
   List<SubjectPlugin> get installedPlugins =>
       _registry.values.where((p) => _installedPluginIds.contains(p.id)).toList();
 
   InstalledPlugin? getPlugin(String id) => _installedPackages[id];
 
-  /// Initialize manager and load saved installed plugin IDs
+  /// Initialize manager, restore saved installed plugin IDs and scan local cache.
   Future<void> init() async {
     if (_isInitialized) return;
     try {
@@ -86,6 +97,23 @@ class PluginManager extends ChangeNotifier {
       _installedPluginIds
         ..clear()
         ..addAll(savedIds);
+
+      // Auto discover previously installed plugins in AppData cache
+      for (final id in savedIds) {
+        final dir = PluginStorageManager.instance.getInstalledDirectory(id);
+        if (dir != null) {
+          final manifest = PluginStorageManager.instance.loadManifestFromDir(dir);
+          if (manifest != null) {
+            final installed = InstalledPlugin(
+              manifest: manifest,
+              installDirectory: dir,
+            );
+            _installedPackages[id] = installed;
+            _registry[id] = installed;
+          }
+        }
+      }
+
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
@@ -93,16 +121,13 @@ class PluginManager extends ChangeNotifier {
     }
   }
 
-  /// Register a real SubjectPlugin into the system
   void registerPlugin(SubjectPlugin plugin) {
     _registry[plugin.id] = plugin;
     notifyListeners();
   }
 
-  /// Check if a plugin is currently installed
   bool isInstalled(String id) => _installedPluginIds.contains(id);
 
-  /// Install a plugin by ID
   Future<void> install(String id) async {
     final plugin = _registry[id];
     if (plugin == null || _installedPluginIds.contains(id)) return;
@@ -117,16 +142,11 @@ class PluginManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Uninstall a plugin by ID
   Future<void> uninstall(String id) async {
     final plugin = _registry[id];
     if (!_installedPluginIds.contains(id)) return;
 
-    _installedPluginIds.remove(id);
-    if (_activePlugin?.id == id) {
-      _activePlugin = null;
-    }
-    await _persistInstalledIds();
+    await uninstallPlugin(id);
     if (plugin != null) {
       try {
         await plugin.onUninstall();
@@ -137,186 +157,110 @@ class PluginManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Open/Launch a plugin to be active in the studio
+  /// Open/Launch a plugin to be active in the studio, starting sidecar if needed.
   void openPlugin(SubjectPlugin plugin) {
     _activePlugin = plugin;
+
+    if (plugin is InstalledPlugin && plugin.installDirectory != null) {
+      if (plugin.manifest.hasSidecar) {
+        ProcessSupervisor.instance.startSidecar(
+          manifest: plugin.manifest,
+          pluginDirectory: plugin.installDirectory!.path,
+        );
+      }
+    }
     notifyListeners();
   }
 
-  /// Close currently active plugin
+  /// Close currently active plugin and shut down its sidecar process.
   void closeActivePlugin() {
-    _activePlugin = null;
-    notifyListeners();
+    if (_activePlugin != null) {
+      final id = _activePlugin!.id;
+      _activePlugin = null;
+      ProcessSupervisor.instance.stopSidecar(id);
+      notifyListeners();
+    }
   }
 
-  /// Install a package from in-memory zip bytes (.hlep)
+  /// Install a package by unpacking zip bytes (.hlep) directly to local storage.
   Future<InstalledPlugin> installPluginFromBytes(
     List<int> bytes,
     String filename,
   ) async {
-    final archive = ZipDecoder().decodeBytes(bytes);
-    ArchiveFile? manifestFile;
-    final filesMap = <String, Uint8List>{};
+    final targetDir = await PluginStorageManager.instance.installFromZip(
+      bytes,
+      customFilename: filename,
+    );
 
-    for (final file in archive) {
-      if (file.isFile) {
-        final path = file.name.replaceAll('\\', '/');
-        final content = file.content as List<int>;
-        filesMap[path] = Uint8List.fromList(content);
-        if (path == 'manifest.json' || path.endsWith('/manifest.json')) {
-          manifestFile = file;
-        }
-      }
+    final manifest = PluginStorageManager.instance.loadManifestFromDir(targetDir);
+    if (manifest == null) {
+      throw const FormatException('Không thể đọc tệp manifest.json sau khi giải nén.');
     }
-
-    if (manifestFile == null) {
-      throw const FormatException('Gói plugin thiếu tệp manifest.json');
-    }
-
-    final manifestJsonStr = utf8.decode(manifestFile.content as List<int>);
-    final manifestJson = jsonDecode(manifestJsonStr) as Map<String, dynamic>;
-    final manifest = PluginManifest.fromJson(manifestJson);
 
     final installed = InstalledPlugin(
       manifest: manifest,
-      files: filesMap,
+      installDirectory: targetDir,
       sourceFilename: filename,
     );
 
     _installedPackages[manifest.id] = installed;
     _registry[manifest.id] = installed;
     _installedPluginIds.add(manifest.id);
+    await _persistInstalledIds();
     notifyListeners();
     return installed;
   }
 
-  Future<InstalledPlugin> installSampleEnglishPlugin() async {
-    final archive = Archive();
-    final manifestJson = jsonEncode({
-      'id': 'com.hocluc.plugin.english',
-      'name': 'Trợ giảng Tiếng Anh',
-      'version': '1.1.0',
-      'author': 'Học Lực Studio',
-      'description':
-          'Bóc tách Cú pháp S-V-O, Phân tích Ngữ liệu chuẩn đề ĐGNL và Tạo bài tập Cloze Test.',
-      'main': 'ui/index.html',
-      'icon': 'icon.png',
-      'placement': 'drawer_panel',
-      'default_width': 420,
-      'backend': {
-        'type': 'python',
-        'entry': 'engine/service.py',
-        'port': 18888,
-        'health_endpoint': '/health',
-      },
-      'permissions': ['board:insert_annotation', 'board:read_text'],
-    });
+  /// Install sample package found in local directory or plugins/
+  Future<InstalledPlugin> installSamplePlugin() async {
+    final searchDirs = [
+      Directory('plugins'),
+      Directory('../plugins'),
+      Directory('../../plugins'),
+    ];
 
-    // Check if real ui/index.html & ui/app.js can be read from disk
-    String? indexHtmlContent;
-    String? appJsContent;
-    String? styleCssContent;
-
-    if (!kIsWeb) {
-      final htmlCandidates = [
-        File('../plugins/english_assistant/ui/index.html'),
-        File('plugins/english_assistant/ui/index.html'),
-      ];
-      for (final f in htmlCandidates) {
-        if (f.existsSync()) {
-          indexHtmlContent = f.readAsStringSync();
-          break;
+    for (final dir in searchDirs) {
+      if (dir.existsSync()) {
+        final hlepFiles = dir
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.hlep'))
+            .toList();
+        if (hlepFiles.isNotEmpty) {
+          final target = hlepFiles.first;
+          final filename = target.uri.pathSegments.where((s) => s.isNotEmpty).last;
+          return installPluginFromBytes(target.readAsBytesSync(), filename);
         }
-      }
 
-      final jsCandidates = [
-        File('../plugins/english_assistant/ui/app.js'),
-        File('plugins/english_assistant/ui/app.js'),
-      ];
-      for (final f in jsCandidates) {
-        if (f.existsSync()) {
-          appJsContent = f.readAsStringSync();
-          break;
-        }
-      }
-
-      final cssCandidates = [
-        File('../plugins/english_assistant/ui/style.css'),
-        File('plugins/english_assistant/ui/style.css'),
-      ];
-      for (final f in cssCandidates) {
-        if (f.existsSync()) {
-          styleCssContent = f.readAsStringSync();
-          break;
+        final subDirs = dir.listSync().whereType<Directory>().toList();
+        for (final d in subDirs) {
+          final manifest = PluginStorageManager.instance.loadManifestFromDir(d);
+          if (manifest != null) {
+            final segments = d.uri.pathSegments.where((s) => s.isNotEmpty).toList();
+            final dirname = segments.isNotEmpty ? segments.last : 'plugin';
+            final installed = InstalledPlugin(
+              manifest: manifest,
+              installDirectory: d,
+              sourceFilename: dirname,
+            );
+            _installedPackages[manifest.id] = installed;
+            _registry[manifest.id] = installed;
+            _installedPluginIds.add(manifest.id);
+            await _persistInstalledIds();
+            notifyListeners();
+            return installed;
+          }
         }
       }
     }
 
-    const defaultIndexHtml = '''<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Trợ giảng Tiếng Anh</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="header">
-    <h3>🇬🇧 Trợ Giảng Tiếng Anh</h3>
-    <span class="badge">S-V-O & ĐGNL 1.1.0</span>
-  </div>
-  <div class="tabs-nav">
-    <button id="tabBtnSvo" class="tab-button active">🔤 Cú pháp S-V-O</button>
-    <button id="tabBtnDgnl" class="tab-button">🎯 Ôn thi ĐGNL & Cloze</button>
-  </div>
-  <textarea id="inputSentence" placeholder="Nhập câu tiếng Anh cần giảng giải..."></textarea>
-  <div class="actions">
-    <button id="btnAnalyze" class="btn-primary">⚡ Phân tích</button>
-  </div>
-  <div id="results" class="results-box"></div>
-  <button id="btnPinToBoard" class="btn-pin" style="display:none;">📌 Ghim lên bảng phấn</button>
-  <script src="app.js"></script>
-</body>
-</html>''';
-
-    final finalIndexHtml = indexHtmlContent ?? defaultIndexHtml;
-    final finalAppJs = appJsContent ?? '// english assistant app.js';
-    final finalStyleCss = styleCssContent ?? 'body { font-family: sans-serif; }';
-
-    archive.addFile(
-      ArchiveFile(
-        'manifest.json',
-        manifestJson.length,
-        utf8.encode(manifestJson),
-      ),
-    );
-    archive.addFile(
-      ArchiveFile(
-        'ui/index.html',
-        finalIndexHtml.length,
-        utf8.encode(finalIndexHtml),
-      ),
-    );
-    archive.addFile(
-      ArchiveFile(
-        'ui/app.js',
-        finalAppJs.length,
-        utf8.encode(finalAppJs),
-      ),
-    );
-    archive.addFile(
-      ArchiveFile(
-        'ui/style.css',
-        finalStyleCss.length,
-        utf8.encode(finalStyleCss),
-      ),
-    );
-    archive.addFile(ArchiveFile('icon.png', 4, [0x89, 0x50, 0x4E, 0x47]));
-
-    final zipBytes = ZipEncoder().encode(archive);
-    return installPluginFromBytes(zipBytes, 'english_assistant.hlep');
+    throw StateError('Không tìm thấy gói hoặc thư mục plugin mẫu.');
   }
 
-  void uninstallPlugin(String id) {
+  /// Alias for backward compatibility
+  Future<InstalledPlugin> installSampleEnglishPlugin() => installSamplePlugin();
+
+  Future<void> uninstallPlugin(String id) async {
     _installedPackages.remove(id);
     _registry.remove(id);
     _installedPluginIds.remove(id);
@@ -324,6 +268,14 @@ class PluginManager extends ChangeNotifier {
       _activePlugin = null;
     }
     notifyListeners();
+
+    try {
+      await ProcessSupervisor.instance.stopSidecar(id);
+      await PluginStorageManager.instance.uninstall(id);
+      await _persistInstalledIds();
+    } catch (e) {
+      debugPrint('[PluginManager] Error during async uninstall for $id: $e');
+    }
   }
 
   String? getFileString(String pluginId, String relativePath) {

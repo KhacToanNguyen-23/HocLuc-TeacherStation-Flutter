@@ -1,10 +1,14 @@
 import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:teaching_companion/models/plugin_manifest.dart';
 import 'package:teaching_companion/services/plugin_manager.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
+
   group('Phase 02: PluginManifest & PluginManager', () {
     test('PluginManifest parses manifest.json correctly', () {
       final jsonMap = {

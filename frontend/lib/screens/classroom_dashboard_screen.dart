@@ -464,7 +464,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                   ),
                   SizedBox(width: 20),
                   Text(
-                    'Đang chuẩn bị phòng Google Meet...',
+                    'Đang tạo phòng...',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,

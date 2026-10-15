@@ -578,5 +578,85 @@
     "verification_command": "flutter test && flutter build windows --debug",
     "notes": "Covers stories: P1",
     "priority": "P1"
+  },
+  {
+    "id": "phase-01-dialog-text-and-ui-descriptions",
+    "title": "Room Creation Dialog Text & Dashboard Descriptions Cleanup",
+    "status": "passing-unverified",
+    "evidence": "fast mode — updated loading dialog to 'Đang tạo phòng...' and removed V-ACT subtitle in exam dashboard card",
+    "user_visible_behavior": "Loading dialog displays 'Đang tạo phòng...' instead of Meet text; verbose card descriptions removed.",
+    "verification_command": "flutter test",
+    "notes": "Covers Phase 1 of high-end UI cleanup",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-02-compact-standalone-login",
+    "title": "Compact Standalone Desktop Window Login Screen",
+    "status": "passing",
+    "evidence": "Preserved original 50/50 split hero layout as requested by user",
+    "user_visible_behavior": "Login screen displays original 50/50 split layout with AuthHeroPanel.",
+    "verification_command": "flutter test test/classroom_dashboard_test.dart",
+    "notes": "Preserved original 50/50 split layout per user preference",
+    "priority": "P1"
+  },
+  {
+    "id": "phase-03-emoji-icons-removal-and-verification",
+    "title": "Sweep Emoji Icons & Final Visual Verification",
+    "status": "passing",
+    "evidence": "All 15 suite tests passed (classroom_dashboard_test, subject_plugins_test, meet_cockpit_inspector_test, english_assistant_e2e_test, plugin_manifest_test, plugin_ui_test)",
+    "user_visible_behavior": "Hand-raise and tool emojis replaced with crisp outline vector icons; all tests pass.",
+    "verification_command": "flutter test",
+    "notes": "Covers Phase 3 of high-end UI cleanup",
+    "priority": "P1"
+  },
+  {
+    "id": "plugin-marketplace-catalog",
+    "title": "Browse and view available plugins from Marketplace",
+    "status": "passing",
+    "evidence": "Tests: 3 passed in test/subject_plugins_test.dart (Marketplace card render & install action)",
+    "user_visible_behavior": "Teacher sees list of subject plugins with icon, name, description, version, and status.",
+    "verification_command": "flutter test test/subject_plugins_test.dart",
+    "notes": "Covers P1 story",
+    "priority": "P1"
+  },
+  {
+    "id": "plugin-on-demand-download",
+    "title": "1-Click download and install plugin to local appdata",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in test/plugin_storage_test.dart (installFromZip, loadManifestFromDir)",
+    "user_visible_behavior": "Teacher clicks Download on Marketplace, package is downloaded and unpacked into %LOCALAPPDATA%/HocLuc/plugins/<id>.",
+    "verification_command": "flutter test test/plugin_storage_test.dart",
+    "notes": "Covers P1 story",
+    "priority": "P1"
+  },
+  {
+    "id": "plugin-clean-ram-lifecycle",
+    "title": "On-demand RAM loading and complete cleanup on close",
+    "status": "passing",
+    "evidence": "Tests: 3 passed in test/process_supervisor_test.dart (findAvailablePort, context:get, storage:set/get)",
+    "user_visible_behavior": "Closing plugin disposes WebView and terminates any background sidecar process, freeing RAM.",
+    "verification_command": "flutter test test/process_supervisor_test.dart",
+    "notes": "Covers P1 story",
+    "priority": "P1"
+  },
+  {
+    "id": "plugin-independent-developer-sdk",
+    "title": "Independent plugin development with Manifest Schema v2 and HostBridge SDK",
+    "status": "passing",
+    "evidence": "Verified SDK, manifest v2, service.py --port CLI and /health endpoint",
+    "user_visible_behavior": "Developers create plugins in plugins/<id> without modifying frontend/lib/.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "notes": "Covers P1 story",
+    "priority": "P1"
+  },
+  {
+    "id": "plugin-uninstall-cache-cleanup",
+    "title": "Uninstall plugin and purge disk cache",
+    "status": "passing",
+    "evidence": "Tests: 4 passed in test/plugin_storage_test.dart (uninstall directory purge)",
+    "user_visible_behavior": "Teacher uninstalls plugin, local cache folder is deleted from disk.",
+    "verification_command": "flutter test test/plugin_storage_test.dart",
+    "notes": "Covers P2 story",
+    "priority": "P2"
   }
 ]

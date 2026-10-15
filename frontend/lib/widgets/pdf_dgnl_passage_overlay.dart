@@ -229,7 +229,7 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
             child: Opacity(
               opacity: spanOpacity,
               child: Tooltip(
-                message: '[${span.type}] ${span.text}\n💡 ${span.note}',
+                message: '[${span.type}] ${span.text}\n• ${span.note}',
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 textStyle: const TextStyle(
                   color: Colors.white,
@@ -670,7 +670,7 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    '📌 "${activeSpan.text}"',
+                    '"${activeSpan.text}"',
                     style: TextStyle(
                       color: categoryColor.withValues(alpha: 0.95),
                       fontSize: 11.5,
@@ -953,7 +953,7 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                         if (explanation.isNotEmpty) ...[
                           const SizedBox(height: 6),
                           Text(
-                            '💡 $explanation',
+                            '• $explanation',
                             style: const TextStyle(color: Color(0xff94a3b8), fontSize: 11),
                           ),
                         ],

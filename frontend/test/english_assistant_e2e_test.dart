@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:teaching_companion/models/studio_state.dart';
 import 'package:teaching_companion/services/plugin_manager.dart';
 import 'package:teaching_companion/widgets/board_sticker_card.dart';
@@ -49,6 +50,10 @@ List<int> createEnglishAssistantZip() {
 
 void main() {
   group('Phase 05: English Assistant End-to-End Tests', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+    });
     test(
       '1. Install english_assistant.hlep and verify manifest & files',
       () async {

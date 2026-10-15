@@ -41,7 +41,9 @@ __pycache__/
 setup_flutter.ps1
 
 # Local Agent and Codex configs
-.agents/
+.agents/*
+!.agents/rules/
+!.agents/skills/
 .codex/
 
 # IDE and Editor configs

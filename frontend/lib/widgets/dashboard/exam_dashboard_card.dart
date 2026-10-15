@@ -57,12 +57,7 @@ class ExamDashboardCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        const Text(
-          'V-ACT · HSA — quản lý đề, lớp học và kết quả kiểm tra.',
-          style: TextStyle(fontSize: 13, color: AppColors.slate600),
-        ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         LayoutBuilder(
           builder: (context, box) {
             final columns = box.maxWidth < 600

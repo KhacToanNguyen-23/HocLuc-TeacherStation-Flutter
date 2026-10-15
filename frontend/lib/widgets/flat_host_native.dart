@@ -47,16 +47,21 @@ class _FlatHostState extends State<FlatHost> {
         raw.startsWith('file://')) {
       return raw;
     }
+
+    final uriParts = raw.split('?');
+    final filePath = uriParts[0];
+    final query = uriParts.length > 1 ? '?${uriParts[1]}' : '';
+
     final candidates = [
-      File(raw),
-      File('../plugins/english_assistant/$raw'),
-      File('plugins/english_assistant/$raw'),
-      File('../plugins/$raw'),
-      File('plugins/$raw'),
+      File(filePath),
+      File('../$filePath'),
+      File('../../$filePath'),
+      File('plugins/$filePath'),
+      File('../plugins/$filePath'),
     ];
     for (final f in candidates) {
       if (f.existsSync()) {
-        return f.absolute.uri.toString();
+        return '${f.absolute.uri}$query';
       }
     }
     return raw;
