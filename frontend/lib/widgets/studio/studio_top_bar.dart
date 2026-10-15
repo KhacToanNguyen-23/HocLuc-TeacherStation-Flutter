@@ -420,17 +420,6 @@ class StudioTopBar extends StatelessWidget {
             icon: const Icon(Icons.slideshow_outlined, color: pine),
           ),
           const SizedBox(width: 3),
-          IconButton(
-            tooltip: 'Thiết bị và API AI',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: onToggleInspector,
-            icon: Icon(
-              hasInspector ? Icons.tune : Icons.tune_outlined,
-              color: hasInspector ? pine : muted,
-            ),
-          ),
           if (!isPlanningMode)
             IconButton(
               tooltip: studio.saving ? 'Đang lưu…' : 'Lưu bài giảng',

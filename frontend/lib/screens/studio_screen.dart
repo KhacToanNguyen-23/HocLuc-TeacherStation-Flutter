@@ -90,7 +90,6 @@ class _StudioScreenState extends State<StudioScreen> {
     studio.addListener(syncControllers);
     if (widget.teachingTarget != null) {
       _sessionId = widget.initialSessionId;
-      showInspector = true;
       MeetAutomationService().addListener(_onMeetChanged);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_openTeachingRoom());
@@ -134,7 +133,12 @@ class _StudioScreenState extends State<StudioScreen> {
   void _onMeetChanged() {
     if (!mounted || widget.teachingTarget == null) return;
     final meet = MeetAutomationService();
-    if (!meet.isHostJoined || _sessionRecorded || _recordingSession || _sessionError != null) return;
+    if (!meet.isHostJoined ||
+        _sessionRecorded ||
+        _recordingSession ||
+        _sessionError != null) {
+      return;
+    }
     final expected = widget.teachingTarget!.meetingUrl;
     if (expected != null && meet.meetingUrl != expected) return;
     _queueSessionRegistration();
@@ -145,11 +149,13 @@ class _StudioScreenState extends State<StudioScreen> {
     final meet = MeetAutomationService();
     final pending = _recordTeachingSession();
     meet.pendingSessionRegistration = pending;
-    unawaited(pending.whenComplete(() {
-      if (identical(meet.pendingSessionRegistration, pending)) {
-        meet.pendingSessionRegistration = null;
-      }
-    }));
+    unawaited(
+      pending.whenComplete(() {
+        if (identical(meet.pendingSessionRegistration, pending)) {
+          meet.pendingSessionRegistration = null;
+        }
+      }),
+    );
   }
 
   Future<void> _recordTeachingSession() async {
@@ -232,8 +238,11 @@ class _StudioScreenState extends State<StudioScreen> {
                 onPressed: _openingRoom || _recordingSession
                     ? null
                     : () {
-                        if (meet.isHostJoined) { _queueSessionRegistration(); }
-                        else { unawaited(_openTeachingRoom()); }
+                        if (meet.isHostJoined) {
+                          _queueSessionRegistration();
+                        } else {
+                          unawaited(_openTeachingRoom());
+                        }
                       },
                 child: const Text('Thử lại'),
               ),
@@ -526,7 +535,9 @@ class _StudioScreenState extends State<StudioScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        widget.teachingTarget == null ? 'Tạm rời phòng' : 'Về danh sách lớp (giữ buổi học)',
+                        widget.teachingTarget == null
+                            ? 'Tạm rời phòng'
+                            : 'Về danh sách lớp (giữ buổi học)',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -698,15 +709,16 @@ class _StudioScreenState extends State<StudioScreen> {
           bindings: <ShortcutActivator, VoidCallback>{
             const SingleActivator(LogicalKeyboardKey.keyS, control: true): save,
             const SingleActivator(LogicalKeyboardKey.keyS, meta: true): save,
+            const SingleActivator(LogicalKeyboardKey.escape): () {
+              setState(() => showInspector = false);
+            },
           },
           child: Focus(
             autofocus: true,
             child: Scaffold(
               body: LayoutBuilder(
                 builder: (context, box) {
-                  final hasInspector =
-                      showInspector &&
-                      (widget.teachingTarget != null || box.maxWidth >= 1250);
+                  final hasInspector = showInspector;
                   final hasLessons = showLessons && box.maxWidth >= 1000;
 
                   return Column(
@@ -730,18 +742,13 @@ class _StudioScreenState extends State<StudioScreen> {
                           }
                         },
                         onToggleInspector: () {
-                          if (box.maxWidth < 1250 &&
-                              widget.teachingTarget == null) {
-                            openInspector();
-                          } else {
-                            setState(() {
-                              showInspector = !showInspector;
-                              if (showInspector) {
-                                showStudentsDrawer = false;
-                                showPluginsMarketplace = false;
-                              }
-                            });
-                          }
+                          setState(() {
+                            showInspector = !showInspector;
+                            if (showInspector) {
+                              showStudentsDrawer = false;
+                              showPluginsMarketplace = false;
+                            }
+                          });
                         },
                         onToggleStudents: () {
                           setState(() {
@@ -805,10 +812,13 @@ class _StudioScreenState extends State<StudioScreen> {
                                         ),
                                       Expanded(
                                         child: Padding(
+                                          key: const ValueKey(
+                                            'studio-board-space',
+                                          ),
                                           padding: const EdgeInsets.fromLTRB(
                                             4,
                                             4,
-                                            10,
+                                            62,
                                             4,
                                           ),
                                           child: fittedStage(),
@@ -826,15 +836,15 @@ class _StudioScreenState extends State<StudioScreen> {
                               Positioned(
                                 top: 0,
                                 bottom: 0,
-                                right: 0,
+                                right: 52,
                                 child: Material(
                                   elevation: 16,
                                   shadowColor: Colors.black.withValues(
                                     alpha: 0.35,
                                   ),
                                   child: Container(
-                                    width: box.maxWidth < 404
-                                        ? box.maxWidth - 24
+                                    width: box.maxWidth < 440
+                                        ? box.maxWidth - 64
                                         : widget.teachingTarget != null
                                         ? 380
                                         : 320,
@@ -859,16 +869,64 @@ class _StudioScreenState extends State<StudioScreen> {
                                               () => showStudentsDrawer = false,
                                             ),
                                           )
-                                        : StudioInspectorPanel(
-                                            studio: studio,
-                                            notesController: notes,
-                                            questionController: question,
-                                            endpointController: endpoint,
-                                            onPreview: preview,
+                                        : Column(
+                                            children: [
+                                              Align(
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: IconButton(
+                                                  tooltip: 'Đóng panel Meet',
+                                                  onPressed: () => setState(
+                                                    () => showInspector = false,
+                                                  ),
+                                                  icon: const Icon(
+                                                    Icons.close,
+                                                    size: 18,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: StudioInspectorPanel(
+                                                  studio: studio,
+                                                  notesController: notes,
+                                                  questionController: question,
+                                                  endpointController: endpoint,
+                                                  onPreview: preview,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                   ),
                                 ),
                               ),
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              bottom: 0,
+                              width: 52,
+                              child: Material(
+                                color: Colors.white,
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 8),
+                                    IconButton(
+                                      tooltip: 'Google Meet',
+                                      isSelected: hasInspector,
+                                      selectedIcon: const Icon(
+                                        Icons.videocam,
+                                        color: AppColors.emerald500,
+                                      ),
+                                      icon: const Icon(Icons.videocam_outlined),
+                                      onPressed: () => setState(() {
+                                        showInspector = !showInspector;
+                                        showStudentsDrawer = false;
+                                        showPluginsMarketplace = false;
+                                      }),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                             // Floating active plugin window
                             ListenableBuilder(
                               listenable: PluginManager(),
