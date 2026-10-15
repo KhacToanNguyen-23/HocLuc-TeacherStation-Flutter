@@ -8,17 +8,19 @@ thẳng sẽ không phát sinh yêu cầu duyệt.
 ## Luồng sử dụng
 
 1. Tạo hoặc kết nối phòng trong app, bảo đảm giáo viên đã vào cuộc gọi bằng
-   tài khoản có quyền duyệt. Biểu tượng camera ở cuối thanh trái mở chính phiên
-   Meet này trong app, kể cả khi cần đăng nhập hoặc kiểm tra quyền chủ phòng.
-2. Khi có yêu cầu, thanh trái hiện biểu tượng thêm người và chấm đỏ. App không
-   tự mở hộp hoặc tự duyệt, nên giáo viên có thể tiếp tục giảng dạy.
+   tài khoản có quyền duyệt. Nút mở Meet cạnh link phòng trên thanh trên cùng mở chính phiên Meet này
+   trong app, kể cả khi cần đăng nhập hoặc kiểm tra quyền chủ phòng.
+2. Trong Studio, nút thêm người nằm ngay trong thanh bút/tẩy có sẵn bên trái,
+   hiển thị khi phòng Meet đang mở. Khi có yêu cầu, nút có thêm chấm đỏ. App
+   không tự mở hộp hoặc tự duyệt. Không có sidebar thông báo riêng.
 3. Bấm biểu tượng để xem tên tài khoản và email nếu Meet cung cấp. Bấm
    **Xác nhận tất cả** để duyệt danh sách tại thời điểm bấm.
 4. Mỗi yêu cầu giữ trạng thái chờ đến khi Meet cung cấp bằng chứng người đó
    đã tham gia. Người đến sau vẫn cần lượt xác nhận tiếp theo. Bấm nhiều lần
    không tạo thêm lượt duyệt đang chạy.
-5. Esc, nút đóng hoặc bấm bên ngoài chỉ đóng hộp, không xóa yêu cầu. Menu tồn
-   tại phía trên Navigator, dùng chung cho các màn hình, drawer và dialog.
+5. Esc, nút đóng hoặc bấm bên ngoài chỉ đóng hộp, không xóa yêu cầu. Box tồn
+   tại phía trên Navigator; các màn hình khác dùng nút trên thanh công cụ có
+   sẵn. Khi xem Câu hỏi hoặc preview, nút nằm trên thanh trên cùng.
 6. Tạm rời Studio giữ phiên Meet và bộ lắng nghe yêu cầu. Kết thúc lớp hoặc
    đăng xuất qua Dashboard đóng phiên và xóa danh sách cũ.
 

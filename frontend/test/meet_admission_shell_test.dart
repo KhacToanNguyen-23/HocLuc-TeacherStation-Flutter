@@ -7,12 +7,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/services/meet_automation_service.dart';
 import 'package:teaching_companion/widgets/meet_admission_shell.dart';
+import 'package:teaching_companion/widgets/meet_admission_button.dart';
+import 'package:teaching_companion/widgets/studio/studio_drawing_toolbar.dart';
+import 'package:teaching_companion/models/studio_state.dart';
 import 'support/meet_admission_fixture.dart';
 
 Widget app(
   MeetAutomationService service, {
   GlobalKey<NavigatorState>? navigatorKey,
   GlobalKey? imageKey,
+  StudioState? studio,
 }) => MaterialApp(
   navigatorKey: navigatorKey,
   theme: ThemeData(useMaterial3: true, fontFamily: 'Manrope'),
@@ -20,9 +24,24 @@ Widget app(
     key: imageKey,
     child: MeetAdmissionShell(service: service, child: child!),
   ),
-  home: const Scaffold(
-    backgroundColor: Color(0xfff4f7fa),
-    body: Center(child: Text('Đang giảng dạy', style: TextStyle(fontSize: 28))),
+  home: Scaffold(
+    backgroundColor: const Color(0xfff4f7fa),
+    body: Row(
+      children: [
+        if (studio != null)
+          StudioDrawingToolbar(studio: studio, isVertical: true)
+        else
+          const SizedBox(
+            width: 56,
+            child: Center(child: MeetAdmissionButton()),
+          ),
+        const Expanded(
+          child: Center(
+            child: Text('Đang giảng dạy', style: TextStyle(fontSize: 28)),
+          ),
+        ),
+      ],
+    ),
   ),
 );
 
@@ -31,6 +50,40 @@ const popup = Key('meet-admission-popup');
 const approve = Key('meet-admission-approve-all');
 
 void main() {
+  testWidgets('Admission button belongs to the existing pen/eraser toolbar', (
+    tester,
+  ) async {
+    final service = MeetAutomationService.forTesting();
+    final studio = StudioState();
+    service.setMeetingUrl(room);
+    await tester.pumpWidget(app(service, studio: studio));
+    expect(
+      find.ancestor(
+        of: find.byKey(menu),
+        matching: find.byType(StudioDrawingToolbar),
+      ),
+      findsOneWidget,
+    );
+    final boardPosition = tester.getCenter(find.text('Đang giảng dạy'));
+    await tester.tap(find.byKey(menu).hitTestable());
+    await tester.pumpAndSettle();
+    expect(find.text('Không còn yêu cầu chờ duyệt.'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    seedAdmissions(service);
+    await tester.pumpAndSettle();
+    expect(tester.getCenter(find.text('Đang giảng dạy')), boardPosition);
+    await tester.tap(find.byKey(menu).hitTestable());
+    await tester.pumpAndSettle();
+    expect(find.text('Nguyễn Văn A'), findsOneWidget);
+    final buttonRect = tester.getRect(find.byKey(menu));
+    final panelRect = tester.getRect(find.byKey(popup));
+    expect(panelRect.left, greaterThan(buttonRect.right));
+    await tester.pumpWidget(const SizedBox.shrink());
+    studio.dispose();
+    service.dispose();
+  });
+
   testWidgets('Unknown accounts cannot be batch-approved or silently cleared', (
     tester,
   ) async {
@@ -43,7 +96,7 @@ void main() {
       }, sequence: 3),
     );
     await tester.pumpWidget(app(service));
-    await tester.tap(find.byKey(menu));
+    await tester.tap(find.byKey(menu).hitTestable());
     await tester.pumpAndSettle();
     expect(find.textContaining('2 yêu cầu chưa đọc được tên'), findsOneWidget);
     expect(tester.widget<FilledButton>(find.byKey(approve)).onPressed, isNull);
@@ -64,14 +117,17 @@ void main() {
         MaterialPageRoute<void>(
           builder: (_) {
             if (service.pendingAdmitCount == 0) seedAdmissions(service);
-            return const Scaffold(body: Text('Studio'));
+            return Scaffold(
+              appBar: AppBar(actions: const [MeetAdmissionButton()]),
+              body: const Text('Studio'),
+            );
           },
         ),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.byKey(menu), findsOneWidget);
-      await tester.tap(find.byKey(menu));
+      await tester.tap(find.byKey(menu).hitTestable());
       await tester.pumpAndSettle();
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -86,7 +142,13 @@ void main() {
       service.setMeetingUrl(room);
       await tester.pumpWidget(app(service, navigatorKey: navigator));
       final contentPosition = tester.getCenter(find.text('Đang giảng dạy'));
-      expect(find.byKey(menu), findsNothing);
+      expect(find.byKey(menu), findsOneWidget);
+      expect(
+        tester
+            .widget<Badge>(find.byKey(const Key('meet-admission-dot')))
+            .isLabelVisible,
+        isFalse,
+      );
       seedAdmissions(service);
       await tester.pumpAndSettle();
       expect(tester.getCenter(find.text('Đang giảng dạy')), contentPosition);
@@ -100,11 +162,14 @@ void main() {
       );
       navigator.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) => const Scaffold(body: Text('Kho đề thi')),
+          builder: (_) => Scaffold(
+            appBar: AppBar(actions: const [MeetAdmissionButton()]),
+            body: const Text('Kho đề thi'),
+          ),
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(menu));
+      await tester.tap(find.byKey(menu).hitTestable());
       await tester.pumpAndSettle();
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       expect(find.text('Trần Thị B'), findsOneWidget);
@@ -114,10 +179,13 @@ void main() {
       expect(service.pendingAdmitCount, 2);
       showDialog<void>(
         context: navigator.currentContext!,
-        builder: (_) => const AlertDialog(title: Text('Hộp thoại khác')),
+        builder: (_) => const AlertDialog(
+          title: Text('Hộp thoại khác'),
+          actions: [MeetAdmissionButton()],
+        ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(menu));
+      await tester.tap(find.byKey(menu).hitTestable());
       await tester.pumpAndSettle();
       expect(find.text('Nguyễn Văn A'), findsOneWidget);
       await tester.tapAt(const Offset(700, 550));
@@ -145,7 +213,7 @@ void main() {
       );
       seedAdmissions(service);
       await tester.pumpWidget(app(service));
-      await tester.tap(find.byKey(menu));
+      await tester.tap(find.byKey(menu).hitTestable());
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(approve));
       await tester.pump();
@@ -200,7 +268,7 @@ void main() {
       ],
     );
     await tester.pumpWidget(app(service));
-    await tester.tap(find.byKey(menu));
+    await tester.tap(find.byKey(menu).hitTestable());
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(approve));
     await tester.pumpAndSettle();
@@ -247,7 +315,7 @@ void main() {
         ),
       );
       await tester.pumpWidget(app(service));
-      await tester.tap(find.byKey(menu));
+      await tester.tap(find.byKey(menu).hitTestable());
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(
@@ -297,8 +365,9 @@ void main() {
       ],
     );
     final key = GlobalKey();
-    await tester.pumpWidget(app(service, imageKey: key));
-    await tester.tap(find.byKey(menu));
+    final studio = StudioState();
+    await tester.pumpWidget(app(service, imageKey: key, studio: studio));
+    await tester.tap(find.byKey(menu).hitTestable());
     await tester.pumpAndSettle();
     await tester.runAsync(() async {
       final image =
@@ -311,6 +380,7 @@ void main() {
     });
     debugDisableShadows = oldShadows;
     await tester.pumpWidget(const SizedBox.shrink());
+    studio.dispose();
     service.dispose();
   });
 }

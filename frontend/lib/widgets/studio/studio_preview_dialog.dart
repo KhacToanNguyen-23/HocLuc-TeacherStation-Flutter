@@ -1,3 +1,4 @@
+import '../meet_admission_button.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import '../../constants/theme.dart';
@@ -41,6 +42,7 @@ class StudioPreviewDialog extends StatelessWidget {
                     ),
                   ),
                 ),
+                const MeetAdmissionButton(color: Colors.white),
                 IconButton(
                   tooltip: 'Đóng xem trước',
                   onPressed: () => Navigator.pop(context),

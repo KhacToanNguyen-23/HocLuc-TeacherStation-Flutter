@@ -1,3 +1,4 @@
+import '../../widgets/meet_admission_button.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
@@ -196,6 +197,7 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
         child: Container(height: 1, color: AppColors.slate200),
       ),
       actions: [
+        const MeetAdmissionButton(),
         IconButton(
           onPressed: busy ? null : reload,
           icon: const Icon(Icons.refresh),
