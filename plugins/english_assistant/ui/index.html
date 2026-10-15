@@ -9,7 +9,7 @@
 <body>
   <div class="header">
     <div class="title-group">
-      <span>🇬🇧</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-color);"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
       <h2>Trợ Giảng Tiếng Anh</h2>
     </div>
     <span class="badge" id="backendBadge">spaCy Local</span>
@@ -25,7 +25,7 @@
 
     <div class="snip-banner">
       <button id="btnSnipSvo" class="btn-snip" title="Kéo khoanh vùng câu trên đề PDF hoặc bảng như PrtSc">
-        <span class="snip-icon">📸</span>
+        <svg class="snip-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <span>Kéo chụp câu trên đề (PrtSc)</span>
       </button>
       <span class="snip-hint">Khoanh vùng trên đề để tự động nhận dạng S-V-O</span>
@@ -34,7 +34,7 @@
     <textarea id="inputSentence" class="input-box" placeholder="Nhập câu tiếng Anh cần phân tích cú pháp..."></textarea>
 
     <button id="btnAnalyze" class="btn-primary">
-      <span>⚡</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       <span>Phân tích cú pháp S-V-O</span>
     </button>
 
@@ -48,13 +48,13 @@
       <div id="tokensContainer" class="tokens-container"></div>
 
       <div id="grammarAlert" class="grammar-alert success">
-        <span>✓</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         <span id="grammarMessage">Câu chuẩn xác ngữ pháp.</span>
       </div>
     </div>
 
     <button id="btnPinToBoard" class="btn-pin" style="display: none;">
-      <span>📌</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
       <span>Ghim lên bảng phấn</span>
     </button>
   </div>

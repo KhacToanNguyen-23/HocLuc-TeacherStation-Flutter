@@ -781,10 +781,6 @@ class _StudioScreenState extends State<StudioScreen> {
                                 );
                               },
                             ),
-                            // Floating student admission banner
-                            StudioAdmissionBanner(
-                              meetService: MeetAutomationService(),
-                            ),
                           ],
                         ),
                       ),

@@ -145,7 +145,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                         Text(
                           _isProcessing
                               ? 'Đang trích xuất & bóc tách highlight trực tiếp trên đề...'
-                              : 'Kéo chuột để khoanh vùng đoạn văn bản trên đề • Nhấn ESC hoặc nút [✕] để hủy',
+                              : 'Kéo chuột để khoanh vùng đoạn văn bản trên đề • Nhấn ESC hoặc nút Đóng để hủy',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,

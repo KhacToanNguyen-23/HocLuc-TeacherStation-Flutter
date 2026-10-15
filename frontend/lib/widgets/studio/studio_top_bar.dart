@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
 import '../../services/meet_automation_service.dart';
+import '../../services/url_opener.dart';
 import '../create_classroom_dialog.dart';
 
 class StudioTopBar extends StatelessWidget {
@@ -652,14 +653,16 @@ class StudioTopBar extends StatelessWidget {
                               ),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
+                            ),
+                          ),
                         ),
                       );
                     }
                     return const SizedBox.shrink();
                   },
                 ),
-          const Spacer(),
+              ],
+              const Spacer(),
           if (studio.view != 'board') const MeetAdmissionButton(),
           IconButton(
             tooltip: 'Bảng giảng',
@@ -790,51 +793,55 @@ class StudioTopBar extends StatelessWidget {
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.1,
-=======
-                if (onLeaveClassroom != null) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 125,
-                    height: 38,
-                    child: ElevatedButton.icon(
-                      onPressed: onLeaveClassroom,
-                      icon: const Icon(
-                        Icons.call_end_rounded,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                      label: const Text(
-                        'Rời phòng',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFDC2626),
-                        foregroundColor: Colors.white,
-                        elevation: 1,
-                        shadowColor: const Color(
-                          0xFFDC2626,
-                        ).withValues(alpha: 0.35),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                      ),
->>>>>>> origin/develop
                     ),
                   ),
-                ],
-              ],
+                ),
+              ),
             ],
-          ),
+          ] else ...[
+            if (onLeaveClassroom != null) ...[
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 125,
+                height: 38,
+                child: ElevatedButton.icon(
+                  onPressed: onLeaveClassroom,
+                  icon: const Icon(
+                    Icons.call_end_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'Rời phòng',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626),
+                    foregroundColor: Colors.white,
+                    elevation: 1,
+                    shadowColor: const Color(
+                      0xFFDC2626,
+                    ).withValues(alpha: 0.35),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ],
       ),
-    );
+    ],
+  ),
+);
   }
 }
