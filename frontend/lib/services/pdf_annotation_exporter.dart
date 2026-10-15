@@ -7,7 +7,9 @@ import '../models/studio_state.dart';
 
 class PdfAnnotationExporter {
   /// Xuất mảng byte PDF đã được ghi đè lớp TextMarkup Highlight Annotation chuẩn ISO-32000
-  static Future<Uint8List?> exportHighlightedPdfBytes(StudioState studio) async {
+  static Future<Uint8List?> exportHighlightedPdfBytes(
+    StudioState studio,
+  ) async {
     Uint8List? sourceBytes = studio.pdfBytes;
     if (sourceBytes == null && studio.pdfFilePath != null) {
       final file = File(studio.pdfFilePath!);
@@ -22,15 +24,22 @@ class PdfAnnotationExporter {
 
     final passages = studio.pdfDgnlPassages;
     for (final passage in passages) {
-      if (passage.pageNumber < 1 || passage.pageNumber > doc.pages.count) continue;
+      if (passage.pageNumber < 1 || passage.pageNumber > doc.pages.count) {
+        continue;
+      }
       final page = doc.pages[passage.pageNumber - 1];
       final pageSize = page.size;
 
       for (final span in passage.spans) {
         final isGrammar = span.category == 'grammar';
         final isCollocation = span.category == 'collocation';
-        final isNestedVocab = span.category == 'vocabulary' &&
-            passage.spans.any((other) => other.category == 'collocation' && _isSpanContained(span, other));
+        final isNestedVocab =
+            span.category == 'vocabulary' &&
+            passage.spans.any(
+              (other) =>
+                  other.category == 'collocation' &&
+                  _isSpanContained(span, other),
+            );
 
         sf.PdfColor highlightColor;
         if (isGrammar) {
@@ -83,7 +92,8 @@ class PdfAnnotationExporter {
               highlightColor,
               author: 'Học Lực - Trợ giảng Tiếng Anh',
               subject: '[${span.type}] ${span.note}',
-              textMarkupAnnotationType: sf.PdfTextMarkupAnnotationType.highlight,
+              textMarkupAnnotationType:
+                  sf.PdfTextMarkupAnnotationType.highlight,
             );
             page.annotations.add(annotation);
           }
@@ -96,7 +106,10 @@ class PdfAnnotationExporter {
     return Uint8List.fromList(outputBytes);
   }
 
-  static bool _isSpanContained(PdfDgnlHighlightSpan inner, PdfDgnlHighlightSpan outer) {
+  static bool _isSpanContained(
+    PdfDgnlHighlightSpan inner,
+    PdfDgnlHighlightSpan outer,
+  ) {
     if (identical(inner, outer)) return false;
     final innerText = inner.text.toLowerCase().trim();
     final outerText = outer.text.toLowerCase().trim();
@@ -131,7 +144,9 @@ class PdfAnnotationExporter {
       if (showFeedback) {
         messenger?.showSnackBar(
           const SnackBar(
-            content: Text('Chưa có đoạn văn nào được quét để highlight lên file.'),
+            content: Text(
+              'Chưa có đoạn văn nào được quét để highlight lên file.',
+            ),
             backgroundColor: Color(0xf0201815),
             duration: Duration(seconds: 3),
           ),
@@ -144,11 +159,19 @@ class PdfAnnotationExporter {
       // 1. Ghi vĩnh viễn các điểm highlight vào canvas nét vẽ (BoardStroke) của PDF trong StudioState
       // Giúp highlight tồn tại vĩnh viễn trên màn hình ngay cả khi tắt extension hay đóng thẻ card
       for (final passage in studio.pdfDgnlPassages) {
-        final targetList = studio.pdfAnnotations.putIfAbsent(passage.pageNumber, () => []);
+        final targetList = studio.pdfAnnotations.putIfAbsent(
+          passage.pageNumber,
+          () => [],
+        );
         for (final span in passage.spans) {
           final isGrammar = span.category == 'grammar';
-          final isNestedVocab = span.category == 'vocabulary' &&
-              passage.spans.any((other) => other.category == 'collocation' && _isSpanContained(span, other));
+          final isNestedVocab =
+              span.category == 'vocabulary' &&
+              passage.spans.any(
+                (other) =>
+                    other.category == 'collocation' &&
+                    _isSpanContained(span, other),
+              );
 
           Color strokeColor;
           if (isGrammar) {
@@ -167,13 +190,18 @@ class PdfAnnotationExporter {
           for (final normR in span.normalizedRects) {
             final exists = targetList.any((s) => s.rect == normR);
             if (!exists) {
-              targetList.add(BoardStroke(
-                strokeColor,
-                strokeWidth,
-                [Offset(normR.left, normR.top), Offset(normR.right, normR.bottom)],
-                rect: normR,
-                isHollow: isHollow,
-              ));
+              targetList.add(
+                BoardStroke(
+                  strokeColor,
+                  strokeWidth,
+                  [
+                    Offset(normR.left, normR.top),
+                    Offset(normR.right, normR.bottom),
+                  ],
+                  rect: normR,
+                  isHollow: isHollow,
+                ),
+              );
             }
           }
         }
@@ -210,7 +238,11 @@ class PdfAnnotationExporter {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Color(0xff86efac), size: 18),
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xff86efac),
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -227,7 +259,9 @@ class PdfAnnotationExporter {
       }
       return true;
     } catch (e) {
-      debugPrint('[PdfAnnotationExporter] applyHighlightDirectlyToPdf error: $e');
+      debugPrint(
+        '[PdfAnnotationExporter] applyHighlightDirectlyToPdf error: $e',
+      );
       if (showFeedback) {
         messenger?.showSnackBar(
           SnackBar(
@@ -250,7 +284,9 @@ class PdfAnnotationExporter {
     if (studio.pdfDgnlPassages.isEmpty) {
       messenger?.showSnackBar(
         const SnackBar(
-          content: Text('Chưa có đoạn văn nào được highlight để lưu vào file PDF.'),
+          content: Text(
+            'Chưa có đoạn văn nào được highlight để lưu vào file PDF.',
+          ),
           backgroundColor: Color(0xf0201815),
           duration: Duration(seconds: 3),
         ),
@@ -326,7 +362,11 @@ class PdfAnnotationExporter {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle, color: Color(0xff86efac), size: 18),
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xff86efac),
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -352,5 +392,227 @@ class PdfAnnotationExporter {
       );
       return null;
     }
+  }
+
+  /// Xuất toàn bộ các slide / trang bảng viết ra tệp PDF hoàn chỉnh
+  static Future<String?> exportChalkboardSlidesToPdf(
+    BuildContext context,
+    StudioState studio,
+  ) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final doc = sf.PdfDocument();
+      doc.pageSettings.orientation = sf.PdfPageOrientation.landscape;
+      doc.pageSettings.size = const Size(960, 540);
+
+      final totalPages = studio.pages.isEmpty ? 1 : studio.pages.length;
+
+      for (int i = 0; i < totalPages; i++) {
+        final page = doc.pages.add();
+        final pageSize = page.size;
+
+        // Vẽ nền bảng viết màu xanh đậm
+        page.graphics.drawRectangle(
+          brush: sf.PdfSolidBrush(sf.PdfColor(27, 43, 37)),
+          bounds: Rect.fromLTWH(0, 0, pageSize.width, pageSize.height),
+        );
+
+        // Vẽ tiêu đề trang slide (nếu có)
+        final pageTitle = i < studio.pageTitles.length
+            ? studio.pageTitles[i]
+            : 'Trang ${i + 1}';
+        final font = sf.PdfStandardFont(sf.PdfFontFamily.helvetica, 12);
+        page.graphics.drawString(
+          pageTitle,
+          font,
+          brush: sf.PdfSolidBrush(sf.PdfColor(200, 220, 200)),
+          bounds: Rect.fromLTWH(20, 15, pageSize.width - 40, 20),
+        );
+
+        // Vẽ các nét vẽ trên trang bảng
+        if (i < studio.pages.length) {
+          final strokes = studio.pages[i];
+          for (final s in strokes) {
+            if (s.points.isEmpty && s.rect == null) continue;
+            final rVal = (s.color.r * 255.0).round().clamp(0, 255);
+            final gVal = (s.color.g * 255.0).round().clamp(0, 255);
+            final bVal = (s.color.b * 255.0).round().clamp(0, 255);
+            final pen = sf.PdfPen(
+              sf.PdfColor(rVal, gVal, bVal),
+              width: s.width,
+            );
+            if (s.rect != null) {
+              final r = Rect.fromLTWH(
+                s.rect!.left * pageSize.width,
+                s.rect!.top * pageSize.height,
+                s.rect!.width * pageSize.width,
+                s.rect!.height * pageSize.height,
+              );
+              if (s.isHollow) {
+                page.graphics.drawRectangle(pen: pen, bounds: r);
+              } else {
+                page.graphics.drawRectangle(
+                  brush: sf.PdfSolidBrush(sf.PdfColor(rVal, gVal, bVal)),
+                  bounds: r,
+                );
+              }
+            } else if (s.points.length == 1) {
+              page.graphics.drawRectangle(
+                brush: sf.PdfSolidBrush(sf.PdfColor(rVal, gVal, bVal)),
+                bounds: Rect.fromLTWH(
+                  s.points[0].dx - s.width / 2,
+                  s.points[0].dy - s.width / 2,
+                  s.width,
+                  s.width,
+                ),
+              );
+            } else {
+              for (int j = 0; j < s.points.length - 1; j++) {
+                page.graphics.drawLine(pen, s.points[j], s.points[j + 1]);
+              }
+            }
+          }
+        }
+      }
+
+      final bytes = Uint8List.fromList(doc.saveSync());
+      doc.dispose();
+
+      final cleanTitle = studio.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final suggestedName = '${cleanTitle}_slides.pdf';
+
+      final savedUri = await FilePicker.saveFile(
+        dialogTitle: 'Lưu Slide bài giảng dạng PDF',
+        fileName: suggestedName,
+        bytes: bytes,
+        mimeType: 'application/pdf',
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+
+      if (savedUri == null) return null;
+
+      String finalPath;
+      if (savedUri.hasScheme && savedUri.scheme == 'file') {
+        finalPath = savedUri.toFilePath();
+      } else {
+        finalPath = savedUri.path;
+      }
+      if (!finalPath.toLowerCase().endsWith('.pdf')) {
+        finalPath = '$finalPath.pdf';
+      }
+
+      final outFile = File(finalPath);
+      if (!await outFile.exists() || await outFile.length() == 0) {
+        await outFile.writeAsBytes(bytes);
+      }
+
+      final displayFile = finalPath.replaceAll(r'\', '/').split('/').last;
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xff86efac),
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Đã xuất $totalPages trang slide bảng ra: $displayFile',
+                  style: const TextStyle(fontSize: 12.5),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xf0111a15),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return finalPath;
+    } catch (e) {
+      debugPrint(
+        '[PdfAnnotationExporter] exportChalkboardSlidesToPdf error: $e',
+      );
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text('Lỗi khi xuất slide ra PDF: $e'),
+          backgroundColor: const Color(0xf03b1111),
+        ),
+      );
+      return null;
+    }
+  }
+
+  /// Lưu file PDF của bài học (ưu tiên tệp PDF đang mở nếu có, hoặc xuất slide bảng thành PDF)
+  static Future<String?> saveLecturePdf(
+    BuildContext context,
+    StudioState studio,
+  ) async {
+    // 1. Nếu có tài liệu PDF đang mở trong phòng học
+    if (studio.pdfBytes != null || studio.pdfFilePath != null) {
+      if (studio.pdfDgnlPassages.isNotEmpty) {
+        return saveHighlightedPdf(context, studio);
+      }
+
+      Uint8List? sourceBytes = studio.pdfBytes;
+      if (sourceBytes == null && studio.pdfFilePath != null) {
+        final file = File(studio.pdfFilePath!);
+        if (await file.exists()) {
+          sourceBytes = await file.readAsBytes();
+        }
+      }
+
+      if (sourceBytes != null && sourceBytes.isNotEmpty) {
+        String suggestedName = 'tai_lieu_bai_giang.pdf';
+        if (studio.pdfFilePath != null && studio.pdfFilePath!.isNotEmpty) {
+          final raw = studio.pdfFilePath!.replaceAll(r'\', '/').split('/').last;
+          suggestedName = raw;
+        }
+
+        final savedUri = await FilePicker.saveFile(
+          dialogTitle: 'Lưu tệp tài liệu PDF bài học',
+          fileName: suggestedName,
+          bytes: sourceBytes,
+          mimeType: 'application/pdf',
+          type: FileType.custom,
+          allowedExtensions: ['pdf'],
+        );
+
+        if (savedUri == null) return null;
+
+        String finalPath;
+        if (savedUri.hasScheme && savedUri.scheme == 'file') {
+          finalPath = savedUri.toFilePath();
+        } else {
+          finalPath = savedUri.path;
+        }
+
+        if (!finalPath.toLowerCase().endsWith('.pdf')) {
+          finalPath = '$finalPath.pdf';
+        }
+
+        final outFile = File(finalPath);
+        if (!await outFile.exists() || await outFile.length() == 0) {
+          await outFile.writeAsBytes(sourceBytes);
+        }
+
+        final displayFile = finalPath.replaceAll(r'\', '/').split('/').last;
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã lưu tệp PDF: $displayFile'),
+              backgroundColor: const Color(0xFF15803D),
+            ),
+          );
+        }
+        return finalPath;
+      }
+    }
+
+    // 2. Nếu không có file PDF tài liệu nào mở, xuất các slide bảng viết ra tệp PDF
+    if (!context.mounted) return null;
+    return exportChalkboardSlidesToPdf(context, studio);
   }
 }

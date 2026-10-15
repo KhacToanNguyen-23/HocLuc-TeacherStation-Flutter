@@ -140,7 +140,6 @@ class StageContainer extends StatelessWidget {
                                     child: FloatingPip(studio: studio),
                                   ),
 
-
                                 // Floating In-Board Subject Tool Palette Dock
                                 if (interactive && studio.activePlugin != null)
                                   SubjectToolPalette(studio: studio),
@@ -148,7 +147,9 @@ class StageContainer extends StatelessWidget {
                                 // PrtSc Drag Snipping Overlay
                                 if (interactive && studio.isSnippingActive)
                                   Positioned.fill(
-                                    child: RegionSnippingOverlay(studio: studio),
+                                    child: RegionSnippingOverlay(
+                                      studio: studio,
+                                    ),
                                   ),
                               ],
                             ),

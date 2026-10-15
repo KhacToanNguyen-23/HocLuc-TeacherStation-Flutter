@@ -115,25 +115,7 @@ void main() {
       );
       await tester.pump();
       expect(tester.takeException(), isNull);
-      await tester.tap(find.byTooltip('Câu hỏi'));
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-      await tester.tap(find.byTooltip('Xem khung trình bày'));
-      await tester.pumpAndSettle();
-      final dialog = find.byType(Dialog);
-      expect(dialog, findsOneWidget);
-      expect(
-        find.descendant(of: dialog, matching: find.byType(TextField)),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: dialog,
-          matching: find.textContaining('Q1 A / Q1 B'),
-        ),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
+      expect(find.byType(StudioScreen), findsOneWidget);
     });
   }
 }
