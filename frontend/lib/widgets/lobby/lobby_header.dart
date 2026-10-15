@@ -1,3 +1,4 @@
+import '../meet_admission_button.dart';
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../services/google_meet_auth_service.dart';
@@ -63,6 +64,7 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
+        const MeetAdmissionButton(),
         ListenableBuilder(
           listenable: authService,
           builder: (context, _) {

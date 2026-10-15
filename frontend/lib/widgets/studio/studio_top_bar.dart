@@ -1,9 +1,9 @@
+import '../meet_admission_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
 import '../../services/meet_automation_service.dart';
-import '../../services/url_opener.dart';
 import '../create_classroom_dialog.dart';
 
 class StudioTopBar extends StatelessWidget {
@@ -329,9 +329,9 @@ class StudioTopBar extends StatelessWidget {
                       ),
                       const SizedBox(width: 2),
                       Tooltip(
-                        message: 'Mở Google Meet trên tab mới',
+                        message: 'Google Meet trong app',
                         child: InkWell(
-                          onTap: () => openExternalUrl(url),
+                          onTap: () => MeetAdmissionScope.maybeOf(context)?.open(context, showMeet: true),
                           borderRadius: BorderRadius.circular(4),
                           child: const Padding(
                             padding: EdgeInsets.all(3),
@@ -373,6 +373,7 @@ class StudioTopBar extends StatelessWidget {
             },
           ),
           const Spacer(),
+          if (studio.view != 'board') const MeetAdmissionButton(),
           IconButton(
             tooltip: 'Bảng giảng',
             iconSize: 18,

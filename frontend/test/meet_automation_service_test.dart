@@ -40,21 +40,6 @@ void main() {
       expect(service.isBridgeReady, isFalse);
     });
 
-    test('autoAdmitEnabled toggle updates property and notifies listeners', () {
-      final service = MeetAutomationService();
-      expect(service.autoAdmitEnabled, isTrue);
-      
-      var notified = false;
-      void listener() => notified = true;
-      service.addListener(listener);
-
-      service.autoAdmitEnabled = false;
-      expect(service.autoAdmitEnabled, isFalse);
-      expect(notified, isTrue);
-
-      service.removeListener(listener);
-    });
-
     test('removeParticipant removes participant and notifies listeners', () async {
       final service = MeetAutomationService();
       service.handleWebMessageForTesting({

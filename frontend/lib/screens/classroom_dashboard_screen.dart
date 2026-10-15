@@ -1,3 +1,4 @@
+import '../widgets/meet_admission_button.dart';
 import 'package:flutter/material.dart';
 import '../constants/theme.dart';
 import '../services/google_meet_auth_service.dart';
@@ -602,6 +603,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                     ),
                   ),
                   const Spacer(),
+                  const MeetAdmissionButton(),
                   if (isCompact) IconButton(
                     tooltip: 'Đề thi & năng lực',
                     icon: const Icon(Icons.assignment_outlined, color: AppColors.sky600),

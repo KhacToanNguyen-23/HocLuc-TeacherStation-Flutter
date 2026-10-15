@@ -1,6 +1,6 @@
 /// Dart wrapper providing the Google Meet Bridge Script for WebView2 injection.
 class MeetBridgeScript {
-  static const String script = '''
+  static const String script = r'''
 (function() {
   if (window.__meetBridgeInstalled) {
     return;
@@ -19,6 +19,11 @@ class MeetBridgeScript {
   }
 
   function attemptAutoJoin() {
+    var activeCall = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
+    if (activeCall) {
+      sendToFlutter('MEET_JOINED', {status: 'joined', url: location.href});
+      return true;
+    }
     var buttons = Array.from(document.querySelectorAll('button'));
 
     // 1. Tự động bypass popup cấp quyền media / micro / camera của Google Meet
@@ -144,7 +149,6 @@ class MeetBridgeScript {
   }
 
   var lastHandsCount = -1;
-  var lastAdmitCount = -1;
   function scanHandsAndKnocks() {
     var handElements = Array.from(document.querySelectorAll('[aria-label*="giơ tay" i], [aria-label*="raised hand" i], [data-is-hand-raised="true"]'));
     var handCount = handElements.length;
@@ -157,49 +161,6 @@ class MeetBridgeScript {
       sendToFlutter('RAISE_HANDS_UPDATE', { count: handCount, names: raisedNames });
     }
 
-    var rawAdmitButtons = Array.from(document.querySelectorAll('button, [role="button"], [jsaction*="admit" i]')).filter(function(b) {
-      if (b.disabled || b.getAttribute('aria-disabled') === 'true') return false;
-      var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-      var a = (b.getAttribute('aria-label') || '').toLowerCase();
-      var js = (b.getAttribute('jsaction') || '').toLowerCase();
-      if (t.includes('từ chối') || a.includes('từ chối') || t.includes('deny') || a.includes('deny')) return false;
-      if (t.includes('rời khỏi') || a.includes('rời khỏi') || t.includes('leave')) return false;
-      return t.includes('cho phép') || t.includes('chấp nhận') || t.includes('cho vào') ||
-             t.includes('admit') || t.includes('allow') ||
-             a.includes('cho phép') || a.includes('chấp nhận') || a.includes('admit') || a.includes('allow') ||
-             js.includes('admit');
-    });
-
-    // Khử lồng nhau: nếu thẻ con đã khớp thì loại thẻ cha, tránh 1 nút bị đếm thành 2-4 lần
-    var admitButtons = rawAdmitButtons.filter(function(b) {
-      return !rawAdmitButtons.some(function(other) {
-        return other !== b && other.contains(b);
-      });
-    });
-
-    var admitAllBtn = admitButtons.find(function(b) {
-      var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-      var a = (b.getAttribute('aria-label') || '').toLowerCase();
-      return t.includes('tất cả') || t.includes('all') || a.includes('tất cả') || a.includes('all');
-    });
-
-    var count = admitButtons.length;
-    if (admitAllBtn && count > 1) {
-      count = count - 1;
-    }
-    if (count === 0) {
-      var allText = (document.body ? document.body.innerText : '').toLowerCase();
-      if (allText.includes('muốn tham gia cuộc gọi này') || 
-          allText.includes('wants to join this call') || 
-          allText.includes('người khác đang chờ')) {
-        count = 1;
-      }
-    }
-
-    if (count !== lastAdmitCount) {
-      lastAdmitCount = count;
-      sendToFlutter('ADMIT_REQUEST', { pendingCount: count });
-    }
   }
 
   var observer = new MutationObserver(function() {
@@ -227,38 +188,9 @@ class MeetBridgeScript {
   }, 1000);
 
   window.MeetBridge = {
-    admitAll: function() {
-      var buttons = Array.from(document.querySelectorAll('button, [role="button"], [jsaction*="admit" i]')).filter(function(b) {
-        if (b.disabled || b.getAttribute('aria-disabled') === 'true') return false;
-        var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-        var a = (b.getAttribute('aria-label') || '').toLowerCase();
-        var js = (b.getAttribute('jsaction') || '').toLowerCase();
-        if (t.includes('từ chối') || a.includes('từ chối') || t.includes('deny') || a.includes('deny')) return false;
-        if (t.includes('rời khỏi') || a.includes('rời khỏi') || t.includes('leave')) return false;
-        return t.includes('cho phép') || t.includes('chấp nhận') || t.includes('cho vào') ||
-               t.includes('admit') || t.includes('allow') ||
-               a.includes('cho phép') || a.includes('chấp nhận') || a.includes('admit') || a.includes('allow') ||
-               js.includes('admit');
-      });
-
-      var admitAllBtn = buttons.find(function(b) {
-        var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-        var a = (b.getAttribute('aria-label') || '').toLowerCase();
-        return t.includes('tất cả') || t.includes('all') || a.includes('tất cả') || a.includes('all');
-      });
-
-      if (admitAllBtn) {
-        try { admitAllBtn.click(); } catch(e) {}
-      } else {
-        buttons.forEach(function(btn) { 
-          try { btn.click(); } catch(e) {}
-        });
-      }
-      lastAdmitCount = 0;
-      sendToFlutter('ADMIT_REQUEST', { pendingCount: 0 });
-      return buttons.length;
-    },
-
+    attemptAutoJoin: attemptAutoJoin,
+    // Admission is exclusively driven by the teacher's named request snapshot.
+    admitAll: function() { return false; },
     removeParticipant: function(targetName) {
       if (!targetName) return false;
       var clean = targetName.trim().toLowerCase();

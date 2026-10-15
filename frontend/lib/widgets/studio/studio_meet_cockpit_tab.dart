@@ -109,7 +109,6 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
     final meetUrl = meetService.meetingUrl;
     final hasRoom = meetService.hasRoom;
     final hands = meetService.raisedHands;
-    final pendingAdmits = meetService.pendingAdmitCount;
     final messages = meetService.messages;
 
     return Column(
@@ -210,43 +209,6 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
             ),
           ),
         ),
-
-        // Admission Banner (Admit all)
-        if (pendingAdmits > 0)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 4, 14, 4),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.blue50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xffbfdbfe)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.person_add_alt_1_rounded, size: 16, color: AppColors.blue600),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Có $pendingAdmits học sinh chờ vào lớp',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xff1e40af)),
-                    ),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.blue600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      visualDensity: VisualDensity.compact,
-                      textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
-                    ),
-                    onPressed: () => meetService.admitAllPending(),
-                    child: const Text('Duyệt tất cả'),
-                  ),
-                ],
-              ),
-            ),
-          ),
 
         // Raised Hands Banner
         if (hands.isNotEmpty)

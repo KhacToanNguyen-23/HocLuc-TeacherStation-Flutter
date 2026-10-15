@@ -1,3 +1,4 @@
+import '../meet_admission_button.dart';
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../models/studio_state.dart';
@@ -37,6 +38,7 @@ class StudioDrawingToolbar extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const MeetAdmissionButton(),
               for (final (name, icon, label) in [
                 ('pen', Icons.edit_outlined, 'Bút vẽ'),
                 ('highlight', Icons.brush_outlined, 'Bút đánh dấu'),
@@ -161,6 +163,7 @@ class StudioDrawingToolbar extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 3,
             children: [
+              const MeetAdmissionButton(),
               for (final (name, icon, label) in [
                 ('pen', Icons.edit_outlined, 'Bút vẽ'),
                 ('highlight', Icons.brush_outlined, 'Bút đánh dấu'),
