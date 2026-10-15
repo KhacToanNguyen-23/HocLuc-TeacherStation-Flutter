@@ -7,6 +7,47 @@ import 'package:teaching_companion/screens/google_workspace_screen.dart';
 import 'package:teaching_companion/services/google_workspace_api.dart';
 
 void main() {
+  test('provider error keeps recovery code without treating network as revoked consent', () async {
+    final api = GoogleWorkspaceApi(email: 'teacher@example.com', client: MockClient((request) async {
+      if (request.url.path.endsWith('bootstrap')) return http.Response('{"token":"local"}', 200);
+      return http.Response('{"code":"GOOGLE_NETWORK","message":"Mạng tạm lỗi"}', 503, headers: {'content-type': 'application/json; charset=utf-8'});
+    }));
+    await expectLater(api.call('courses'), throwsA(isA<GoogleWorkspaceFailure>()
+      .having((e) => e.code, 'code', 'GOOGLE_NETWORK')
+      .having((e) => e.needsConsent, 'needsConsent', false)
+      .having((e) => e.temporary, 'temporary', true)));
+    api.close();
+  });
+  for (final state in ['REAUTH_REQUIRED', 'TEMPORARY_ERROR']) {
+    testWidgets('$state presents correct recovery without opening OAuth for retry', (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var checks = 0, connects = 0;
+      final api = GoogleWorkspaceApi(email: 'teacher@example.com', client: MockClient((request) async {
+        if (request.url.path.endsWith('bootstrap')) return http.Response('{"token":"local"}', 200);
+        if (request.url.path.endsWith('connect')) connects++;
+        if (request.url.path.endsWith('status')) checks++;
+        return http.Response(jsonEncode({'configured': true, 'connected': false, 'state': state, 'message': 'Kiểm tra kết nối'}), 200, headers: {'content-type': 'application/json; charset=utf-8'});
+      }));
+      await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+      await tester.pumpAndSettle();
+      if (state == 'TEMPORARY_ERROR') {
+        expect(find.widgetWithText(FilledButton, 'Thử lại'), findsOneWidget);
+        expect(find.text('Cấp quyền lại'), findsNothing);
+        await tester.tap(find.widgetWithText(FilledButton, 'Thử lại'));
+        await tester.pumpAndSettle();
+        expect(checks, 2);
+        expect(connects, 0);
+      } else {
+        expect(find.widgetWithText(FilledButton, 'Cấp quyền lại'), findsOneWidget);
+        expect(find.text('Google cần cấp quyền lại'), findsOneWidget);
+      }
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    });
+  }
   test('email input validates, normalizes and deduplicates', () {
     expect(
       GoogleWorkspaceApi.parseEmails(

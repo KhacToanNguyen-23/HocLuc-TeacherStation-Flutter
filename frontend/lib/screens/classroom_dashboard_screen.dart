@@ -350,6 +350,13 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   }
 
   Future<void> _handleLogout() async {
+    if (TeachingLauncher.hasStudio || MeetAutomationService().hasRoom) {
+      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Lưu bài và kết thúc buổi dạy trước khi đăng xuất HocLuc.'),
+        action: TeachingLauncher.hasStudio ? SnackBarAction(label: 'Về buổi dạy', onPressed: TeachingLauncher.returnToStudio) : null,
+      )); }
+      return;
+    }
     await MeetAutomationService().leaveClassroom();
     await TeacherMediaService().shutdown();
     _authService.signOut();

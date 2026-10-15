@@ -4,10 +4,11 @@ import 'package:flutter/services.dart';
 import '../constants/theme.dart';
 import '../services/google_meet_auth_service.dart';
 import '../services/google_workspace_api.dart';
-import '../services/url_opener.dart';
 import '../services/google_connection_flow.dart';
+import '../services/url_opener.dart';
 import '../models/teaching_target.dart';
 import '../services/teaching_launcher.dart';
+import '../services/meet_automation_service.dart';
 
 class GoogleWorkspaceScreen extends StatefulWidget {
   const GoogleWorkspaceScreen({
@@ -70,12 +71,13 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
       setState(() {
         _connection = connection;
         _courses = courses;
+        _error = connection['message'] as String?;
         if (!courses.any((c) => c['id'] == _selected)) {
           _selected = courses.isEmpty ? null : courses.first['id'] as String;
         }
       });
     } catch (e) {
-      if (mounted) setState(() => _error = _message(e));
+      _handleError(e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -84,6 +86,18 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   static String _message(Object e) => e is FormatException
       ? e.message
       : e.toString().replaceFirst('Bad state: ', '');
+
+  void _handleError(Object e) {
+    if (!mounted) return;
+    setState(() {
+      _error = _message(e);
+      if (e is GoogleWorkspaceFailure && e.needsConsent) {
+        _connection = {..._connection, 'connected': false, 'state': 'REAUTH_REQUIRED'};
+        _courses = [];
+        _selected = null;
+      }
+    });
+  }
 
   Future<void> _run(Future<void> Function() action) async {
     if (_busy || _polling) return;
@@ -94,21 +108,27 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     try {
       await action();
     } catch (e) {
-      if (mounted) setState(() => _error = _message(e));
+      _handleError(e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _connect() async {
+  Future<void> _connect({bool repair = false, bool changeAccount = false}) async {
     await _run(() async {
+      if (changeAccount) await TeachingLauncher.requireIdleForAccountChange();
       final generation = ++_connectGeneration;
       setState(() => _polling = true);
       try {
         final email = await GoogleConnectionFlow.connect(_api,
-          forceConsent: true,
+          forceConsent: repair,
           isActive: () => mounted && generation == _connectGeneration);
         if (!mounted || generation != _connectGeneration) return;
+        if (email.toLowerCase() != _api.email.toLowerCase()) {
+          await TeachingLauncher.requireIdleForAccountChange();
+          if (!mounted || generation != _connectGeneration) return;
+          await MeetAutomationService().leaveClassroom();
+        }
         _auth.removeListener(_accountChanged);
         try {
           if (widget.api == null) {
@@ -116,6 +136,9 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
             _api = GoogleWorkspaceApi(email: email);
           }
           await _auth.signInWithGoogleConnection(email);
+          _connection = {'configured': true, 'connected': false, 'state': 'CHECKING'};
+          _courses = [];
+          _selected = null;
         } finally {
           if (mounted) _auth.addListener(_accountChanged);
         }
@@ -148,6 +171,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     );
     if (confirmed != true || !mounted) return;
     await _run(() async {
+      await TeachingLauncher.requireIdleForAccountChange();
       await _api.call('disconnect', post: true);
       await _load();
     });
@@ -481,6 +505,8 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   @override
   Widget build(BuildContext context) {
     final connected = _connection['connected'] == true;
+    final needsConsent = _connection['state'] == 'REAUTH_REQUIRED';
+    final retryConnection = _connection['state'] == 'TEMPORARY_ERROR' || _connection['state'] == 'CONFIG_ERROR';
     final disabled = _busy || _polling;
     final selected = _courses.where((c) => c['id'] == _selected).firstOrNull;
     return Scaffold(
@@ -512,6 +538,8 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                   children: [
                     if (_busy) const LinearProgressIndicator(),
                     if (_error != null) _notice(_error!, error: true),
+                    if (_error != null && TeachingLauncher.hasStudio)
+                      TextButton(onPressed: TeachingLauncher.returnToStudio, child: const Text('Trở về buổi dạy để lưu và kết thúc')),
                     _panel(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,7 +560,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                                   Text(
                                     connected
                                         ? 'Google đã kết nối'
-                                        : 'Kết nối Google',
+                                        : needsConsent ? 'Google cần cấp quyền lại' : retryConnection ? 'Chưa kiểm tra được kết nối' : 'Kết nối Google',
                                     style: const TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
@@ -551,15 +579,21 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                                       disabled ||
                                           _connection['configured'] != true
                                       ? null
-                                      : _connect,
+                                      : connected || retryConnection
+                                          ? () => _run(_load)
+                                          : () => _connect(repair: needsConsent),
                                   icon: const Icon(Icons.link),
                                   label: Text(
                                     connected
-                                        ? 'Cấp quyền lại'
-                                        : 'Kết nối Google',
+                                        ? 'Kiểm tra kết nối'
+                                        : needsConsent ? 'Cấp quyền lại' : retryConnection ? 'Thử lại' : 'Kết nối Google',
                                   ),
                                 ),
-                              if (connected)
+                              if (!_polling && _connection['configured'] == true)
+                                TextButton(onPressed: disabled ? null : () => _connect(changeAccount: true), child: const Text('Đổi tài khoản')),
+                              if (connected && !_polling)
+                                TextButton(onPressed: disabled ? null : () => _connect(repair: true), child: const Text('Cấp quyền lại')),
+                              if (_api.email.isNotEmpty && _connection['state'] != 'DISCONNECTED' && _connection['configured'] == true)
                                 TextButton(
                                   onPressed: disabled ? null : _disconnect,
                                   child: const Text('Ngắt kết nối'),
@@ -567,6 +601,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                             ],
                           ),
                           const SizedBox(height: 20),
+                          const Text('Đăng xuất HocLuc giữ quyền đã cấp. Ngắt kết nối Google sẽ thu hồi quyền API của tài khoản này.', style: TextStyle(fontSize: 12, color: AppColors.slate600)),
                           const Wrap(
                             spacing: 12,
                             runSpacing: 12,

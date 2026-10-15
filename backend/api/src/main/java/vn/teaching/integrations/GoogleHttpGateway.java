@@ -22,8 +22,23 @@ public class GoogleHttpGateway implements GoogleGateway {
     }
     @Override public Map<String, Object> token(Map<String, String> form) {
         var fields = new LinkedMultiValueMap<String, String>(); form.forEach(fields::add);
-        return execute(() -> http.post().uri("https://oauth2.googleapis.com/token")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED).body(fields).retrieve().body(Map.class));
+        try {
+            return http.post().uri("https://oauth2.googleapis.com/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED).body(fields).retrieve().body(Map.class);
+        } catch (RestClientResponseException e) {
+            String error = "";
+            try { error = new com.fasterxml.jackson.databind.ObjectMapper().readTree(e.getResponseBodyAsString()).path("error").asText(); }
+            catch (Exception ignored) { }
+            throw tokenFailure(e.getStatusCode().value(),error);
+        } catch (ResourceAccessException e) {
+            throw new GoogleFailure(503,"GOOGLE_NETWORK","Không kết nối được Google. Kiểm tra mạng rồi thử lại; chưa cần cấp quyền lại.");
+        }
+    }
+    static GoogleFailure tokenFailure(int status, String error) {
+        if ("invalid_grant".equals(error)) return new GoogleFailure(401,"RECONNECT_GOOGLE","Quyền Google đã hết hiệu lực hoặc bị thu hồi. Vui lòng cấp quyền lại.");
+        if ("invalid_client".equals(error) || "unauthorized_client".equals(error))
+            return new GoogleFailure(503,"GOOGLE_CLIENT_CONFIG","Cấu hình OAuth của ứng dụng không hợp lệ. Liên hệ người cài đặt HocLuc.");
+        return new GoogleFailure(503,status == 429 ? "GOOGLE_RATE_LIMIT" : "GOOGLE_TEMPORARY","Google chưa xử lý được yêu cầu. Vui lòng thử lại sau; chưa cần cấp quyền lại.");
     }
     @Override public Map<String, Object> call(String method, String url, String token, Object body) {
         if (!url.startsWith("https://classroom.googleapis.com/") && !url.startsWith("https://meet.googleapis.com/")
@@ -45,6 +60,16 @@ public class GoogleHttpGateway implements GoogleGateway {
         try { var result = action.get(); return result == null ? Map.of() : result; }
         catch (RestClientResponseException e) {
             int status = e.getStatusCode().value();
+            if (status == 403) {
+                try {
+                    var body = new com.fasterxml.jackson.databind.ObjectMapper().readTree(e.getResponseBodyAsString());
+                    for (var detail : body.path("error").path("errors")) {
+                        if ("insufficientPermissions".equals(detail.path("reason").asText()))
+                            throw new GoogleFailure(403,"SCOPE_MISSING","Google chưa cấp đủ quyền cho thao tác này. Vui lòng cấp quyền lại.");
+                    }
+                } catch (GoogleFailure missing) { throw missing; }
+                catch (Exception ignored) { }
+            }
             // Never return Google's raw body: it can contain tokens or personal data.
             throw new GoogleFailure(status == 401 ? 401 : 502, "GOOGLE_" + status,
                 status == 401 ? "Kết nối Google hết hiệu lực. Vui lòng kết nối lại."

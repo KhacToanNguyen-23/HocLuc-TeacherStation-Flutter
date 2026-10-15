@@ -14,7 +14,7 @@ public class GoogleConnectionService {
     private static final class Flow {
         final String verifier = random(), proof = random(), email;
         final long expires = System.currentTimeMillis() + 300_000;
-        boolean used; String error; boolean complete; String connectedEmail;
+        boolean used; String error, errorCode; boolean complete; String connectedEmail;
         Flow(String email) { this.email = email; }
     }
     private final Map<String,Flow> flows = new ConcurrentHashMap<>();
@@ -30,7 +30,23 @@ public class GoogleConnectionService {
     public Map<String,Object> status(String email) {
         boolean configured = !clientId.isBlank() && store.configured();
         var subject = email == null || email.isBlank() ? Optional.<String>empty() : store.subject(normalizeEmail(email));
-        return Map.of("configured", configured, "connected", configured && subject.isPresent(), "email", subject.isPresent() ? normalizeEmail(email) : "");
+        if (!configured) return Map.of("configured",false,"connected",false,"state","NOT_CONFIGURED","email","");
+        if (subject.isEmpty()) return Map.of("configured",true,"connected",false,"state","DISCONNECTED","email","");
+        try {
+            String access=access(email);
+            try { google.call("GET","https://openidconnect.googleapis.com/v1/userinfo",access,null); }
+            catch (GoogleFailure expired) {
+                if (!expired.code.equals("GOOGLE_401")) throw expired;
+                var credentials=store.credentials(subject.get());
+                credentials.put("expiresAt",0); store.saveConnection(subject.get(),normalizeEmail(email),credentials);
+                google.call("GET","https://openidconnect.googleapis.com/v1/userinfo",access(email),null);
+            }
+            return Map.of("configured",true,"connected",true,"state","CONNECTED","email",normalizeEmail(email));
+        } catch (GoogleFailure e) {
+            boolean repair=e.code.equals("RECONNECT_GOOGLE") || e.code.equals("GOOGLE_401");
+            return Map.of("configured",true,"connected",false,"state",repair ? "REAUTH_REQUIRED" : e.code.equals("GOOGLE_CLIENT_CONFIG") ? "CONFIG_ERROR" : "TEMPORARY_ERROR",
+                "email",normalizeEmail(email),"code",e.code,"message",e.getMessage());
+        }
     }
     public Map<String,Object> start(String email) {
         return start(email,false);
@@ -55,7 +71,7 @@ public class GoogleConnectionService {
         synchronized(flow) {
             if (flow.used) throw new GoogleFailure(400,"OAUTH_USED","Phiên kết nối đã sử dụng.");
             flow.used=true;
-            if (error!=null || code==null || code.isBlank()) { flow.error="Bạn đã hủy cấp quyền Google."; return; }
+            if (error!=null || code==null || code.isBlank()) { flow.errorCode="OAUTH_CANCELLED"; flow.error="Bạn đã hủy cấp quyền Google."; return; }
             try {
                 var form=new LinkedHashMap<String,String>(); form.put("client_id",clientId);
                 if (!secret.isBlank()) form.put("client_secret",secret);
@@ -74,13 +90,16 @@ public class GoogleConnectionService {
                 }
                 var credentials=new LinkedHashMap<String,Object>(tokens);
                 if (string(tokens,"refresh_token").isBlank()) {
-                    try { credentials.put("refresh_token",store.credentials(subject).get("refresh_token")); } catch (GoogleFailure ignored) { }
+                    try {
+                        var previous=store.credentials(subject);
+                        if (!Boolean.TRUE.equals(previous.get("reauthRequired"))) credentials.put("refresh_token",previous.get("refresh_token"));
+                    } catch (GoogleFailure ignored) { }
                 }
                 if (string(credentials,"refresh_token").isBlank()) throw new GoogleFailure(400,"REFRESH_MISSING","Google chưa cấp quyền duy trì kết nối. Vui lòng kết nối lại.");
                 credentials.put("expiresAt",System.currentTimeMillis()+((Number)tokens.getOrDefault("expires_in",3600)).longValue()*1000);
                 store.saveConnection(subject,email,credentials); flow.connectedEmail=email; flow.complete=true;
-            } catch (GoogleFailure e) { flow.error=e.getMessage(); }
-            catch (Exception e) { flow.error="Không hoàn tất kết nối Google. Vui lòng thử lại."; }
+            } catch (GoogleFailure e) { flow.errorCode=e.code; flow.error=e.getMessage(); }
+            catch (Exception e) { flow.errorCode="OAUTH_FAILED"; flow.error="Không hoàn tất kết nối Google. Vui lòng thử lại."; }
         }
     }
     public Map<String,Object> poll(String state,String proof) {
@@ -89,7 +108,7 @@ public class GoogleConnectionService {
                 || !MessageDigest.isEqual(flow.proof.getBytes(StandardCharsets.UTF_8),proof.getBytes(StandardCharsets.UTF_8)))
             throw new GoogleFailure(401,"OAUTH_EXPIRED","Phiên kết nối hết hạn hoặc không hợp lệ.");
         synchronized(flow) {
-            if(flow.error!=null) { flows.remove(state); throw new GoogleFailure(400,"OAUTH_FAILED",flow.error); }
+            if(flow.error!=null) { flows.remove(state); throw new GoogleFailure(400,flow.errorCode,flow.error); }
             if(!flow.complete) return Map.of("status","PENDING");
             flows.remove(state); return Map.of("status","COMPLETE","email",flow.connectedEmail);
         }
@@ -97,12 +116,19 @@ public class GoogleConnectionService {
     public String subject(String email) { return store.subject(normalizeEmail(email)).orElseThrow(() -> new GoogleFailure(401,"CONNECT_GOOGLE","Vui lòng kết nối Google.")); }
     public synchronized String access(String email) {
         String subject=subject(email); var credentials=store.credentials(subject);
-        if (((Number)credentials.getOrDefault("expiresAt",0)).longValue()>System.currentTimeMillis()+60_000) return string(credentials,"access_token");
+        if (Boolean.TRUE.equals(credentials.get("reauthRequired"))) throw new GoogleFailure(401,"RECONNECT_GOOGLE","Quyền Google đã hết hiệu lực. Vui lòng cấp quyền lại.");
+        if (!string(credentials,"access_token").isBlank() && ((Number)credentials.getOrDefault("expiresAt",0)).longValue()>System.currentTimeMillis()+60_000) return string(credentials,"access_token");
+        if (string(credentials,"refresh_token").isBlank()) throw new GoogleFailure(401,"RECONNECT_GOOGLE","Thiếu quyền duy trì kết nối. Vui lòng cấp quyền lại.");
         var form=new LinkedHashMap<String,String>(); form.put("client_id",clientId); if(!secret.isBlank()) form.put("client_secret",secret);
         form.put("grant_type","refresh_token"); form.put("refresh_token",string(credentials,"refresh_token"));
         Map<String,Object> fresh;
-        try { fresh=google.token(form); } catch (GoogleFailure e) { throw new GoogleFailure(401,"RECONNECT_GOOGLE","Không gia hạn được quyền Google. Vui lòng kết nối lại."); }
-        if(string(fresh,"access_token").isBlank()) throw new GoogleFailure(401,"RECONNECT_GOOGLE","Vui lòng kết nối lại Google.");
+        try { fresh=google.token(form); } catch (GoogleFailure e) {
+            if(e.code.equals("RECONNECT_GOOGLE") || e.code.equals("GOOGLE_401")) {
+                credentials.put("reauthRequired",true); store.saveConnection(subject,normalizeEmail(email),credentials);
+            }
+            throw e;
+        }
+        if(fresh==null || string(fresh,"access_token").isBlank()) throw new GoogleFailure(503,"GOOGLE_TEMPORARY","Google chưa trả về quyền truy cập. Vui lòng thử lại sau.");
         credentials.putAll(fresh); credentials.put("expiresAt",System.currentTimeMillis()+((Number)fresh.getOrDefault("expires_in",3600)).longValue()*1000);
         store.saveConnection(subject,normalizeEmail(email),credentials); return string(credentials,"access_token");
     }

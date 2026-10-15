@@ -5,6 +5,7 @@ import '../../services/google_meet_auth_service.dart';
 import '../../services/local_service.dart';
 import '../../services/google_workspace_api.dart';
 import '../../services/google_connection_flow.dart';
+import '../../services/teaching_launcher.dart';
 
 /// Reusable Authentication Form Card handling Password Login, OTP Signup,
 /// Google Single Sign-On and Quick Demo Teacher Login.
@@ -255,6 +256,10 @@ class _AuthFormCardState extends State<AuthFormCard> {
       if (!mounted) return;
       final email = await GoogleConnectionFlow.connect(api, isActive: () => mounted);
       if (!mounted) return;
+      if (rememberedEmail.isNotEmpty && rememberedEmail.toLowerCase() != email.toLowerCase()) {
+        await TeachingLauncher.requireIdleForAccountChange();
+        if (!mounted) return;
+      }
       await _authService.signInWithGoogleConnection(email);
       if (mounted) widget.onSuccess?.call();
     } catch (e) {

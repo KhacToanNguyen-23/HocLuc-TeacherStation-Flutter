@@ -85,6 +85,48 @@ class GoogleIntegrationTest {
         when(google.token(argThat(f -> "refresh_token".equals(f.get("grant_type"))))).thenReturn(Map.of("access_token","new","expires_in",3600));
         assertEquals("new",connections.access(EMAIL)); assertEquals("new",connections.access(EMAIL)); verify(google,times(1)).token(anyMap());
     }
+    @Test void networkFailurePreservesGrantAndAllowsRetryWithoutConsent() {
+        store.saveConnection(SUBJECT,EMAIL,new LinkedHashMap<>(Map.of("access_token","old","refresh_token","private-refresh","expiresAt",0)));
+        when(google.token(anyMap())).thenThrow(new GoogleFailure(503,"GOOGLE_NETWORK","Mạng tạm lỗi"))
+            .thenReturn(Map.of("access_token","recovered","expires_in",3600));
+        assertEquals("TEMPORARY_ERROR",connections.status(EMAIL).get("state"));
+        assertEquals("private-refresh",store.credentials(SUBJECT).get("refresh_token"));
+        assertEquals("CONNECTED",connections.status(EMAIL).get("state"));
+        assertEquals("recovered",connections.access(EMAIL));
+    }
+    @Test void revokedRefreshRequiresConsentAndDoesNotRetryInvalidGrantForever() {
+        store.saveConnection(SUBJECT,EMAIL,new LinkedHashMap<>(Map.of("refresh_token","private-refresh","expiresAt",0)));
+        when(google.token(anyMap())).thenThrow(new GoogleFailure(401,"RECONNECT_GOOGLE","Đã thu hồi"));
+        assertEquals("REAUTH_REQUIRED",connections.status(EMAIL).get("state"));
+        assertEquals("REAUTH_REQUIRED",connections.status(EMAIL).get("state"));
+        verify(google,times(1)).token(anyMap());
+    }
+    @Test void expiredAccessReportedByGoogleRefreshesOnceBeforeRequiringConsent() {
+        when(google.call(eq("GET"),contains("userinfo"),eq("private-access"),isNull()))
+            .thenThrow(new GoogleFailure(401,"GOOGLE_401","Expired access"));
+        when(google.token(anyMap())).thenReturn(Map.of("access_token","renewed","expires_in",3600));
+        assertEquals("CONNECTED",connections.status(EMAIL).get("state"));
+        verify(google,times(1)).token(anyMap());
+    }
+    @Test void oauthConfigErrorsDoNotAskTeachersToReauthorize() {
+        store.saveConnection(SUBJECT,EMAIL,new LinkedHashMap<>(Map.of("refresh_token","r","expiresAt",0)));
+        when(google.token(anyMap())).thenThrow(new GoogleFailure(503,"GOOGLE_CLIENT_CONFIG","Cấu hình lỗi"));
+        assertEquals("CONFIG_ERROR",connections.status(EMAIL).get("state"));
+        assertNotEquals(true,store.credentials(SUBJECT).get("reauthRequired"));
+    }
+    @Test void tokenErrorsDistinguishRevocationFromServiceAndClientFailures() {
+        assertEquals("RECONNECT_GOOGLE",GoogleHttpGateway.tokenFailure(400,"invalid_grant").code);
+        assertEquals("GOOGLE_CLIENT_CONFIG",GoogleHttpGateway.tokenFailure(401,"invalid_client").code);
+        assertEquals("GOOGLE_RATE_LIMIT",GoogleHttpGateway.tokenFailure(429,"").code);
+        assertEquals("GOOGLE_TEMPORARY",GoogleHttpGateway.tokenFailure(503,"").code);
+    }
+    @Test void disconnectRevokesGrantWhileKeepingClassData() {
+        course();
+        connections.disconnect(EMAIL);
+        verify(google).revoke("private-refresh");
+        assertEquals("DISCONNECTED",connections.status(EMAIL).get("state"));
+        assertFalse(store.courses(SUBJECT).isEmpty());
+    }
     @Test void oauthRejectsWrongProofAndAdoptsVerifiedSelectedAccount() {
         var flow=connections.start(EMAIL);
         assertThrows(GoogleFailure.class,()->connections.poll(flow.get("state").toString(),"wrong"));

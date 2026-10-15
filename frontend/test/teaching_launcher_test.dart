@@ -82,6 +82,16 @@ void main() {
     MeetAutomationService().setMeetingUrl('');
   });
 
+  test('account change refuses ongoing session without ending it', () async {
+    final local = SessionLocal()..active = {'id': 'old-session', 'status': 'ONGOING'};
+    addTearDown(local.dispose);
+    await expectLater(TeachingLauncher.requireIdleForAccountChange(localService: local), throwsStateError);
+    expect(local.ends, 0);
+    expect(local.active['id'], 'old-session');
+    local.active = {};
+    await TeachingLauncher.requireIdleForAccountChange(localService: local);
+  });
+
   testWidgets('same class returns to existing Studio and keeps board', (
     tester,
   ) async {
