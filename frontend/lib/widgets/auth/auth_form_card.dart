@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../services/google_meet_auth_service.dart';
 import '../../services/local_service.dart';
-import 'google_webview_login_dialog.dart';
+import '../../services/google_workspace_api.dart';
+import '../../services/google_connection_flow.dart';
+import '../../services/teaching_launcher.dart';
 
 /// Reusable Authentication Form Card handling Password Login, OTP Signup,
 /// Google Single Sign-On and Quick Demo Teacher Login.
@@ -245,13 +247,26 @@ class _AuthFormCardState extends State<AuthFormCard> {
 
 
   Future<void> _handleGoogleSignInAction() async {
-    final result = await GoogleWebviewLoginDialog.show(
-      context,
-      authService: _authService,
-      initialUrl: 'https://accounts.google.com/signin',
-    );
-    if ((result != null || _authService.isSignedIn) && mounted) {
-      widget.onSuccess?.call();
+    if (_isLoading) return;
+    setState(() { _isLoading = true; _errorMessage = null; _infoMessage = 'Hoàn tất kết nối Google trong trình duyệt, sau đó trở về HocLuc.'; });
+    GoogleWorkspaceApi? api;
+    try {
+      final rememberedEmail = await _authService.lastGoogleConnectionEmail();
+      api = GoogleWorkspaceApi(email: rememberedEmail);
+      if (!mounted) return;
+      final email = await GoogleConnectionFlow.connect(api, isActive: () => mounted);
+      if (!mounted) return;
+      if (rememberedEmail.isNotEmpty && rememberedEmail.toLowerCase() != email.toLowerCase()) {
+        await TeachingLauncher.requireIdleForAccountChange();
+        if (!mounted) return;
+      }
+      await _authService.signInWithGoogleConnection(email);
+      if (mounted) widget.onSuccess?.call();
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = e.toString().replaceFirst('Bad state: ', ''));
+    } finally {
+      api?.close();
+      if (mounted) setState(() { _isLoading = false; _infoMessage = null; });
     }
   }
 

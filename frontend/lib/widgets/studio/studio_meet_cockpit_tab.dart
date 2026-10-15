@@ -5,6 +5,7 @@ import '../../models/meet_events.dart';
 import '../../services/google_meet_auth_service.dart';
 import '../../services/meet_automation_service.dart';
 import '../../services/url_opener.dart';
+import '../google_meet_view.dart';
 
 class StudioMeetCockpitTab extends StatefulWidget {
   const StudioMeetCockpitTab({
@@ -21,6 +22,7 @@ class StudioMeetCockpitTab extends StatefulWidget {
 }
 
 class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
+  bool _meetExpanded = false;
   final TextEditingController _chatInputController = TextEditingController();
   final ScrollController _chatScrollController = ScrollController();
 
@@ -49,6 +51,21 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
     widget.meetService.sendChatMessage(text);
     _chatInputController.clear();
     _scrollToBottom();
+  }
+
+  Future<void> _expandMeet() async {
+    setState(() => _meetExpanded = true);
+    await showDialog<void>(context: context, builder: (ctx) => Dialog(
+      insetPadding: const EdgeInsets.all(20),
+      child: Column(children: [
+        Padding(padding: const EdgeInsets.all(12), child: Row(children: [
+          Expanded(child: Text('Google Meet · ${widget.meetService.linkedTeacherEmail}')),
+          IconButton(tooltip: 'Thu gọn Meet', onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
+        ])),
+        Expanded(child: GoogleMeetView(service: widget.meetService)),
+      ]),
+    ));
+    if (mounted) setState(() => _meetExpanded = false);
   }
 
   Widget _buildChatBubble(MeetChatMessage msg) {
@@ -111,6 +128,24 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
     final hands = meetService.raisedHands;
     final messages = meetService.messages;
 
+    if (meetService.showEmbeddedMeet) {
+      return Column(children: [
+        Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Icon(meetService.isHostJoined ? Icons.check_circle_outline : Icons.videocam_outlined, size: 18, color: AppColors.sky600),
+            const SizedBox(width: 8),
+            Expanded(child: Text(meetService.isHostJoined ? 'Đã tham gia Meet' : 'Chuẩn bị Meet', style: const TextStyle(fontWeight: FontWeight.w700))),
+            IconButton(tooltip: 'Sao chép link Meet', onPressed: meetUrl == null ? null : () => Clipboard.setData(ClipboardData(text: meetUrl)), icon: const Icon(Icons.copy, size: 18)),
+            IconButton(tooltip: 'Phóng lớn Meet trong ứng dụng', onPressed: _expandMeet, icon: const Icon(Icons.open_in_full, size: 18)),
+          ]),
+          if (meetService.linkedTeacherEmail != null) Text('Dùng tài khoản ${meetService.linkedTeacherEmail}', style: const TextStyle(fontSize: 11, color: AppColors.slate600)),
+          if (meetService.linkedTeacherEmail != null && !meetService.isHostJoined)
+            const Text('Lần đầu: nếu Meet yêu cầu đăng nhập, chọn tài khoản đã kết nối ở trên. Các lần sau dùng lại phiên đã lưu.', style: TextStyle(fontSize: 11, color: AppColors.slate600)),
+        ])),
+        Expanded(child: _meetExpanded ? const Center(child: Text('Meet đang mở trong cửa sổ lớn.')) : GoogleMeetView(service: meetService)),
+      ]);
+    }
+
     return Column(
       children: [
         // Status Card & Room Link
@@ -131,7 +166,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                 Row(
                   children: [
                     Icon(
-                      hasRoom ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                      meetService.isHostJoined ? Icons.check_circle_rounded : Icons.info_outline_rounded,
                       size: 16,
                       color: hasRoom ? AppColors.emerald600 : AppColors.slate400,
                     ),
@@ -139,7 +174,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                     Expanded(
                       child: Text(
                         hasRoom
-                            ? 'Đang kết nối Google Meet'
+                            ? meetService.isHostJoined ? 'Đã tham gia Google Meet' : 'Chuẩn bị Google Meet'
                             : 'Chưa khởi tạo phòng học',
                         style: TextStyle(
                           fontSize: 12,
@@ -148,7 +183,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                         ),
                       ),
                     ),
-                    if (hasRoom)
+                    if (meetService.isHostJoined)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
@@ -196,6 +231,12 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                           );
                         },
                       ),
+                      if (meetService.showEmbeddedMeet)
+                        IconButton(
+                          icon: const Icon(Icons.open_in_full, size: 15),
+                          tooltip: 'Phóng lớn Meet trong ứng dụng',
+                          onPressed: _expandMeet,
+                        ),
                       IconButton(
                         icon: const Icon(Icons.open_in_new_rounded, size: 15, color: AppColors.slate600),
                         tooltip: 'Mở Google Meet ngoài',
@@ -209,6 +250,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
             ),
           ),
         ),
+
 
         // Raised Hands Banner
         if (hands.isNotEmpty)
@@ -262,6 +304,11 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
           ),
 
         const Divider(height: 1, color: AppColors.line),
+
+        if (meetService.showEmbeddedMeet)
+          Expanded(child: _meetExpanded
+            ? const Center(child: Text('Meet đang mở trong cửa sổ lớn.'))
+            : GoogleMeetView(service: meetService)),
 
         // Live Chat Area
         Expanded(

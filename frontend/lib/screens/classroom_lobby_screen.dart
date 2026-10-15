@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/theme.dart';
 import '../services/google_meet_auth_service.dart';
+import '../services/teaching_launcher.dart';
 import '../services/local_service.dart';
+import '../models/teaching_target.dart';
 import '../services/meet_automation_service.dart';
 import '../services/teacher_media_service.dart';
 import '../widgets/lobby/lobby_header.dart';
@@ -22,6 +24,7 @@ class ClassroomLobbyScreen extends StatefulWidget {
     this.mediaService,
     this.authService,
     this.meetService,
+    this.localService,
   });
 
   final String? initialMeetingUrl;
@@ -29,6 +32,7 @@ class ClassroomLobbyScreen extends StatefulWidget {
   final TeacherMediaService? mediaService;
   final GoogleMeetAuthService? authService;
   final MeetAutomationService? meetService;
+  final LocalService? localService;
 
   @override
   State<ClassroomLobbyScreen> createState() => _ClassroomLobbyScreenState();
@@ -85,9 +89,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     _mediaService.initMedia();
     _startSimulatedMicMeter();
 
-    if (_currentMeetingUrl != null) {
-      _syncClassroomToBackend(_currentMeetingUrl!);
-    }
   }
 
   @override
@@ -113,19 +114,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     });
   }
 
-  Future<void> _syncClassroomToBackend(String meetingUrl) async {
-    try {
-      final local = LocalService();
-      await local.post('classroom/create', data: {
-        'directUrl': meetingUrl,
-        'title': _titleController.text.trim(),
-        'teacherName': _authService.teacherName ?? 'Giáo viên',
-        'teacherEmail': _authService.teacherEmail,
-      });
-    } catch (e) {
-      debugPrint('[ClassroomLobby] Sync classroom to backend error: $e');
-    }
-  }
+
 
   void _copyMeetingLink() {
     if (_currentMeetingUrl == null) return;
@@ -181,7 +170,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
         final formatted = extractRealGoogleMeetUrl(realUrl)!;
         setState(() => _currentMeetingUrl = formatted);
         _meetService.setMeetingUrl(formatted);
-        await _syncClassroomToBackend(formatted);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -219,7 +207,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     if (extracted != null) {
       setState(() => _currentMeetingUrl = extracted);
       _meetService.setMeetingUrl(extracted);
-      await _syncClassroomToBackend(extracted);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -300,7 +287,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                   if (extracted != null) {
                     setState(() => _currentMeetingUrl = extracted);
                     _meetService.setMeetingUrl(extracted);
-                    _syncClassroomToBackend(extracted);
                     Navigator.of(ctx).pop();
                   } else {
                     setDialogState(() {
@@ -365,20 +351,11 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
   }
 
   void _proceedToStudio({String? meetingUrl}) {
-    if (meetingUrl != null) {
-      _meetService.setMeetingUrl(meetingUrl);
-      _syncClassroomToBackend(meetingUrl);
+    if (meetingUrl == null) {
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => StudioScreen(lessonTitle: _titleController.text.trim())));
+      return;
     }
-    _meetService.ensureHostJoined();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => StudioScreen(
-          initialState: null,
-          lessonTitle: _titleController.text.trim(),
-          meetingUrl: meetingUrl,
-        ),
-      ),
-    );
+    TeachingLauncher.open(context, TeachingTarget(title: _titleController.text.trim(), meetingUrl: meetingUrl), localService: widget.localService);
   }
 
   @override

@@ -9,7 +9,10 @@ import '../widgets/dashboard/exam_dashboard_card.dart';
 import '../widgets/dashboard/dashboard_empty_card.dart';
 import '../widgets/dashboard/join_classroom_dialog.dart';
 import '../widgets/dashboard/schedule_classroom_dialog.dart';
-import 'classroom_lobby_screen.dart';
+import '../services/teaching_launcher.dart';
+import '../services/google_workspace_api.dart';
+import '../models/teaching_target.dart';
+import '../services/teacher_media_service.dart';
 import 'login_screen.dart';
 import 'studio_screen.dart';
 import '../models/planning_meta.dart';
@@ -17,6 +20,7 @@ import '../widgets/dashboard/planning_list_card.dart';
 import 'exams/exam_workspace_screen.dart';
 import '../services/exam_api.dart';
 import '../services/exam_session_service.dart';
+import 'google_workspace_screen.dart';
 
 /// Classroom Dashboard Screen styled to match the layout in Image 2 with Educational Green theme.
 class ClassroomDashboardScreen extends StatefulWidget {
@@ -30,7 +34,6 @@ class ClassroomDashboardScreen extends StatefulWidget {
 class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   final _authService = GoogleMeetAuthService();
   final _localService = LocalService();
-  bool _isStarting = false;
   String _selectedRoomFilter = 'Tất cả';
 
   int _selectedTabIndex = 0; // 0: Phòng học, 1: Kế hoạch bài giảng, 2: Lịch sử
@@ -188,107 +191,8 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   }
 
   Future<void> _handleLaunchFromPlanning(PlanningMeta plan) async {
-    if (_isStarting) return;
-
-    if (_activeRoom != null && _activeRoom!['status'] == 'ONGOING') {
-      final shouldProceed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Tạo phòng học mới?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          content: Text(
-            'Bạn đang có buổi học "${_activeRoom!['title'] ?? 'Hiện tại'}" chưa kết thúc.\n'
-            'Bắt đầu buổi dạy từ "${plan.title}" sẽ đóng phòng học cũ và mở phòng học trực tuyến mới. Bạn có muốn tiếp tục?',
-            style: const TextStyle(fontSize: 13, height: 1.4),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.sky600,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Đóng cũ & Bắt đầu dạy'),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldProceed != true) return;
-
-      await _localService.endClassroom(classroomId: _activeRoom!['id']?.toString());
-      await MeetAutomationService().leaveClassroom();
-    }
-
-    if (!mounted) return;
-    setState(() => _isStarting = true);
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const PopScope(
-        canPop: false,
-        child: Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
-                  ),
-                ),
-                SizedBox(width: 20),
-                Text(
-                  'Đang nhân bản bài giảng & tạo lớp học...',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.slate900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    String? realMeetUrl;
-    try {
-      await _localService.clonePlanningToClassroom(plan.id);
-      realMeetUrl = await MeetAutomationService().generateAndJoinRealMeetRoom();
-    } catch (e) {
-      debugPrint('[Dashboard] Error launching from planning: $e');
-    } finally {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-        setState(() => _isStarting = false);
-      }
-    }
-
-    if (mounted) {
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => ClassroomLobbyScreen(
-            initialMeetingUrl: realMeetUrl,
-            initialLessonTitle: plan.title,
-          ),
-        ),
-      );
-      _loadRoomsAndHistory();
-      _loadPlannings();
-    }
+    await Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => GoogleWorkspaceScreen(planningId: plan.id, lessonTitle: plan.title)));
+    if (mounted) { await _loadRoomsAndHistory(); await _loadPlannings(); }
   }
 
   Future<void> _handleDeletePlanning(PlanningMeta plan) async {
@@ -399,131 +303,37 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   }
 
   Future<void> _startClassroom() async {
-    if (_isStarting) return;
-
-    // Nếu đang có phòng cũ đang chạy, hỏi giáo viên trước khi tạo phòng mới
-    if (_activeRoom != null && _activeRoom!['status'] == 'ONGOING') {
-      final shouldProceed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Tạo phòng học mới?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          content: Text(
-            'Bạn đang có buổi học "${_activeRoom!['title'] ?? 'Hiện tại'}" chưa kết thúc.\n'
-            'Tạo phòng mới sẽ đóng phòng học cũ và bắt đầu một link Google Meet mới 100%. Bạn có muốn tiếp tục?',
-            style: const TextStyle(fontSize: 13, height: 1.4),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.sky600,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Đóng cũ & Tạo mới'),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldProceed != true) return;
-
-      // Đóng phòng cũ trên backend
-      await _localService.endClassroom(classroomId: _activeRoom!['id']?.toString());
-      await MeetAutomationService().leaveClassroom();
-    }
-
-    if (!mounted) return;
-
-    setState(() => _isStarting = true);
-
-    void showLoadingDialog() {
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const PopScope(
-          canPop: false,
-          child: Dialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
-                    ),
-                  ),
-                  SizedBox(width: 20),
-                  Text(
-                    'Đang tạo phòng...',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.slate900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    showLoadingDialog();
-
-    String? realMeetUrl;
-    try {
-      realMeetUrl = await MeetAutomationService().generateAndJoinRealMeetRoom();
-    } catch (e) {
-      debugPrint('[Dashboard] Error starting meet room: $e');
-    } finally {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-    }
-
-    if (mounted) {
-      setState(() => _isStarting = false);
-      if (realMeetUrl == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Chưa thể kết nối phòng Google Meet tự động. Vui lòng kiểm tra lại tài khoản Google.'),
-            backgroundColor: Color(0xFFDC2626),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => ClassroomLobbyScreen(
-            initialMeetingUrl: realMeetUrl,
-          ),
-        ),
-      );
-      _loadRoomsAndHistory();
-    }
+    await Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => const GoogleWorkspaceScreen()));
+    if (mounted) await _loadRoomsAndHistory();
   }
 
   Future<void> _rejoinClassroom(String meetUrl) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => ClassroomLobbyScreen(
-          initialMeetingUrl: meetUrl,
-        ),
-      ),
-    );
-    _loadRoomsAndHistory();
+    if (TeachingLauncher.hasStudio && MeetAutomationService().meetingUrl == meetUrl) {
+      TeachingLauncher.returnToStudio();
+      return;
+    }
+    String? courseId;
+    final email = _authService.teacherEmail;
+    if (email != null) {
+      final api = GoogleWorkspaceApi(email: email);
+      try {
+        final result = await api.call('courses');
+        for (final item in result['courses'] as List) {
+          if (item['meetingUrl'] == meetUrl) { courseId = item['id'] as String; break; }
+        }
+      } catch (_) { /* A one-off room doesn't require a Google API connection. */ }
+      finally { api.close(); }
+    }
+    if (!mounted) return;
+    try {
+      await TeachingLauncher.open(context, TeachingTarget(
+        title: _activeRoom?['title'] as String? ?? 'Buổi học đang mở',
+        meetingUrl: meetUrl, courseId: courseId, teacherEmail: courseId == null ? null : email,
+      ));
+      if (mounted) await _loadRoomsAndHistory();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
   }
 
   void _handleJoinClassroom() {
@@ -541,7 +351,15 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   }
 
   Future<void> _handleLogout() async {
+    if (TeachingLauncher.hasStudio || MeetAutomationService().hasRoom) {
+      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Lưu bài và kết thúc buổi dạy trước khi đăng xuất HocLuc.'),
+        action: TeachingLauncher.hasStudio ? SnackBarAction(label: 'Về buổi dạy', onPressed: TeachingLauncher.returnToStudio) : null,
+      )); }
+      return;
+    }
     await MeetAutomationService().leaveClassroom();
+    await TeacherMediaService().shutdown();
     _authService.signOut();
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
@@ -604,6 +422,13 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                   ),
                   const Spacer(),
                   const MeetAdmissionButton(),
+                  IconButton(
+                    tooltip: 'Lớp học & kết nối Google',
+                    icon: const Icon(Icons.hub_outlined, color: AppColors.sky600),
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(builder: (_) => const GoogleWorkspaceScreen()),
+                    ),
+                  ),
                   if (isCompact) IconButton(
                     tooltip: 'Đề thi & năng lực',
                     icon: const Icon(Icons.assignment_outlined, color: AppColors.sky600),
@@ -752,7 +577,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                               const SizedBox(width: 16),
                               Expanded(
                                 child: DashboardActionCard(
-                                  title: 'Bắt đầu',
+                                  title: 'Chọn lớp để dạy',
                                   icon: Icons.videocam_rounded,
                                   onTap: _startClassroom,
                                 ),
@@ -771,7 +596,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                           Column(
                             children: [
                               DashboardActionCard(
-                                title: 'Bắt đầu',
+                                title: 'Chọn lớp để dạy',
                                 icon: Icons.videocam_rounded,
                                 onTap: _startClassroom,
                               ),

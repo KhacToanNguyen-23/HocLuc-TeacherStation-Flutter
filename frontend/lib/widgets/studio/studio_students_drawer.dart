@@ -102,6 +102,7 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                 ),
               ),
 
+
               const Divider(height: 16, color: AppColors.line),
 
               // Student List

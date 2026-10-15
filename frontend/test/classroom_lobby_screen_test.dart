@@ -5,6 +5,12 @@ import 'package:teaching_companion/screens/studio_screen.dart';
 import 'package:teaching_companion/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/services/meet_automation_service.dart';
 import 'package:teaching_companion/services/teacher_media_service.dart';
+import 'package:teaching_companion/services/local_service.dart';
+
+class _EmptySessionService extends LocalService {
+  @override
+  Future<Map<String, dynamic>> getActiveClassroom({bool strict = false}) async => {};
+}
 
 void main() {
   group('ClassroomLobbyScreen Pre-flight Check tests', () {
@@ -30,6 +36,7 @@ void main() {
             mediaService: mediaService,
             authService: authService,
             meetService: meetService,
+            localService: _EmptySessionService(),
           ),
         ),
       );

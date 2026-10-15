@@ -53,6 +53,29 @@ void main() {
       await service.removeParticipant('p1', 'Nguyễn Văn A');
       expect(service.participants, isEmpty);
     });
+
+    test('linked classes prevent auto-admit and restore legacy preference', () {
+      final service = MeetAutomationService();
+      service.autoAdmitEnabled = true;
+      service.linkedTeacherEmail = 'teacher@example.com';
+      expect(service.autoAdmitEnabled, isFalse);
+      service.autoAdmitEnabled = true;
+      expect(service.autoAdmitEnabled, isFalse);
+      service.linkedTeacherEmail = null;
+      expect(service.autoAdmitEnabled, isTrue);
+    });
+
+    test('room URL alone is preparation; joined event must match exact room', () {
+      final service = MeetAutomationService();
+      service.clearMeetingEvents();
+      service.setMeetingUrl('https://meet.google.com/abc-defg-hij');
+      expect(service.isHostJoined, isFalse);
+      service.handleWebMessageForTesting({'type': 'MEET_JOINED', 'payload': {'url': 'https://meet.google.com/klm-nopq-rst'}});
+      expect(service.isHostJoined, isFalse);
+      service.handleWebMessageForTesting({'type': 'MEET_JOINED', 'payload': {'url': 'https://meet.google.com/abc-defg-hij?authuser=0'}});
+      expect(service.isHostJoined, isTrue);
+      service.clearMeetingEvents();
+    });
   });
 }
 

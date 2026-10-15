@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../constants/theme.dart';
-import '../../services/meet_automation_service.dart';
 import '../../services/url_opener.dart';
-import '../../screens/studio_screen.dart';
+import '../../services/teaching_launcher.dart';
+import '../../models/teaching_target.dart';
 
 /// Dialog to join a classroom via Google Meet link or room code.
 class JoinClassroomDialog extends StatefulWidget {
-  const JoinClassroomDialog({super.key});
+  const JoinClassroomDialog({super.key, this.onJoin});
+  final Future<void> Function(String)? onJoin;
 
   static Future<void> show(BuildContext context) {
     return showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (_) => const JoinClassroomDialog(),
+      builder: (_) => JoinClassroomDialog(onJoin: (url) => TeachingLauncher.open(context,
+        TeachingTarget(title: 'Buổi học từ link Meet', meetingUrl: url))),
     );
   }
 
@@ -23,7 +25,6 @@ class JoinClassroomDialog extends StatefulWidget {
 
 class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
   final _controller = TextEditingController();
-  final _meetService = MeetAutomationService();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -60,17 +61,12 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
     });
 
     try {
-      await _meetService.createClassroom(directUrl: validUrl);
-      if (mounted) {
-        Navigator.of(context).pop();
-        await Navigator.of(context).push<void>(
-          MaterialPageRoute(
-            builder: (_) => StudioScreen(meetingUrl: validUrl),
-          ),
-        );
-      }
+      final open = widget.onJoin;
+      if (open == null) throw StateError('Không tìm thấy màn hình mở lớp.');
+      Navigator.of(context).pop();
+      await open(validUrl);
     } catch (e) {
-      setState(() => _errorMessage = 'Không thể kết nối phòng học: $e');
+      if (mounted) setState(() => _errorMessage = 'Không thể kết nối phòng học: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

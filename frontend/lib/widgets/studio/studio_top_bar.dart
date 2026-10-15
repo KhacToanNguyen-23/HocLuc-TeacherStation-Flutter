@@ -191,6 +191,7 @@ class StudioTopBar extends StatelessWidget {
     const line = AppColors.line;
 
     return Container(
+      width: width,
       height: 54,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: const BoxDecoration(
@@ -203,7 +204,6 @@ class StudioTopBar extends StatelessWidget {
           // ==================== CỤM BÊN TRÁI (GIÓNG SÁT LỀ TRÁI) ====================
           Expanded(
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 1. Logo
@@ -617,6 +617,12 @@ class StudioTopBar extends StatelessWidget {
                   builder: (context, _) {
                     final meetService = MeetAutomationService();
                     final url = meetService.meetingUrl;
+                    if (meetService.showEmbeddedMeet && url == null) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text('Chuẩn bị Meet', style: TextStyle(fontSize: 11)),
+                      );
+                    }
                     if (url == null && onLeaveClassroom == null) {
                       return Padding(
                         padding: const EdgeInsets.only(left: 8),
@@ -662,7 +668,6 @@ class StudioTopBar extends StatelessWidget {
                   },
                 ),
               ],
-              const Spacer(),
           if (studio.view != 'board') const MeetAdmissionButton(),
           IconButton(
             tooltip: 'Bảng giảng',
