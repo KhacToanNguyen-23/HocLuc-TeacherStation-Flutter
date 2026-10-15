@@ -6,7 +6,7 @@ import '../services/teacher_media_service.dart';
 import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../screens/classroom_dashboard_screen.dart';
-import '../screens/classroom_lobby_screen.dart';
+import 'google_workspace_screen.dart';
 import '../services/local_service.dart';
 import '../services/meet_automation_service.dart';
 import '../widgets/stage_container.dart';
@@ -21,6 +21,7 @@ import '../widgets/studio/studio_top_bar.dart';
 import '../widgets/studio/studio_admission_banner.dart';
 import '../services/plugin_manager.dart';
 import '../widgets/studio/studio_plugins_marketplace_panel.dart';
+import '../models/teaching_target.dart';
 
 class StudioScreen extends StatefulWidget {
   const StudioScreen({
@@ -30,6 +31,8 @@ class StudioScreen extends StatefulWidget {
     this.meetingUrl,
     this.isPlanningMode = false,
     this.planningId,
+    this.teachingTarget,
+    this.initialSessionId,
   });
 
   final StudioState? initialState;
@@ -37,6 +40,8 @@ class StudioScreen extends StatefulWidget {
   final String? meetingUrl;
   final bool isPlanningMode;
   final String? planningId;
+  final TeachingTarget? teachingTarget;
+  final String? initialSessionId;
 
   @override
   State<StudioScreen> createState() => _StudioScreenState();
@@ -53,6 +58,11 @@ class _StudioScreenState extends State<StudioScreen> {
   bool showStudentsDrawer = false;
   bool showPluginsMarketplace = false;
   String? _currentPlanningId;
+  bool _openingRoom = false,
+      _recordingSession = false,
+      _sessionRecorded = false;
+  String? _sessionId, _sessionError;
+  final _sessionApi = LocalService();
 
   @override
   void initState() {
@@ -71,12 +81,167 @@ class _StudioScreenState extends State<StudioScreen> {
     if (widget.lessonTitle != null && widget.lessonTitle!.trim().isNotEmpty) {
       studio.title = widget.lessonTitle!.trim();
     }
-    if (widget.meetingUrl != null && widget.meetingUrl!.trim().isNotEmpty) {
+    if (widget.teachingTarget == null &&
+        widget.meetingUrl != null &&
+        widget.meetingUrl!.trim().isNotEmpty) {
       MeetAutomationService().setMeetingUrl(widget.meetingUrl!.trim());
     }
 
     studio.addListener(syncControllers);
+    if (widget.teachingTarget != null) {
+      _sessionId = widget.initialSessionId;
+      showInspector = true;
+      MeetAutomationService().addListener(_onMeetChanged);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_openTeachingRoom());
+      });
+    }
   }
+
+  Future<void> _openTeachingRoom() async {
+    if (_openingRoom || !mounted) return;
+    final target = widget.teachingTarget!;
+    final meet = MeetAutomationService();
+    setState(() {
+      _openingRoom = true;
+      _sessionError = null;
+    });
+    try {
+      meet.linkedTeacherEmail = target.isLinked ? target.teacherEmail : null;
+      meet.showEmbeddedMeet = true;
+      final url = await meet.generateAndJoinRealMeetRoom(
+        existingUrl: target.meetingUrl,
+        autoJoin: target.isOneOff,
+      );
+      if (url == null) {
+        throw StateError(
+          'Chưa mở được Meet. Thử lại ngay tại đây; phòng liên kết sẽ được giữ nguyên.',
+        );
+      }
+      if (!mounted) return;
+      _onMeetChanged();
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _sessionError = e.toString().replaceFirst('Bad state: ', ''),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _openingRoom = false);
+    }
+  }
+
+  void _onMeetChanged() {
+    if (!mounted || widget.teachingTarget == null) return;
+    final meet = MeetAutomationService();
+    if (!meet.isHostJoined || _sessionRecorded || _recordingSession || _sessionError != null) return;
+    final expected = widget.teachingTarget!.meetingUrl;
+    if (expected != null && meet.meetingUrl != expected) return;
+    _queueSessionRegistration();
+  }
+
+  void _queueSessionRegistration() {
+    if (_recordingSession || _sessionRecorded) return;
+    final meet = MeetAutomationService();
+    final pending = _recordTeachingSession();
+    meet.pendingSessionRegistration = pending;
+    unawaited(pending.whenComplete(() {
+      if (identical(meet.pendingSessionRegistration, pending)) {
+        meet.pendingSessionRegistration = null;
+      }
+    }));
+  }
+
+  Future<void> _recordTeachingSession() async {
+    if (_recordingSession || _sessionRecorded || !mounted) return;
+    final meet = MeetAutomationService();
+    final url = meet.meetingUrl;
+    if (!meet.isHostJoined || url == null) return;
+    setState(() {
+      _recordingSession = true;
+      _sessionError = null;
+    });
+    try {
+      final result = await _sessionApi.post(
+        'classroom/create',
+        data: {
+          'directUrl': url,
+          'title': widget.lessonTitle ?? widget.teachingTarget!.title,
+        },
+      );
+      if (result['success'] != true) {
+        throw StateError('Chưa ghi nhận được buổi dạy.');
+      }
+      if (!mounted) return;
+      setState(() {
+        _sessionId = result['id'] as String?;
+        _sessionRecorded = true;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _sessionError = e.toString().replaceFirst('Bad state: ', ''),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _recordingSession = false);
+    }
+  }
+
+  Widget _teachingStatus() => ListenableBuilder(
+    listenable: MeetAutomationService(),
+    builder: (context, _) {
+      final meet = MeetAutomationService();
+      final text =
+          _sessionError ??
+          (_openingRoom
+              ? 'Đang mở phòng học…'
+              : _sessionRecorded
+              ? 'Đang dạy · ${widget.teachingTarget!.title}'
+              : _recordingSession
+              ? 'Đang ghi nhận buổi học…'
+              : meet.isHostJoined
+              ? 'Meet đã tham gia · chưa ghi nhận buổi học'
+              : 'Chuẩn bị · kiểm tra tài khoản, mic/camera và bấm Tham gia trong Meet');
+      return Container(
+        color: _sessionError == null
+            ? const Color(0xffe8f4f3)
+            : const Color(0xfffff1ed),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              _sessionRecorded
+                  ? Icons.check_circle_outline
+                  : Icons.info_outline,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(text, style: const TextStyle(fontSize: 12))),
+            if (widget.teachingTarget!.teacherEmail != null &&
+                MediaQuery.sizeOf(context).width > 900)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Text(
+                  widget.teachingTarget!.teacherEmail!,
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ),
+            if (_sessionError != null)
+              TextButton(
+                onPressed: _openingRoom || _recordingSession
+                    ? null
+                    : () {
+                        if (meet.isHostJoined) { _queueSessionRegistration(); }
+                        else { unawaited(_openTeachingRoom()); }
+                      },
+                child: const Text('Thử lại'),
+              ),
+          ],
+        ),
+      );
+    },
+  );
 
   Future<void> _loadPlanning(String id) async {
     try {
@@ -86,7 +251,8 @@ class _StudioScreenState extends State<StudioScreen> {
       if (content != null) {
         studio.change(() {
           studio.restoreFromJson(content);
-          if (widget.lessonTitle != null && widget.lessonTitle!.trim().isNotEmpty) {
+          if (widget.lessonTitle != null &&
+              widget.lessonTitle!.trim().isNotEmpty) {
             studio.title = widget.lessonTitle!.trim();
           }
           studio.online = true;
@@ -113,8 +279,12 @@ class _StudioScreenState extends State<StudioScreen> {
 
   @override
   void dispose() {
-    unawaited(CameraBroadcastService().stop());
-    unawaited(TeacherMediaService().shutdown());
+    MeetAutomationService().removeListener(_onMeetChanged);
+    _sessionApi.dispose();
+    if (widget.teachingTarget == null) {
+      unawaited(CameraBroadcastService().stop());
+      unawaited(TeacherMediaService().shutdown());
+    }
     studio.removeListener(syncControllers);
     studio.dispose();
     notes.dispose();
@@ -137,7 +307,9 @@ class _StudioScreenState extends State<StudioScreen> {
       try {
         final lessonSnapshot = studio.exportLessonJson();
         final targetId = _currentPlanningId ?? widget.planningId;
-        debugPrint('[StudioScreen] Starting save planning: title="${studio.title}", targetId=$targetId, pdf=${studio.pdfFilePath}, page=${studio.pdfPage}');
+        debugPrint(
+          '[StudioScreen] Starting save planning: title="${studio.title}", targetId=$targetId, pdf=${studio.pdfFilePath}, page=${studio.pdfPage}',
+        );
 
         bool success = false;
         if (targetId != null) {
@@ -179,7 +351,9 @@ class _StudioScreenState extends State<StudioScreen> {
               content: Row(
                 children: [
                   Icon(
-                    success ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                    success
+                        ? Icons.check_circle_rounded
+                        : Icons.error_outline_rounded,
                     color: Colors.white,
                     size: 18,
                   ),
@@ -194,7 +368,9 @@ class _StudioScreenState extends State<StudioScreen> {
                   ),
                 ],
               ),
-              backgroundColor: success ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+              backgroundColor: success
+                  ? const Color(0xFF15803D)
+                  : const Color(0xFFDC2626),
               duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
             ),
@@ -224,8 +400,13 @@ class _StudioScreenState extends State<StudioScreen> {
       final choice = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Thoát chế độ soạn bài?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Thoát chế độ soạn bài?',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           content: const Text(
             'Bạn có thay đổi chưa lưu trên bảng vẽ bài giảng. Bạn có muốn lưu trước khi thoát không?',
             style: TextStyle(fontSize: 13, height: 1.4),
@@ -233,11 +414,17 @@ class _StudioScreenState extends State<StudioScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop('cancel'),
-              child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+              child: const Text(
+                'Hủy',
+                style: TextStyle(color: AppColors.slate600),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop('discard'),
-              child: const Text('Không lưu', style: TextStyle(color: Color(0xFFDC2626))),
+              child: const Text(
+                'Không lưu',
+                style: TextStyle(color: Color(0xFFDC2626)),
+              ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop('save'),
@@ -263,108 +450,19 @@ class _StudioScreenState extends State<StudioScreen> {
   }
 
   Future<void> _handleCreateClassroomFromPlanning() async {
-    if (studio.dirty) {
-      await save();
-    }
-
+    await save();
     if (!mounted) return;
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.videocam_rounded, size: 20, color: AppColors.sky600),
-            SizedBox(width: 8),
-            Text('Tạo phòng học từ bài giảng?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Text(
-          'Hệ thống sẽ nhân bản nội dung bài giảng "${studio.title}" sang một phòng học trực tuyến mới để bạn bắt đầu dạy ngay.\n\nBài giảng kế hoạch gốc vẫn sẽ được giữ nguyên vẹn.',
-          style: const TextStyle(fontSize: 13, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.sky600,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Tạo & Bắt đầu dạy'),
-          ),
-        ],
+    final id = _currentPlanningId ?? widget.planningId;
+    if (id == null || studio.dirty) {
+      message('Lưu bài giảng trước khi chọn lớp để dạy.');
+      return;
+    }
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) =>
+            GoogleWorkspaceScreen(planningId: id, lessonTitle: studio.title),
       ),
     );
-
-    if (confirm != true || !mounted) return;
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
-                  ),
-                ),
-                SizedBox(width: 20),
-                Text(
-                  'Đang nhân bản bài giảng & tạo phòng học...',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.slate900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    String? realMeetUrl;
-    try {
-      final planId = _currentPlanningId ?? widget.planningId;
-      if (planId != null) {
-        await studio.service.clonePlanningToClassroom(planId);
-      }
-      realMeetUrl = await MeetAutomationService().generateAndJoinRealMeetRoom();
-    } catch (e) {
-      debugPrint('[StudioScreen] Error launching classroom from planning: $e');
-    } finally {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-    }
-
-    if (mounted) {
-      await Navigator.of(context).pushReplacement<void, void>(
-        MaterialPageRoute(
-          builder: (_) => ClassroomLobbyScreen(
-            initialMeetingUrl: realMeetUrl,
-            initialLessonTitle: studio.title,
-          ),
-        ),
-      );
-    }
   }
 
   void preview() => StudioPreviewDialog.show(context, studio);
@@ -382,13 +480,23 @@ class _StudioScreenState extends State<StudioScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 12,
+        ),
         actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
         title: const Row(
           children: [
-            Icon(Icons.meeting_room_outlined, color: AppColors.slate900, size: 22),
+            Icon(
+              Icons.meeting_room_outlined,
+              color: AppColors.slate900,
+              size: 22,
+            ),
             SizedBox(width: 10),
-            Text('Rời khỏi lớp học', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            Text(
+              'Rời khỏi lớp học',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Column(
@@ -399,20 +507,31 @@ class _StudioScreenState extends State<StudioScreen> {
               onTap: () => Navigator.of(ctx).pop('pause'),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: const Color(0xFFBAE6FD)),
                   color: const Color(0xFFF0F9FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.pause_circle_outline_rounded, color: AppColors.sky600, size: 24),
-                    SizedBox(width: 12),
+                    const Icon(
+                      Icons.pause_circle_outline_rounded,
+                      color: AppColors.sky600,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Tạm rời phòng',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.slate900),
+                        widget.teachingTarget == null ? 'Tạm rời phòng' : 'Về danh sách lớp (giữ buổi học)',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.slate900,
+                        ),
                       ),
                     ),
                   ],
@@ -424,7 +543,10 @@ class _StudioScreenState extends State<StudioScreen> {
               onTap: () => Navigator.of(ctx).pop('end'),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: const Color(0xFFFECDD3)),
                   color: const Color(0xFFFFF1F2),
@@ -432,12 +554,20 @@ class _StudioScreenState extends State<StudioScreen> {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.stop_circle_outlined, color: AppColors.rose600, size: 24),
+                    Icon(
+                      Icons.stop_circle_outlined,
+                      color: AppColors.rose600,
+                      size: 24,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Kết thúc buổi học',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.rose600),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.rose600,
+                        ),
                       ),
                     ),
                   ],
@@ -449,13 +579,28 @@ class _StudioScreenState extends State<StudioScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(null),
-            child: const Text('Ở lại tiếp tục dạy', style: TextStyle(color: AppColors.slate600, fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Ở lại tiếp tục dạy',
+              style: TextStyle(
+                color: AppColors.slate600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
     );
 
     if (action == 'pause' && mounted) {
+      if (widget.teachingTarget != null) {
+        await MeetAutomationService().stopBroadcast();
+        if (mounted) {
+          await Navigator.of(context).push<void>(
+            MaterialPageRoute(builder: (_) => const ClassroomDashboardScreen()),
+          );
+        }
+        return;
+      }
       await MeetAutomationService().pauseSession();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -464,8 +609,29 @@ class _StudioScreenState extends State<StudioScreen> {
         );
       }
     } else if (action == 'end' && mounted) {
-      await LocalService().endClassroom();
+      if (widget.teachingTarget != null && _recordingSession) {
+        message('Đang ghi nhận buổi học. Vui lòng thử lại sau.');
+        return;
+      }
+      final local = LocalService();
+      try {
+        final active = await local.getActiveClassroom(strict: true);
+        if (active['status'] == 'ONGOING') {
+          if (!await local.endClassroom(
+            classroomId: _sessionId ?? active['id'] as String?,
+          )) {
+            message('Chưa kết thúc được buổi học. Vui lòng thử lại.');
+            return;
+          }
+        }
+      } catch (_) {
+        message('Không kết nối được backend để kết thúc buổi học.');
+        return;
+      } finally {
+        local.dispose();
+      }
       await MeetAutomationService().leaveClassroom();
+      await TeacherMediaService().shutdown();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const ClassroomDashboardScreen()),
@@ -518,10 +684,14 @@ class _StudioScreenState extends State<StudioScreen> {
     animation: studio,
     builder: (context, _) {
       return PopScope(
-        canPop: !widget.isPlanningMode || !studio.dirty,
+        canPop:
+            widget.teachingTarget == null &&
+            (!widget.isPlanningMode || !studio.dirty),
         onPopInvokedWithResult: (didPop, _) {
           if (!didPop && widget.isPlanningMode) {
             _handleExitPlanning();
+          } else if (!didPop && widget.teachingTarget != null) {
+            _handleLeaveClassroom();
           }
         },
         child: CallbackShortcuts(
@@ -532,211 +702,266 @@ class _StudioScreenState extends State<StudioScreen> {
           child: Focus(
             autofocus: true,
             child: Scaffold(
-          body: LayoutBuilder(
-            builder: (context, box) {
-              final hasInspector = showInspector && box.maxWidth >= 1250;
-              final hasLessons = showLessons && box.maxWidth >= 1000;
+              body: LayoutBuilder(
+                builder: (context, box) {
+                  final hasInspector =
+                      showInspector &&
+                      (widget.teachingTarget != null || box.maxWidth >= 1250);
+                  final hasLessons = showLessons && box.maxWidth >= 1000;
 
-              return Column(
-                children: [
-                  StudioTopBar(
-                    studio: studio,
-                    width: box.maxWidth,
-                    hasLessons: hasLessons,
-                    hasInspector: hasInspector,
-                    hasStudents: showStudentsDrawer,
-                    hasPlugins: showPluginsMarketplace,
-                    isPlanningMode: widget.isPlanningMode,
-                    onExitPlanning: _handleExitPlanning,
-                    onCreateClassroomFromPlanning: _handleCreateClassroomFromPlanning,
-                  onToggleLessons: () {
-                    if (box.maxWidth < 1000) {
-                      openLessons();
-                    } else {
-                      setState(() => showLessons = !showLessons);
-                    }
-                  },
-                  onToggleInspector: () {
-                    if (box.maxWidth < 1250) {
-                      openInspector();
-                    } else {
-                      setState(() {
-                        showInspector = !showInspector;
-                        if (showInspector) {
-                          showStudentsDrawer = false;
-                          showPluginsMarketplace = false;
-                        }
-                      });
-                    }
-                  },
-                  onToggleStudents: () {
-                    setState(() {
-                      showStudentsDrawer = !showStudentsDrawer;
-                      if (showStudentsDrawer) {
-                        showInspector = false;
-                        showPluginsMarketplace = false;
-                      }
-                    });
-                  },
-                  onTogglePlugins: () {
-                    setState(() {
-                      showPluginsMarketplace = !showPluginsMarketplace;
-                      if (showPluginsMarketplace) {
-                        showInspector = false;
-                        showStudentsDrawer = false;
-                      }
-                    });
-                  },
-                  onLeaveClassroom: widget.isPlanningMode ? null : _handleLeaveClassroom,
-                  onRename: rename,
-                  onPreview: preview,
-                  onSave: save,
-                  onRetryConnect: () {
-                    initializedControllers = false;
-                    studio.initialize();
-                  },
-                ),
-                Expanded(
-                  child: Stack(
+                  return Column(
                     children: [
-                      Row(
-                        children: [
-                          if (hasLessons)
-                            SizedBox(
-                              width: 200,
-                              child: StudioLessonsDrawer(
-                                studio: studio,
-                                onClose: () => setState(() => showLessons = false),
-                                onPluginMessage: message,
-                                onOpenPluginsMarketplace: () {
-                                  setState(() {
-                                    showPluginsMarketplace = true;
-                                    showStudentsDrawer = false;
-                                    showInspector = false;
-                                  });
-                                },
-                              ),
-                            ),
-                          Expanded(
-                            child: Row(
+                      StudioTopBar(
+                        studio: studio,
+                        width: box.maxWidth,
+                        hasLessons: hasLessons,
+                        hasInspector: hasInspector,
+                        hasStudents: showStudentsDrawer,
+                        hasPlugins: showPluginsMarketplace,
+                        isPlanningMode: widget.isPlanningMode,
+                        onExitPlanning: _handleExitPlanning,
+                        onCreateClassroomFromPlanning:
+                            _handleCreateClassroomFromPlanning,
+                        onToggleLessons: () {
+                          if (box.maxWidth < 1000) {
+                            openLessons();
+                          } else {
+                            setState(() => showLessons = !showLessons);
+                          }
+                        },
+                        onToggleInspector: () {
+                          if (box.maxWidth < 1250 &&
+                              widget.teachingTarget == null) {
+                            openInspector();
+                          } else {
+                            setState(() {
+                              showInspector = !showInspector;
+                              if (showInspector) {
+                                showStudentsDrawer = false;
+                                showPluginsMarketplace = false;
+                              }
+                            });
+                          }
+                        },
+                        onToggleStudents: () {
+                          setState(() {
+                            showStudentsDrawer = !showStudentsDrawer;
+                            if (showStudentsDrawer) {
+                              showInspector = false;
+                              showPluginsMarketplace = false;
+                            }
+                          });
+                        },
+                        onTogglePlugins: () {
+                          setState(() {
+                            showPluginsMarketplace = !showPluginsMarketplace;
+                            if (showPluginsMarketplace) {
+                              showInspector = false;
+                              showStudentsDrawer = false;
+                            }
+                          });
+                        },
+                        onLeaveClassroom: widget.isPlanningMode
+                            ? null
+                            : _handleLeaveClassroom,
+                        onRename: rename,
+                        onPreview: preview,
+                        onSave: save,
+                        onRetryConnect: () {
+                          initializedControllers = false;
+                          studio.initialize();
+                        },
+                      ),
+                      if (widget.teachingTarget != null) _teachingStatus(),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Row(
                               children: [
-                                if (studio.view == 'board')
-                                  StudioDrawingToolbar(studio: studio, isVertical: true),
+                                if (hasLessons)
+                                  SizedBox(
+                                    width: 200,
+                                    child: StudioLessonsDrawer(
+                                      studio: studio,
+                                      onClose: () =>
+                                          setState(() => showLessons = false),
+                                      onPluginMessage: message,
+                                      onOpenPluginsMarketplace: () {
+                                        setState(() {
+                                          showPluginsMarketplace = true;
+                                          showStudentsDrawer = false;
+                                          showInspector = false;
+                                        });
+                                      },
+                                    ),
+                                  ),
                                 Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
-                                    child: fittedStage(),
+                                  child: Row(
+                                    children: [
+                                      if (studio.view == 'board')
+                                        StudioDrawingToolbar(
+                                          studio: studio,
+                                          isVertical: true,
+                                        ),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            4,
+                                            4,
+                                            10,
+                                            4,
+                                          ),
+                                          child: fittedStage(),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                      // OVERLAY RIGHT PANELS (Hover đè lên mép phải màn hình, KHÔNG MỜ NỀN, KHÔNG BÓP UI)
-                      if (hasInspector || showStudentsDrawer || showPluginsMarketplace)
-                        Positioned(
-                          top: 0,
-                          bottom: 0,
-                          right: 0,
-                          child: Material(
-                            elevation: 16,
-                            shadowColor: Colors.black.withValues(alpha: 0.35),
-                            child: Container(
-                              width: 320,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                border: Border(left: BorderSide(color: AppColors.line)),
-                              ),
-                              child: showPluginsMarketplace
-                                  ? StudioPluginsMarketplacePanel(
-                                      onClose: () => setState(() => showPluginsMarketplace = false),
-                                    )
-                                  : showStudentsDrawer
-                                      ? StudioStudentsDrawer(
-                                          meetService: MeetAutomationService(),
-                                          onClose: () => setState(() => showStudentsDrawer = false),
-                                        )
-                                      : StudioInspectorPanel(
-                                          studio: studio,
-                                          notesController: notes,
-                                          questionController: question,
-                                          endpointController: endpoint,
-                                          onPreview: preview,
-                                        ),
-                            ),
-                          ),
-                        ),
-                      // Floating active plugin window
-                      ListenableBuilder(
-                        listenable: PluginManager(),
-                        builder: (context, _) {
-                          final active = PluginManager().activePlugin;
-                          if (active == null) return const SizedBox.shrink();
-
-                          return Positioned(
-                            top: 50,
-                            right: 40,
-                            child: Material(
-                              elevation: 12,
-                              borderRadius: BorderRadius.circular(16),
-                              clipBehavior: Clip.antiAlias,
-                              child: Container(
-                                width: 340,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.slate200),
+                            // OVERLAY RIGHT PANELS (Hover đè lên mép phải màn hình, KHÔNG MỜ NỀN, KHÔNG BÓP UI)
+                            if (hasInspector ||
+                                showStudentsDrawer ||
+                                showPluginsMarketplace)
+                              Positioned(
+                                top: 0,
+                                bottom: 0,
+                                right: 0,
+                                child: Material(
+                                  elevation: 16,
+                                  shadowColor: Colors.black.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                  child: Container(
+                                    width: box.maxWidth < 404
+                                        ? box.maxWidth - 24
+                                        : widget.teachingTarget != null
+                                        ? 380
+                                        : 320,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border(
+                                        left: BorderSide(color: AppColors.line),
+                                      ),
+                                    ),
+                                    child: showPluginsMarketplace
+                                        ? StudioPluginsMarketplacePanel(
+                                            onClose: () => setState(
+                                              () => showPluginsMarketplace =
+                                                  false,
+                                            ),
+                                          )
+                                        : showStudentsDrawer
+                                        ? StudioStudentsDrawer(
+                                            meetService:
+                                                MeetAutomationService(),
+                                            onClose: () => setState(
+                                              () => showStudentsDrawer = false,
+                                            ),
+                                          )
+                                        : StudioInspectorPanel(
+                                            studio: studio,
+                                            notesController: notes,
+                                            questionController: question,
+                                            endpointController: endpoint,
+                                            onPreview: preview,
+                                          ),
+                                  ),
                                 ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                      color: const Color(0xFFF8FAFC),
-                                      child: Row(
+                              ),
+                            // Floating active plugin window
+                            ListenableBuilder(
+                              listenable: PluginManager(),
+                              builder: (context, _) {
+                                final active = PluginManager().activePlugin;
+                                if (active == null) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return Positioned(
+                                  top: 50,
+                                  right: 40,
+                                  child: Material(
+                                    elevation: 12,
+                                    borderRadius: BorderRadius.circular(16),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Container(
+                                      width: 340,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: AppColors.slate200,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(active.icon, size: 16, color: active.color),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              active.name,
-                                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 10,
+                                            ),
+                                            color: const Color(0xFFF8FAFC),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  active.icon,
+                                                  size: 16,
+                                                  color: active.color,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    active.name,
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.close_rounded,
+                                                    size: 18,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(),
+                                                  onPressed: () =>
+                                                      PluginManager()
+                                                          .closeActivePlugin(),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          IconButton(
-                                            icon: const Icon(Icons.close_rounded, size: 18),
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
-                                            onPressed: () => PluginManager().closeActivePlugin(),
+                                          Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: active.buildWidget(context),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: active.buildWidget(context),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
+                            // Floating student admission banner
+                            StudioAdmissionBanner(
+                              meetService: MeetAutomationService(),
+                            ),
+                          ],
+                        ),
                       ),
-                      // Floating student admission banner
-                      StudioAdmissionBanner(meetService: MeetAutomationService()),
                     ],
-                  ),
-                ),
-              ],
-            );
-          },
+                  );
+                },
+              ),
+            ),
+          ),
         ),
-      ),
-    ),
-  ),
-);
-  },
-);
+      );
+    },
+  );
 }

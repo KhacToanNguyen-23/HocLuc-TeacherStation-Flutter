@@ -15,6 +15,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ClassroomService {
@@ -30,6 +32,16 @@ public class ClassroomService {
     }
 
     public Classroom createClassroom(String directUrl, String accessToken, String title, String teacherId) {
+        synchronized (fileLock) {
+        JsonObject active = getActiveClassroom();
+        if (active.has("status") && "ONGOING".equals(active.get("status").getAsString())) {
+            String owner = teacherId != null && !teacherId.isBlank() ? teacherId : "teacher_default";
+            if (directUrl != null && active.has("meetingUrl") && directUrl.equals(active.get("meetingUrl").getAsString())
+                    && active.has("teacherId") && owner.equals(active.get("teacherId").getAsString())) {
+                return gson.fromJson(active, Classroom.class);
+            }
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đang có buổi học khác. Kết thúc buổi hiện tại trước khi chuyển lớp.");
+        }
         String meetUrl = directUrl;
 
         // Nếu chưa có link trực tiếp mà có token Google, gọi GoogleMeetService
@@ -50,6 +62,7 @@ public class ClassroomService {
         }
 
         return Classroom.error("Chưa có đường dẫn Meet hoặc cần token ủy quyền Google");
+        }
     }
 
     public Classroom createClassroom(String directUrl, String accessToken, String title) {
@@ -74,6 +87,8 @@ public class ClassroomService {
     public boolean endClassroom(String classroomId) {
         synchronized (fileLock) {
             try {
+                JsonObject active = getActiveClassroom();
+                if (classroomId != null && active.has("id") && !classroomId.equals(active.get("id").getAsString())) return false;
                 List<Classroom> list = loadAllClassrooms();
                 Classroom target = null;
                 for (Classroom c : list) {

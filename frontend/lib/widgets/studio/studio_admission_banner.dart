@@ -17,7 +17,7 @@ class StudioAdmissionBanner extends StatelessWidget {
       listenable: meetService,
       builder: (context, _) {
         final count = meetService.pendingAdmitCount;
-        if (count <= 0) return const SizedBox.shrink();
+        if (count <= 0 || meetService.linkedTeacherEmail != null) return const SizedBox.shrink();
 
         return Positioned(
           top: 12,

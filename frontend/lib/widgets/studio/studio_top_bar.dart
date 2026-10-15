@@ -280,6 +280,9 @@ class StudioTopBar extends StatelessWidget {
               builder: (context, _) {
                 final meetService = MeetAutomationService();
                 final url = meetService.meetingUrl;
+                if (meetService.showEmbeddedMeet && url == null) {
+                  return const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('Chuẩn bị Meet', style: TextStyle(fontSize: 11)));
+                }
               if (url != null) {
                 return Container(
                   margin: const EdgeInsets.only(left: 4),

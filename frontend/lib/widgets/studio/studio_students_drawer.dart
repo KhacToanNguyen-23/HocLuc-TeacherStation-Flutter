@@ -103,7 +103,7 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
               ),
 
               // Waiting Room Card (when students are knocking)
-              if (widget.meetService.pendingAdmitCount > 0)
+              if (widget.meetService.pendingAdmitCount > 0 && widget.meetService.linkedTeacherEmail == null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
                   child: Container(

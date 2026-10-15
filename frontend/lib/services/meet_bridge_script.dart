@@ -19,6 +19,11 @@ class MeetBridgeScript {
   }
 
   function attemptAutoJoin() {
+    if (window.__hoclucManualJoin) {
+      var joined = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
+      if (joined) sendToFlutter('MEET_JOINED', { status: 'joined', url: window.location.href });
+      return !!joined;
+    }
     var buttons = Array.from(document.querySelectorAll('button'));
 
     // 1. Tự động bypass popup cấp quyền media / micro / camera của Google Meet

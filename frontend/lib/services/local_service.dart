@@ -61,6 +61,7 @@ class LocalService {
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? data,
+    bool retryLocalSession = true,
   }) async {
     if (_token == null) {
       try {
@@ -79,6 +80,13 @@ class LocalService {
     final response = await client
         .post(url, headers: headers, body: jsonEncode(data ?? {}))
         .timeout(const Duration(seconds: 10));
+    if (response.statusCode == 401 && retryLocalSession) {
+      final problem = jsonDecode(utf8.decode(response.bodyBytes));
+      if (problem is Map && problem['error'] == 'Local session required') {
+        await connect();
+        return post(path, data: data, retryLocalSession: false);
+      }
+    }
     if (response.statusCode != 200 && response.statusCode != 201) {
       try {
         final problem = jsonDecode(utf8.decode(response.bodyBytes));
@@ -143,15 +151,17 @@ class LocalService {
     }
   }
 
-  Future<Map<String, dynamic>> getActiveClassroom() async {
+  Future<Map<String, dynamic>> getActiveClassroom({bool strict = false}) async {
     try {
-      final res = await client
-          .get(Uri.parse('$base/api/classroom/active'))
-          .timeout(const Duration(seconds: 4));
-      if (res.statusCode == 200 && res.body.isNotEmpty) {
-        return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      for (var attempt = 0; attempt < 2; attempt++) {
+        final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
+        final response = await client.get(Uri.parse('$base/api/classroom/active'), headers: headers).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 401 && attempt == 0) continue;
+        if (response.statusCode != 200) throw StateError('Không đọc được buổi học hiện tại (${response.statusCode}).');
+        return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       }
     } catch (e) {
+      if (strict) rethrow;
       debugPrint('[LocalService] getActiveClassroom error: $e');
     }
     return {};
@@ -159,22 +169,12 @@ class LocalService {
 
   Future<bool> endClassroom({String? classroomId}) async {
     try {
-      final res = await client
-          .post(
-            Uri.parse('$base/api/classroom/end'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'classroomId': classroomId}),
-          )
-          .timeout(const Duration(seconds: 4));
-      if (res.statusCode == 200) {
-        final data =
-            jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-        return data['success'] == true;
-      }
+      final result = await post('classroom/end', data: {'classroomId': classroomId});
+      return result['success'] == true;
     } catch (e) {
       debugPrint('[LocalService] endClassroom error: $e');
+      return false;
     }
-    return false;
   }
 
   Future<List<dynamic>> getClassroomHistory({String? teacherId}) async {
@@ -182,7 +182,7 @@ class LocalService {
       final url = teacherId != null
           ? Uri.parse('$base/api/classroom/history?teacherId=$teacherId')
           : Uri.parse('$base/api/classroom/history');
-      final res = await client.get(url).timeout(const Duration(seconds: 4));
+      final res = await client.get(url, headers: await _getAuthHeaders()).timeout(const Duration(seconds: 4));
       if (res.statusCode == 200 && res.body.isNotEmpty) {
         return jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
       }

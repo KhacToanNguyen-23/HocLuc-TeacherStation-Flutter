@@ -8,10 +8,15 @@ import vn.teaching.model.Classroom;
 import vn.teaching.service.ClassroomService;
 
 import java.util.Map;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/classroom")
 public class ClassroomController {
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<?> sessionConflict(ResponseStatusException error) {
+        return ResponseEntity.status(error.getStatusCode()).body(Map.of("message",error.getReason()==null?"Không mở được buổi học.":error.getReason()));
+    }
     private final ClassroomService classroomService;
 
     public ClassroomController(ClassroomService classroomService) {

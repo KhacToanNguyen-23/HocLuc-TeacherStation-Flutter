@@ -36,6 +36,26 @@ class MeetAutomationService extends ChangeNotifier {
   bool _isBroadcasting = false;
   bool _autoAdmitEnabled = true;
   bool _needsGoogleLogin = false;
+  bool _manualJoin = false;
+  bool _hostJoined = false;
+  bool get isHostJoined => _hostJoined;
+  bool showEmbeddedMeet = false;
+  Future<void>? pendingSessionRegistration;
+  String? _controllerMeetingUrl;
+  String? _linkedTeacherEmail;
+  bool? _admissionPreferenceBeforeLinkedClass;
+  String? get linkedTeacherEmail => _linkedTeacherEmail;
+  set linkedTeacherEmail(String? email) {
+    if (email != null && _linkedTeacherEmail == null) {
+      _admissionPreferenceBeforeLinkedClass = _autoAdmitEnabled;
+      _autoAdmitEnabled = false;
+    } else if (email == null && _linkedTeacherEmail != null) {
+      _autoAdmitEnabled = _admissionPreferenceBeforeLinkedClass ?? false;
+      _admissionPreferenceBeforeLinkedClass = null;
+    }
+    _linkedTeacherEmail = email;
+    notifyListeners();
+  }
   StreamSubscription<String>? _urlSubscription;
   StreamSubscription<dynamic>? _webMessageSubscription;
 
@@ -65,6 +85,7 @@ class MeetAutomationService extends ChangeNotifier {
   bool get autoAdmitEnabled => _autoAdmitEnabled;
 
   set autoAdmitEnabled(bool val) {
+    if (linkedTeacherEmail != null && val) return;
     if (_autoAdmitEnabled != val) {
       _autoAdmitEnabled = val;
       notifyListeners();
@@ -80,6 +101,7 @@ class MeetAutomationService extends ChangeNotifier {
     if (cleanUrl.isNotEmpty && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
       cleanUrl = 'https://$cleanUrl';
     }
+    if (_meetingUrl != cleanUrl) _hostJoined = false;
     _meetingUrl = cleanUrl.isEmpty ? null : cleanUrl;
     _status = _meetingUrl != null ? MeetStatus.ready : MeetStatus.idle;
     _errorMessage = null;
@@ -136,6 +158,7 @@ class MeetAutomationService extends ChangeNotifier {
   /// và tự động tham gia vào phòng với tư cách Host.
   Future<String?> generateAndJoinRealMeetRoom({
     String? existingUrl,
+    bool autoJoin = true,
     Duration timeout = const Duration(seconds: 25),
   }) async {
     if (kIsWeb) {
@@ -143,6 +166,12 @@ class MeetAutomationService extends ChangeNotifier {
     }
 
     final previousUrl = _meetingUrl;
+    if (existingUrl != null && _controllerMeetingUrl == existingUrl && _controller != null && _status != MeetStatus.error) {
+      return existingUrl;
+    }
+    _hostJoined = false;
+    if (autoJoin) linkedTeacherEmail = null;
+    _manualJoin = !autoJoin;
     _meetingUrl = null;
     _needsGoogleLogin = false;
     _status = MeetStatus.creating;
@@ -158,6 +187,7 @@ class MeetAutomationService extends ChangeNotifier {
         } catch (_) {}
         _controller = null;
       }
+      _controllerMeetingUrl = null;
 
       final version = await win.WebviewController.getWebViewVersion();
       if (version == null) {
@@ -177,11 +207,19 @@ class MeetAutomationService extends ChangeNotifier {
       Timer? timeoutTimer;
 
       void onMeetingUrlDetected(String realUrl) {
-        if (previousUrl != null && realUrl == previousUrl) {
+        if (linkedTeacherEmail != null && existingUrl != null && realUrl != existingUrl) {
+          _errorMessage = 'Meet đã chuyển sang phòng khác. Quay lại đúng phòng đã liên kết với lớp.';
+          _hostJoined = false;
+          _status = MeetStatus.error;
+          notifyListeners();
+          return;
+        }
+        if (existingUrl == null && previousUrl != null && realUrl == previousUrl) {
           debugPrint('[MeetAutomation] Skipping previous room URL lingering in WebView: $realUrl');
           return;
         }
         _meetingUrl = realUrl;
+        _controllerMeetingUrl = realUrl;
         _status = MeetStatus.ready;
         notifyListeners();
 
@@ -207,6 +245,13 @@ class MeetAutomationService extends ChangeNotifier {
           : 'https://meet.google.com/new?hs=193';
       debugPrint('[MeetAutomation] Loading target URL: $targetUrl');
       await controller.loadUrl(targetUrl);
+      _controllerMeetingUrl ??= existingUrl;
+      if (!autoJoin) {
+        _meetingUrl = existingUrl;
+        _status = MeetStatus.ready;
+        notifyListeners();
+        return existingUrl;
+      }
 
       // Liên tục tiêm script trích xuất URL và bypass modal cấp quyền media / tự click tham gia
       autoClickTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
@@ -350,6 +395,11 @@ class MeetAutomationService extends ChangeNotifier {
         _isBridgeReady = true;
         notifyListeners();
       } else if (type == 'MEET_JOINED') {
+        if (payload is! Map || payload['url'] is! String) return;
+        final uri = Uri.tryParse(payload['url'] as String);
+        if (uri == null || uri.host != 'meet.google.com' || 'https://meet.google.com${uri.path}' != _meetingUrl) return;
+        if (_hostJoined) return;
+        _hostJoined = true;
         _status = MeetStatus.ready;
         notifyListeners();
       }
@@ -422,6 +472,7 @@ class MeetAutomationService extends ChangeNotifier {
 
   /// Duyệt tất cả học sinh đang chờ vào phòng
   Future<void> admitAllPending() async {
+    if (linkedTeacherEmail != null) return;
     _pendingAdmitCount = 0;
     notifyListeners();
     if (_controller != null) {
@@ -490,6 +541,7 @@ class MeetAutomationService extends ChangeNotifier {
 
   /// Xóa sạch dữ liệu phiên học khi rời phòng
   void clearMeetingEvents() {
+    _hostJoined = false;
     _messages.clear();
     _raisedHands.clear();
     _participants.clear();
@@ -518,6 +570,10 @@ class MeetAutomationService extends ChangeNotifier {
   /// Đóng lớp học hoàn toàn
   Future<void> leaveClassroom() async {
     await stopBroadcast();
+    linkedTeacherEmail = null;
+    _manualJoin = false;
+    showEmbeddedMeet = false;
+    _controllerMeetingUrl = null;
     clearMeetingEvents();
     _status = MeetStatus.idle;
     _meetingUrl = null;
@@ -559,6 +615,7 @@ class MeetAutomationService extends ChangeNotifier {
       Future.delayed(Duration(seconds: delay), () async {
         if (_controller == null) return;
         try {
+          await controller.executeScript('window.__hoclucManualJoin = $_manualJoin;');
           await controller.executeScript(MeetBridgeScript.script);
         } catch (err) {
           debugPrint('[MeetAutomation] Bridge inject error at ${delay}s: $err');
@@ -570,6 +627,7 @@ class MeetAutomationService extends ChangeNotifier {
   /// Đảm bảo Host đã thực sự ở trong phòng cuộc gọi (IN_CALL)
   /// Thường được gọi khi chuyển từ Lobby sang Studio
   Future<void> ensureHostJoined() async {
+    if (_manualJoin) return;
     final ctrl = _controller;
     if (ctrl == null) return;
     try {
