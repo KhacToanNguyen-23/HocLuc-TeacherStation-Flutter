@@ -17,7 +17,9 @@ public class GoogleIntegrationController {
     record Poll(String state,String pollToken) { }
     record Create(String requestId,String title,String description,List<String> emails) { }
     record Invite(List<String> emails) { }
+    record MeetAccess(String email, Boolean allowed) { }
     record Schedule(String requestId,String start,String end) { }
+    record StartLesson(String requestId) { }
     @GetMapping("/status") public Object status(HttpServletRequest req) { local(req); return connections.status(req.getHeader("X-Google-Teacher-Email")); }
     @PostMapping("/connect") public Object connect(HttpServletRequest req,@RequestBody Start body) {
         local(req);
@@ -29,7 +31,12 @@ public class GoogleIntegrationController {
     @PostMapping("/courses") public Object create(HttpServletRequest req,@RequestBody Create body) { return classes.create(email(req),body.requestId(),body.title(),body.description(),body.emails()); }
     @PostMapping("/courses/{id}/invite") public Object invite(HttpServletRequest req,@PathVariable String id,@RequestBody Invite body) { return classes.invite(email(req),id,body.emails()); }
     @PostMapping("/courses/{id}/sync") public Object sync(HttpServletRequest req,@PathVariable String id) { return classes.sync(email(req),id); }
+    @PostMapping("/courses/{id}/access") public Object access(HttpServletRequest req,@PathVariable String id,@RequestBody MeetAccess body) {
+        if(body.allowed()==null) throw new IllegalArgumentException("allowed is required");
+        return classes.setMeetAccess(email(req),id,body.email(),body.allowed());
+    }
     @PostMapping("/courses/{id}/prepare") public Object prepare(HttpServletRequest req,@PathVariable String id) { return classes.prepare(email(req),id); }
+    @PostMapping("/courses/{id}/start") public Object startLesson(HttpServletRequest req,@PathVariable String id,@RequestBody StartLesson body) { return classes.start(email(req),id,body.requestId()); }
     @PostMapping("/courses/{id}/schedule") public Object schedule(HttpServletRequest req,@PathVariable String id,@RequestBody Schedule body) { return classes.schedule(email(req),id,body.requestId(),body.start(),body.end()); }
     @GetMapping(value="/callback",produces="text/html;charset=UTF-8")
     public ResponseEntity<String> callback(HttpServletRequest req,@RequestParam(required=false) String state,@RequestParam(required=false) String code,@RequestParam(required=false) String error) {

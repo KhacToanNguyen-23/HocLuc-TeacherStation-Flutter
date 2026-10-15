@@ -16,9 +16,11 @@ class GoogleWorkspaceScreen extends StatefulWidget {
     this.api,
     this.planningId,
     this.lessonTitle,
+    this.launchLesson,
   });
   final GoogleWorkspaceApi? api;
   final String? planningId, lessonTitle;
+  final Future<void> Function(Map<String, dynamic>)? launchLesson;
   @override
   State<GoogleWorkspaceScreen> createState() => _GoogleWorkspaceScreenState();
 }
@@ -30,6 +32,8 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   List<Map<String, dynamic>> _courses = [];
   String? _selected, _error;
   bool _busy = true, _polling = false;
+  final Map<String, String> _startRequests = {};
+  String? _startingCourse;
   int _connectGeneration = 0;
   static const _teal = Color(0xff087f83);
 
@@ -92,7 +96,11 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     setState(() {
       _error = _message(e);
       if (e is GoogleWorkspaceFailure && e.needsConsent) {
-        _connection = {..._connection, 'connected': false, 'state': 'REAUTH_REQUIRED'};
+        _connection = {
+          ..._connection,
+          'connected': false,
+          'state': 'REAUTH_REQUIRED',
+        };
         _courses = [];
         _selected = null;
       }
@@ -114,15 +122,20 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     }
   }
 
-  Future<void> _connect({bool repair = false, bool changeAccount = false}) async {
+  Future<void> _connect({
+    bool repair = false,
+    bool changeAccount = false,
+  }) async {
     await _run(() async {
       if (changeAccount) await TeachingLauncher.requireIdleForAccountChange();
       final generation = ++_connectGeneration;
       setState(() => _polling = true);
       try {
-        final email = await GoogleConnectionFlow.connect(_api,
+        final email = await GoogleConnectionFlow.connect(
+          _api,
           forceConsent: repair,
-          isActive: () => mounted && generation == _connectGeneration);
+          isActive: () => mounted && generation == _connectGeneration,
+        );
         if (!mounted || generation != _connectGeneration) return;
         if (email.toLowerCase() != _api.email.toLowerCase()) {
           await TeachingLauncher.requireIdleForAccountChange();
@@ -136,7 +149,11 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
             _api = GoogleWorkspaceApi(email: email);
           }
           await _auth.signInWithGoogleConnection(email);
-          _connection = {'configured': true, 'connected': false, 'state': 'CHECKING'};
+          _connection = {
+            'configured': true,
+            'connected': false,
+            'state': 'CHECKING',
+          };
           _courses = [];
           _selected = null;
         } finally {
@@ -185,6 +202,54 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     });
   }
 
+  Future<void> _setMeetAccess(
+    Map<String, dynamic> course,
+    Map<String, dynamic> student,
+  ) async {
+    final allowed = student['meetAllowed'] != true;
+    if (!allowed) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Gỡ quyền vào Meet?'),
+          content: Text(
+            'Gỡ ${student['email']} khỏi danh sách mời của buổi Calendar hiện tại hoặc membership cũ do HocLuc quản lý. Không đuổi người đang trong cuộc gọi và không xóa học sinh khỏi Classroom.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Gỡ quyền'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    await _run(() async {
+      final result = await _api.call(
+        'courses/${course['id']}/access',
+        post: true,
+        body: {'email': student['email'], 'allowed': allowed},
+      );
+      _replace(result);
+    });
+  }
+
+  Widget _meetAccessAction(
+    Map<String, dynamic> course,
+    Map<String, dynamic> student,
+    bool disabled,
+  ) => TextButton(
+    onPressed: disabled ? null : () => _setMeetAccess(course, student),
+    child: Text(
+      student['meetAllowed'] == true ? 'Gỡ quyền Meet' : 'Cấp quyền Meet',
+    ),
+  );
+
   Future<void> _editClass({Map<String, dynamic>? course}) async {
     final title = TextEditingController();
     final description = TextEditingController();
@@ -193,7 +258,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     final requestId = GoogleWorkspaceApi.requestId();
     bool saving = false;
     String? error;
-    await showDialog<void>(
+    final dialogRoute = DialogRoute<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
@@ -258,7 +323,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Học sinh cần chấp nhận lời mời Classroom một lần. Sau đó bấm Đồng bộ để cấp quyền vào Meet.',
+                        'Thêm email vào danh sách lớp. Chuẩn bị phòng Calendar để gửi lời mời Meet; không cần học sinh chấp nhận Classroom.',
                         style: TextStyle(
                           color: AppColors.slate600,
                           height: 1.5,
@@ -333,50 +398,69 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
         ),
       ),
     );
+    await Navigator.of(context).push(dialogRoute);
+    await dialogRoute.completed;
     title.dispose();
     description.dispose();
     emails.dispose();
-    await _load();
+    if (mounted) await _load();
   }
 
-  Future<void> _schedule(Map<String, dynamic> course) async {
-    DateTime? selectedDate;
-    final date = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 730)),
-    );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (time == null || !mounted) return;
-    selectedDate = DateTime(
-      date.year,
-      date.month,
-      date.day,
-      time.hour,
-      time.minute,
-    );
-    if (!selectedDate.isAfter(DateTime.now())) {
-      setState(() => _error = 'Chọn thời gian học trong tương lai.');
+  Future<void> _schedule(
+    Map<String, dynamic> course, {
+    bool now = false,
+  }) async {
+    if (TeachingLauncher.hasStudio || MeetAutomationService().hasRoom) {
+      _handleError(
+        StateError(
+          'Lưu bài và kết thúc buổi đang mở trước khi tạo phòng Calendar mới.',
+        ),
+      );
       return;
+    }
+    DateTime? selectedDate;
+    if (now) {
+      selectedDate = DateTime.now().add(const Duration(minutes: 1));
+    } else {
+      final date = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 730)),
+      );
+      if (date == null || !mounted) return;
+      final time = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+      if (time == null || !mounted) return;
+      selectedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+      if (!selectedDate.isAfter(DateTime.now())) {
+        setState(() => _error = 'Chọn thời gian học trong tương lai.');
+        return;
+      }
     }
     final start = selectedDate;
     final requestId = GoogleWorkspaceApi.requestId();
     final duration = TextEditingController(text: '90');
     bool saving = false;
     String? error;
-    await showDialog<void>(
+    final dialogRoute = DialogRoute<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, update) => PopScope(
           canPop: !saving,
           child: AlertDialog(
-            title: const Text('Lên lịch và gửi lời mời'),
+            title: Text(
+              now ? 'Chuẩn bị phòng Calendar' : 'Lên lịch và tạo phòng Meet',
+            ),
             content: SizedBox(
               width: 420,
               child: SingleChildScrollView(
@@ -398,7 +482,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      'Google Calendar sẽ gửi lịch kèm link Meet tới học sinh đã tham gia lớp. Thời gian theo múi giờ máy của bạn.',
+                      'Tạo một buổi Calendar có phòng Meet mới và gửi lời mời tới các email đã chọn trong lớp. Link cũ sẽ được thay bằng link buổi này. Thời gian theo múi giờ máy của bạn.',
                     ),
                     if (error != null)
                       Padding(
@@ -459,24 +543,71 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                           }
                         }
                       },
-                child: const Text('Gửi lịch học'),
+                child: const Text('Tạo phòng và gửi lời mời'),
               ),
             ],
           ),
         ),
       ),
     );
+    await Navigator.of(context).push(dialogRoute);
+    await dialogRoute.completed;
     duration.dispose();
+    if (mounted) await _load();
   }
 
   Future<void> _start(Map<String, dynamic> course) async {
+    if (TeachingLauncher.hasStudio &&
+        MeetAutomationService().meetingUrl == course['meetingUrl']) {
+      TeachingLauncher.returnToStudio();
+      return;
+    }
     await _run(() async {
-      final ready = await _api.call(
-        'courses/${course['id']}/prepare',
-        post: true,
+      final id = course['id'] as String;
+      final request = _startRequests.putIfAbsent(
+        id,
+        GoogleWorkspaceApi.requestId,
       );
+      setState(() => _startingCourse = id);
+      late Map<String, dynamic> ready;
+      try {
+        for (var attempt = 0; ; attempt++) {
+          ready = await _api.call(
+            'courses/$id/start',
+            post: true,
+            body: {'requestId': request},
+          );
+          if (!mounted) return;
+          _replace(ready);
+          if (ready['calendarStatus'] == 'READY' &&
+              ready['meetingUrl'] is String) {
+            break;
+          }
+          if (!{'PENDING', 'CREATING'}.contains(ready['calendarStatus']) ||
+              attempt >= 9) {
+            final warnings = (ready['warnings'] as List? ?? []).join('\n');
+            throw StateError(
+              warnings.isEmpty
+                  ? 'Chưa chuẩn bị xong phòng. Bấm Thử lại để tiếp tục buổi này.'
+                  : warnings,
+            );
+          }
+          await Future<void>.delayed(const Duration(seconds: 2));
+          if (!mounted) return;
+        }
+      } on GoogleWorkspaceFailure catch (e) {
+        if (e.code == 'START_REQUEST_FINISHED') _startRequests.remove(id);
+        rethrow;
+      } finally {
+        if (mounted) setState(() => _startingCourse = null);
+      }
       _replace(ready);
       if (!mounted) return;
+      if (widget.launchLesson != null) {
+        await widget.launchLesson!(ready);
+        _startRequests.remove(id);
+        return;
+      }
       await TeachingLauncher.open(
         context,
         TeachingTarget(
@@ -487,6 +618,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
           planningId: widget.planningId,
         ),
       );
+      _startRequests.remove(id);
     });
   }
 
@@ -506,7 +638,9 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   Widget build(BuildContext context) {
     final connected = _connection['connected'] == true;
     final needsConsent = _connection['state'] == 'REAUTH_REQUIRED';
-    final retryConnection = _connection['state'] == 'TEMPORARY_ERROR' || _connection['state'] == 'CONFIG_ERROR';
+    final retryConnection =
+        _connection['state'] == 'TEMPORARY_ERROR' ||
+        _connection['state'] == 'CONFIG_ERROR';
     final disabled = _busy || _polling;
     final selected = _courses.where((c) => c['id'] == _selected).firstOrNull;
     return Scaffold(
@@ -539,7 +673,10 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                     if (_busy) const LinearProgressIndicator(),
                     if (_error != null) _notice(_error!, error: true),
                     if (_error != null && TeachingLauncher.hasStudio)
-                      TextButton(onPressed: TeachingLauncher.returnToStudio, child: const Text('Trở về buổi dạy để lưu và kết thúc')),
+                      TextButton(
+                        onPressed: TeachingLauncher.returnToStudio,
+                        child: const Text('Trở về buổi dạy để lưu và kết thúc'),
+                      ),
                     _panel(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,7 +697,11 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                                   Text(
                                     connected
                                         ? 'Google đã kết nối'
-                                        : needsConsent ? 'Google cần cấp quyền lại' : retryConnection ? 'Chưa kiểm tra được kết nối' : 'Kết nối Google',
+                                        : needsConsent
+                                        ? 'Google cần cấp quyền lại'
+                                        : retryConnection
+                                        ? 'Chưa kiểm tra được kết nối'
+                                        : 'Kết nối Google',
                                     style: const TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
@@ -580,20 +721,37 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                                           _connection['configured'] != true
                                       ? null
                                       : connected || retryConnection
-                                          ? () => _run(_load)
-                                          : () => _connect(repair: needsConsent),
+                                      ? () => _run(_load)
+                                      : () => _connect(repair: needsConsent),
                                   icon: const Icon(Icons.link),
                                   label: Text(
                                     connected
                                         ? 'Kiểm tra kết nối'
-                                        : needsConsent ? 'Cấp quyền lại' : retryConnection ? 'Thử lại' : 'Kết nối Google',
+                                        : needsConsent
+                                        ? 'Cấp quyền lại'
+                                        : retryConnection
+                                        ? 'Thử lại'
+                                        : 'Kết nối Google',
                                   ),
                                 ),
-                              if (!_polling && _connection['configured'] == true)
-                                TextButton(onPressed: disabled ? null : () => _connect(changeAccount: true), child: const Text('Đổi tài khoản')),
+                              if (!_polling &&
+                                  _connection['configured'] == true)
+                                TextButton(
+                                  onPressed: disabled
+                                      ? null
+                                      : () => _connect(changeAccount: true),
+                                  child: const Text('Đổi tài khoản'),
+                                ),
                               if (connected && !_polling)
-                                TextButton(onPressed: disabled ? null : () => _connect(repair: true), child: const Text('Cấp quyền lại')),
-                              if (_api.email.isNotEmpty && _connection['state'] != 'DISCONNECTED' && _connection['configured'] == true)
+                                TextButton(
+                                  onPressed: disabled
+                                      ? null
+                                      : () => _connect(repair: true),
+                                  child: const Text('Cấp quyền lại'),
+                                ),
+                              if (_api.email.isNotEmpty &&
+                                  _connection['state'] != 'DISCONNECTED' &&
+                                  _connection['configured'] == true)
                                 TextButton(
                                   onPressed: disabled ? null : _disconnect,
                                   child: const Text('Ngắt kết nối'),
@@ -601,7 +759,13 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                             ],
                           ),
                           const SizedBox(height: 20),
-                          const Text('Đăng xuất HocLuc giữ quyền đã cấp. Ngắt kết nối Google sẽ thu hồi quyền API của tài khoản này.', style: TextStyle(fontSize: 12, color: AppColors.slate600)),
+                          const Text(
+                            'Đăng xuất HocLuc giữ quyền đã cấp. Ngắt kết nối Google sẽ thu hồi quyền API của tài khoản này.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.slate600,
+                            ),
+                          ),
                           const Wrap(
                             spacing: 12,
                             runSpacing: 12,
@@ -729,7 +893,10 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     final joined = students
         .where((s) => s['classroomStatus'] == 'JOINED')
         .length;
-    final warnings = (course['warnings'] as List? ?? []).cast<String>();
+    final warnings = [
+      ...(course['warnings'] as List? ?? []),
+      ...(course['classroomWarnings'] as List? ?? []),
+    ].cast<String>();
     final events = (course['events'] as List? ?? [])
         .cast<Map<String, dynamic>>();
     return Column(
@@ -778,32 +945,45 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                       label: const Text('Hoàn tất tạo lớp'),
                     ),
                   FilledButton.icon(
-                    onPressed: disabled || course['meetingUrl'] == null
-                        ? null
-                        : () => _start(course),
+                    onPressed: disabled ? null : () => _start(course),
                     icon: const Icon(Icons.play_arrow),
-                    label: const Text('Bắt đầu dạy'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: disabled || course['courseId'] == null
-                        ? null
-                        : () => _editClass(course: course),
-                    icon: const Icon(Icons.person_add_outlined),
-                    label: const Text('Mời học sinh'),
+                    label: Text(
+                      _startingCourse == course['id']
+                          ? 'Đang chuẩn bị phòng…'
+                          : TeachingLauncher.hasStudio &&
+                                MeetAutomationService().meetingUrl ==
+                                    course['meetingUrl']
+                          ? 'Tiếp tục dạy'
+                          : _startRequests.containsKey(course['id'])
+                          ? 'Thử lại'
+                          : 'Bắt đầu dạy',
+                    ),
                   ),
                   OutlinedButton.icon(
                     onPressed: disabled
                         ? null
-                        : () => _run(
-                            () async => _replace(
-                              await _api.call(
-                                'courses/${course['id']}/sync',
-                                post: true,
-                              ),
-                            ),
-                          ),
-                    icon: const Icon(Icons.sync),
-                    label: const Text('Đồng bộ'),
+                        : () => _editClass(course: course),
+                    icon: const Icon(Icons.person_add_outlined),
+                    label: const Text('Thêm email học sinh'),
+                  ),
+                  PopupMenuButton<String>(
+                    enabled: !disabled,
+                    tooltip: 'Thao tác khác',
+                    onSelected: (_) => _run(
+                      () async => _replace(
+                        await _api.call(
+                          'courses/${course['id']}/sync',
+                          post: true,
+                        ),
+                      ),
+                    ),
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'sync',
+                        child: Text('Đồng bộ'),
+                      ),
+                    ],
+                    icon: const Icon(Icons.more_horiz),
                   ),
                   OutlinedButton.icon(
                     onPressed: disabled ? null : () => _schedule(course),
@@ -842,13 +1022,15 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Học sinh dùng đúng tài khoản đã tham gia Classroom. Quyền vào phòng còn phụ thuộc chính sách Google. Học sinh chưa tham gia cần mở lời mời trong Classroom.',
+                'Nhập email học sinh một lần, sau đó bấm Bắt đầu dạy. HocLuc tự chuẩn bị phòng và gửi lời mời cho buổi học. Học sinh dùng link của buổi này và đúng email được mời.',
                 style: TextStyle(color: AppColors.slate600),
               ),
             ],
           ),
         ),
         for (final warning in warnings) _notice(warning, error: true),
+        if (course['accessNotice'] != null)
+          _notice(course['accessNotice'] as String),
         const SizedBox(height: 16),
         _panel(
           child: LayoutBuilder(
@@ -883,6 +1065,9 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                                   ),
                                 ],
                               ),
+                              _meetAccessAction(course, student, disabled),
+                              if (student['classroomError'] != null)
+                                Text('Classroom: ${student['classroomError']}'),
                               if (student['error'] != null)
                                 Text(
                                   student['error'] as String,
@@ -903,6 +1088,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                     DataColumn(label: Text('Học sinh / Email')),
                     DataColumn(label: Text('Classroom')),
                     DataColumn(label: Text('Quyền vào Meet')),
+                    DataColumn(label: Text('Thao tác')),
                   ],
                   rows: students
                       .map(
@@ -936,6 +1122,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                               _status(s['classroomStatus'] as String? ?? ''),
                             ),
                             DataCell(_status(s['meetStatus'] as String? ?? '')),
+                            DataCell(_meetAccessAction(course, s, disabled)),
                           ],
                         ),
                       )
@@ -952,7 +1139,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Lịch đã gửi',
+                  'Các buổi Calendar',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 for (final event in events.reversed)
@@ -966,7 +1153,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                     subtitle: Text(
                       'Đã yêu cầu Google gửi lịch cho ${event['inviteeCount']} học sinh',
                     ),
-                    trailing: event['url'] == ''
+                    trailing: event['url'] == null || event['url'] == ''
                         ? null
                         : IconButton(
                             tooltip: 'Mở lịch Google',
@@ -991,7 +1178,11 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
       'NOT_INVITED': 'Chưa mời',
       'LEFT': 'Đã rời lớp',
       'INVITATION_CLOSED': 'Lời mời đã đóng',
-      'GRANTED': 'Đã cấp quyền',
+      'GRANTED': 'Đã lưu membership',
+      'CALENDAR_INVITED': 'Có trong lời mời Calendar',
+      'VERIFYING': 'Đang xác nhận',
+      'VERIFY_FAILED': 'Chưa xác nhận quyền',
+      'EXTERNAL_ACCESS': 'Quyền ngoài HocLuc',
       'NOT_GRANTED': 'Chưa cấp quyền',
       'GRANT_FAILED': 'Cấp quyền thất bại',
       'REVOKE_FAILED': 'Chưa gỡ được quyền',

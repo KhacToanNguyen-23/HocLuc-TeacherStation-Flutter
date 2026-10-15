@@ -5,11 +5,11 @@ Giáo viên có thể đăng nhập bằng nút Google để kết nối API nga
 ## Phân công
 
 - Classroom: tạo lớp, mời email, đọc danh sách học sinh đã chấp nhận.
-- Meet: tạo một space do HocLuc quản lý, cấp membership thường cho học sinh đã vào Classroom, gỡ membership do HocLuc quản lý khi học sinh rời lớp.
-- Calendar: tạo lịch kèm link Meet đã có, `sendUpdates=all`, không tạo một Meet khác.
+- Calendar: tạo sự kiện có `conferenceData.createRequest`, `conferenceDataVersion=1`, khách mời là email giáo viên đã chọn, `sendUpdates=all`. Link Meet lấy từ video entry point của sự kiện, không dán link phòng cũ vào location/description.
+- Meet: phòng của buổi Calendar dùng trong Studio. Lớp cũ còn dữ liệu membership được giữ để tương thích, nhưng giao diện yêu cầu chuẩn bị buổi Calendar trước khi bắt đầu theo luồng mới.
 - WebView2: mở đúng phòng, giáo viên chọn đúng tài khoản rồi tham gia; giữ các chức năng studio hiện có. Lớp liên kết không dùng auto-admit/duyệt tất cả.
 
-Classroom course và Meet space được liên kết trong dữ liệu HocLuc. Đây không phải thao tác tạo nút Meet nguyên bản trên giao diện Classroom. HocLuc không gọi một API không tồn tại để tạo nút đó.
+Classroom course và sự kiện Calendar được liên kết trong dữ liệu HocLuc. Đây không phải thao tác tạo nút Meet nguyên bản trên giao diện Classroom. HocLuc không gọi một API không tồn tại để tạo nút đó.
 
 ## Cấu hình dành cho người phát triển/cài đặt
 
@@ -48,30 +48,31 @@ Refresh token chỉ được dùng ở backend. Danh tính OAuth đã được G
 
 1. Kết nối Google trong HocLuc; chọn đúng tài khoản và cấp đủ quyền trên trình duyệt hệ thống.
 2. Tạo lớp, mỗi lần mời tối đa 50 email; mỗi email có trạng thái lỗi riêng nếu Google từ chối.
-   Với Gmail cá nhân, Google không cho tạo trực tiếp lớp `ACTIVE`. HocLuc tạo `PROVISIONED`, sau đó yêu cầu kích hoạt qua API. Nếu Google từ chối kích hoạt, app giữ lớp đã tạo và hiện hướng dẫn **Mở Classroom → chấp nhận lớp → Đồng bộ**; chưa gửi lời mời hoặc tạo phòng trong lúc chờ. Đây là giới hạn của Google đối với tài khoản, không phải lỗi OAuth.
-3. Học sinh mở lời mời trên Classroom và chấp nhận một lần. Việc API trả invitation không phải xác nhận email đã được giao tới hộp thư.
-4. Bấm **Đồng bộ** sau khi học sinh tham gia. HocLuc đọc hết các trang roster trước khi thay quyền Meet. Danh sách chưa hoàn tất sẽ không dùng để thu hồi quyền.
-5. **Lên lịch học** chọn giờ trên máy và thời lượng. Google Calendar nhận yêu cầu gửi lịch cho các thành viên đã tham gia; giao diện không khẳng định email đã đến hộp thư.
+   Với Gmail cá nhân, Google có thể yêu cầu chấp nhận lớp `PROVISIONED` trong Classroom. Lỗi Classroom không chặn chuẩn bị buổi Calendar hoặc mời email vào sự kiện.
+3. Bấm **Bắt đầu dạy**. HocLuc tự tìm lại buổi đang mở, hoặc sự kiện đang diễn ra/sẽ bắt đầu trong 15 phút. Nếu chưa có buổi phù hợp, tự tạo buổi Calendar 90 phút và gửi lời mời tới danh sách email được chọn; không cần nút chuẩn bị riêng. **Lên lịch học** vẫn cho chọn ngày giờ và thời lượng trước.
+4. Giao diện hiện **Đang chuẩn bị phòng…**, tự kiểm tra lại hội nghị pending tối đa 10 lần, cách nhau 2 giây, rồi mở Studio khi có link và danh sách khách đã xác nhận. Lỗi hiện **Thử lại**, dùng lại request ID và sự kiện đã lưu. Không quay lại link Meet cũ khi lỗi. **Đồng bộ** nằm trong menu **Thao tác khác**. Mỗi sự kiện có Meet riêng, không sao chép conference data giữa các sự kiện.
+5. Học sinh dùng **link mới**, đăng nhập đúng email đã mời. Trạng thái **Có trong lời mời Calendar** chỉ xác nhận danh sách khách mời, không khẳng định email đã được giao hoặc học sinh chắc chắn vào không cần duyệt. Khả năng no-knock còn phải nghiệm thu trực tiếp với Gmail/Workspace đang dùng.
 6. **Bắt đầu dạy** đồng bộ lại rồi vào thẳng Studio. Panel Meet bên phải chứa luôn bước chọn tài khoản, mic/camera và tham gia; không mở cửa sổ Meet trung gian hoặc lobby. Chỉ khi bridge báo đã tham gia đúng URL, app mới đăng ký phiên dạy với backend. Có link phòng không đồng nghĩa đang dạy.
 
 ## Một luồng vào lớp
 
-- Dashboard **Chọn lớp để dạy** mở danh sách lớp. **Dạy buổi lẻ** là lựa chọn riêng, chỉ lựa chọn này mới tạo Meet mới.
+- Dashboard **Chọn lớp để dạy** mở danh sách lớp. **Bắt đầu dạy** tự chuẩn bị buổi phù hợp; bấm khi Studio cùng phòng đang mở sẽ **Tiếp tục dạy** ngay. Buổi đã kết thúc trong lịch sử HocLuc không được tái sử dụng dù chưa hết thời lượng Calendar; buổi đang dạy quá giờ giữ nguyên phòng. **Dạy buổi lẻ** giữ luồng riêng.
 - Các đường chọn lớp, mở lại buổi học, dạy từ bài giảng và dán link đều dùng `TeachingLauncher`. Phòng của lớp liên kết không có fallback sang `meet.google.com/new`.
 - Một Studio cho một buổi đang mở. **Về danh sách lớp (giữ buổi học)** giữ route, bảng và controller Meet. Bấm cùng lớp quay về đúng Studio đó, không tải lại WebView. Đây là về danh sách trong ứng dụng, không phải rời cuộc gọi Meet.
 - Chọn lớp khác cần xác nhận kết thúc buổi cũ. Chờ thao tác ghi nhận đang chạy hoàn tất, kết thúc session backend, đóng controller cũ rồi mở lớp mới; route trung gian bị dọn khỏi stack.
 - Backend tái sử dụng ID/thời điểm bắt đầu khi đăng ký lại cùng phòng, từ chối ghi đè buổi khác bằng HTTP 409. Yêu cầu kết thúc với ID cũ không được đóng buổi mới.
 - Trạng thái phiên sau khi khởi động lại app dựa trên backend, còn nét vẽ đang giữ trong RAM chỉ được giữ khi route Studio chưa bị hủy; cần lưu bài trước khi đóng hẳn ứng dụng.
 
-Scope `meetings.space.created` chỉ dùng cho các phòng do ứng dụng tạo; không giả định quyền trên một phòng do Classroom tạo ngoài app. Mặc định xin `TRUSTED`, đọc lại cấu hình thực tế; không tự mở `OPEN`. Tài khoản cùng tổ chức có thể vào theo chính sách TRUSTED. Học sinh không phải co-host. Membership được cấp không phải bằng chứng đã vào cuộc gọi.
+Luồng Calendar không gọi Meet API để sửa accessType hay thêm co-host. Scope `calendar.events.owned` hiện có được dùng để tạo/cập nhật sự kiện. Scope `meetings.space.created` chỉ dùng cho luồng phòng cũ do ứng dụng tạo. Không mặc định scope này có quyền sửa phòng do Calendar tạo. Membership cũ không phải bằng chứng đã vào cuộc gọi; giao diện ghi **Đã lưu membership** để tránh khẳng định sai.
 
 ## Lỗi và retry
 
 - Request ID ổn định trong cùng biểu mẫu tạo lớp và gửi lịch; Classroom project alias và Calendar event ID giúp retry không tạo trùng sau lỗi mạng.
 - Mời thất bại có thể mời lại bằng panel Mời học sinh. Lời mời đang mở không bị gửi lại hàng loạt mỗi lần đồng bộ.
 - Meet creation không có request ID đảm bảo exactly-once. Nếu mất phản hồi hoặc Google 5xx, HocLuc ghi `meetCreationUncertain`, không tự tạo phòng khác. Người cài đặt cần đối soát kết quả bằng tài khoản Google và dữ liệu ánh xạ trước khi tiếp tục. Không tự cấp quyền cho phòng khác.
-- Đồng bộ là thao tác chủ động, không phải push realtime. Lịch đã gửi không tự được cập nhật khi có thành viên mới/rời lớp.
-- Gỡ membership không đuổi người đang trong cuộc gọi, không thu hồi lời mời Calendar cũ hoặc các quyền vào từ tổ chức/chính sách khác. Cần xử lý trong Meet/Calendar nếu muốn thu hồi toàn bộ các đường vào.
+- Đồng bộ là thao tác chủ động. Khi thêm/gỡ email, HocLuc cập nhật khách mời của **sự kiện Calendar đang chọn**, gửi cập nhật và đọc lại danh sách; không tự sửa các buổi lịch sử. Khách được thêm ngoài HocLuc được giữ nguyên.
+- Gỡ khách mời không đuổi người đang trong cuộc gọi, không thu hồi các quyền vào từ tổ chức/chính sách Google khác hoặc membership của phòng cũ. Không tuyên bố chỉ danh sách HocLuc có thể vào.
+- Lưu event ID và request body trước khi POST. Sau timeout/409, đọc lại đúng sự kiện và kiểm tra chủ sở hữu HocLuc, thời gian, danh sách khách, hội nghị trước khi dùng link. Hội nghị pending không được tự tạo một sự kiện khác. Buổi hết giờ không được khởi động lại như buổi mới.
 - Ngắt kết nối thu hồi OAuth rồi xóa token local; không xóa lớp, phòng hoặc lịch Google.
 
 ## Kiểm chứng
@@ -87,3 +88,18 @@ Backend tests dùng H2 trong RAM và GoogleGateway giả lập. Flutter tests d�
 Để nghiệm thu: dùng một giáo viên và tài khoản học sinh được mời/chưa chấp nhận/đã chấp nhận/ngoài lớp; kiểm tra Gmail cá nhân và Workspace nếu sản phẩm hỗ trợ cả hai. Chạy lại Windows app thật sau khi cấu hình OAuth, thử đổi tài khoản, từ chối một scope, token bị thu hồi, thêm/rời lớp và mở lại cùng phòng qua nhiều buổi. Không chạy backend thứ hai trên cùng file H2 đang bị khóa.
 
 Nguồn: [Classroom invitations](https://developers.google.com/workspace/classroom/guides/manage-invitations), [Meet members](https://developers.google.com/workspace/meet/api/guides/meeting-space-members), [Desktop OAuth](https://developers.google.com/identity/protocols/oauth2/native-app).
+
+
+## Cấp quyền vào Meet theo email (không chờ Classroom)
+
+- `meetAllowed` lưu lựa chọn của giáo viên. Thêm email hoặc bấm Cấp quyền Meet đặt true; Gỡ quyền Meet đặt false. Đồng bộ Classroom không bật lại quyền đã gỡ và không tự cấp cho thành viên chỉ được nhập từ roster.
+- Tạo member với `ROLE_UNSPECIFIED`, không cấp COHOST. Đọc đầy đủ danh sách membership sau POST/DELETE để xác nhận; chỉ báo GRANTED khi có đúng email và resource thuộc đúng space. Lỗi API/không đọc lại được thì hiện trạng thái lỗi, chặn bắt đầu dạy. Không đánh đồng việc bấm nút với việc người học thực sự đã tham gia.
+- Khi chuyển dữ liệu cũ, khôi phục quyền từ intendedEmails, invitationId hoặc bản ghi lời mời do app tạo. Với email chỉ có trong roster hoặc không có bằng chứng nhập từ app, giáo viên kiểm tra và bấm Cấp quyền Meet nếu cần.
+- Chỉ xóa membership có dấu grantAttempted của HocLuc. Membership có sẵn ngoài app không tự xóa; app hiển thị EXTERNAL_ACCESS để giáo viên xử lý trong Google. Không gán COHOST và không bật bot duyệt tất cả.
+- Lỗi hoặc chờ kích hoạt Classroom nằm trong classroomWarnings, không chặn quyền Meet. Email trong danh sách có thể vào khi chưa chấp nhận lời mời Classroom. Lịch Calendar hiện chỉ là thông báo chứa URL, không dùng làm bằng chứng được phép vào Meet và không tự tạo thêm conference.
+- Kiểm thử thủ công: giáo viên bấm Đồng bộ trên lớp cũ hoặc Thêm email; đợi email hiện Đã cấp quyền. Học sinh đăng nhập đúng email, mở đúng link của lớp khi giáo viên đã ở trong phòng. Thử email chưa chấp nhận Classroom, email ngoài danh sách, gỡ/cấp lại quyền và kiểm tra lỗi Google theo email. Việc gỡ không đuổi người đã trong cuộc gọi và không xóa các quyền Calendar/Meet khác.
+
+
+### Lỗi 400 khi đổi chế độ phòng
+
+Kiểm tra thực tế ngày 15/10/2026 trên lớp Toán 12A1: GET space và LIST members thành công; PATCH Restricted trả HTTP 400, trạng thái FAILED_PRECONDITION, tính năng không khả dụng/chưa đủ điều kiện. Không coi đây là mất OAuth hay khuyên cấp quyền lại. Chỉ cho phép fallback trên phòng Trusted khi có lỗi precondition rõ ràng; lỗi mạng hoặc thiếu quyền khác vẫn báo lỗi. Với tạo phòng mới, chỉ thử Trusted sau một phản hồi precondition rõ ràng của lần tạo Restricted, không thử lại khi kết quả tạo chưa xác định. Sau khi sửa, cả hai email đã được Google trả về trong membership; chưa xác nhận việc học sinh thực sự vào cuộc gọi không cần duyệt.

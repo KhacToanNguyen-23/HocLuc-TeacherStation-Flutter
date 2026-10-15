@@ -2,7 +2,9 @@
 class MeetBridgeScript {
   static const String script = '''
 (function() {
+  if (!document.body) return;
   if (window.__meetBridgeInstalled) {
+    if (window.MeetBridge && window.MeetBridge.reportCallState) window.MeetBridge.reportCallState();
     return;
   }
   window.__meetBridgeInstalled = true;
@@ -18,9 +20,17 @@ class MeetBridgeScript {
     }
   }
 
+  function confirmedCallButton() {
+    var text = (document.body.innerText || '').toLowerCase();
+    if (text.includes('vui lòng đợi cho đến khi người tổ chức') || text.includes('wait until the host') || text.includes('asking to join')) return null;
+    return document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="rời cuộc gọi" i], button[aria-label*="kết thúc cuộc gọi" i], button[aria-label*="leave call" i], button[aria-label*="leave the call" i]');
+  }
+  function reportCallState() {
+    if (confirmedCallButton()) sendToFlutter('MEET_JOINED', { status: 'joined', url: window.location.href });
+  }
   function attemptAutoJoin() {
     if (window.__hoclucManualJoin) {
-      var joined = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
+      var joined = confirmedCallButton();
       if (joined) sendToFlutter('MEET_JOINED', { status: 'joined', url: window.location.href });
       return !!joined;
     }
@@ -55,7 +65,7 @@ class MeetBridgeScript {
     }) || document.querySelector('button[jsname="Qx7uuf"]');
 
     // Kiểm tra xem đã vào phòng chưa (nút kết thúc cuộc gọi đỏ)
-    var inCall = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
+    var inCall = confirmedCallButton();
     if (inCall) {
       sendToFlutter('MEET_JOINED', { status: 'joined', url: window.location.href });
       return true;
@@ -232,6 +242,7 @@ class MeetBridgeScript {
   }, 1000);
 
   window.MeetBridge = {
+    reportCallState: reportCallState,
     admitAll: function() {
       var buttons = Array.from(document.querySelectorAll('button, [role="button"], [jsaction*="admit" i]')).filter(function(b) {
         if (b.disabled || b.getAttribute('aria-disabled') === 'true') return false;

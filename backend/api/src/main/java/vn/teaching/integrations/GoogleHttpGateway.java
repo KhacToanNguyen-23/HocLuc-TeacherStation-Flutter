@@ -60,6 +60,14 @@ public class GoogleHttpGateway implements GoogleGateway {
         try { var result = action.get(); return result == null ? Map.of() : result; }
         catch (RestClientResponseException e) {
             int status = e.getStatusCode().value();
+            if (status == 400) {
+                try {
+                    var body = new com.fasterxml.jackson.databind.ObjectMapper().readTree(e.getResponseBodyAsString());
+                    if ("FAILED_PRECONDITION".equals(body.path("error").path("status").asText()))
+                        throw preconditionFailure();
+                } catch (GoogleFailure unsupported) { throw unsupported; }
+                catch (Exception ignored) { }
+            }
             if (status == 403) {
                 try {
                     var body = new com.fasterxml.jackson.databind.ObjectMapper().readTree(e.getResponseBodyAsString());
@@ -78,5 +86,8 @@ public class GoogleHttpGateway implements GoogleGateway {
         } catch (ResourceAccessException e) {
             throw new GoogleFailure(502, "GOOGLE_NETWORK", "Không nhận được phản hồi Google. Đồng bộ trước khi thử lại để tránh tạo trùng.");
         }
+    }
+    static GoogleFailure preconditionFailure() {
+        return new GoogleFailure(400,"GOOGLE_FAILED_PRECONDITION","Google chưa hỗ trợ thao tác này cho tài khoản hoặc tài khoản chưa đáp ứng điều kiện sử dụng.");
     }
 }
