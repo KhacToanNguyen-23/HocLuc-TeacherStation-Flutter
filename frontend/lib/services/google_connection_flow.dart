@@ -8,6 +8,7 @@ class GoogleConnectionFlow {
     required bool Function() isActive,
     bool forceConsent = false,
     bool reuseExisting = false,
+    Future<void> Function(String)? openBrowser,
   }) async {
     if (reuseExisting && !forceConsent && api.email.isNotEmpty) {
       final status = await api.call('status');
@@ -31,16 +32,31 @@ class GoogleConnectionFlow {
       post: true,
       body: {'email': api.email, 'forceConsent': forceConsent},
     );
-    await openExternalUrl(flow['authorizationUrl'] as String);
+    await (openBrowser ?? openExternalUrl)(flow['authorizationUrl'] as String);
     while (isActive() &&
         DateTime.now().millisecondsSinceEpoch < (flow['expiresAt'] as num)) {
       await Future<void>.delayed(const Duration(seconds: 2));
       if (!isActive()) break;
-      final result = await api.call(
-        'poll',
-        post: true,
-        body: {'state': flow['state'], 'pollToken': flow['pollToken']},
-      );
+      late Map<String, dynamic> result;
+      try {
+        result = await api.call(
+          'poll',
+          post: true,
+          body: {'state': flow['state'], 'pollToken': flow['pollToken']},
+        );
+      } on GoogleWorkspaceFailure catch (error) {
+        // Google may omit a refresh token for an old grant that this install
+        // no longer holds. Repair once; cancellation/network errors never loop.
+        if (!forceConsent && isActive() && error.code == 'REFRESH_MISSING') {
+          return connect(
+            api,
+            isActive: isActive,
+            forceConsent: true,
+            openBrowser: openBrowser,
+          );
+        }
+        rethrow;
+      }
       if (result['status'] == 'COMPLETE') return result['email'] as String;
     }
     throw StateError('Phiên kết nối đã kết thúc. Vui lòng thử lại.');

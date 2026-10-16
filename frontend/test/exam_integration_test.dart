@@ -17,9 +17,10 @@ import 'package:teaching_companion/services/exam_oauth_client.dart';
 import 'package:teaching_companion/services/local_service.dart';
 
 void main() {
-  setUp(() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    GoogleMeetAuthService().signOut();
+    await GoogleMeetAuthService().signOut();
   });
   ExamApi api({String role = 'TEACHER'}) => ExamApi(
     base: 'http://test.local',
@@ -58,11 +59,15 @@ void main() {
       );
     }),
   );
-  void signIn() => GoogleMeetAuthService().signInWithOtpSession(
-    token: 'shared-app-session',
-    name: 'Giáo viên',
-    email: 'teacher@test.vn',
-  );
+  Future<void> signIn() async {
+    GoogleMeetAuthService().signInWithOtpSession(
+      token: 'shared-app-session',
+      name: 'Giáo viên',
+      email: 'teacher@test.vn',
+    );
+    await GoogleMeetAuthService().init();
+  }
+
   test('Google access token and shared application token stay separate', () {
     final auth = GoogleMeetAuthService();
     final google = ExamOAuthClient(
@@ -136,7 +141,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      signIn();
+      await tester.runAsync(signIn);
       final client = api();
       addTearDown(client.dispose);
       await tester.pumpWidget(
@@ -166,7 +171,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      signIn();
+      await tester.runAsync(signIn);
       final client = api();
       addTearDown(client.dispose);
       await tester.pumpWidget(
@@ -185,11 +190,17 @@ void main() {
   testWidgets(
     'Expired or legacy session returns to the existing login screen',
     (tester) async {
-      GoogleMeetAuthService().signInWithDemoTeacher();
+      await tester.runAsync(() async {
+        GoogleMeetAuthService().signInWithDemoTeacher();
+        await GoogleMeetAuthService().init();
+      });
       await tester.pumpWidget(const MaterialApp(home: ExamWorkspaceScreen()));
       await tester.pumpAndSettle();
       expect(find.text('Đăng nhập lại'), findsOneWidget);
-      await tester.tap(find.text('Đăng nhập lại'));
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Đăng nhập lại'));
+        await GoogleMeetAuthService().init();
+      });
       await tester.pumpAndSettle();
       expect(find.byType(LoginScreen), findsOneWidget);
       expect(GoogleMeetAuthService().isSignedIn, isFalse);
@@ -238,7 +249,7 @@ void main() {
   testWidgets('Studio exam popup navigates without changing the board', (
     tester,
   ) async {
-    signIn();
+    await tester.runAsync(signIn);
     final client = api();
     addTearDown(client.dispose);
     final studio = StudioState();
@@ -261,7 +272,7 @@ void main() {
   testWidgets(
     'Native module keeps usable navigation at mobile and desktop widths',
     (tester) async {
-      signIn();
+      await tester.runAsync(signIn);
       final client = api(role: 'ADMIN');
       addTearDown(client.dispose);
       tester.view.devicePixelRatio = 1;

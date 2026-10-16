@@ -256,7 +256,30 @@ class GoogleIntegrationTest {
     }
     @Test void savedConnectionOnlyForcesConsentOnExplicitRepair() {
         assertFalse(connections.start(EMAIL).get("authorizationUrl").toString().contains("prompt=consent"));
-        assertTrue(connections.start(EMAIL,true).get("authorizationUrl").toString().contains("prompt=consent"));
+        assertTrue(connections.start(EMAIL,true).get("authorizationUrl").toString().contains("prompt=consent%20select_account"));
+    }
+    @Test void freshInstallDoesNotForcePreviouslyGrantedAccountToConsentAgain() {
+        String url=connections.start("").get("authorizationUrl").toString();
+        assertTrue(url.contains("prompt=select_account"));
+        assertTrue(url.contains("access_type=offline"));
+        assertFalse(url.contains("prompt=consent"));
+    }
+    @Test void repeatedLoginReusesRefreshTokenOnlyForVerifiedSubject() {
+        var flow=connections.start(EMAIL);
+        when(google.token(anyMap())).thenReturn(Map.of("access_token","fresh-login","scope",GoogleConnectionService.SCOPES));
+        when(google.call(eq("GET"),contains("userinfo"),eq("fresh-login"),isNull())).thenReturn(Map.of("email_verified",true,"email",EMAIL,"sub",SUBJECT));
+        connections.callback(flow.get("state").toString(),"code",null);
+        assertEquals("COMPLETE",connections.poll(flow.get("state").toString(),flow.get("pollToken").toString()).get("status"));
+        assertEquals("private-refresh",store.credentials(SUBJECT).get("refresh_token"));
+    }
+    @Test void differentSelectedAccountCannotBorrowRememberedAccountsGrant() {
+        var flow=connections.start(EMAIL);
+        when(google.token(anyMap())).thenReturn(Map.of("access_token","other-login","scope",GoogleConnectionService.SCOPES));
+        when(google.call(eq("GET"),contains("userinfo"),eq("other-login"),isNull())).thenReturn(Map.of("email_verified",true,"email","other@example.com","sub","new-sub"));
+        connections.callback(flow.get("state").toString(),"code",null);
+        var failure=assertThrows(GoogleFailure.class,()->connections.poll(flow.get("state").toString(),flow.get("pollToken").toString()));
+        assertEquals("REFRESH_MISSING",failure.code);
+        assertTrue(store.subject("other@example.com").isEmpty());
     }
     @Test void localOAuthSetupDoesNotRequirePriorTeacherEmail() throws Exception {
         mvc.perform(get("/api/integrations/google/status").header("X-Companion-Token",companionToken))

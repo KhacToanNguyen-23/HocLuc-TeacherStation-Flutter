@@ -61,7 +61,7 @@ public class GoogleConnectionService {
             .queryParam("client_id",clientId).queryParam("redirect_uri",redirect).queryParam("response_type","code")
             .queryParam("scope",SCOPES).queryParam("state",state).queryParam("code_challenge",hash(flow.verifier))
             .queryParam("code_challenge_method","S256").queryParam("access_type","offline")
-            .queryParam("prompt",forceConsent || email.isBlank() || store.subject(email).isEmpty() ? "consent" : "select_account")
+            .queryParam("prompt",forceConsent ? "consent select_account" : "select_account")
             .queryParamIfPresent("login_hint",email.isBlank() ? Optional.empty() : Optional.of(email)).build().encode().toUriString();
         return Map.of("authorizationUrl",url,"state",state,"pollToken",flow.proof,"expiresAt",flow.expires);
     }

@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GoogleMeetAuthService extends ChangeNotifier {
-  static final GoogleMeetAuthService _instance = GoogleMeetAuthService._internal();
+  static final GoogleMeetAuthService _instance =
+      GoogleMeetAuthService._internal();
   factory GoogleMeetAuthService() => _instance;
   GoogleMeetAuthService._internal();
 
@@ -13,6 +14,8 @@ class GoogleMeetAuthService extends ChangeNotifier {
   static const _kPhone = 'auth_phone';
   static const _kAvatar = 'auth_avatar';
   static const _kMethod = 'auth_method';
+
+  Future<void> _pendingPersistence = Future<void>.value();
 
   bool _isSignedIn = false;
   String? _teacherName;
@@ -30,54 +33,77 @@ class GoogleMeetAuthService extends ChangeNotifier {
   String? get accessToken => _accessToken;
   String? get authMethod => _authMethod;
 
-  /// Khởi tạo và nạp phiên đăng nhập đã lưu trong LocalStorage / SharedPreferences
+  /// Restore the local HocLuc session without contacting Google. Provider
+  /// token expiry is handled by the Workspace backend, not by this login gate.
   Future<void> init() async {
+    await _pendingPersistence;
     try {
       final prefs = await SharedPreferences.getInstance();
       _isSignedIn = prefs.getBool(_kIsSignedIn) ?? false;
-      if (_isSignedIn) {
-        _accessToken = prefs.getString(_kToken);
-        _teacherName = prefs.getString(_kName);
-        _teacherEmail = prefs.getString(_kEmail);
-        _teacherPhone = prefs.getString(_kPhone);
-        _teacherAvatar = prefs.getString(_kAvatar);
-        _authMethod = prefs.getString(_kMethod);
-        notifyListeners();
+      _accessToken = _isSignedIn ? prefs.getString(_kToken) : null;
+      _teacherName = _isSignedIn ? prefs.getString(_kName) : null;
+      _teacherEmail = _isSignedIn ? prefs.getString(_kEmail) : null;
+      _teacherPhone = _isSignedIn ? prefs.getString(_kPhone) : null;
+      _teacherAvatar = _isSignedIn ? prefs.getString(_kAvatar) : null;
+      _authMethod = _isSignedIn ? prefs.getString(_kMethod) : null;
+      if (_isSignedIn &&
+          _authMethod == 'google_oauth' &&
+          (_teacherEmail == null || _teacherEmail!.trim().isEmpty)) {
+        await signOut();
+        return;
       }
+      notifyListeners();
     } catch (e) {
       debugPrint('[GoogleMeetAuthService] init error: $e');
     }
   }
 
-  Future<void> _persistSession() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_kIsSignedIn, _isSignedIn);
-      if (_accessToken != null) await prefs.setString(_kToken, _accessToken!);
-      if (_teacherName != null) await prefs.setString(_kName, _teacherName!);
-      if (_teacherEmail != null) await prefs.setString(_kEmail, _teacherEmail!);
-      if (_teacherPhone != null) await prefs.setString(_kPhone, _teacherPhone!);
-      if (_teacherAvatar != null) await prefs.setString(_kAvatar, _teacherAvatar!);
-      if (_authMethod != null) await prefs.setString(_kMethod, _authMethod!);
-    } catch (e) {
-      debugPrint('[GoogleMeetAuthService] persist error: $e');
-    }
+  Future<void> _queuePersistence(Future<void> Function() operation) {
+    _pendingPersistence = _pendingPersistence
+        .then((_) => operation())
+        .catchError((Object e) {
+          debugPrint('[GoogleMeetAuthService] persist error: $e');
+        });
+    return _pendingPersistence;
   }
 
-  Future<void> _clearPersistedSession() async {
-    try {
+  Future<void> _persistSession() {
+    // Capture now: a later logout/account switch must not change this write.
+    final signedIn = _isSignedIn;
+    final values = <String, String?>{
+      _kToken: _accessToken,
+      _kName: _teacherName,
+      _kEmail: _teacherEmail,
+      _kPhone: _teacherPhone,
+      _kAvatar: _teacherAvatar,
+      _kMethod: _authMethod,
+    };
+    return _queuePersistence(() async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_kIsSignedIn);
-      await prefs.remove(_kToken);
-      await prefs.remove(_kName);
-      await prefs.remove(_kEmail);
-      await prefs.remove(_kPhone);
-      await prefs.remove(_kAvatar);
-      await prefs.remove(_kMethod);
-    } catch (e) {
-      debugPrint('[GoogleMeetAuthService] clear error: $e');
-    }
+      // Commit the signed-in marker last so a partial write is not restored.
+      await prefs.setBool(_kIsSignedIn, false);
+      for (final entry in values.entries) {
+        if (entry.value == null) {
+          await prefs.remove(entry.key);
+        } else {
+          await prefs.setString(entry.key, entry.value!);
+        }
+      }
+      if (values[_kMethod] == 'google_oauth') {
+        await prefs.setString('google_connection_email', values[_kEmail]!);
+      }
+      await prefs.setBool(_kIsSignedIn, signedIn);
+    });
   }
+
+  Future<void> _clearPersistedSession() => _queuePersistence(() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kIsSignedIn, false);
+    for (final key in [_kToken, _kName, _kEmail, _kPhone, _kAvatar, _kMethod]) {
+      await prefs.remove(key);
+    }
+    // Keep the account hint and API grant; logout is not Google revocation.
+  });
 
   /// Đăng nhập tài khoản Google (lưu token và thông tin giáo viên)
   Future<String> lastGoogleConnectionEmail() async {
@@ -93,11 +119,6 @@ class GoogleMeetAuthService extends ChangeNotifier {
     _teacherAvatar = null;
     _accessToken = null;
     _authMethod = 'google_oauth';
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('google_connection_email', email);
-    await prefs.remove(_kToken);
-    await prefs.remove(_kAvatar);
-    await prefs.remove(_kPhone);
     await _persistSession();
     notifyListeners();
   }
@@ -138,7 +159,10 @@ class GoogleMeetAuthService extends ChangeNotifier {
   }
 
   bool get isGoogleAuthenticated =>
-      _isSignedIn && (_authMethod == 'google' || _authMethod == 'google_oauth' || _authMethod == 'demo');
+      _isSignedIn &&
+      (_authMethod == 'google' ||
+          _authMethod == 'google_oauth' ||
+          _authMethod == 'demo');
 
   /// Mô phỏng đăng nhập nhanh cho giáo viên (Quick Sign-in)
   void quickSignIn({String? email, String? name}) {
@@ -179,7 +203,7 @@ class GoogleMeetAuthService extends ChangeNotifier {
   }
 
   /// Đăng xuất tài khoản
-  void signOut() {
+  Future<void> signOut() {
     _isSignedIn = false;
     _accessToken = null;
     _teacherName = null;
@@ -187,7 +211,8 @@ class GoogleMeetAuthService extends ChangeNotifier {
     _teacherPhone = null;
     _teacherAvatar = null;
     _authMethod = null;
-    _clearPersistedSession();
+    final cleared = _clearPersistedSession();
     notifyListeners();
+    return cleared;
   }
 }

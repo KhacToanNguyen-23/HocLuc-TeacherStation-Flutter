@@ -103,7 +103,6 @@ class MeetAutomationService extends ChangeNotifier {
   int _pendingAdmitCount = 0;
   bool _isBridgeReady = false;
   bool _hasHocLucCam = false;
-  bool _hasHocLucMic = false;
 
   final Map<String, MeetAdmissionRequest> _admissionRequests = {};
   final Map<String, _AdmissionAttempt> _admissionAttempts = {};
@@ -577,7 +576,6 @@ class MeetAutomationService extends ChangeNotifier {
         return;
       } else if (type == 'MEET_MEDIA_DEVICE_SELECTED' && payload is Map) {
         _hasHocLucCam = payload['hasHocLucCam'] == true;
-        _hasHocLucMic = payload['hasHocLucMic'] == true;
         notifyListeners();
       } else if (type == 'MEET_BRIDGE_READY') {
         _isBridgeReady = true;
