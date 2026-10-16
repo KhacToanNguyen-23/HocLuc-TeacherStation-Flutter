@@ -297,11 +297,11 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.selected : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.transparent,
-            width: 1.5,
+            width: 1,
           ),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -328,7 +328,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                   vertical: 2.5,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.sky50 : AppColors.border,
+                  color: isSelected ? Colors.white : AppColors.surfaceMuted,
                   borderRadius: BorderRadius.circular(AppRadii.control),
                 ),
                 child: Text(
@@ -441,7 +441,6 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
@@ -854,7 +853,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.panel),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -878,7 +877,6 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.successSurface,
                   borderRadius: BorderRadius.circular(AppRadii.panel),
-                  border: Border.all(color: AppColors.border),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
@@ -907,9 +905,8 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: AppColors.surfaceMuted,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1035,7 +1032,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.panel),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -103,12 +103,6 @@ class StudioDocumentPagesList extends StatelessWidget {
             color: isCurrent
                 ? AppColors.overlaySelected
                 : AppColors.overlayRaised,
-            border: Border.all(
-              color: isCurrent
-                  ? AppColors.overlayAccent
-                  : AppColors.overlayBorder,
-              width: isCurrent ? 1.4 : 1.0,
-            ),
             borderRadius: BorderRadius.circular(AppRadii.control),
           ),
           child: Row(
@@ -208,7 +202,6 @@ class StudioDocumentPagesList extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.overlaySelected,
           borderRadius: BorderRadius.circular(AppRadii.control),
-          border: Border.all(color: AppColors.overlaySelected),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,

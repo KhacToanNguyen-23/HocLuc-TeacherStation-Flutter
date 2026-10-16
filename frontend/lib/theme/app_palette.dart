@@ -12,7 +12,8 @@ abstract final class AppPalette {
   static const textPrimary = Color(0xFF0F172A);
   static const textSecondary = Color(0xFF475569);
   static const textMuted = Color(0xFF64748B);
-  static const border = Color(0xFFCBD5E1);
+  static const border = Color(0xFFE2E8F0);
+  static const surfaceBorder = Color(0xFFD2DCE7);
   static const inputBorder = Color(0xFF64748B);
   static const selected = Color(0xFFE0F2FE);
   static const onSelected = Color(0xFF075985);

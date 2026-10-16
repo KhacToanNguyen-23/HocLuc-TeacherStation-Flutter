@@ -1222,7 +1222,6 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     decoration: BoxDecoration(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadii.panel),
-      border: Border.all(color: AppColors.border),
     ),
     child: child,
   );

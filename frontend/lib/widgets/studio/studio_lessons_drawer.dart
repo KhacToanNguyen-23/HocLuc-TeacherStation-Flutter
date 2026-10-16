@@ -27,7 +27,6 @@ class StudioLessonsDrawer extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(right: BorderSide(color: line)),
       ),
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -93,11 +92,6 @@ class StudioLessonsDrawer extends StatelessWidget {
                     color: studio.page == index && studio.view == 'board'
                         ? const Color(0xfff0f4e8)
                         : Colors.white,
-                    border: Border.all(
-                      color: studio.page == index && studio.view == 'board'
-                          ? const Color(0xffadc38c)
-                          : line,
-                    ),
                     borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
                   child: Row(
@@ -214,7 +208,6 @@ class StudioLessonsDrawer extends StatelessWidget {
                             borderRadius: BorderRadius.circular(
                               AppRadii.control,
                             ),
-                            border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
                             children: [

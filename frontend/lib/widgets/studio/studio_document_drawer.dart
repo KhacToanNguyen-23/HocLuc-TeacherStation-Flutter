@@ -45,10 +45,6 @@ class StudioDocumentDrawer extends StatelessWidget {
                     topRight: Radius.circular(14),
                     bottomRight: Radius.circular(14),
                   ),
-                  border: Border.all(
-                    color: AppColors.overlayBorder,
-                    width: 1.2,
-                  ),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x77000000),
@@ -65,11 +61,6 @@ class StudioDocumentDrawer extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 8,
-                      ),
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: AppColors.overlayBorder),
-                        ),
                       ),
                       child: Row(
                         children: [
@@ -172,9 +163,6 @@ class StudioDocumentDrawer extends StatelessWidget {
                                             borderRadius: BorderRadius.circular(
                                               AppRadii.control,
                                             ),
-                                            border: Border.all(
-                                              color: AppColors.overlayBorder,
-                                            ),
                                           ),
                                           child: Row(
                                             children: [
@@ -257,9 +245,6 @@ class StudioDocumentDrawer extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(
                                     AppRadii.control,
                                   ),
-                                  border: Border.all(
-                                    color: AppColors.overlayBorder,
-                                  ),
                                 ),
                                 child: const Row(
                                   children: [
@@ -317,7 +302,6 @@ class StudioDocumentDrawer extends StatelessWidget {
                           topRight: Radius.circular(7),
                           bottomRight: Radius.circular(7),
                         ),
-                        border: Border.all(color: AppColors.overlayBorder),
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x55000000),

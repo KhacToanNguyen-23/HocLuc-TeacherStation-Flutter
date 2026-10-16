@@ -18,7 +18,7 @@ class ExamDashboardCard extends StatelessWidget {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(AppRadii.panel),
-      border: Border.all(color: AppColors.border),
+      border: Border.all(color: AppColors.surfaceBorder),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +89,7 @@ class ExamDashboardCard extends StatelessWidget {
                 ])
                   SizedBox(
                     width: tileWidth,
-                    child: OutlinedButton.icon(
+                    child: TextButton.icon(
                       onPressed: () => onOpen(page),
                       icon: Icon(icon, size: 20, color: AppColors.primary),
                       label: Text(
@@ -100,17 +100,29 @@ class ExamDashboardCard extends StatelessWidget {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.surfaceMuted,
+                        foregroundColor: AppColors.textPrimary,
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
                           vertical: AppSpacing.lg,
                         ),
                         minimumSize: const Size(0, 48),
-                        side: const BorderSide(color: AppColors.inputBorder),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppRadii.control),
                         ),
+                      ).copyWith(
+                        backgroundColor: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.pressed)) {
+                            return AppColors.selected;
+                          }
+                          if (states.contains(WidgetState.hovered) ||
+                              states.contains(WidgetState.focused)) {
+                            return AppColors.sky50;
+                          }
+                          return AppColors.surfaceMuted;
+                        }),
                       ),
                     ),
                   ),

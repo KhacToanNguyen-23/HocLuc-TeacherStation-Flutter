@@ -97,7 +97,6 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadii.panel),
-          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -111,7 +110,6 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
                   decoration: BoxDecoration(
                     color: AppColors.sky50,
                     borderRadius: BorderRadius.circular(AppRadii.control),
-                    border: Border.all(color: AppColors.border),
                   ),
                   child: Center(
                     child: Icon(Icons.add_link_rounded, color: sky, size: 20),

@@ -30,7 +30,7 @@ class DashboardEmptyCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.panel),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -40,9 +40,6 @@ class DashboardEmptyCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.xl,
               vertical: AppSpacing.md,
-            ),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -69,7 +66,6 @@ class DashboardEmptyCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.background,
                       borderRadius: BorderRadius.circular(AppRadii.control),
-                      border: Border.all(color: AppColors.border),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -151,10 +147,6 @@ class DashboardEmptyCard extends StatelessWidget {
                 ? AppColors.successSurface
                 : AppColors.sky50, // Soft Mint or Sky
             shape: BoxShape.circle,
-            border: Border.all(
-              color: isPlanning ? AppColors.border : AppColors.border,
-              width: 1.5,
-            ),
           ),
         ),
         // Central educational icon

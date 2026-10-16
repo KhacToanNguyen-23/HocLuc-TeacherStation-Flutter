@@ -242,9 +242,6 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
             decoration: BoxDecoration(
               color: hasRoom ? AppColors.successSurface : AppColors.background,
               borderRadius: BorderRadius.circular(AppRadii.control),
-              border: Border.all(
-                color: hasRoom ? AppColors.border : AppColors.border,
-              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +360,6 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
               decoration: BoxDecoration(
                 color: AppColors.warningSurface,
                 borderRadius: BorderRadius.circular(AppRadii.control),
-                border: Border.all(color: AppColors.warning),
               ),
               child: Row(
                 children: [
@@ -495,7 +491,6 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                   decoration: BoxDecoration(
                     color: AppColors.background,
                     borderRadius: BorderRadius.circular(AppRadii.panel),
-                    border: Border.all(color: AppColors.border),
                   ),
                   child: TextField(
                     controller: _chatInputController,

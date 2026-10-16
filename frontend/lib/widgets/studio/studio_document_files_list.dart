@@ -80,10 +80,8 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
               : AppColors.overlayRaised,
           borderRadius: BorderRadius.circular(AppRadii.control),
           border: Border.all(
-            color: _isDragging
-                ? AppColors.overlayAccent
-                : AppColors.overlayBorder,
-            width: _isDragging ? 1.5 : 1.0,
+            color: _isDragging ? AppColors.overlayAccent : Colors.transparent,
+            width: 1.5,
           ),
         ),
         child: Row(
@@ -152,10 +150,8 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
               : AppColors.overlayRaised,
           borderRadius: BorderRadius.circular(7),
           border: Border.all(
-            color: isActiveOnBoard
-                ? AppColors.overlayAccent
-                : AppColors.overlayBorder,
-            width: isActiveOnBoard ? 1.3 : 1.0,
+            color: isActiveOnBoard ? AppColors.overlayAccent : Colors.transparent,
+            width: 1.3,
           ),
         ),
         child: Column(

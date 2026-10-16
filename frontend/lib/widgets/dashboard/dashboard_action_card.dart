@@ -33,7 +33,6 @@ class _DashboardActionCardState extends State<DashboardActionCard> {
   Widget build(BuildContext context) {
     final sky = AppColors.primary;
     final slate = AppColors.textPrimary;
-    final slateBorder = AppColors.border;
 
     return FocusableActionDetector(
       mouseCursor: SystemMouseCursors.click,
@@ -69,21 +68,16 @@ class _DashboardActionCardState extends State<DashboardActionCard> {
                       ? AppColors.selected
                       : _isHovered
                       ? AppColors.sky50
-                      : AppColors.surface,
+                      : AppColors.surfaceMuted,
                   borderRadius: BorderRadius.circular(AppRadii.panel),
                   border: Border.all(
                     color: _isFocused
-                        ? AppColors.primaryPressed
+                        ? AppColors.primary
                         : _isHovered
-                        ? sky
-                        : slateBorder,
-                    width: 1.2,
+                        ? AppColors.primary.withValues(alpha: 0.55)
+                        : AppColors.surfaceBorder,
+                    width: _isFocused ? 2 : 1,
                   ),
-                  boxShadow: _isFocused
-                      ? const [
-                          BoxShadow(color: AppColors.primary, spreadRadius: 1),
-                        ]
-                      : null,
                 ),
                 child: Row(
                   children: [
@@ -94,14 +88,8 @@ class _DashboardActionCardState extends State<DashboardActionCard> {
                       width: compact ? 40 : 48,
                       height: compact ? 40 : 48,
                       decoration: BoxDecoration(
-                        color: _isHovered
-                            ? AppColors.selected
-                            : AppColors.sky50,
+                        color: AppColors.selected,
                         borderRadius: BorderRadius.circular(AppRadii.control),
-                        border: Border.all(
-                          color: _isHovered ? sky : AppColors.border,
-                          width: 1,
-                        ),
                       ),
                       child: Center(
                         child: Icon(widget.icon, size: 24, color: sky),

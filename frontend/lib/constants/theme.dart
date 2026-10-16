@@ -110,6 +110,7 @@ class AppColors {
   static const textSecondary = AppPalette.textSecondary;
   static const textMuted = AppPalette.textMuted;
   static const border = AppPalette.border;
+  static const surfaceBorder = AppPalette.surfaceBorder;
   static const inputBorder = AppPalette.inputBorder;
   static const selected = AppPalette.selected;
   static const onSelected = AppPalette.onSelected;

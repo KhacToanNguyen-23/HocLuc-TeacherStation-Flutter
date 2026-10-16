@@ -527,7 +527,6 @@ class _StudioScreenState extends State<StudioScreen> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border),
                   color: AppColors.sky50,
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -565,7 +564,6 @@ class _StudioScreenState extends State<StudioScreen> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.error),
                   color: AppColors.errorSurface,
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -732,9 +730,6 @@ class _StudioScreenState extends State<StudioScreen> {
                             width: panelWidth,
                             decoration: const BoxDecoration(
                               color: Colors.white,
-                              border: Border(
-                                left: BorderSide(color: AppColors.line),
-                              ),
                             ),
                             child: showPluginsMarketplace
                                 ? StudioPluginsMarketplacePanel(
@@ -906,9 +901,6 @@ class _StudioScreenState extends State<StudioScreen> {
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(
                                           AppRadii.panel,
-                                        ),
-                                        border: Border.all(
-                                          color: AppColors.border,
                                         ),
                                       ),
                                       child: Column(

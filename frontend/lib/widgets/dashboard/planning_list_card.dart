@@ -66,7 +66,7 @@ class PlanningListCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadii.panel),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: AppColors.surfaceBorder),
         ),
         child: const Center(
           child: CircularProgressIndicator(
@@ -115,7 +115,7 @@ class PlanningListCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.panel),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,9 +123,6 @@ class PlanningListCard extends StatelessWidget {
           // Header Row
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border)),
-            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -149,7 +146,6 @@ class PlanningListCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: AppColors.sky50,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
                       ),
                       child: Text(
                         '${filtered.length} bài',
@@ -240,9 +236,8 @@ class PlanningListCard extends StatelessWidget {
                     vertical: AppSpacing.md,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surfaceMuted,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     children: [
@@ -255,9 +250,6 @@ class PlanningListCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: subjectBg,
                           borderRadius: BorderRadius.circular(AppRadii.control),
-                          border: Border.all(
-                            color: subjectColor.withValues(alpha: 0.25),
-                          ),
                         ),
                         child: Text(
                           plan.subject,

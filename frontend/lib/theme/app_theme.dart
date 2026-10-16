@@ -189,7 +189,6 @@ abstract final class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.panel),
-          side: const BorderSide(color: AppColors.border),
         ),
       ),
       dialogTheme: DialogThemeData(
@@ -206,13 +205,12 @@ abstract final class AppTheme {
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.control),
-          side: const BorderSide(color: AppColors.border),
         ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surface,
         selectedColor: AppColors.selected,
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide.none,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.control),
         ),

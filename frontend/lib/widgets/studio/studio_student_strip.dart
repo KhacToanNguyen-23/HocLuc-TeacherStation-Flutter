@@ -229,14 +229,6 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                 ? AppColors.overlaySelected
                 : AppColors.overlayRaised,
             borderRadius: BorderRadius.circular(AppRadii.control),
-            border: Border.all(
-              color: p.isSpeaking
-                  ? AppColors.emerald100
-                  : p.isHandRaised
-                  ? AppColors.amber100
-                  : AppColors.overlayBorder,
-              width: p.isSpeaking || p.isHandRaised ? 1.5 : 1.0,
-            ),
           ),
           child: Row(
             children: [

@@ -25,7 +25,6 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
       width: 280,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(left: BorderSide(color: AppColors.line)),
       ),
       child: ListenableBuilder(
         listenable: widget.meetService,
@@ -37,9 +36,6 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
               // Header
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
-                decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: AppColors.line)),
-                ),
                 child: Row(
                   children: [
                     const Icon(
@@ -82,7 +78,6 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                   decoration: BoxDecoration(
                     color: AppColors.background,
                     borderRadius: BorderRadius.circular(AppRadii.control),
-                    border: Border.all(color: AppColors.border),
                   ),
                   child: const Row(
                     children: [
@@ -196,7 +191,6 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                 ),
                 decoration: const BoxDecoration(
                   color: AppColors.background,
-                  border: Border(top: BorderSide(color: AppColors.line)),
                 ),
                 child: Row(
                   children: [

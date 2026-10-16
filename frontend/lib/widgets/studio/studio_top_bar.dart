@@ -91,7 +91,6 @@ class StudioTopBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.sky50,
           borderRadius: BorderRadius.circular(AppRadii.control),
-          border: Border.all(color: AppColors.border),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
@@ -126,7 +125,6 @@ class StudioTopBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.successSurface,
             borderRadius: BorderRadius.circular(AppRadii.control),
-            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -162,7 +160,6 @@ class StudioTopBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.warningSurface,
             borderRadius: BorderRadius.circular(AppRadii.control),
-            border: Border.all(color: AppColors.warning),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -295,7 +292,6 @@ class StudioTopBar extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.selected,
                       borderRadius: BorderRadius.circular(AppRadii.control),
-                      border: Border.all(color: AppColors.border),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -329,7 +325,6 @@ class StudioTopBar extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppColors.sky50,
                           borderRadius: BorderRadius.circular(AppRadii.control),
-                          border: Border.all(color: AppColors.border),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

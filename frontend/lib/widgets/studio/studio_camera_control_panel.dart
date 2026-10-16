@@ -30,7 +30,6 @@ class StudioCameraControlPanel extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppRadii.panel),
-            border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.14),
@@ -142,7 +141,6 @@ class StudioCameraControlPanel extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(AppRadii.control),
-                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
@@ -203,11 +201,6 @@ class StudioCameraControlPanel extends StatelessWidget {
                         ? AppColors.successSurface
                         : AppColors.background,
                     borderRadius: BorderRadius.circular(AppRadii.control),
-                    border: Border.all(
-                      color: studio.showCameraPip
-                          ? AppColors.border
-                          : AppColors.border,
-                    ),
                   ),
                   child: Row(
                     children: [
@@ -261,7 +254,6 @@ class StudioCameraControlPanel extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.background,
                     borderRadius: BorderRadius.circular(AppRadii.control),
-                    border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     children: [

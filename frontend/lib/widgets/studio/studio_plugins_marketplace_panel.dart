@@ -23,7 +23,6 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
       width: 320,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(left: BorderSide(color: AppColors.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -32,9 +31,6 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
           Container(
             height: 56,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border)),
-            ),
             child: Row(
               children: [
                 Container(
@@ -43,7 +39,6 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.successSurface,
                     borderRadius: BorderRadius.circular(AppRadii.control),
-                    border: Border.all(color: AppColors.border),
                   ),
                   child: const Center(
                     child: Icon(
@@ -126,7 +121,6 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surfaceMuted,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border),
               ),
               child: const Icon(
                 Icons.extension_outlined,
@@ -171,9 +165,6 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isInstalled ? AppColors.border : AppColors.border,
-        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),

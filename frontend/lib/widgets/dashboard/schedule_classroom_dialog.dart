@@ -62,7 +62,6 @@ class _ScheduleClassroomDialogState extends State<ScheduleClassroomDialog> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadii.panel),
-          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -76,7 +75,6 @@ class _ScheduleClassroomDialogState extends State<ScheduleClassroomDialog> {
                   decoration: BoxDecoration(
                     color: amberBg,
                     borderRadius: BorderRadius.circular(AppRadii.control),
-                    border: Border.all(color: AppColors.warning),
                   ),
                   child: Center(
                     child: Icon(
@@ -160,7 +158,6 @@ class _ScheduleClassroomDialogState extends State<ScheduleClassroomDialog> {
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(AppRadii.control),
-                border: Border.all(color: AppColors.border),
               ),
               child: Row(
                 children: [
