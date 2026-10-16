@@ -63,6 +63,19 @@ class GoogleIntegrationTest {
         saved.put("students",new ArrayList<>(List.of(new LinkedHashMap<>(Map.of("email",address,"meetAllowed",true,"classroomStatus","INVITED")))));
         store.saveCourse(SUBJECT,saved);
     }
+    @Test void bulkMeetInviteRequiresExplicitActionAndDoesNotGrantNewRosterEmails() throws Exception {
+        var saved=course(); saved.put("admissionMode","CALENDAR"); store.saveCourse(SUBJECT,saved);
+        roster(List.of(student("one@example.com"),student("two@example.com")));
+        var synced=classes.sync(EMAIL,COURSE);
+        assertTrue(((List<Map<String,Object>>)synced.get("students")).stream().noneMatch(s -> Boolean.TRUE.equals(s.get("meetAllowed"))));
+        mvc.perform(post("/api/integrations/google/courses/"+COURSE+"/invite-all-meet")
+            .header("X-Companion-Token",companionToken).header("X-Google-Teacher-Email",EMAIL))
+            .andExpect(status().isOk());
+        assertTrue(((List<Map<String,Object>>)store.course(SUBJECT,COURSE).get("students")).stream().allMatch(s -> Boolean.TRUE.equals(s.get("meetAllowed"))));
+        roster(List.of(student("one@example.com"),student("two@example.com"),student("new@example.com")));
+        var next=classes.sync(EMAIL,COURSE);
+        assertFalse((Boolean)((List<Map<String,Object>>)next.get("students")).stream().filter(s -> "new@example.com".equals(s.get("email"))).findFirst().orElseThrow().get("meetAllowed"));
+    }
     @Test void pendingClassroomInvitationDoesNotBlockReadyMeetAndSyncIsIdempotent() {
         course(); roster(List.of()); allowStudent("pending@example.com");
         var result=classes.prepare(EMAIL,COURSE);

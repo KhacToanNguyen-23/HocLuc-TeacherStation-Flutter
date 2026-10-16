@@ -31,6 +31,7 @@ public class GoogleIntegrationController {
     @PostMapping("/courses") public Object create(HttpServletRequest req,@RequestBody Create body) { return classes.create(email(req),body.requestId(),body.title(),body.description(),body.emails()); }
     @PostMapping("/courses/{id}/invite") public Object invite(HttpServletRequest req,@PathVariable String id,@RequestBody Invite body) { return classes.invite(email(req),id,body.emails()); }
     @PostMapping("/courses/{id}/sync") public Object sync(HttpServletRequest req,@PathVariable String id) { return classes.sync(email(req),id); }
+    @PostMapping("/courses/{id}/invite-all-meet") public Object inviteAllToMeet(HttpServletRequest req,@PathVariable String id) { return classes.inviteAllToMeet(email(req),id); }
     @PostMapping("/courses/{id}/access") public Object access(HttpServletRequest req,@PathVariable String id,@RequestBody MeetAccess body) {
         if(body.allowed()==null) throw new IllegalArgumentException("allowed is required");
         return classes.setMeetAccess(email(req),id,body.email(),body.allowed());

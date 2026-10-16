@@ -26,6 +26,20 @@ class MeetBridgeScript {
     return document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="rời cuộc gọi" i], button[aria-label*="kết thúc cuộc gọi" i], button[aria-label*="leave call" i], button[aria-label*="leave the call" i]');
   }
   function reportCallState() {
+    // Inspect only the current account control, never participant/chat text or
+    // account-chooser rows. Missing or ambiguous evidence stays unknown.
+    var emails = new Set();
+    document.querySelectorAll('a[aria-label], button[aria-label]').forEach(function(node) {
+      var label = node.getAttribute('aria-label') || '';
+      if (!/google account|tài khoản google/i.test(label)) return;
+      var found = label.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+      found.forEach(function(email) { emails.add(email.toLowerCase()); });
+    });
+    sendToFlutter('MEET_ACCOUNT', {
+      url: window.location.href,
+      email: emails.size === 1 ? Array.from(emails)[0] : null,
+      inCall: !!confirmedCallButton()
+    });
     if (confirmedCallButton()) sendToFlutter('MEET_JOINED', { status: 'joined', url: window.location.href });
   }
   function attemptAutoJoin() {
@@ -117,24 +131,18 @@ class MeetBridgeScript {
     });
   }
 
-  function ensurePeoplePanelOpen() {
-    var inCall = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
-    if (!inCall) return;
-
-    var panel = document.querySelector('[aria-label*="mọi người" i][role="tabpanel"], div[jsname="AznF2e"], [data-tab-id="1"]');
-    var isPanelVisible = panel && panel.offsetParent !== null;
-    if (!isPanelVisible) {
-      var peopleBtn = document.querySelector('button[aria-label*="mọi người" i], button[aria-label*="people" i], button[data-panel-id="1"]');
-      if (peopleBtn && !peopleBtn.disabled) {
-        peopleBtn.click();
-      }
-    }
-  }
-
   var lastParticipantsKey = '';
+  var lastRosterAvailable = null;
   function scanParticipants() {
-    var nodes = Array.from(document.querySelectorAll('[data-participant-id]'));
-    if (nodes.length === 0) return;
+    var panel = document.querySelector('[role="tabpanel"][aria-label*="people" i], [role="tabpanel"][aria-label*="mọi người" i], [role="tabpanel"][aria-label*="participants" i], div[jsname="AznF2e"]');
+    // No recognized rows may mean a DOM change/loading, not an empty room.
+    var available = !!(confirmedCallButton() && panel && panel.offsetParent !== null && panel.querySelector('[data-participant-id]'));
+    if (available !== lastRosterAvailable) {
+      lastRosterAvailable = available;
+      sendToFlutter('PARTICIPANTS_STATE', { available: available });
+    }
+    if (!available) return;
+    var nodes = Array.from(panel.querySelectorAll('[data-participant-id]'));
 
     var participants = [];
     nodes.forEach(function(node) {
@@ -156,7 +164,7 @@ class MeetBridgeScript {
       });
     });
 
-    var key = participants.map(function(p) { return p.name + ':' + p.isMuted + ':' + p.isHandRaised; }).join(',');
+    var key = JSON.stringify(participants);
     if (key !== lastParticipantsKey) {
       lastParticipantsKey = key;
       sendToFlutter('PARTICIPANTS_UPDATE', participants);
@@ -178,10 +186,15 @@ class MeetBridgeScript {
 
   }
 
+  var scanTimer = null;
   var observer = new MutationObserver(function() {
-    scanChatMessages();
-    scanHandsAndKnocks();
-    scanParticipants();
+    if (scanTimer !== null) return;
+    scanTimer = setTimeout(function() {
+      scanTimer = null;
+      scanChatMessages();
+      scanHandsAndKnocks();
+      scanParticipants();
+    }, 200);
   });
 
   observer.observe(document.body, {
@@ -197,7 +210,6 @@ class MeetBridgeScript {
   }, 1000);
 
   setInterval(function() {
-    ensurePeoplePanelOpen();
     scanParticipants();
     scanHandsAndKnocks();
   }, 1000);
@@ -207,50 +219,6 @@ class MeetBridgeScript {
     reportCallState: reportCallState,
     // Admission is exclusively driven by the teacher's named request snapshot.
     admitAll: function() { return false; },
-    removeParticipant: function(targetName) {
-      if (!targetName) return false;
-      var clean = targetName.trim().toLowerCase();
-      var nodes = Array.from(document.querySelectorAll('[data-participant-id], div[role="listitem"]'));
-      var targetNode = nodes.find(function(n) {
-        return (n.innerText || '').toLowerCase().includes(clean);
-      });
-      if (targetNode) {
-        var menuBtn = targetNode.querySelector('button[aria-label*="thao tác khác" i], button[aria-label*="more actions" i], button[aria-label*="thêm" i]');
-        if (menuBtn) {
-          menuBtn.click();
-          setTimeout(function() {
-            var removeBtn = Array.from(document.querySelectorAll('[role="menuitem"], button')).find(function(m) {
-              var t = (m.innerText || m.textContent || '').toLowerCase();
-              return t.includes('xóa khỏi cuộc gọi') || t.includes('remove from the call') || t.includes('xóa');
-            });
-            if (removeBtn) {
-              removeBtn.click();
-              setTimeout(function() {
-                var confirmBtn = Array.from(document.querySelectorAll('button')).find(function(c) {
-                  var t = (c.innerText || c.textContent || '').toLowerCase();
-                  return t.includes('xóa') || t.includes('remove');
-                });
-                if (confirmBtn) confirmBtn.click();
-              }, 400);
-            }
-          }, 300);
-          return true;
-        }
-      }
-      return false;
-    },
-
-    muteAll: function() {
-      var buttons = Array.from(document.querySelectorAll('button')).filter(function(b) {
-        var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-        var a = (b.getAttribute('aria-label') || '').toLowerCase();
-        return t.includes('tắt tiếng tất cả') || t.includes('mute all') ||
-               a.includes('tắt tiếng tất cả') || a.includes('mute all');
-      });
-      buttons.forEach(function(btn) { btn.click(); });
-      return buttons.length;
-    },
-
     startPresenting: function() {
       var presentBtn = Array.from(document.querySelectorAll('button')).find(function(b) {
         var t = (b.innerText || b.textContent || '').trim().toLowerCase();
@@ -270,15 +238,7 @@ class MeetBridgeScript {
       if (!message || !message.trim()) return false;
 
       var input = document.querySelector('textarea[name="chatTextInput"], textarea[aria-label*="tin nhắn" i], textarea[aria-label*="message" i], [contenteditable="true"][aria-label*="tin nhắn" i]');
-      if (!input) {
-        var chatPanelBtn = document.querySelector('button[aria-label*="trò chuyện" i], button[aria-label*="chat" i]');
-        if (chatPanelBtn) {
-          chatPanelBtn.click();
-          setTimeout(function() { window.MeetBridge.sendChat(message); }, 500);
-          return true;
-        }
-        return false;
-      }
+      if (!input) return false;
 
       input.value = message;
       input.dispatchEvent(new Event('input', { bubbles: true }));

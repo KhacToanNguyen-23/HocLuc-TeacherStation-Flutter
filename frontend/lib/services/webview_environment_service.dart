@@ -4,18 +4,27 @@ import 'package:flutter/services.dart';
 import 'package:webview_windows/webview_windows.dart' as win;
 
 /// Manages the shared, persistent Microsoft Edge WebView2 environment on Windows.
-/// Ensures Google account session, cookies, and permissions persist permanently.
+/// Reuses cookies while the Google session remains valid.
 class WebviewEnvironmentService {
   static bool _initialized = false;
   static String? _resolvedUserDataPath;
+  static Future<void>? _initializing;
 
   static bool get isInitialized => _initialized;
   static String? get resolvedUserDataPath => _resolvedUserDataPath;
 
+  @visibleForTesting
+  static void resetForTesting() {
+    _initialized = false;
+    _resolvedUserDataPath = null;
+    _initializing = null;
+  }
+
   /// Resolves the default persistent directory in %APPDATA%/HocLucTeacherStation/EdgeProfile.
   static String get defaultUserDataPath {
     if (!kIsWeb && Platform.isWindows) {
-      final appData = Platform.environment['APPDATA'] ??
+      final appData =
+          Platform.environment['APPDATA'] ??
           Platform.environment['LOCALAPPDATA'] ??
           r'C:\Users\Public';
       return '$appData\\HocLucTeacherStation\\EdgeProfile';
@@ -23,18 +32,24 @@ class WebviewEnvironmentService {
     return '';
   }
 
-  /// Chromium launch arguments ensuring bypass of permission prompts and isolation of physical camera devices.
-  static const String chromiumAdditionalArguments =
-      '--use-fake-ui-for-media-stream --use-fake-device-for-media-stream --enable-usermedia-screen-capturing';
+  /// Synthetic devices are opt-in for automated testing, never normal teaching.
+  static const bool useTestMedia = bool.fromEnvironment('HOC_LUC_TEST_MEDIA');
+  static const String chromiumAdditionalArguments = useTestMedia
+      ? '--use-fake-ui-for-media-stream --use-fake-device-for-media-stream --enable-usermedia-screen-capturing'
+      : '--enable-usermedia-screen-capturing';
 
   /// Explicitly initializes the shared WebView2 environment before any WebviewController is created.
   static Future<void> ensureInitialized({String? customPath}) async {
     if (_initialized) return;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) {
-      _initialized = true;
       return;
     }
+    return _initializing ??= _initialize(customPath).whenComplete(() {
+      _initializing = null;
+    });
+  }
 
+  static Future<void> _initialize(String? customPath) async {
     try {
       final path = customPath ?? defaultUserDataPath;
       if (path.isNotEmpty) {
@@ -42,23 +57,30 @@ class WebviewEnvironmentService {
         if (!dir.existsSync()) {
           dir.createSync(recursive: true);
         }
-        _resolvedUserDataPath = path;
       }
 
       await win.WebviewController.initializeEnvironment(
-        userDataPath: _resolvedUserDataPath,
+        userDataPath: path,
         additionalArguments: chromiumAdditionalArguments,
       );
+      _resolvedUserDataPath = path;
       _initialized = true;
       debugPrint(
-          '[WebviewEnvironment] Successfully initialized with profile: $_resolvedUserDataPath');
+        '[WebviewEnvironment] Successfully initialized with profile: $_resolvedUserDataPath',
+      );
     } on PlatformException catch (e) {
-      // If already initialized by previous instance/runner, mark as initialized
-      debugPrint('[WebviewEnvironment] PlatformException during init (already initialized?): $e');
-      _initialized = true;
+      _resolvedUserDataPath = null;
+      if (e.code == 'environment_already_initialized') {
+        // Native state survives a Dart hot restart. Its profile is unknown.
+        _initialized = true;
+        return;
+      }
+      _initialized = false;
+      rethrow;
     } catch (e) {
-      debugPrint('[WebviewEnvironment] Init error: $e');
-      _initialized = true;
+      _initialized = false;
+      _resolvedUserDataPath = null;
+      rethrow;
     }
   }
 }

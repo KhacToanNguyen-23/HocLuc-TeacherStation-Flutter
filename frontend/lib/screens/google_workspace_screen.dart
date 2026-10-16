@@ -239,6 +239,36 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     });
   }
 
+  Future<void> _inviteAllToMeet(Map<String, dynamic> course) async {
+    final students = (course['students'] as List? ?? []).cast<Map>();
+    final count = students.where((s) => s['meetAllowed'] != true).length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mời tất cả email trong danh sách?'),
+        content: Text(
+          'Cấp quyền mời Meet cho thêm $count email. Buổi Calendar hiện tại sẽ được cập nhật và gửi lời mời; các buổi sau dùng danh sách này. Học sinh cần đăng nhập đúng email được mời. Quyền vào phòng còn phụ thuộc cấu hình Google Meet.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Mời tất cả'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run(() async {
+      _replace(
+        await _api.call('courses/${course['id']}/invite-all-meet', post: true),
+      );
+    });
+  }
+
   Widget _meetAccessAction(
     Map<String, dynamic> course,
     Map<String, dynamic> student,
@@ -1031,6 +1061,25 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
         for (final warning in warnings) _notice(warning, error: true),
         if (course['accessNotice'] != null)
           _notice(course['accessNotice'] as String),
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Wrap(
+            spacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                '${students.where((s) => s['meetAllowed'] == true).length}/${students.length} email được chọn để mời Meet',
+              ),
+              OutlinedButton(
+                onPressed:
+                    disabled || !students.any((s) => s['meetAllowed'] != true)
+                    ? null
+                    : () => _inviteAllToMeet(course),
+                child: const Text('Mời tất cả email trong danh sách'),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
         _panel(
           child: LayoutBuilder(

@@ -87,6 +87,7 @@ class _StudioScreenState extends State<StudioScreen> {
 
     studio.addListener(syncControllers);
     if (widget.teachingTarget != null) {
+      showInspector = true;
       _sessionId = widget.initialSessionId;
       MeetAutomationService().addListener(_onMeetChanged);
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -200,6 +201,10 @@ class _StudioScreenState extends State<StudioScreen> {
           _sessionError ??
           (_openingRoom
               ? 'Đang mở phòng học…'
+              : meet.accountMismatch
+              ? 'Tài khoản Meet ${meet.meetAccountEmail} khác tài khoản tạo phòng. Hãy đổi tài khoản trong Meet.'
+              : meet.needsAccountConfirmation
+              ? 'Kiểm tra Meet đang dùng ${meet.linkedTeacherEmail}. Lần đầu có thể cần đăng nhập; các lần sau dùng phiên đã lưu.'
               : _sessionRecorded
               ? 'Đang dạy · ${widget.teachingTarget!.title}'
               : _recordingSession
@@ -212,38 +217,57 @@ class _StudioScreenState extends State<StudioScreen> {
             ? const Color(0xffe8f4f3)
             : const Color(0xfffff1ed),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(
-              _sessionRecorded
-                  ? Icons.check_circle_outline
-                  : Icons.info_outline,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(text, style: const TextStyle(fontSize: 12))),
-            if (widget.teachingTarget!.teacherEmail != null &&
-                MediaQuery.sizeOf(context).width > 900)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Text(
-                  widget.teachingTarget!.teacherEmail!,
-                  style: const TextStyle(fontSize: 11),
+            Row(
+              children: [
+                Icon(
+                  _sessionRecorded
+                      ? Icons.check_circle_outline
+                      : Icons.info_outline,
+                  size: 18,
                 ),
-              ),
-            if (_sessionError != null)
-              TextButton(
-                onPressed: _openingRoom || _recordingSession
-                    ? null
-                    : () {
-                        if (meet.isHostJoined) {
-                          _queueSessionRegistration();
-                        } else {
-                          unawaited(_openTeachingRoom());
-                        }
-                      },
-                child: const Text('Thử lại'),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(text, style: const TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (meet.needsAccountConfirmation)
+                  TextButton(
+                    key: const Key('confirm-meet-account'),
+                    onPressed: meet.confirmMeetAccount,
+                    child: const Text('Tôi đã kiểm tra đúng tài khoản'),
+                  ),
+                if (widget.teachingTarget!.teacherEmail != null &&
+                    MediaQuery.sizeOf(context).width > 900)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Text(
+                      widget.teachingTarget!.teacherEmail!,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ),
+                if (_sessionError != null)
+                  TextButton(
+                    onPressed: _openingRoom || _recordingSession
+                        ? null
+                        : () {
+                            if (meet.isHostJoined) {
+                              _queueSessionRegistration();
+                            } else {
+                              unawaited(_openTeachingRoom());
+                            }
+                          },
+                    child: const Text('Thử lại'),
+                  ),
+              ],
+            ),
           ],
         ),
       );
@@ -648,21 +672,6 @@ class _StudioScreenState extends State<StudioScreen> {
     }
   }
 
-  void openInspector() => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    builder: (context) => SizedBox(
-      height: 520,
-      child: StudioInspectorPanel(
-        studio: studio,
-        notesController: notes,
-        questionController: question,
-        endpointController: endpoint,
-        onPreview: preview,
-      ),
-    ),
-  );
-
   Widget fittedStage({bool interactive = true}) {
     if (studio.view == 'question') {
       return StudioQuestionView(studio: studio, interactive: interactive);
@@ -698,7 +707,7 @@ class _StudioScreenState extends State<StudioScreen> {
             child: Scaffold(
               body: LayoutBuilder(
                 builder: (context, box) {
-                  final hasInspector = showInspector && box.maxWidth >= 1250;
+                  final hasInspector = showInspector;
 
                   return Column(
                     children: [
@@ -714,17 +723,13 @@ class _StudioScreenState extends State<StudioScreen> {
                         onCreateClassroomFromPlanning:
                             _handleCreateClassroomFromPlanning,
                         onToggleInspector: () {
-                          if (box.maxWidth < 1250) {
-                            openInspector();
-                          } else {
-                            setState(() {
-                              showInspector = !showInspector;
-                              if (showInspector) {
-                                showStudentsDrawer = false;
-                                showPluginsMarketplace = false;
-                              }
-                            });
-                          }
+                          setState(() {
+                            showInspector = !showInspector;
+                            if (showInspector) {
+                              showStudentsDrawer = false;
+                              showPluginsMarketplace = false;
+                            }
+                          });
                         },
                         onToggleStudents: () {
                           setState(() {
@@ -768,10 +773,11 @@ class _StudioScreenState extends State<StudioScreen> {
                                   ),
                                 Expanded(
                                   child: Padding(
+                                    key: const ValueKey('studio-board-space'),
                                     padding: const EdgeInsets.fromLTRB(
                                       4,
                                       4,
-                                      10,
+                                      62,
                                       4,
                                     ),
                                     child: fittedStage(),
@@ -779,14 +785,26 @@ class _StudioScreenState extends State<StudioScreen> {
                                 ),
                               ],
                             ),
-                            // OVERLAY RIGHT PANELS (Hover đè lên mép phải màn hình, KHÔNG MỜ NỀN, KHÔNG BÓP UI)
+                            if (hasInspector)
+                              Positioned.fill(
+                                child: GestureDetector(
+                                  key: const Key('dismiss-meet-panel'),
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () =>
+                                      setState(() => showInspector = false),
+                                  child: const ColoredBox(
+                                    color: Colors.transparent,
+                                  ),
+                                ),
+                              ),
+                            // Overlay panels never change the board's layout.
                             if (hasInspector ||
                                 showStudentsDrawer ||
                                 showPluginsMarketplace)
                               Positioned(
                                 top: 0,
                                 bottom: 0,
-                                right: 0,
+                                right: 52,
                                 child: Material(
                                   elevation: 16,
                                   shadowColor: Colors.black.withValues(
@@ -813,22 +831,76 @@ class _StudioScreenState extends State<StudioScreen> {
                                           )
                                         : showStudentsDrawer
                                         ? StudioStudentsDrawer(
+                                            onOpenMeet: () => setState(() {
+                                              showStudentsDrawer = false;
+                                              showPluginsMarketplace = false;
+                                              showInspector = true;
+                                            }),
                                             meetService:
                                                 MeetAutomationService(),
                                             onClose: () => setState(
                                               () => showStudentsDrawer = false,
                                             ),
                                           )
-                                        : StudioInspectorPanel(
-                                            studio: studio,
-                                            notesController: notes,
-                                            questionController: question,
-                                            endpointController: endpoint,
-                                            onPreview: preview,
+                                        : Column(
+                                            children: [
+                                              Align(
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: IconButton(
+                                                  tooltip: 'Đóng panel Meet',
+                                                  onPressed: () => setState(
+                                                    () => showInspector = false,
+                                                  ),
+                                                  icon: const Icon(
+                                                    Icons.close,
+                                                    size: 18,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: StudioInspectorPanel(
+                                                  studio: studio,
+                                                  notesController: notes,
+                                                  questionController: question,
+                                                  endpointController: endpoint,
+                                                  onPreview: preview,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                   ),
                                 ),
                               ),
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              bottom: 0,
+                              width: 52,
+                              child: Material(
+                                key: const Key('studio-meet-rail'),
+                                color: Colors.white,
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 8),
+                                    IconButton(
+                                      tooltip: 'Google Meet',
+                                      isSelected: hasInspector,
+                                      selectedIcon: const Icon(
+                                        Icons.videocam,
+                                        color: AppColors.emerald500,
+                                      ),
+                                      icon: const Icon(Icons.videocam_outlined),
+                                      onPressed: () => setState(() {
+                                        showInspector = !showInspector;
+                                        showStudentsDrawer = false;
+                                        showPluginsMarketplace = false;
+                                      }),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                             // Floating active plugin window
                             ListenableBuilder(
                               listenable: PluginManager(),

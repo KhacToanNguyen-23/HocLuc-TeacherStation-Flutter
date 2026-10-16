@@ -14,7 +14,12 @@ export 'screens/classroom_dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await WebviewEnvironmentService.ensureInitialized();
+  try {
+    await WebviewEnvironmentService.ensureInitialized();
+  } catch (e) {
+    // The Meet panel retries and displays native errors without blocking login.
+    debugPrint('[Startup] WebView2 profile is not ready: $e');
+  }
   await GoogleMeetAuthService().init();
   runApp(const CompanionApp());
 }

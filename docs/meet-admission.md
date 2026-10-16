@@ -31,6 +31,10 @@ thông tin phân biệt cần được kiểm tra ở đây.
 
 ## Giới hạn và kiểm thử
 
+Danh sách người tham gia trong HocLuc chỉ là dữ liệu đọc từ Meet. Nếu panel Mọi người không mở hoặc trang đang tải lại, giao diện báo dữ liệu có thể chưa cập nhật; bridge không tự giành panel. Các thao tác mic, hạ tay và mời ra được thực hiện trực tiếp trong Google Meet bằng nút **Điều khiển trong Google Meet**. HocLuc không tự đổi trạng thái hoặc xóa học sinh trước khi Meet thay đổi. Chat chỉ xuất hiện trong lịch sử khi bridge đọc được tin nhắn từ Meet; click gửi chưa phải bằng chứng đã gửi thành công.
+
+Bản dạy bình thường dùng thiết bị media thật (gồm camera ảo đã cài trên Windows). Thiết bị media giả chỉ bật khi build kiểm thử với `--dart-define=HOC_LUC_TEST_MEDIA=true`; không dùng cấu hình đó để nghiệm thu mic/camera thật. Sau khi đổi cờ phải khởi động lại toàn bộ app/native WebView, không chỉ hot restart.
+
 Đây là cầu nối DOM của WebView2, không phải API duyệt người tham gia của Google.
 Mỗi lệnh gắn với phòng, tài liệu, yêu cầu và lượt xử lý cụ thể. Một lần click
 hoặc một dòng biến mất không được coi là duyệt thành công. Bộ thử DOM cục bộ

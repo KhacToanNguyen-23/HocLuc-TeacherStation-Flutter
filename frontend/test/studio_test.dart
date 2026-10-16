@@ -116,6 +116,35 @@ void main() {
       await tester.pump();
       expect(tester.takeException(), isNull);
       expect(find.byType(StudioScreen), findsOneWidget);
+      final boardSpace = find.byKey(const ValueKey('studio-board-space'));
+      final beforeMeet = tester.getRect(boardSpace);
+      await tester.tap(find.byTooltip('Google Meet'));
+      await tester.pump();
+      expect(find.byTooltip('Đóng panel Meet'), findsOneWidget);
+      expect(tester.getRect(boardSpace), beforeMeet);
+      await tester.tap(find.byTooltip('Đóng panel Meet'));
+      await tester.pump();
+      expect(find.byTooltip('Đóng panel Meet'), findsNothing);
+      expect(tester.getRect(boardSpace), beforeMeet);
+      await tester.tap(find.byTooltip('Câu hỏi'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('Xem khung trình bày'));
+      await tester.pumpAndSettle();
+      final dialog = find.byType(Dialog);
+      expect(dialog, findsOneWidget);
+      expect(
+        find.descendant(of: dialog, matching: find.byType(TextField)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: dialog,
+          matching: find.textContaining('Q1 A / Q1 B'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   }
 }

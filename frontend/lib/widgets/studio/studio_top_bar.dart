@@ -186,12 +186,25 @@ class StudioTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (width < 760) {
+      return SizedBox(
+        height: 54,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: _buildBar(context, 760),
+        ),
+      );
+    }
+    return _buildBar(context, width);
+  }
+
+  Widget _buildBar(BuildContext context, double layoutWidth) {
     const pine = AppColors.pine;
     const muted = AppColors.muted;
     const line = AppColors.line;
 
     return Container(
-      width: width,
+      width: layoutWidth,
       height: 54,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: const BoxDecoration(
@@ -275,14 +288,16 @@ class StudioTopBar extends StatelessWidget {
                 const SizedBox(width: 8),
 
                 // 3. Trạng thái lưu (Có không gian cố định 108px riêng, không xê dịch các thẻ bên cạnh khi đổi trạng thái)
-                SizedBox(
-                  width: 108,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: _buildSaveStatusBadge(),
+                if (width >= 1100) ...[
+                  SizedBox(
+                    width: 108,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildSaveStatusBadge(),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
 
                 // 4. Thẻ chế độ Kế hoạch bài giảng hoặc Link lớp học Meet
                 if (isPlanningMode)

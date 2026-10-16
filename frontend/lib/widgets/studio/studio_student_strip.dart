@@ -177,7 +177,7 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
     return Tooltip(
       message: '${p.name}\n${p.isMuted ? "Đã tắt mic" : "Đang bật mic"}${p.isHandRaised ? " • Đang giơ tay" : ""}',
       child: InkWell(
-        onTap: () => widget.meetService.toggleMuteParticipant(p.id),
+        onTap: widget.onOpenStudentsDrawer,
         borderRadius: BorderRadius.circular(8),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

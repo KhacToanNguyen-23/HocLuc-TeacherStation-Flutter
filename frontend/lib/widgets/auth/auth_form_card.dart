@@ -254,7 +254,7 @@ class _AuthFormCardState extends State<AuthFormCard> {
       final rememberedEmail = await _authService.lastGoogleConnectionEmail();
       api = GoogleWorkspaceApi(email: rememberedEmail);
       if (!mounted) return;
-      final email = await GoogleConnectionFlow.connect(api, isActive: () => mounted);
+      final email = await GoogleConnectionFlow.connect(api, isActive: () => mounted, reuseExisting: true);
       if (!mounted) return;
       if (rememberedEmail.isNotEmpty && rememberedEmail.toLowerCase() != email.toLowerCase()) {
         await TeachingLauncher.requireIdleForAccountChange();

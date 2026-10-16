@@ -5,10 +5,11 @@ import 'package:teaching_companion/widgets/studio/studio_students_drawer.dart';
 import 'support/meet_admission_fixture.dart';
 
 void main() {
-  testWidgets('Participant controls remain; approvals live in global menu', (
+  testWidgets('Moderation opens real Meet without changing participant state', (
     tester,
   ) async {
     final service = MeetAutomationService.forTesting();
+    var opened = false;
     seedAdmissions(service);
     service.receiveBridgeMessage({
       'type': 'PARTICIPANTS_UPDATE',
@@ -19,11 +20,20 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: StudioStudentsDrawer(meetService: service, onClose: () {}),
+          body: StudioStudentsDrawer(
+            meetService: service,
+            onClose: () {},
+            onOpenMeet: () => opened = true,
+          ),
         ),
       ),
     );
     expect(find.text('Học sinh đã vào'), findsOneWidget);
+    expect(find.byTooltip('Mở mic cho học sinh'), findsNothing);
+    expect(find.byTooltip('Mời học sinh ra khỏi phòng'), findsNothing);
+    await tester.tap(find.byTooltip('Mở Google Meet để điều khiển học sinh'));
+    expect(opened, isTrue);
+    expect(service.participants.single.isMuted, isFalse);
     expect(find.text('Tự động duyệt học sinh'), findsNothing);
     expect(find.text('Cho vào tất cả'), findsNothing);
     expect(service.pendingAdmitCount, 2);

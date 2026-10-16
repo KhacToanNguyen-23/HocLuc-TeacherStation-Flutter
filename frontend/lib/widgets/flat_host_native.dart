@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart' as mac;
 import 'package:webview_windows/webview_windows.dart' as win;
+import '../services/webview_environment_service.dart';
 
 class FlatHost extends StatefulWidget {
   const FlatHost({
@@ -71,6 +72,7 @@ class _FlatHostState extends State<FlatHost> {
     try {
       final targetUrl = _resolveUrl(widget.url);
       if (defaultTargetPlatform == TargetPlatform.windows) {
+        await WebviewEnvironmentService.ensureInitialized();
         if (await win.WebviewController.getWebViewVersion() == null) {
           throw StateError('Cần Microsoft Edge WebView2 Runtime');
         }

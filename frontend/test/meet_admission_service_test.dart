@@ -7,6 +7,28 @@ import 'support/meet_admission_fixture.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test(
+    'linked class allows explicit batch approval but never auto-admits',
+    () async {
+      final commands = <String>[];
+      final service = MeetAutomationService.forTesting(
+        executeScript: (script) async {
+          commands.add(script);
+          return jsonEncode({'status': 'NOT_CLICKABLE'});
+        },
+      );
+      service.linkedTeacherEmail = 'teacher@example.com';
+      service.autoAdmitEnabled = true;
+      seedAdmissions(service);
+      expect(service.autoAdmitEnabled, isFalse);
+      expect(commands, isEmpty);
+      await service.admitAllPending();
+      expect(commands, hasLength(2));
+      expect(service.pendingAdmitCount, 2);
+      expect(service.admissionError('request-a'), isNotNull);
+      service.dispose();
+    },
+  );
+  test(
     'Batch shares repeated clicks and cancels its snapshot on room change',
     () async {
       final commands = <Map<String, dynamic>>[];

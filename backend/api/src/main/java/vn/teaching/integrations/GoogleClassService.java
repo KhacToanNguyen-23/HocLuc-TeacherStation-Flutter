@@ -89,6 +89,12 @@ public class GoogleClassService {
         course.put("students",students); store.saveCourse(subject,course);
         return sync(email,string(course,"id"));
     }
+    public synchronized Map<String,Object> inviteAllToMeet(String email,String id) {
+        String subject=connections.subject(email); var course=store.course(subject,id);
+        for(var row:students(course)) row.put("meetAllowed",true);
+        store.saveCourse(subject,course);
+        return sync(email,id);
+    }
     public synchronized Map<String,Object> setMeetAccess(String email,String id,String studentEmail,boolean allowed) {
         studentEmail=normalizeEmail(studentEmail);
         String subject=connections.subject(email); var course=store.course(subject,id);

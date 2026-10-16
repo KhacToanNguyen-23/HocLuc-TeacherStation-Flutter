@@ -23,6 +23,7 @@ class StudioMeetCockpitTab extends StatefulWidget {
 
 class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
   bool _meetExpanded = false;
+  bool _sendingChat = false;
   final TextEditingController _chatInputController = TextEditingController();
   final ScrollController _chatScrollController = ScrollController();
 
@@ -45,11 +46,30 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
     });
   }
 
-  void _handleSendMessage() {
-    final text = _chatInputController.text.trim();
+  Future<void> _handleSendMessage() async {
+    if (_sendingChat) return;
+    final draft = _chatInputController.text;
+    final text = draft.trim();
     if (text.isEmpty) return;
-    widget.meetService.sendChatMessage(text);
-    _chatInputController.clear();
+    setState(() => _sendingChat = true);
+    bool requested;
+    try {
+      requested = await widget.meetService.sendChatMessage(text);
+    } finally {
+      if (mounted) setState(() => _sendingChat = false);
+    }
+    if (!mounted) return;
+    if (!requested) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Chưa gửi được. Mở Chat trong Google Meet để gửi tin nhắn.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (_chatInputController.text == draft) _chatInputController.clear();
     _scrollToBottom();
   }
 
@@ -294,9 +314,9 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                       visualDensity: VisualDensity.compact,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
                     ),
-                    onPressed: () => meetService.muteAllParticipants(),
+                    onPressed: null,
                     icon: const Icon(Icons.mic_off_outlined, size: 14),
-                    label: const Text('Tắt tiếng cả lớp', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                    label: const Text('Tắt tiếng trong Google Meet', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
@@ -387,7 +407,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.send_rounded, size: 16, color: Colors.white),
-                  onPressed: _handleSendMessage,
+                  onPressed: _sendingChat ? null : _handleSendMessage,
                 ),
               ),
             ],

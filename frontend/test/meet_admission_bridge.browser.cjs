@@ -168,6 +168,38 @@ async function run(browser, name, body, test, full = false) {
       assert.equal((await queue(page)).requests.length,0);
       assert.equal((await queue(page)).unknownCount,0);
     });
+    await run(browser, 'account evidence uses Google account control, not roster or chat', '<button aria-label="Google Account: Teacher (teacher@example.com)">Account</button><section data-email="student@example.com">student@example.com</section>', async page => {
+      await page.evaluate(() => window.MeetBridge.reportCallState());
+      assert.equal(await page.evaluate(() => window.__messages.filter(m => m.type === 'MEET_ACCOUNT').at(-1).payload.email), 'teacher@example.com');
+      await page.evaluate(() => document.querySelector('button').remove());
+      await page.evaluate(() => window.MeetBridge.reportCallState());
+      assert.equal(await page.evaluate(() => window.__messages.filter(m => m.type === 'MEET_ACCOUNT').at(-1).payload.email), null);
+    }, true);
+    await run(browser, 'ambiguous account controls remain unknown', '<button aria-label="Tài khoản Google: teacher@example.com">A</button><button aria-label="Google Account: other@example.com">B</button>', async page => {
+      await page.evaluate(() => window.MeetBridge.reportCallState());
+      assert.equal(await page.evaluate(() => window.__messages.filter(m => m.type === 'MEET_ACCOUNT').at(-1).payload.email), null);
+    }, true);
+    await run(browser, 'bridge does not reopen People while teacher is using Chat', '<button aria-label="Leave call">Leave</button><button aria-label="People">People</button><textarea name="chatTextInput"></textarea>', async page => {
+      await page.evaluate(() => document.querySelector('[aria-label="People"]').onclick = () => window.__clicks.push('people'));
+      await page.clock.fastForward(5000);
+      assert.deepEqual(await page.evaluate(() => window.__clicks), []);
+    }, true);
+    await run(browser, 'visible empty roster clears snapshot, hidden panel stays unknown', '<button aria-label="Leave call">Leave</button><section role="tabpanel" aria-label="People"><div data-participant-id="student-1">Alice</div><div data-participant-id="self">Bạn</div></section>', async page => {
+      await page.clock.fastForward(1000);
+      assert.equal(await page.evaluate(() => window.__messages.filter(m => m.type === 'PARTICIPANTS_UPDATE').at(-1).payload[0].id), 'student-1');
+      await page.evaluate(() => document.querySelector('[data-participant-id]').remove());
+      await page.clock.fastForward(1000);
+      assert.deepEqual(await page.evaluate(() => window.__messages.filter(m => m.type === 'PARTICIPANTS_UPDATE').at(-1).payload), []);
+      await page.evaluate(() => document.querySelector('[role="tabpanel"]').style.display = 'none');
+      await page.clock.fastForward(1000);
+      assert.equal(await page.evaluate(() => window.__messages.filter(m => m.type === 'PARTICIPANTS_STATE').at(-1).payload.available), false);
+    }, true);
+    await run(browser, 'missing Chat input returns failure without opening another panel', '<button aria-label="Chat">Chat</button>', async page => {
+      await page.evaluate(() => document.querySelector('button').onclick = () => window.__clicks.push('chat'));
+      assert.equal(await page.evaluate(() => window.MeetBridge.sendChat('hello')), false);
+      await page.clock.fastForward(2000);
+      assert.deepEqual(await page.evaluate(() => window.__clicks), []);
+    }, true);
     console.log(JSON.stringify({passed:results.length,fixtures:results,liveGoogleValidated:false},null,2));
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

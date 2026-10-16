@@ -37,6 +37,41 @@ class MeetAutomationService extends ChangeNotifier {
   bool _manualJoin = false;
   bool _hostJoined = false;
   bool get isHostJoined => _hostJoined;
+  bool _callJoined = false;
+  String? _meetAccountEmail;
+  bool _accountConfirmedByTeacher = false;
+  String? get meetAccountEmail => _meetAccountEmail;
+  bool get accountMismatch =>
+      linkedTeacherEmail != null &&
+      _meetAccountEmail != null &&
+      _meetAccountEmail != linkedTeacherEmail!.trim().toLowerCase();
+  bool get needsAccountConfirmation =>
+      linkedTeacherEmail != null &&
+      _meetAccountEmail == null &&
+      !_accountConfirmedByTeacher;
+
+  // This is a teacher acknowledgement, not a verified Google identity or host role.
+  void confirmMeetAccount() {
+    if (linkedTeacherEmail == null || accountMismatch) return;
+    _accountConfirmedByTeacher = true;
+    _updateJoinedState();
+    notifyListeners();
+  }
+
+  void _updateJoinedState() {
+    _hostJoined = _callJoined && !accountMismatch && !needsAccountConfirmation;
+  }
+
+  void _resetMeetAccount() {
+    _participantsFresh = false;
+    _participants.clear();
+    _raisedHands.clear();
+    _callJoined = false;
+    _hostJoined = false;
+    _meetAccountEmail = null;
+    _accountConfirmedByTeacher = false;
+  }
+
   bool showEmbeddedMeet = false;
   Future<void>? pendingSessionRegistration;
   String? _linkedTeacherEmail;
@@ -44,6 +79,7 @@ class MeetAutomationService extends ChangeNotifier {
   bool? _admissionPreferenceBeforeLinkedClass;
   String? get linkedTeacherEmail => _linkedTeacherEmail;
   set linkedTeacherEmail(String? email) {
+    if (_linkedTeacherEmail != email) _resetMeetAccount();
     if (email != null && _linkedTeacherEmail == null) {
       _admissionPreferenceBeforeLinkedClass = _autoAdmitEnabled;
       _autoAdmitEnabled = false;
@@ -62,6 +98,8 @@ class MeetAutomationService extends ChangeNotifier {
   final List<MeetChatMessage> _messages = [];
   final List<String> _raisedHands = [];
   final List<MeetParticipant> _participants = [];
+  bool _participantsFresh = false;
+  bool get participantsFresh => _participantsFresh;
   int _pendingAdmitCount = 0;
   bool _isBridgeReady = false;
   bool _hasHocLucCam = false;
@@ -138,7 +176,8 @@ class MeetAutomationService extends ChangeNotifier {
     final nextUrl = cleanUrl.isEmpty ? null : cleanUrl;
     if (_meetingUrl != nextUrl) {
       _resetAdmissions();
-      _hostJoined = false;
+      _resetMeetAccount();
+      _messages.clear();
     }
     _meetingUrl = nextUrl;
     _status = _meetingUrl != null ? MeetStatus.ready : MeetStatus.idle;
@@ -218,7 +257,7 @@ class MeetAutomationService extends ChangeNotifier {
       return existingUrl;
     }
     _resetAdmissions();
-    _hostJoined = false;
+    _resetMeetAccount();
     if (autoJoin) linkedTeacherEmail = null;
     _manualJoin = !autoJoin;
     _meetingUrl = existingUrl;
@@ -259,6 +298,7 @@ class MeetAutomationService extends ChangeNotifier {
         if (_controller != controller) return;
         if (state == win.LoadingState.loading) {
           _resetAdmissions();
+          _resetMeetAccount();
           notifyListeners();
         } else if (state == win.LoadingState.navigationCompleted) {
           _scheduleAutoJoin(controller);
@@ -509,7 +549,11 @@ class MeetAutomationService extends ChangeNotifier {
           _messages.add(chat);
           notifyListeners();
         }
+      } else if (type == 'PARTICIPANTS_STATE' && payload is Map) {
+        _participantsFresh = payload['available'] == true;
+        notifyListeners();
       } else if (type == 'PARTICIPANTS_UPDATE' && payload is List) {
+        _participantsFresh = true;
         _participants.clear();
         for (final p in payload) {
           if (p is Map) {
@@ -538,16 +582,34 @@ class MeetAutomationService extends ChangeNotifier {
       } else if (type == 'MEET_BRIDGE_READY') {
         _isBridgeReady = true;
         notifyListeners();
-      } else if (type == 'MEET_JOINED') {
+      } else if (type == 'MEET_ACCOUNT' || type == 'MEET_JOINED') {
         if (payload is! Map || payload['url'] is! String) return;
         final uri = Uri.tryParse(payload['url'] as String);
         if (uri == null ||
+            uri.scheme != 'https' ||
             uri.host != 'meet.google.com' ||
             'https://meet.google.com${uri.path}' != _meetingUrl) {
           return;
         }
-        if (_hostJoined) return;
-        _hostJoined = true;
+        if (type == 'MEET_ACCOUNT') {
+          final email = payload['email'];
+          final normalized = email is String && email.contains('@')
+              ? email.trim().toLowerCase()
+              : null;
+          final inCall = payload.containsKey('inCall')
+              ? payload['inCall'] == true
+              : _callJoined;
+          if (_meetAccountEmail == normalized && _callJoined == inCall) return;
+          if (_meetAccountEmail != normalized) {
+            _meetAccountEmail = normalized;
+            _accountConfirmedByTeacher = false;
+          }
+          _callJoined = inCall;
+        } else {
+          if (_callJoined) return;
+          _callJoined = true;
+        }
+        _updateJoinedState();
         _status = MeetStatus.ready;
         notifyListeners();
       }
@@ -743,40 +805,23 @@ class MeetAutomationService extends ChangeNotifier {
     }
   }
 
-  /// Gửi tin nhắn chat từ Giáo viên vào phòng Meet
-  Future<void> sendChatMessage(String text) async {
+  /// Request a send; only CHAT_MESSAGE from Meet adds a visible message.
+  Future<bool> sendChatMessage(String text) async {
     final clean = text.trim();
-    if (clean.isEmpty) return;
-
-    final nowStr = DateTime.now().toLocal().toString().substring(11, 16);
-    final selfMessage = MeetChatMessage(
-      id: 'self_${DateTime.now().millisecondsSinceEpoch}',
-      sender: 'Tôi (Giáo viên)',
-      text: clean,
-      time: nowStr,
-      isSelf: true,
-    );
-    _messages.add(selfMessage);
-    notifyListeners();
-
-    if (_controller != null) {
-      final escaped = clean
-          .replaceAll(r'\', r'\\')
-          .replaceAll('"', r'\"')
-          .replaceAll('\n', r'\n');
-      try {
-        await _controller!.executeScript(
-          'window.MeetBridge && window.MeetBridge.sendChat("$escaped");',
-        );
-      } catch (e) {
-        debugPrint('[MeetAutomation] Error executing sendChat script: $e');
-      }
+    if (clean.isEmpty) return false;
+    if (_controller == null && _testExecuteScript == null) return false;
+    try {
+      final raw = await _executeAdmissionScript(
+        'window.MeetBridge ? window.MeetBridge.sendChat(${jsonEncode(clean)}) : false;',
+      );
+      return jsonDecode(raw) == true;
+    } catch (_) {
+      return false;
     }
   }
 
   /// Duyệt tất cả học sinh đang chờ vào phòng
   Future<void> admitAllPending() {
-    if (linkedTeacherEmail != null) return Future.value();
     final running = _admissionBatch;
     if (running != null) return running;
     // Snapshot before notifying: newcomers always require a fresh teacher action.
@@ -802,75 +847,14 @@ class MeetAutomationService extends ChangeNotifier {
     return completion.future;
   }
 
-  /// Tắt tiếng micro của toàn bộ học sinh trong phòng
-  Future<void> muteAllParticipants() async {
-    for (int i = 0; i < _participants.length; i++) {
-      _participants[i] = _participants[i].copyWith(
-        isMuted: true,
-        isSpeaking: false,
-      );
-    }
-    notifyListeners();
-    if (_controller != null) {
-      try {
-        await _controller!.executeScript(
-          'window.MeetBridge && window.MeetBridge.muteAll();',
-        );
-      } catch (e) {
-        debugPrint('[MeetAutomation] Error executing muteAll script: $e');
-      }
-    }
-  }
-
-  /// Bật/Tắt tiếng micro riêng từng học sinh
-  void toggleMuteParticipant(String id) {
-    final idx = _participants.indexWhere((p) => p.id == id);
-    if (idx != -1) {
-      final p = _participants[idx];
-      final newMuted = !p.isMuted;
-      _participants[idx] = p.copyWith(
-        isMuted: newMuted,
-        isSpeaking: newMuted ? false : p.isSpeaking,
-      );
-      notifyListeners();
-    }
-  }
-
-  /// Hạ tay học sinh đang giơ tay
-  void lowerHandParticipant(String id) {
-    final idx = _participants.indexWhere((p) => p.id == id);
-    if (idx != -1) {
-      final p = _participants[idx];
-      _participants[idx] = p.copyWith(isHandRaised: false);
-      _raisedHands.remove(p.name);
-      notifyListeners();
-    }
-  }
-
-  /// Mời học sinh ra khỏi phòng học (Kick out)
-  Future<void> removeParticipant(String id, String name) async {
-    _participants.removeWhere((p) => p.id == id);
-    _raisedHands.remove(name);
-    notifyListeners();
-    final ctrl = _controller;
-    if (ctrl == null) return;
-    try {
-      final safeName = name.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
-      await ctrl.executeScript(
-        'window.MeetBridge && window.MeetBridge.removeParticipant("$safeName");',
-      );
-    } catch (e) {
-      debugPrint('[MeetAutomation] Error executing removeParticipant: $e');
-    }
-  }
-
   /// Xóa sạch dữ liệu phiên học khi rời phòng
   void clearMeetingEvents() {
     _resetAdmissions();
-    _hostJoined = false;
+    _resetMeetAccount();
     _messages.clear();
     _raisedHands.clear();
     _participants.clear();
+    _participantsFresh = false;
     _pendingAdmitCount = 0;
     _isBridgeReady = false;
     notifyListeners();

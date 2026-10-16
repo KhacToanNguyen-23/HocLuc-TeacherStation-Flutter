@@ -14,7 +14,7 @@ Future<void> openExternalUrl(String url) async {
       }
     }
   } catch (e) {
-    debugPrint('[UrlOpenerNative] Failed to open external URL "$url": $e');
+    debugPrint('[UrlOpenerNative] Failed to open external URL: $e');
     rethrow;
   }
 }

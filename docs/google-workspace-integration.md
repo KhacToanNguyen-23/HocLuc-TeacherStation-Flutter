@@ -7,7 +7,7 @@ Giáo viên có thể đăng nhập bằng nút Google để kết nối API nga
 - Classroom: tạo lớp, mời email, đọc danh sách học sinh đã chấp nhận.
 - Calendar: tạo sự kiện có `conferenceData.createRequest`, `conferenceDataVersion=1`, khách mời là email giáo viên đã chọn, `sendUpdates=all`. Link Meet lấy từ video entry point của sự kiện, không dán link phòng cũ vào location/description.
 - Meet: phòng của buổi Calendar dùng trong Studio. Lớp cũ còn dữ liệu membership được giữ để tương thích, nhưng giao diện yêu cầu chuẩn bị buổi Calendar trước khi bắt đầu theo luồng mới.
-- WebView2: mở đúng phòng, giáo viên chọn đúng tài khoản rồi tham gia; giữ các chức năng studio hiện có. Lớp liên kết không dùng auto-admit/duyệt tất cả.
+- WebView2: mở đúng phòng, giáo viên chọn đúng tài khoản rồi tham gia; giữ các chức năng studio hiện có. Lớp liên kết không tự động duyệt; giáo viên có thể xác nhận thủ công danh sách yêu cầu hiện tại bằng menu toàn app.
 
 Classroom course và sự kiện Calendar được liên kết trong dữ liệu HocLuc. Đây không phải thao tác tạo nút Meet nguyên bản trên giao diện Classroom. HocLuc không gọi một API không tồn tại để tạo nút đó.
 
@@ -55,6 +55,13 @@ Refresh token chỉ được dùng ở backend. Danh tính OAuth đã được G
 6. **Bắt đầu dạy** đồng bộ lại rồi vào thẳng Studio. Panel Meet bên phải chứa luôn bước chọn tài khoản, mic/camera và tham gia; không mở cửa sổ Meet trung gian hoặc lobby. Chỉ khi bridge báo đã tham gia đúng URL, app mới đăng ký phiên dạy với backend. Có link phòng không đồng nghĩa đang dạy.
 
 ## Một luồng vào lớp
+
+- Studio luôn có thanh **Google Meet** rộng 52 px bên phải, kể cả khi chưa chọn lớp. Panel mở dạng overlay cạnh thanh này ở mọi kích thước, không làm co bảng. Nút **Đóng panel Meet**, Esc hoặc bấm ngoài chỉ ẩn panel, giữ phiên Meet hiện tại. Bắt đầu buổi dạy vẫn tự mở panel; thanh công cụ trên cùng cuộn ngang ở cửa sổ dưới 760 px.
+
+- Nút Google ở màn đăng nhập kiểm tra lại kết nối đã nhớ trước. Nếu còn dùng được, backend gia hạn token khi cần và app đăng nhập lại mà không mở OAuth. Lỗi mạng/cấu hình giữ kết nối để thử lại; chỉ kết nối mới hoặc cần cấp quyền lại mới mở trình duyệt hệ thống.
+- Studio đối chiếu email trên nút tài khoản Google của Meet (DOM, không phải bằng chứng OAuth). Khác email tạo phòng thì chưa ghi nhận buổi dạy. Khi DOM thiếu/không rõ email, giáo viên kiểm tra tài khoản trong Meet rồi bấm **Tôi đã kiểm tra đúng tài khoản**. App vẫn chờ tín hiệu đang trong cuộc gọi đúng URL; lời xác nhận của giáo viên không tự tạo trạng thái đã tham gia hoặc chứng minh quyền host. Tải lại trang, đổi tài khoản hay đổi phòng cần kiểm tra lại. OAuth và cookie WebView2 độc lập; không chạy OAuth trong WebView và không sao chép cookie/token giữa hai phiên.
+- Danh sách lớp hiển thị số email được chọn để mời Meet. **Mời tất cả email trong danh sách** cần xác nhận trước khi cấp `meetAllowed` cho danh sách đang lưu và đồng bộ sự kiện hiện tại. Email mới đồng bộ sau đó vẫn mặc định chưa được chọn; có thể chọn từng email. Chưa có sự kiện thì lời mời được gửi khi bắt đầu/lên lịch buổi học.
+- WebView2 chỉ được đánh dấu sẵn sàng sau khi khởi tạo profile thành công. Lỗi được trả về để thử lại; các yêu cầu khởi tạo đồng thời dùng chung một lần khởi tạo.
 
 - Dashboard **Chọn lớp để dạy** mở danh sách lớp. **Bắt đầu dạy** tự chuẩn bị buổi phù hợp; bấm khi Studio cùng phòng đang mở sẽ **Tiếp tục dạy** ngay. Buổi đã kết thúc trong lịch sử HocLuc không được tái sử dụng dù chưa hết thời lượng Calendar; buổi đang dạy quá giờ giữ nguyên phòng. **Dạy buổi lẻ** giữ luồng riêng.
 - Các đường chọn lớp, mở lại buổi học, dạy từ bài giảng và dán link đều dùng `TeachingLauncher`. Phòng của lớp liên kết không có fallback sang `meet.google.com/new`.
