@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/models/studio_state.dart';
 import 'package:teaching_companion/widgets/floating_pip.dart';
 import 'package:teaching_companion/widgets/floating_timer.dart';
-import 'package:teaching_companion/widgets/drawer_questions.dart';
 import 'package:teaching_companion/widgets/studio/studio_document_drawer.dart';
 import 'package:teaching_companion/widgets/stage_container.dart';
 
@@ -87,7 +86,7 @@ void main() {
       studio.dispose();
     });
 
-    testWidgets('DrawerQuestions slides out and shows document manager', (
+    testWidgets('StudioDocumentDrawer slides out and shows document manager', (
       tester,
     ) async {
       final studio = StudioState();
@@ -96,7 +95,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: Stack(children: [DrawerQuestions(studio: studio)]),
+            body: Stack(children: [StudioDocumentDrawer(studio: studio)]),
           ),
         ),
       );
@@ -139,9 +138,7 @@ void main() {
 
       expect(find.byType(FloatingPip), findsOneWidget);
       expect(
-        find.byWidgetPredicate(
-          (w) => w is StudioDocumentDrawer || w is DrawerQuestions,
-        ),
+        find.byWidgetPredicate((w) => w is StudioDocumentDrawer),
         findsOneWidget,
       );
 

@@ -6,6 +6,7 @@ import '../../services/local_service.dart';
 import '../../services/google_workspace_api.dart';
 import '../../services/google_connection_flow.dart';
 import '../../services/teaching_launcher.dart';
+import 'google_webview_login_dialog.dart';
 
 /// Reusable Authentication Form Card handling Password Login, OTP Signup,
 /// Google Single Sign-On and Quick Demo Teacher Login.
@@ -248,13 +249,17 @@ class _AuthFormCardState extends State<AuthFormCard> {
 
   Future<void> _handleGoogleSignInAction() async {
     if (_isLoading) return;
-    setState(() { _isLoading = true; _errorMessage = null; _infoMessage = 'Hoàn tất kết nối Google trong trình duyệt, sau đó trở về HocLuc.'; });
+    setState(() { _isLoading = true; _errorMessage = null; _infoMessage = 'Đang mở cửa sổ đăng nhập Google...'; });
     GoogleWorkspaceApi? api;
     try {
       final rememberedEmail = await _authService.lastGoogleConnectionEmail();
       api = GoogleWorkspaceApi(email: rememberedEmail);
       if (!mounted) return;
-      final email = await GoogleConnectionFlow.connect(api, isActive: () => mounted);
+      final email = await GoogleConnectionFlow.connect(
+        api,
+        context: context,
+        isActive: () => mounted,
+      );
       if (!mounted) return;
       if (rememberedEmail.isNotEmpty && rememberedEmail.toLowerCase() != email.toLowerCase()) {
         await TeachingLauncher.requireIdleForAccountChange();
@@ -263,7 +268,21 @@ class _AuthFormCardState extends State<AuthFormCard> {
       await _authService.signInWithGoogleConnection(email);
       if (mounted) widget.onSuccess?.call();
     } catch (e) {
-      if (mounted) setState(() => _errorMessage = e.toString().replaceFirst('Bad state: ', ''));
+      final errorMsg = e.toString().replaceFirst('Bad state: ', '');
+      // Fallback: Nếu Backend chưa cấu hình Google Cloud OAuth Client ID, mở trực tiếp WebView2 đăng nhập Google:
+      if (errorMsg.contains('chưa được cấu hình kết nối Google') || errorMsg.contains('GOOGLE_NOT_CONFIGURED')) {
+        debugPrint('[AuthFormCard] Google OAuth not configured on backend. Falling back to direct WebView2 Google Sign-In.');
+        if (!mounted) return;
+        setState(() {
+          _infoMessage = 'Đang mở cửa sổ đăng nhập Google qua WebView2...';
+        });
+        final email = await GoogleWebviewLoginDialog.show(context, authService: _authService);
+        if (email != null && email.isNotEmpty && mounted) {
+          widget.onSuccess?.call();
+          return;
+        }
+      }
+      if (mounted) setState(() => _errorMessage = errorMsg);
     } finally {
       api?.close();
       if (mounted) setState(() { _isLoading = false; _infoMessage = null; });

@@ -81,11 +81,27 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
         }
 
         // 2. Nhận diện trạng thái đăng nhập Google thành công
-        if (url.contains('myaccount.google.com') ||
-            url.contains('accounts.google.com/ManageAccount') ||
-            url.contains('accounts.google.com/b/') ||
-            (url.contains('google.com') && !url.contains('/signin') && !url.contains('ServiceLogin'))) {
-          _extractGoogleUserInfo(controller);
+        final isOAuth = widget.initialUrl.contains('/oauth2/') ||
+            widget.initialUrl.contains('/auth?') ||
+            widget.initialUrl.contains('response_type=code');
+
+        if (isOAuth) {
+          if (url.contains('/api/integrations/google/callback') ||
+              url.contains('/api/auth/google/callback') ||
+              url.contains(':47831/api/integrations/google/callback')) {
+            debugPrint('[GoogleWebview] OAuth callback reached: $url');
+            Future.delayed(const Duration(milliseconds: 600), () {
+              if (mounted) Navigator.of(context).pop('oauth_complete');
+            });
+            return;
+          }
+        } else {
+          if (url.contains('myaccount.google.com') ||
+              url.contains('accounts.google.com/ManageAccount') ||
+              url.contains('accounts.google.com/b/') ||
+              (url.contains('google.com') && !url.contains('/signin') && !url.contains('ServiceLogin'))) {
+            _extractGoogleUserInfo(controller);
+          }
         }
       });
 
@@ -95,7 +111,11 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
           _isLoading = (state == win.LoadingState.loading);
         });
 
-        if (state == win.LoadingState.navigationCompleted) {
+        final isOAuth = widget.initialUrl.contains('/oauth2/') ||
+            widget.initialUrl.contains('/auth?') ||
+            widget.initialUrl.contains('response_type=code');
+
+        if (!isOAuth && state == win.LoadingState.navigationCompleted) {
           _extractGoogleUserInfo(controller);
         }
       });
