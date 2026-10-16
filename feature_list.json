@@ -658,5 +658,85 @@
     "verification_command": "flutter test test/plugin_storage_test.dart",
     "notes": "Covers P2 story",
     "priority": "P2"
+  },
+  {
+    "id": "inapp-google-oauth-login",
+    "title": "In-app Google OAuth Login in Edge WebView2 Dialog",
+    "status": "passing",
+    "evidence": "dart analyze passed (0 issues), test/google_connection_identity_test.dart & test/classroom_dashboard_test.dart passed",
+    "user_visible_behavior": "Teacher clicks Google icon at LoginScreen, completes OAuth and consent inside in-app WebView2 dialog without opening external browser.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "calendar-meet-link-with-attendees",
+    "title": "Automated Meet Link Generation with Student Attendees",
+    "status": "passing",
+    "evidence": "mvn test -Dtest=GoogleIntegrationTest passed (47/47 passed), GoogleClassService schedule & attendees verified",
+    "user_visible_behavior": "Backend automatically creates Google Calendar event with Hangouts Meet conference and student email attendees so students enter without knock.",
+    "verification_command": "mvn test",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "studio-meet-host-session",
+    "title": "Seamless Meet Host Session in Studio Without Re-login",
+    "status": "passing",
+    "evidence": "flutter test test/google_workspace_test.dart & test/architecture_test.dart passed (all 5 architecture invariants verified)",
+    "user_visible_behavior": "Edge WebView2 in Studio loads created Meet link with preserved Google cookies as Host without showing any second login prompt.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "silent-token-refresh",
+    "title": "Silent Google Token Refresh in Background",
+    "status": "passing",
+    "evidence": "mvn test -Dtest=GoogleIntegrationTest passed, token refresh on expired access token verified",
+    "user_visible_behavior": "Backend automatically refreshes expired 1-hour Google access tokens using stored refresh tokens without disrupting active teaching sessions.",
+    "verification_command": "mvn test",
+    "notes": "Covers stories: P2",
+    "priority": "P2"
+  },
+  {
+    "id": "codebase-refactor-google-workspace",
+    "title": "Google Workspace Screen Modular Decomposition",
+    "status": "passing",
+    "evidence": "14/14 tests passed in test/google_workspace_test.dart and architecture invariants passed",
+    "user_visible_behavior": "Main screen reduced from 1,248 to 442 lines with encapsulated dialogs and course cards under lib/widgets/workspace/.",
+    "verification_command": "flutter test test/google_workspace_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "codebase-refactor-retire-drawer-questions",
+    "title": "Retire Dead Legacy DrawerQuestions Component",
+    "status": "passing",
+    "evidence": "Deleted 1,222 lines of dead code; all 4 tests in test/floating_accessories_test.dart and 5 architecture invariants passed",
+    "user_visible_behavior": "Eradicated 1,222 lines of unused legacy code superseded by StudioDocumentDrawer.",
+    "verification_command": "flutter test test/floating_accessories_test.dart",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "codebase-refactor-services-restructure",
+    "title": "Domain-Driven Services Folder Reorganization",
+    "status": "passing",
+    "evidence": "7 domain barrels + master services.dart created; 100% backward compatible; architecture test passed",
+    "user_visible_behavior": "Organizes 41 flat service files into domain subfolders with export barrels for clean navigation.",
+    "verification_command": "flutter test",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
+  },
+  {
+    "id": "codebase-refactor-backend-google-service",
+    "title": "Backend Google Schedule Service Decomposition",
+    "status": "passing",
+    "evidence": "Extracted GoogleScheduleService; all 47 tests in GoogleIntegrationTest passed; all 104 backend tests passed cleanly",
+    "user_visible_behavior": "Decomposed monolithic 443-line GoogleClassService into GoogleClassService and GoogleScheduleService with clean single responsibilities.",
+    "verification_command": "mvn test -Dtest=GoogleIntegrationTest",
+    "notes": "Covers stories: P1",
+    "priority": "P1"
   }
 ]
