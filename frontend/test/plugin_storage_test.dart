@@ -47,7 +47,7 @@ void main() {
         ArchiveFile('ui/index.html', 12, utf8.encode('<h1>Math</h1>')),
       );
 
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
       final installedDir = await PluginStorageManager.instance.installFromZip(zipBytes);
 
       expect(installedDir.existsSync(), isTrue);
@@ -70,7 +70,7 @@ void main() {
       archive.addFile(
         ArchiveFile('manifest.json', manifestJson.length, utf8.encode(manifestJson)),
       );
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
       final installedDir = await PluginStorageManager.instance.installFromZip(zipBytes);
       expect(installedDir.existsSync(), isTrue);
 
@@ -92,7 +92,7 @@ void main() {
       archive.addFile(
         ArchiveFile('ui/index.html', 15, utf8.encode('<html>Read</html>')),
       );
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
 
       final plugin = await PluginManager.instance.installPluginFromBytes(
         zipBytes,

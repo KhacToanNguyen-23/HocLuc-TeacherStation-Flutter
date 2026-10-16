@@ -408,61 +408,8 @@ class StudioTopBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Nút Thiết bị và API AI (Giữ nguyên IconButton gốc, trong không gian cố định 36x36)
-              SizedBox(
-                width: 36,
-                height: 36,
-                child: IconButton(
-                  tooltip: 'Thiết bị và API AI',
-                  iconSize: 19,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
-                  ),
-                  onPressed: onToggleInspector,
-                  icon: Icon(
-                    hasInspector ? Icons.tune : Icons.tune_outlined,
-                    color: hasInspector ? pine : muted,
-                  ),
-                ),
-              ),
-
               // Các nút hành động cho Chế độ Soạn bài giảng (Planning Mode)
               if (isPlanningMode) ...[
-                if (onExitPlanning != null) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 95,
-                    height: 38,
-                    child: OutlinedButton.icon(
-                      onPressed: onExitPlanning,
-                      icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                      label: const Text(
-                        'Thoát',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.slate700,
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(
-                          color: AppColors.slate300,
-                          width: 1.2,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
                 const SizedBox(width: 8),
                 // Nút Lưu bài soạn với không gian 140px cố định: Khi bấm lưu và hiện "Đang lưu...", không làm xê dịch nút kế bên
                 SizedBox(
@@ -546,72 +493,6 @@ class StudioTopBar extends StatelessWidget {
                   ),
                 ],
               ] else ...[
-                // Các nút hành động cho Chế độ Lớp học trực tiếp (Live Mode)
-                const SizedBox(width: 4),
-                SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: IconButton(
-                    tooltip: studio.saving ? 'Đang lưu…' : 'Lưu bài giảng',
-                    iconSize: 18,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 36,
-                      minHeight: 36,
-                    ),
-                    onPressed: studio.saving || studio.loading ? null : onSave,
-                    icon: Icon(
-                      studio.saving
-                          ? Icons.hourglass_top_rounded
-                          : Icons.save_outlined,
-                      color: pine,
-                    ),
-                  ),
-                ),
-                if (onToggleStudents != null) ...[
-                  const SizedBox(width: 4),
-                  ListenableBuilder(
-                    listenable: MeetAutomationService(),
-                    builder: (context, _) {
-                      final pendingCount =
-                          MeetAutomationService().pendingAdmitCount;
-                      Widget icon = Icon(
-                        hasStudents ? Icons.groups : Icons.groups_outlined,
-                        color: pine,
-                      );
-                      if (pendingCount > 0) {
-                        icon = Badge.count(
-                          count: pendingCount,
-                          backgroundColor: const Color(0xFFDC2626),
-                          textColor: Colors.white,
-                          child: icon,
-                        );
-                      }
-                      return SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: IconButton(
-                          tooltip: pendingCount > 0
-                              ? 'Danh sách học sinh ($pendingCount đang chờ duyệt)'
-                              : 'Danh sách học sinh',
-                          iconSize: 18,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 36,
-                            minHeight: 36,
-                          ),
-                          onPressed: onToggleStudents,
-                          style: IconButton.styleFrom(
-                            backgroundColor: hasStudents
-                                ? const Color(0xffedf2e5)
-                                : Colors.transparent,
-                          ),
-                          icon: icon,
-                        ),
-                      );
-                    },
-                  ),
-                ],
                 ListenableBuilder(
                   listenable: MeetAutomationService(),
                   builder: (context, _) {
@@ -736,7 +617,7 @@ class StudioTopBar extends StatelessWidget {
                 color: pine,
               ),
             ),
-          if (!isPlanningMode && width > 800 && onToggleStudents != null) ...[
+          if (!isPlanningMode && onToggleStudents != null) ...[
             const SizedBox(width: 3),
             ListenableBuilder(
               listenable: MeetAutomationService(),
