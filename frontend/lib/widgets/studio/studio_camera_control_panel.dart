@@ -291,12 +291,12 @@ class StudioCameraControlPanel extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: AppColors.slate900,
                           ),
-                          items: media.cameras
+                          items: media.availableCameras
                               .map(
-                                (c) => DropdownMenuItem(
-                                  value: c.name,
+                                (name) => DropdownMenuItem<String>(
+                                  value: name,
                                   child: Text(
-                                    c.name,
+                                    name,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),

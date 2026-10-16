@@ -47,3 +47,6 @@ jobs:
 
       - name: Run Architecture & Unit Tests
         run: flutter test
+
+      - name: Build Web Release
+        run: flutter build web --release --no-pub --no-web-resources-cdn --no-wasm-dry-run

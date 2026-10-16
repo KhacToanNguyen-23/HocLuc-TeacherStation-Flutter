@@ -12,7 +12,8 @@ void main() {
       expect(MeetBridgeScript.script, contains('MutationObserver'));
       expect(MeetBridgeScript.script, contains('scanChatMessages'));
       expect(MeetBridgeScript.script, contains('admitAll'));
-      expect(MeetBridgeScript.script, contains('muteAll'));
+      expect(MeetBridgeScript.script, contains('setMicMute'));
+      expect(MeetBridgeScript.script, isNot(contains('muteAll:')));
       expect(MeetBridgeScript.script, contains('startPresenting'));
       expect(MeetBridgeScript.script, contains('sendChat'));
       expect(MeetBridgeScript.script, contains('cho phép'));
