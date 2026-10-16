@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_palette.dart';
 
 /// Flutter ThemeExtension implementing the Nordic Sky & Slate Blue color system.
 ///
@@ -62,19 +63,19 @@ class AppColorTheme extends ThemeExtension<AppColorTheme> {
   /// Standard Light Mode preset (Nordic Mist & Deep Slate).
   factory AppColorTheme.light() {
     return const AppColorTheme(
-      slatePrimary: Color(0xFF0F172A), // Slate 900
-      slateSurface: Color(0xFF1E293B), // Slate 800
-      slateBorder: Color(0xFFE2E8F0),  // Slate 200
-      slateMuted: Color(0xFF64748B),   // Slate 500
-      skyAccent: Color(0xFF0284C7),    // Sky 600
-      skyLight: Color(0xFF38BDF8),     // Sky 400
-      skySurface: Color(0xFFE0F2FE),   // Sky 100
-      skyHover: Color(0xFF0369A1),     // Sky 700
-      background: Color(0xFFF8FAFC),   // Slate 50 (Nordic Mist)
-      surface: Colors.white,
-      amber: Color(0xFFF59E0B),
-      emerald: Color(0xFF10B981),
-      rose: Color(0xFFF43F5E),
+      slatePrimary: AppPalette.textPrimary,
+      slateSurface: AppPalette.surfaceMuted,
+      slateBorder: AppPalette.border,
+      slateMuted: AppPalette.textMuted,
+      skyAccent: AppPalette.primary,
+      skyLight: AppPalette.primary,
+      skySurface: AppPalette.selected,
+      skyHover: AppPalette.primaryHover,
+      background: AppPalette.background,
+      surface: AppPalette.surface,
+      amber: AppPalette.warning,
+      emerald: AppPalette.success,
+      rose: AppPalette.error,
     );
   }
 

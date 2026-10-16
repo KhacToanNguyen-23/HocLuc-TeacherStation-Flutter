@@ -82,7 +82,9 @@ class StudioQuestionView extends StatelessWidget {
                                         color: studio.reveal && i == 1
                                             ? AppColors.lime
                                             : const Color(0xfff2f3e9),
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadii.control,
+                                        ),
                                       ),
                                       child: Text(
                                         '${String.fromCharCode(65 + i)}. $option',

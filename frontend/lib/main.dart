@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'constants/theme.dart';
+import 'theme/app_theme.dart';
 import 'services/google_meet_auth_service.dart';
 import 'services/webview_environment_service.dart';
 import 'screens/login_screen.dart';
@@ -27,46 +27,21 @@ class CompanionApp extends StatelessWidget {
     final authService = GoogleMeetAuthService();
 
     return MaterialApp(
-      title: 'Mộc · Teaching Studio',
+      title: 'HocLucStation',
       debugShowCheckedModeBanner: false,
-      builder: (_, child) => AppCaptureSurface(
-        child: MeetAdmissionShell(
-          service: MeetAutomationService(),
-          child: child ?? const SizedBox.shrink(),
-        ),
-      ),
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Manrope',
-        scaffoldBackgroundColor: AppColors.paper,
-        extensions: [AppColorTheme.light()],
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.sky600,
-          primary: AppColors.slate900,
-          secondary: AppColors.sky600,
-          surface: Colors.white,
-        ),
-        textTheme: const TextTheme(
-          bodyMedium: TextStyle(fontSize: 13, color: AppColors.slate900),
-          bodySmall: TextStyle(fontSize: 11, color: AppColors.slate500),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xfff6f7f2),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(9),
-            borderSide: const BorderSide(color: AppColors.slate200),
+      builder: (context, child) => AppCaptureSurface(
+        child: Theme(
+          data: AppTheme.light(
+            reduceMotion:
+                MediaQuery.maybeOf(context)?.disableAnimations ?? false,
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(9),
-            borderSide: const BorderSide(color: AppColors.slate200),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 12,
+          child: MeetAdmissionShell(
+            service: MeetAutomationService(),
+            child: child ?? const SizedBox.shrink(),
           ),
         ),
       ),
+      theme: AppTheme.light(),
       home: ListenableBuilder(
         listenable: authService,
         builder: (context, _) {

@@ -32,7 +32,7 @@ void main() {
       expect(find.byType(ClassroomDashboardScreen), findsOneWidget);
 
       // Verify TopBar
-      expect(find.text('Mộc'), findsOneWidget);
+      expect(find.text('HocLucStation'), findsOneWidget);
       expect(find.byType(CircleAvatar), findsOneWidget);
 
       // Verify 3 Action cards (single words)

@@ -37,7 +37,8 @@ class GoogleWebviewLoginDialog extends StatefulWidget {
   }
 
   @override
-  State<GoogleWebviewLoginDialog> createState() => _GoogleWebviewLoginDialogState();
+  State<GoogleWebviewLoginDialog> createState() =>
+      _GoogleWebviewLoginDialogState();
 }
 
 class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
@@ -46,7 +47,9 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
   StreamSubscription<win.LoadingState>? _loadingSub;
   bool _isLoading = true;
   String? _errorMessage;
-  final _fallbackEmailController = TextEditingController(text: 'teacher.hocluc@gmail.com');
+  final _fallbackEmailController = TextEditingController(
+    text: 'teacher.hocluc@gmail.com',
+  );
 
   @override
   void initState() {
@@ -69,7 +72,9 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
         debugPrint('[GoogleWebview] URL: $url');
 
         // 1. Nếu mở Meet trực tiếp và máy chủ Google sinh mã phòng thật
-        final meetMatch = RegExp(r'meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})').firstMatch(url);
+        final meetMatch = RegExp(
+          r'meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})',
+        ).firstMatch(url);
         if (meetMatch != null) {
           final realUrl = 'https://meet.google.com/${meetMatch.group(1)}';
           _completeGoogleSignIn(
@@ -84,7 +89,9 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
         if (url.contains('myaccount.google.com') ||
             url.contains('accounts.google.com/ManageAccount') ||
             url.contains('accounts.google.com/b/') ||
-            (url.contains('google.com') && !url.contains('/signin') && !url.contains('ServiceLogin'))) {
+            (url.contains('google.com') &&
+                !url.contains('/signin') &&
+                !url.contains('ServiceLogin'))) {
           _extractGoogleUserInfo(controller);
         }
       });
@@ -154,7 +161,9 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
           if (email != null && email.isNotEmpty) {
             _completeGoogleSignIn(
               email: email,
-              name: (name != null && name.isNotEmpty) ? name : 'Giáo viên Google',
+              name: (name != null && name.isNotEmpty)
+                  ? name
+                  : 'Giáo viên Google',
             );
           }
         }
@@ -190,7 +199,8 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktopWebview = !kIsWeb &&
+    final isDesktopWebview =
+        !kIsWeb &&
         defaultTargetPlatform == TargetPlatform.windows &&
         _controller != null &&
         _errorMessage == null;
@@ -199,15 +209,15 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
       backgroundColor: Colors.white,
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.slate200),
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        side: const BorderSide(color: AppColors.border),
       ),
       child: Container(
         width: 780,
         height: 640,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.panel),
           color: Colors.white,
         ),
         child: Column(
@@ -217,8 +227,8 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: const BoxDecoration(
-                color: Color(0xFFF8FAFC),
-                border: Border(bottom: BorderSide(color: AppColors.slate200)),
+                color: AppColors.background,
+                border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
@@ -227,8 +237,8 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
                     height: 32,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.slate200),
+                      borderRadius: BorderRadius.circular(AppRadii.control),
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: const Center(
                       child: Text(
@@ -251,12 +261,15 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.slate900,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       Text(
                         'Chọn tài khoản đã lưu hoặc nhập email để tự động tạo phòng Meet thật',
-                        style: TextStyle(fontSize: 11, color: AppColors.slate500),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -265,11 +278,18 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
                     const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.sky600),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
                     ),
                   const SizedBox(width: 12),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.slate500),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: AppColors.textMuted,
+                    ),
                     onPressed: () => Navigator.of(context).pop(null),
                     tooltip: 'Đóng',
                   ),
@@ -304,18 +324,25 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
               height: 52,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: const BoxDecoration(
-                color: Color(0xFFF8FAFC),
-                border: Border(top: BorderSide(color: AppColors.slate200)),
+                color: AppColors.background,
+                border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.lock_outline_rounded, size: 14, color: Color(0xFF16A34A)),
+                  const Icon(
+                    Icons.lock_outline_rounded,
+                    size: 14,
+                    color: AppColors.success,
+                  ),
                   const SizedBox(width: 6),
                   const Expanded(
                     child: Text(
                       'Kết nối bảo mật Google Accounts (Lưu vĩnh viễn trên máy)',
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: AppColors.slate500),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -326,26 +353,45 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
                           _extractGoogleUserInfo(_controller!);
                         }
                       },
-                      icon: const Icon(Icons.check_circle_outline_rounded, size: 15),
+                      icon: const Icon(
+                        Icons.check_circle_outline_rounded,
+                        size: 15,
+                      ),
                       label: const Text(
                         'Xác nhận đã đăng nhập',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.control),
+                        ),
                       ),
                     ),
                   const SizedBox(width: 8),
                   TextButton.icon(
-                    onPressed: () => openExternalUrl('https://accounts.google.com/signin'),
-                    icon: const Icon(Icons.open_in_browser_rounded, size: 14, color: Color(0xFF0284C7)),
+                    onPressed: () =>
+                        openExternalUrl('https://accounts.google.com/signin'),
+                    icon: const Icon(
+                      Icons.open_in_browser_rounded,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
                     label: const Text(
                       'Mở trên trình duyệt ngoài',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF0284C7)),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -370,9 +416,9 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
+                  color: AppColors.selected,
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFC7D2FE)),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: const Center(
                   child: Text(
@@ -390,8 +436,8 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
                 'Đăng nhập tài khoản Google Giáo Viên',
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.slate900,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -399,7 +445,11 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
               Text(
                 _errorMessage ??
                     'Nhập địa chỉ Email Google của bạn để đồng bộ hồ sơ giáo viên và kích hoạt tự động tạo phòng Meet.',
-                style: const TextStyle(fontSize: 12, color: AppColors.slate500, height: 1.4),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                  height: 1.4,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
@@ -409,8 +459,13 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
                   labelText: 'Email Google',
                   hintText: 'vidu@gmail.com hoặc vidu@fpt.edu.vn',
                   prefixIcon: const Icon(Icons.email_outlined, size: 18),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.control),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -421,18 +476,25 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
                   onPressed: () {
                     final email = _fallbackEmailController.text.trim();
                     if (email.isNotEmpty) {
-                      _completeGoogleSignIn(email: email, name: email.split('@').first);
+                      _completeGoogleSignIn(
+                        email: email,
+                        name: email.split('@').first,
+                      );
                     }
                   },
-                  icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                  icon: const Icon(
+                    Icons.check_circle_outline_rounded,
+                    size: 18,
+                  ),
                   label: const Text(
                     'Xác nhận đăng nhập',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadii.control),
+                    ),
                     elevation: 0,
                   ),
                 ),

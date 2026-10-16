@@ -35,10 +35,24 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_chatScrollController.hasClients) {
+      if (!mounted || !_chatScrollController.hasClients) return;
+      final target = _chatScrollController.position.maxScrollExtent;
+      final duration = AppMotion.duration(context, milliseconds: 250);
+      if (duration == Duration.zero) {
+        _chatScrollController.jumpTo(target);
+        // The lazy list resolves its final extent after the jump lays out
+        // the newest bubbles. Keep the latest message visible without motion.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _chatScrollController.hasClients) {
+            _chatScrollController.jumpTo(
+              _chatScrollController.position.maxScrollExtent,
+            );
+          }
+        });
+      } else {
         _chatScrollController.animateTo(
-          _chatScrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
+          target,
+          duration: duration,
           curve: Curves.easeOut,
         );
       }
@@ -55,16 +69,34 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
 
   Future<void> _expandMeet() async {
     setState(() => _meetExpanded = true);
-    await showDialog<void>(context: context, builder: (ctx) => Dialog(
-      insetPadding: const EdgeInsets.all(20),
-      child: Column(children: [
-        Padding(padding: const EdgeInsets.all(12), child: Row(children: [
-          Expanded(child: Text('Google Meet · ${widget.meetService.linkedTeacherEmail}')),
-          IconButton(tooltip: 'Thu gọn Meet', onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
-        ])),
-        Expanded(child: GoogleMeetView(service: widget.meetService)),
-      ]),
-    ));
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Google Meet · ${widget.meetService.linkedTeacherEmail}',
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Thu gọn Meet',
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: GoogleMeetView(service: widget.meetService)),
+          ],
+        ),
+      ),
+    );
     if (mounted) setState(() => _meetExpanded = false);
   }
 
@@ -74,7 +106,9 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
-        crossAxisAlignment: isSelf ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isSelf
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -84,13 +118,13 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: isSelf ? AppColors.sky600 : AppColors.slate600,
+                  color: isSelf ? AppColors.primary : AppColors.textSecondary,
                 ),
               ),
               const SizedBox(width: 6),
               Text(
                 msg.time,
-                style: const TextStyle(fontSize: 9, color: AppColors.slate400),
+                style: const TextStyle(fontSize: 9, color: AppColors.textMuted),
               ),
             ],
           ),
@@ -99,7 +133,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
             constraints: const BoxConstraints(maxWidth: 240),
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
             decoration: BoxDecoration(
-              color: isSelf ? AppColors.sky600 : AppColors.slate100,
+              color: isSelf ? AppColors.primary : AppColors.surfaceMuted,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(10),
                 topRight: const Radius.circular(10),
@@ -111,7 +145,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
               msg.text,
               style: TextStyle(
                 fontSize: 12,
-                color: isSelf ? Colors.white : AppColors.slate800,
+                color: isSelf ? Colors.white : AppColors.textPrimary,
               ),
             ),
           ),
@@ -129,21 +163,73 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
     final messages = meetService.messages;
 
     if (meetService.showEmbeddedMeet) {
-      return Column(children: [
-        Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            Icon(meetService.isHostJoined ? Icons.check_circle_outline : Icons.videocam_outlined, size: 18, color: AppColors.sky600),
-            const SizedBox(width: 8),
-            Expanded(child: Text(meetService.isHostJoined ? 'Đã tham gia Meet' : 'Chuẩn bị Meet', style: const TextStyle(fontWeight: FontWeight.w700))),
-            IconButton(tooltip: 'Sao chép link Meet', onPressed: meetUrl == null ? null : () => Clipboard.setData(ClipboardData(text: meetUrl)), icon: const Icon(Icons.copy, size: 18)),
-            IconButton(tooltip: 'Phóng lớn Meet trong ứng dụng', onPressed: _expandMeet, icon: const Icon(Icons.open_in_full, size: 18)),
-          ]),
-          if (meetService.linkedTeacherEmail != null) Text('Dùng tài khoản ${meetService.linkedTeacherEmail}', style: const TextStyle(fontSize: 11, color: AppColors.slate600)),
-          if (meetService.linkedTeacherEmail != null && !meetService.isHostJoined)
-            const Text('Lần đầu: nếu Meet yêu cầu đăng nhập, chọn tài khoản đã kết nối ở trên. Các lần sau dùng lại phiên đã lưu.', style: TextStyle(fontSize: 11, color: AppColors.slate600)),
-        ])),
-        Expanded(child: _meetExpanded ? const Center(child: Text('Meet đang mở trong cửa sổ lớn.')) : GoogleMeetView(service: meetService)),
-      ]);
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      meetService.isHostJoined
+                          ? Icons.check_circle_outline
+                          : Icons.videocam_outlined,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        meetService.isHostJoined
+                            ? 'Đã tham gia Meet'
+                            : 'Chuẩn bị Meet',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Sao chép link Meet',
+                      onPressed: meetUrl == null
+                          ? null
+                          : () =>
+                                Clipboard.setData(ClipboardData(text: meetUrl)),
+                      icon: const Icon(Icons.copy, size: 18),
+                    ),
+                    IconButton(
+                      tooltip: 'Phóng lớn Meet trong ứng dụng',
+                      onPressed: _expandMeet,
+                      icon: const Icon(Icons.open_in_full, size: 18),
+                    ),
+                  ],
+                ),
+                if (meetService.linkedTeacherEmail != null)
+                  Text(
+                    'Dùng tài khoản ${meetService.linkedTeacherEmail}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                if (meetService.linkedTeacherEmail != null &&
+                    !meetService.isHostJoined)
+                  const Text(
+                    'Lần đầu: nếu Meet yêu cầu đăng nhập, chọn tài khoản đã kết nối ở trên. Các lần sau dùng lại phiên đã lưu.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _meetExpanded
+                ? const Center(child: Text('Meet đang mở trong cửa sổ lớn.'))
+                : GoogleMeetView(service: meetService),
+          ),
+        ],
+      );
     }
 
     return Column(
@@ -154,10 +240,10 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: hasRoom ? AppColors.emerald50 : AppColors.slate50,
-              borderRadius: BorderRadius.circular(10),
+              color: hasRoom ? AppColors.successSurface : AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadii.control),
               border: Border.all(
-                color: hasRoom ? const Color(0xffbbf7d0) : AppColors.slate200,
+                color: hasRoom ? AppColors.border : AppColors.border,
               ),
             ),
             child: Column(
@@ -166,36 +252,45 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                 Row(
                   children: [
                     Icon(
-                      meetService.isHostJoined ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                      meetService.isHostJoined
+                          ? Icons.check_circle_rounded
+                          : Icons.info_outline_rounded,
                       size: 16,
-                      color: hasRoom ? AppColors.emerald600 : AppColors.slate400,
+                      color: hasRoom ? AppColors.success : AppColors.textMuted,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         hasRoom
-                            ? meetService.isHostJoined ? 'Đã tham gia Google Meet' : 'Chuẩn bị Google Meet'
+                            ? meetService.isHostJoined
+                                  ? 'Đã tham gia Google Meet'
+                                  : 'Chuẩn bị Google Meet'
                             : 'Chưa khởi tạo phòng học',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: hasRoom ? const Color(0xff15803d) : AppColors.slate700,
+                          color: hasRoom
+                              ? AppColors.success
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
                     if (meetService.isHostJoined)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xffdcfce7),
+                          color: AppColors.successSurface,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
                           'LIVE',
                           style: TextStyle(
                             fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xff166534),
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.success,
                           ),
                         ),
                       ),
@@ -211,13 +306,17 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.blue600,
+                            color: AppColors.primary,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.copy_rounded, size: 15, color: AppColors.blue600),
+                        icon: const Icon(
+                          Icons.copy_rounded,
+                          size: 15,
+                          color: AppColors.primary,
+                        ),
                         tooltip: 'Sao chép link gửi học sinh',
                         visualDensity: VisualDensity.compact,
                         onPressed: () {
@@ -238,7 +337,11 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                           onPressed: _expandMeet,
                         ),
                       IconButton(
-                        icon: const Icon(Icons.open_in_new_rounded, size: 15, color: AppColors.slate600),
+                        icon: const Icon(
+                          Icons.open_in_new_rounded,
+                          size: 15,
+                          color: AppColors.textSecondary,
+                        ),
                         tooltip: 'Mở Google Meet ngoài',
                         visualDensity: VisualDensity.compact,
                         onPressed: () => openExternalUrl(meetUrl),
@@ -251,7 +354,6 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
           ),
         ),
 
-
         // Raised Hands Banner
         if (hands.isNotEmpty)
           Padding(
@@ -259,18 +361,26 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.amber50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xfffed7aa)),
+                color: AppColors.warningSurface,
+                borderRadius: BorderRadius.circular(AppRadii.control),
+                border: Border.all(color: AppColors.warning),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.front_hand_outlined, size: 16, color: Color(0xff9a3412)),
+                  const Icon(
+                    Icons.front_hand_outlined,
+                    size: 16,
+                    color: AppColors.warning,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Đang giơ tay: ${hands.join(", ")}',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xff9a3412)),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.warning,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -288,15 +398,23 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                 Expanded(
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.rose600,
-                      side: const BorderSide(color: Color(0xfffecaca)),
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       visualDensity: VisualDensity.compact,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.control),
+                      ),
                     ),
                     onPressed: () => meetService.muteAllParticipants(),
                     icon: const Icon(Icons.mic_off_outlined, size: 14),
-                    label: const Text('Tắt tiếng cả lớp', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                    label: const Text(
+                      'Tắt tiếng cả lớp',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -306,9 +424,11 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
         const Divider(height: 1, color: AppColors.line),
 
         if (meetService.showEmbeddedMeet)
-          Expanded(child: _meetExpanded
-            ? const Center(child: Text('Meet đang mở trong cửa sổ lớn.'))
-            : GoogleMeetView(service: meetService)),
+          Expanded(
+            child: _meetExpanded
+                ? const Center(child: Text('Meet đang mở trong cửa sổ lớn.'))
+                : GoogleMeetView(service: meetService),
+          ),
 
         // Live Chat Area
         Expanded(
@@ -319,11 +439,19 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline_rounded, size: 36, color: Colors.grey.shade300),
+                        Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 36,
+                          color: AppColors.border,
+                        ),
                         const SizedBox(height: 10),
                         const Text(
                           'Chưa có tin nhắn trong phòng',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.slate600),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -331,7 +459,10 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                               ? 'Tin nhắn học sinh gửi từ Meet sẽ xuất hiện ngay tại đây.'
                               : 'Khởi tạo phòng Meet để bắt đầu nhận tin nhắn của học sinh.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 10, color: AppColors.slate400),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -339,7 +470,10 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                 )
               : ListView.builder(
                   controller: _chatScrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msg = messages[index];
@@ -359,17 +493,23 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                 child: Container(
                   height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.slate50,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.slate200),
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(AppRadii.panel),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: TextField(
                     controller: _chatInputController,
                     style: const TextStyle(fontSize: 12),
                     decoration: const InputDecoration(
                       hintText: 'Nhắn cho học sinh trên Meet…',
-                      hintStyle: TextStyle(fontSize: 11, color: AppColors.slate400),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      hintStyle: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -382,11 +522,15 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                 width: 38,
                 height: 38,
                 decoration: const BoxDecoration(
-                  color: AppColors.sky600,
+                  color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.send_rounded, size: 16, color: Colors.white),
+                  icon: const Icon(
+                    Icons.send_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
                   onPressed: _handleSendMessage,
                 ),
               ),

@@ -81,10 +81,14 @@ class StudioLessonsDrawer extends StatelessWidget {
                   studio.page = index;
                   studio.view = 'board';
                 }),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadii.control),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  duration: AppMotion.duration(context, milliseconds: 150),
+                  curve: AppMotion.stateCurve,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: studio.page == index && studio.view == 'board'
                         ? const Color(0xfff0f4e8)
@@ -94,7 +98,7 @@ class StudioLessonsDrawer extends StatelessWidget {
                           ? const Color(0xffadc38c)
                           : line,
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
                   child: Row(
                     children: [
@@ -199,13 +203,18 @@ class StudioLessonsDrawer extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 6),
                       child: InkWell(
                         onTap: () => PluginManager().openPlugin(p),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadii.control),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xffdbe2d4)),
+                            borderRadius: BorderRadius.circular(
+                              AppRadii.control,
+                            ),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
                             children: [
@@ -243,14 +252,14 @@ class StudioLessonsDrawer extends StatelessWidget {
                 );
               }
             },
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadii.control),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xfff8f9f5),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(AppRadii.control),
                 border: Border.all(
-                  color: const Color(0xffdbe2d4),
+                  color: AppColors.border,
                   style: BorderStyle.solid,
                 ),
               ),

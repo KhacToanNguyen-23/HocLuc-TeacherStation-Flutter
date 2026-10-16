@@ -207,10 +207,17 @@ class _StudioScreenState extends State<StudioScreen> {
               : meet.isHostJoined
               ? 'Meet đã tham gia · chưa ghi nhận buổi học'
               : 'Chuẩn bị · kiểm tra tài khoản, mic/camera và bấm Tham gia trong Meet');
+      final statusColor = _sessionError != null
+          ? AppColors.error
+          : _sessionRecorded
+          ? AppColors.success
+          : AppColors.onSelected;
       return Container(
-        color: _sessionError == null
-            ? const Color(0xffe8f4f3)
-            : const Color(0xfffff1ed),
+        color: _sessionError != null
+            ? AppColors.errorSurface
+            : _sessionRecorded
+            ? AppColors.successSurface
+            : AppColors.selected,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Row(
           children: [
@@ -219,16 +226,22 @@ class _StudioScreenState extends State<StudioScreen> {
                   ? Icons.check_circle_outline
                   : Icons.info_outline,
               size: 18,
+              color: statusColor,
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text(text, style: const TextStyle(fontSize: 12))),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(fontSize: 12, color: statusColor),
+              ),
+            ),
             if (widget.teachingTarget!.teacherEmail != null &&
                 MediaQuery.sizeOf(context).width > 900)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Text(
                   widget.teachingTarget!.teacherEmail!,
-                  style: const TextStyle(fontSize: 11),
+                  style: TextStyle(fontSize: 11, color: statusColor),
                 ),
               ),
             if (_sessionError != null)
@@ -375,9 +388,7 @@ class _StudioScreenState extends State<StudioScreen> {
                   ),
                 ],
               ),
-              backgroundColor: success
-                  ? const Color(0xFF15803D)
-                  : const Color(0xFFDC2626),
+              backgroundColor: success ? AppColors.success : AppColors.error,
               duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
             ),
@@ -406,7 +417,7 @@ class _StudioScreenState extends State<StudioScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.panel),
           ),
           title: const Text(
             'Thoát chế độ soạn bài?',
@@ -421,22 +432,19 @@ class _StudioScreenState extends State<StudioScreen> {
               onPressed: () => Navigator.of(ctx).pop('cancel'),
               child: const Text(
                 'Hủy',
-                style: TextStyle(color: AppColors.slate600),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop('discard'),
               child: const Text(
                 'Không lưu',
-                style: TextStyle(color: Color(0xFFDC2626)),
+                style: TextStyle(color: AppColors.error),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop('save'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.sky600,
-                foregroundColor: Colors.white,
-              ),
+              style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
               child: const Text('Lưu & Thoát'),
             ),
           ],
@@ -483,7 +491,9 @@ class _StudioScreenState extends State<StudioScreen> {
     final action = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.panel),
+        ),
         titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 24,
@@ -494,7 +504,7 @@ class _StudioScreenState extends State<StudioScreen> {
           children: [
             Icon(
               Icons.meeting_room_outlined,
-              color: AppColors.slate900,
+              color: AppColors.textPrimary,
               size: 22,
             ),
             SizedBox(width: 10),
@@ -517,15 +527,15 @@ class _StudioScreenState extends State<StudioScreen> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFBAE6FD)),
-                  color: const Color(0xFFF0F9FF),
+                  border: Border.all(color: AppColors.border),
+                  color: AppColors.sky50,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.pause_circle_outline_rounded,
-                      color: AppColors.sky600,
+                      color: AppColors.primary,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -537,7 +547,7 @@ class _StudioScreenState extends State<StudioScreen> {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.slate900,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -555,15 +565,15 @@ class _StudioScreenState extends State<StudioScreen> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFFECDD3)),
-                  color: const Color(0xFFFFF1F2),
+                  border: Border.all(color: AppColors.error),
+                  color: AppColors.errorSurface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Row(
                   children: [
                     Icon(
                       Icons.stop_circle_outlined,
-                      color: AppColors.rose600,
+                      color: AppColors.error,
                       size: 24,
                     ),
                     SizedBox(width: 12),
@@ -573,7 +583,7 @@ class _StudioScreenState extends State<StudioScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.rose600,
+                          color: AppColors.error,
                         ),
                       ),
                     ),
@@ -589,7 +599,7 @@ class _StudioScreenState extends State<StudioScreen> {
             child: const Text(
               'Ở lại tiếp tục dạy',
               style: TextStyle(
-                color: AppColors.slate600,
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -699,6 +709,58 @@ class _StudioScreenState extends State<StudioScreen> {
               body: LayoutBuilder(
                 builder: (context, box) {
                   final hasInspector = showInspector && box.maxWidth >= 1250;
+                  final panelVisible =
+                      hasInspector ||
+                      showStudentsDrawer ||
+                      showPluginsMarketplace;
+                  final panelKind = showPluginsMarketplace
+                      ? 'plugins'
+                      : showStudentsDrawer
+                      ? 'students'
+                      : 'inspector';
+                  final panelWidth = box.maxWidth < 440
+                      ? box.maxWidth - 64
+                      : widget.teachingTarget != null
+                      ? 380.0
+                      : 320.0;
+                  final Widget rightPanel = panelVisible
+                      ? Material(
+                          key: ValueKey('studio-panel-$panelKind'),
+                          elevation: 4,
+                          shadowColor: Colors.black.withValues(alpha: 0.12),
+                          child: Container(
+                            width: panelWidth,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              border: Border(
+                                left: BorderSide(color: AppColors.line),
+                              ),
+                            ),
+                            child: showPluginsMarketplace
+                                ? StudioPluginsMarketplacePanel(
+                                    onClose: () => setState(
+                                      () => showPluginsMarketplace = false,
+                                    ),
+                                  )
+                                : showStudentsDrawer
+                                ? StudioStudentsDrawer(
+                                    meetService: MeetAutomationService(),
+                                    onClose: () => setState(
+                                      () => showStudentsDrawer = false,
+                                    ),
+                                  )
+                                : StudioInspectorPanel(
+                                    studio: studio,
+                                    notesController: notes,
+                                    questionController: question,
+                                    endpointController: endpoint,
+                                    onPreview: preview,
+                                  ),
+                          ),
+                        )
+                      : const SizedBox.shrink(
+                          key: ValueKey('studio-panel-hidden'),
+                        );
 
                   return Column(
                     children: [
@@ -779,56 +841,47 @@ class _StudioScreenState extends State<StudioScreen> {
                                 ),
                               ],
                             ),
-                            // OVERLAY RIGHT PANELS (Hover đè lên mép phải màn hình, KHÔNG MỜ NỀN, KHÔNG BÓP UI)
-                            if (hasInspector ||
-                                showStudentsDrawer ||
-                                showPluginsMarketplace)
-                              Positioned(
-                                top: 0,
-                                bottom: 0,
-                                right: 0,
-                                child: Material(
-                                  elevation: 16,
-                                  shadowColor: Colors.black.withValues(
-                                    alpha: 0.35,
-                                  ),
-                                  child: Container(
-                                    width: box.maxWidth < 440
-                                        ? box.maxWidth - 64
-                                        : widget.teachingTarget != null
-                                        ? 380
-                                        : 320,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border(
-                                        left: BorderSide(color: AppColors.line),
-                                      ),
-                                    ),
-                                    child: showPluginsMarketplace
-                                        ? StudioPluginsMarketplacePanel(
-                                            onClose: () => setState(
-                                              () => showPluginsMarketplace =
-                                                  false,
-                                            ),
-                                          )
-                                        : showStudentsDrawer
-                                        ? StudioStudentsDrawer(
-                                            meetService:
-                                                MeetAutomationService(),
-                                            onClose: () => setState(
-                                              () => showStudentsDrawer = false,
-                                            ),
-                                          )
-                                        : StudioInspectorPanel(
-                                            studio: studio,
-                                            notesController: notes,
-                                            questionController: question,
-                                            endpointController: endpoint,
-                                            onPreview: preview,
-                                          ),
-                                  ),
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              right: 0,
+                              child: AnimatedSwitcher(
+                                duration: AppMotion.duration(
+                                  context,
+                                  milliseconds: 220,
                                 ),
+                                switchInCurve: AppMotion.enterCurve,
+                                switchOutCurve: AppMotion.exitCurve,
+                                transitionBuilder: (child, animation) {
+                                  final slide = Tween<Offset>(
+                                    begin: const Offset(0.06, 0),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: animation,
+                                      curve: AppMotion.enterCurve,
+                                    ),
+                                  );
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: SlideTransition(
+                                      position: slide,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                layoutBuilder: (currentChild, previousChildren) =>
+                                    Stack(
+                                      alignment: Alignment.centerRight,
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        ...previousChildren,
+                                        ?currentChild,
+                                      ],
+                                    ),
+                                child: rightPanel,
                               ),
+                            ),
                             // Floating active plugin window
                             ListenableBuilder(
                               listenable: PluginManager(),
@@ -842,16 +895,20 @@ class _StudioScreenState extends State<StudioScreen> {
                                   top: 50,
                                   right: 40,
                                   child: Material(
-                                    elevation: 12,
-                                    borderRadius: BorderRadius.circular(16),
+                                    elevation: 4,
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.panel,
+                                    ),
                                     clipBehavior: Clip.antiAlias,
                                     child: Container(
                                       width: 340,
                                       decoration: BoxDecoration(
                                         color: Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadii.panel,
+                                        ),
                                         border: Border.all(
-                                          color: AppColors.slate200,
+                                          color: AppColors.border,
                                         ),
                                       ),
                                       child: Column(
@@ -862,7 +919,7 @@ class _StudioScreenState extends State<StudioScreen> {
                                               horizontal: 14,
                                               vertical: 10,
                                             ),
-                                            color: const Color(0xFFF8FAFC),
+                                            color: AppColors.background,
                                             child: Row(
                                               children: [
                                                 Icon(

@@ -28,7 +28,9 @@ class SaveClassroomDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+      ),
       elevation: 10,
       backgroundColor: Colors.white,
       child: ConstrainedBox(
@@ -46,12 +48,12 @@ class SaveClassroomDialog extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.sky50,
+                      borderRadius: BorderRadius.circular(AppRadii.control),
                     ),
                     child: const Icon(
                       Icons.save_rounded,
-                      color: Color(0xFF2563EB),
+                      color: AppColors.primary,
                       size: 22,
                     ),
                   ),
@@ -62,7 +64,7 @@ class SaveClassroomDialog extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -70,7 +72,7 @@ class SaveClassroomDialog extends StatelessWidget {
                     icon: const Icon(
                       Icons.close,
                       size: 20,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textMuted,
                     ),
                     tooltip: 'Đóng',
                     onPressed: () => Navigator.pop(context),
@@ -83,11 +85,11 @@ class SaveClassroomDialog extends StatelessWidget {
               _buildOptionCard(
                 context: context,
                 icon: Icons.slideshow_rounded,
-                iconColor: const Color(0xFF059669),
-                iconBg: const Color(0xFFECFDF5),
+                iconColor: AppColors.success,
+                iconBg: AppColors.successSurface,
                 title: 'Slide bài giảng',
                 buttonText: 'Lưu Slide',
-                buttonColor: const Color(0xFF059669),
+                buttonColor: AppColors.success,
                 onTap: () async {
                   Navigator.pop(context);
                   final success = await onSaveSlide();
@@ -100,8 +102,8 @@ class SaveClassroomDialog extends StatelessWidget {
                               : 'Lưu slide thất bại. Vui lòng kiểm tra lại dịch vụ.',
                         ),
                         backgroundColor: success
-                            ? const Color(0xFF059669)
-                            : const Color(0xFFDC2626),
+                            ? AppColors.success
+                            : AppColors.error,
                       ),
                     );
                   }
@@ -113,11 +115,11 @@ class SaveClassroomDialog extends StatelessWidget {
               _buildOptionCard(
                 context: context,
                 icon: Icons.picture_as_pdf_rounded,
-                iconColor: const Color(0xFFDC2626),
-                iconBg: const Color(0xFFFEF2F2),
+                iconColor: AppColors.error,
+                iconBg: AppColors.errorSurface,
                 title: 'File tài liệu PDF',
                 buttonText: 'Lưu PDF',
-                buttonColor: const Color(0xFFDC2626),
+                buttonColor: AppColors.error,
                 onTap: () async {
                   Navigator.pop(context);
                   await PdfAnnotationExporter.saveLecturePdf(context, studio);
@@ -129,11 +131,11 @@ class SaveClassroomDialog extends StatelessWidget {
               _buildOptionCard(
                 context: context,
                 icon: Icons.cloud_done_rounded,
-                iconColor: const Color(0xFF2563EB),
-                iconBg: const Color(0xFFEFF6FF),
+                iconColor: AppColors.primary,
+                iconBg: AppColors.sky50,
                 title: 'Cả Slide & File PDF',
                 buttonText: 'Lưu cả hai',
-                buttonColor: const Color(0xFF2563EB),
+                buttonColor: AppColors.primary,
                 onTap: () async {
                   Navigator.pop(context);
                   final success = await onSaveSlide();
@@ -144,7 +146,7 @@ class SaveClassroomDialog extends StatelessWidget {
                           content: Text(
                             'Đã lưu slide vào hệ thống. Đang mở hộp thoại xuất tệp PDF...',
                           ),
-                          backgroundColor: Color(0xFF059669),
+                          backgroundColor: AppColors.success,
                           duration: Duration(seconds: 2),
                         ),
                       );
@@ -176,9 +178,9 @@ class SaveClassroomDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: AppColors.background,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.slate200),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -188,7 +190,7 @@ class SaveClassroomDialog extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: iconBg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadii.control),
               ),
               child: Icon(icon, color: iconColor, size: 24),
             ),
@@ -199,7 +201,7 @@ class SaveClassroomDialog extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -217,7 +219,7 @@ class SaveClassroomDialog extends StatelessWidget {
                     vertical: 12,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
                 ),
                 child: Text(

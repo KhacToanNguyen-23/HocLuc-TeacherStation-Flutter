@@ -42,20 +42,28 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.groups_rounded, size: 19, color: AppColors.sky600),
+                    const Icon(
+                      Icons.groups_rounded,
+                      size: 19,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Người tham gia (${participants.length + 1})',
                         style: const TextStyle(
                           fontSize: 13.5,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.slate900,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.slate500),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: AppColors.textMuted,
+                      ),
                       onPressed: widget.onClose,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -67,18 +75,28 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(AppRadii.control),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: const Row(
                     children: [
                       CircleAvatar(
                         radius: 13,
-                        backgroundColor: AppColors.sky600,
-                        child: Text('GV', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                        backgroundColor: AppColors.primary,
+                        child: Text(
+                          'GV',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                       SizedBox(width: 10),
                       Expanded(
@@ -87,21 +105,31 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                           children: [
                             Text(
                               'Bạn (Chủ phòng)',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.slate900),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                             Text(
                               'Giáo viên giảng dạy',
-                              style: TextStyle(fontSize: 10, color: AppColors.slate500),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textMuted,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      Icon(Icons.mic_rounded, size: 16, color: AppColors.emerald600),
+                      Icon(
+                        Icons.mic_rounded,
+                        size: 16,
+                        color: AppColors.success,
+                      ),
                     ],
                   ),
                 ),
               ),
-
 
               const Divider(height: 16, color: AppColors.line),
 
@@ -110,31 +138,49 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                 child: participants.isEmpty
                     ? const Center(
                         child: SingleChildScrollView(
-                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.groups_outlined, size: 36, color: AppColors.slate300),
+                              Icon(
+                                Icons.groups_outlined,
+                                size: 36,
+                                color: AppColors.slate300,
+                              ),
                               SizedBox(height: 10),
                               Text(
                                 'Đang đợi học sinh tham gia...',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.slate600),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
                               ),
                               SizedBox(height: 4),
                               Text(
                                 'Chia sẻ link lớp học để học sinh vào phòng',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 10.5, color: AppColors.slate400),
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  color: AppColors.textMuted,
+                                ),
                               ),
                             ],
                           ),
                         ),
                       )
                     : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         itemCount: participants.length,
-                        separatorBuilder: (_, _) => const Divider(height: 8, color: Color(0x11000000)),
+                        separatorBuilder: (_, _) =>
+                            const Divider(height: 8, color: Color(0x11000000)),
                         itemBuilder: (context, index) {
                           final p = participants[index];
                           return _buildParticipantRow(p);
@@ -144,25 +190,44 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
 
               // Footer (Zoom Style: Mute All at bottom)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF8FAFC),
+                  color: AppColors.background,
                   border: Border(top: BorderSide(color: AppColors.line)),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: participants.isEmpty ? null : () => widget.meetService.muteAllParticipants(),
+                        onPressed: participants.isEmpty
+                            ? null
+                            : () => widget.meetService.muteAllParticipants(),
                         icon: const Icon(Icons.mic_off_rounded, size: 14),
-                        label: const Text('Tắt tiếng tất cả', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                        label: const Text(
+                          'Tắt tiếng tất cả',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.rose600,
-                          side: const BorderSide(color: Color(0xfffecaca)),
+                          foregroundColor: AppColors.error,
+                          side: BorderSide(
+                            color: participants.isEmpty
+                                ? AppColors.border
+                                : AppColors.error,
+                          ),
                           backgroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           visualDensity: VisualDensity.compact,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadii.control,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -191,7 +256,9 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
             children: [
               CircleAvatar(
                 radius: 15,
-                backgroundColor: p.isSpeaking ? AppColors.emerald600 : const Color(0xffe2e8f0),
+                backgroundColor: p.isSpeaking
+                    ? AppColors.success
+                    : AppColors.border,
                 child: Text(
                   initials,
                   style: TextStyle(
@@ -233,8 +300,10 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: p.isSpeaking ? FontWeight.w700 : FontWeight.w600,
-                    color: AppColors.slate900,
+                    fontWeight: p.isSpeaking
+                        ? FontWeight.w700
+                        : FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 Text(
@@ -248,10 +317,10 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                   style: TextStyle(
                     fontSize: 9.5,
                     color: p.isSpeaking
-                        ? AppColors.emerald600
+                        ? AppColors.success
                         : p.isHandRaised
-                        ? const Color(0xfff97316)
-                        : AppColors.slate400,
+                        ? AppColors.warning
+                        : AppColors.textMuted,
                   ),
                 ),
               ],
@@ -261,7 +330,11 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
           // Lower Hand Button if raised
           if (p.isHandRaised)
             IconButton(
-              icon: const Icon(Icons.pan_tool_outlined, size: 14, color: Color(0xfff97316)),
+              icon: const Icon(
+                Icons.pan_tool_outlined,
+                size: 14,
+                color: AppColors.warning,
+              ),
               tooltip: 'Hạ tay',
               visualDensity: VisualDensity.compact,
               onPressed: () => widget.meetService.lowerHandParticipant(p.id),
@@ -272,7 +345,7 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
             icon: Icon(
               p.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
               size: 16,
-              color: p.isMuted ? AppColors.rose500 : AppColors.emerald600,
+              color: p.isMuted ? AppColors.error : AppColors.success,
             ),
             tooltip: p.isMuted ? 'Mở mic cho học sinh' : 'Tắt mic học sinh',
             visualDensity: VisualDensity.compact,
@@ -284,7 +357,7 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
             icon: const Icon(
               Icons.person_remove_outlined,
               size: 16,
-              color: AppColors.rose500,
+              color: AppColors.error,
             ),
             tooltip: 'Mời học sinh ra khỏi phòng',
             visualDensity: VisualDensity.compact,
@@ -302,22 +375,32 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.rose600, size: 22),
+            Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
             SizedBox(width: 8),
-            Text('Mời ra khỏi phòng', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              'Mời ra khỏi phòng',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
-        content: Text('Bạn có chắc chắn muốn mời học sinh "${p.name}" ra khỏi lớp học Google Meet không?'),
+        content: Text(
+          'Bạn có chắc chắn muốn mời học sinh "${p.name}" ra khỏi lớp học Google Meet không?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Hủy', style: TextStyle(color: AppColors.slate600)),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.rose600,
+              backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadii.control),
+              ),
             ),
             onPressed: () {
               Navigator.of(ctx).pop();

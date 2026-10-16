@@ -108,7 +108,7 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                   boxShadow: const [
                     BoxShadow(
                       color: Colors.black87,
-                      blurRadius: 20,
+                      blurRadius: 8,
                       offset: Offset(0, 6),
                     ),
                   ],
@@ -170,7 +170,7 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
                     boxShadow: const [
                       BoxShadow(
                         color: Colors.black87,
-                        blurRadius: 18,
+                        blurRadius: 8,
                         offset: Offset(0, 6),
                       ),
                     ],
@@ -324,7 +324,10 @@ class _FloatingPdfWindowState extends State<FloatingPdfWindow> {
               final current = _posNotifier.value;
               final maxW = math.max(360.0, widget.boardConstraints.maxWidth);
               final maxH = math.max(280.0, widget.boardConstraints.maxHeight);
-              final cardW = _sizeNotifier.value.width.safeClamp(340.0, maxW * 0.95);
+              final cardW = _sizeNotifier.value.width.safeClamp(
+                340.0,
+                maxW * 0.95,
+              );
               final cardH = _sizeNotifier.value.height.safeClamp(260.0, maxH);
               final maxX = math.max(
                 0.0,

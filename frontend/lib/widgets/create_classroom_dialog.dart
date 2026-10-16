@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import 'package:flutter/services.dart';
 import '../services/meet_automation_service.dart';
 import '../services/url_opener.dart';
@@ -65,15 +66,8 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
         padding: const EdgeInsets.all(26),
         decoration: BoxDecoration(
           color: const Color(0xFF1E222D),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadii.panel),
           border: Border.all(color: Colors.white12, width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -85,7 +79,7 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -110,16 +104,17 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                       SizedBox(height: 2),
                       Text(
                         'Kết nối phòng học trực tuyến cho học sinh',
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.white60, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white54,
+                    size: 20,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -136,7 +131,7 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                       height: 36,
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
-                        color: Color(0xFF3B82F6),
+                        color: AppColors.primary,
                       ),
                     ),
                     SizedBox(height: 16),
@@ -157,15 +152,19 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                    color: AppColors.success.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                      color: AppColors.success.withValues(alpha: 0.3),
                     ),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.success,
+                        size: 20,
+                      ),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -184,7 +183,10 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
 
                 // Ô Link & Nút Copy + Mở Meet
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black26,
                     borderRadius: BorderRadius.circular(12),
@@ -192,7 +194,11 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.link_rounded, color: Colors.white54, size: 18),
+                      const Icon(
+                        Icons.link_rounded,
+                        color: Colors.white54,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: SelectableText(
@@ -208,7 +214,11 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                       Tooltip(
                         message: 'Mở Google Meet trên tab mới',
                         child: IconButton(
-                          icon: const Icon(Icons.open_in_new_rounded, size: 18, color: Colors.white70),
+                          icon: const Icon(
+                            Icons.open_in_new_rounded,
+                            size: 18,
+                            color: Colors.white70,
+                          ),
                           onPressed: () => openExternalUrl(url),
                         ),
                       ),
@@ -222,14 +232,22 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                         label: Text(_copied ? 'Đã chép' : 'Sao chép'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _copied
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFF2563EB),
+                              ? AppColors.success
+                              : AppColors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
                           ),
-                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadii.control,
+                            ),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -245,7 +263,10 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                     labelStyle: const TextStyle(color: Colors.white70),
                     hintText: 'https://meet.google.com/xxx-yyyy-zzz',
                     hintStyle: const TextStyle(color: Colors.white38),
-                    prefixIcon: const Icon(Icons.link_rounded, color: Color(0xFF3B82F6)),
+                    prefixIcon: const Icon(
+                      Icons.link_rounded,
+                      color: AppColors.primary,
+                    ),
                     filled: true,
                     fillColor: Colors.black26,
                     border: OutlineInputBorder(
@@ -259,7 +280,8 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton.icon(
-                      onPressed: () => openExternalUrl('https://meet.google.com/new'),
+                      onPressed: () =>
+                          openExternalUrl('https://meet.google.com/new'),
                       icon: const Icon(Icons.open_in_new, size: 14),
                       label: const Text('Mở tạo phòng Meet mới'),
                       style: TextButton.styleFrom(
@@ -284,7 +306,6 @@ class _CreateClassroomDialogState extends State<CreateClassroomDialog> {
                 icon: const Icon(Icons.check_rounded, size: 18),
                 label: const Text('Xác nhận & Giảng dạy'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/system_microphone_service.dart';
+import '../constants/theme.dart';
 
 class SystemMicrophoneControls extends StatefulWidget {
   const SystemMicrophoneControls({super.key, this.microphone});
@@ -38,7 +39,10 @@ class _SystemMicrophoneControlsState extends State<SystemMicrophoneControls> {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Microphone Windows'),
+        title: const Text(
+          'Microphone Windows',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: SizedBox(
           width: 360,
           child: ListenableBuilder(
@@ -104,7 +108,7 @@ class _SystemMicrophoneControlsState extends State<SystemMicrophoneControls> {
                 if (_microphone.errorMessage != null)
                   Text(
                     _microphone.errorMessage!,
-                    style: const TextStyle(color: Colors.red),
+                    style: const TextStyle(color: AppColors.error),
                   ),
                 TextButton.icon(
                   onPressed: _microphone.busy
@@ -130,50 +134,76 @@ class _SystemMicrophoneControlsState extends State<SystemMicrophoneControls> {
   @override
   Widget build(BuildContext context) {
     if (!_microphone.supported) return const SizedBox.shrink();
+    final controlStyle = ButtonStyle(
+      overlayColor: WidgetStateProperty.resolveWith(
+        (states) =>
+            states.contains(WidgetState.hovered) ||
+                states.contains(WidgetState.focused)
+            ? AppColors.overlayRaised
+            : Colors.transparent,
+      ),
+      side: WidgetStateProperty.resolveWith(
+        (states) => BorderSide(
+          color: states.contains(WidgetState.focused)
+              ? AppColors.overlayAccent
+              : Colors.transparent,
+        ),
+      ),
+    );
     return ListenableBuilder(
       listenable: _microphone,
-      builder: (_, _) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            tooltip: !_microphone.ready
-                ? 'Microphone chưa sẵn sàng — mở cài đặt'
-                : _microphone.muted
-                ? 'Bật microphone Windows (mọi ứng dụng)'
-                : 'Tắt microphone Windows (mọi ứng dụng)',
-            onPressed: _microphone.busy
-                ? null
-                : !_microphone.ready
-                ? _settings
-                : () async {
-                    await _microphone.toggleMute();
-                  },
-            icon: Icon(
-              !_microphone.ready || _microphone.muted
-                  ? Icons.mic_off
-                  : Icons.mic,
-              color: !_microphone.ready
-                  ? Colors.orange
+      builder: (_, _) => Material(
+        color: AppColors.overlaySurface,
+        borderRadius: BorderRadius.circular(AppRadii.control),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              style: controlStyle,
+              tooltip: !_microphone.ready
+                  ? 'Microphone chưa sẵn sàng — mở cài đặt'
                   : _microphone.muted
-                  ? Colors.redAccent
-                  : Colors.greenAccent,
-              size: 20,
+                  ? 'Bật microphone Windows (mọi ứng dụng)'
+                  : 'Tắt microphone Windows (mọi ứng dụng)',
+              onPressed: _microphone.busy
+                  ? null
+                  : !_microphone.ready
+                  ? _settings
+                  : () async {
+                      await _microphone.toggleMute();
+                    },
+              icon: Icon(
+                !_microphone.ready || _microphone.muted
+                    ? Icons.mic_off
+                    : Icons.mic,
+                color: !_microphone.ready
+                    ? AppColors.amber100
+                    : _microphone.muted
+                    ? AppColors.rose100
+                    : AppColors.emerald100,
+                size: 20,
+              ),
             ),
-          ),
-          SizedBox(
-            width: 30,
-            child: LinearProgressIndicator(
-              value: _microphone.ready ? _microphone.level : 0,
-              backgroundColor: Colors.white12,
-              color: Colors.greenAccent,
+            SizedBox(
+              width: 30,
+              child: LinearProgressIndicator(
+                value: _microphone.ready ? _microphone.level : 0,
+                backgroundColor: AppColors.overlayBorder,
+                color: AppColors.emerald100,
+              ),
             ),
-          ),
-          IconButton(
-            tooltip: 'Cài đặt microphone Windows',
-            onPressed: _settings,
-            icon: const Icon(Icons.tune, color: Colors.white, size: 18),
-          ),
-        ],
+            IconButton(
+              style: controlStyle,
+              tooltip: 'Cài đặt microphone Windows',
+              onPressed: _settings,
+              icon: const Icon(
+                Icons.tune,
+                color: AppColors.overlayText,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

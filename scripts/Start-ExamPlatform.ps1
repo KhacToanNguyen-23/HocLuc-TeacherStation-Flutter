@@ -4,9 +4,13 @@ param(
     [SecureString]$AdminPassword,
     [string]$FlutterPath,
     [switch]$SkipBuild,
+    [switch]$EnableDevLogin,
     [switch]$ShowAdminCredential
 )
 $ErrorActionPreference = 'Stop'
+if ($EnableDevLogin -and $SkipBuild) {
+    throw 'EnableDevLogin requires a Flutter web rebuild; run without -SkipBuild.'
+}
 $taskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $taskApi = Join-Path $taskRoot 'backend\api'
 $taskCredentialPath = Join-Path $taskRoot '.run\exam-admin.credential.xml'
@@ -36,6 +40,7 @@ $taskJar = Join-Path $taskApi 'target\companion-service-0.1.0.jar'
 Push-Location $taskApi
 $taskOldEmail = $env:EXAM_ADMIN_EMAIL
 $taskOldPassword = $env:EXAM_ADMIN_PASSWORD
+$taskOldProfiles = $env:SPRING_PROFILES_ACTIVE
 try {
     if (-not $SkipBuild) {
         & mvn -q -DskipTests package
@@ -49,7 +54,9 @@ try {
         }
         Push-Location (Join-Path $taskRoot 'frontend')
         try {
-            & $FlutterPath build web --no-pub --no-wasm-dry-run "--dart-define=COMPANION_SERVICE=http://127.0.0.1:$Port"
+            $taskFlutterArgs = @('build', 'web', '--no-pub', '--no-wasm-dry-run', "--dart-define=COMPANION_SERVICE=http://127.0.0.1:$Port")
+            if ($EnableDevLogin) { $taskFlutterArgs += '--dart-define=HLS_DEV_LOGIN=true' }
+            & $FlutterPath @taskFlutterArgs
             if ($LASTEXITCODE -ne 0) { throw 'Flutter web build không thành công.' }
         } finally { Pop-Location }
     }
@@ -59,7 +66,9 @@ try {
     }
     $env:EXAM_ADMIN_EMAIL = $taskCredential.UserName
     $env:EXAM_ADMIN_PASSWORD = $taskCredential.GetNetworkCredential().Password
-    Write-Host "App Mộc: http://127.0.0.1:$Port/"
+    if ($EnableDevLogin) { $env:SPRING_PROFILES_ACTIVE = 'dev' }
+    Write-Host "App HocLucStation: http://127.0.0.1:$Port/"
+    if ($EnableDevLogin) { Write-Host 'Development quick login enabled.' }
     Write-Host 'Dùng màn hình đăng nhập hiện có; mở Đề thi & năng lực trên thanh trên cùng.'
     Write-Host ('Local admin: ' + $taskCredential.UserName)
     Write-Host 'Xem thông tin đăng nhập bằng: .\scripts\Start-ExamPlatform.ps1 -ShowAdminCredential'
@@ -67,5 +76,6 @@ try {
 } finally {
     $env:EXAM_ADMIN_EMAIL = $taskOldEmail
     $env:EXAM_ADMIN_PASSWORD = $taskOldPassword
+    $env:SPRING_PROFILES_ACTIVE = $taskOldProfiles
     Pop-Location
 }

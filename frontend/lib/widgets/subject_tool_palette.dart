@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../services/pdf_annotation_exporter.dart';
 
@@ -39,20 +40,19 @@ class SubjectToolPalette extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(
-                    0xf2101c17,
-                  ), // Deep slate green chalkboard tone
-                  borderRadius: BorderRadius.circular(22),
+                  color: AppColors
+                      .overlaySurface, // Deep slate green chalkboard tone
+                  borderRadius: BorderRadius.circular(AppRadii.panel),
                   border: Border.all(
                     color: isSvoActive
-                        ? const Color(0xff89b4fa)
-                        : const Color(0x55d4e8a6),
+                        ? AppColors.overlayAccent
+                        : AppColors.overlaySelected,
                     width: 1.4,
                   ),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x66000000),
-                      blurRadius: 16,
+                      blurRadius: 8,
                       offset: Offset(0, 4),
                     ),
                   ],
@@ -68,9 +68,9 @@ class SubjectToolPalette extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0x28d4e8a6),
+                        color: AppColors.overlaySelected,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0x44d4e8a6)),
+                        border: Border.all(color: AppColors.overlaySelected),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -78,7 +78,7 @@ class SubjectToolPalette extends StatelessWidget {
                           const Icon(
                             Icons.drag_indicator,
                             size: 13,
-                            color: Color(0xffa5b5a8),
+                            color: AppColors.overlayMuted,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -86,7 +86,7 @@ class SubjectToolPalette extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xffd4e8a6),
+                              color: AppColors.overlayAccent,
                             ),
                           ),
                         ],
@@ -101,24 +101,22 @@ class SubjectToolPalette extends StatelessWidget {
                       child: InkWell(
                         key: const Key('quick_snip_dgnl_button'),
                         onTap: () => studio.startSnipping(target: 'dgnl'),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadii.panel),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0x4489b4fa), Color(0x44f5c2e7)],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
+                            color: AppColors.overlaySelected,
+                            borderRadius: BorderRadius.circular(AppRadii.panel),
                             border: Border.all(
-                              color: const Color(0xff89b4fa),
+                              color: AppColors.overlayAccent,
                               width: 1.3,
                             ),
                             boxShadow: const [
                               BoxShadow(
-                                color: Color(0x3389b4fa),
+                                color: AppColors.overlaySelected,
                                 blurRadius: 8,
                                 offset: Offset(0, 2),
                               ),
@@ -130,7 +128,7 @@ class SubjectToolPalette extends StatelessWidget {
                               Icon(
                                 Icons.crop_free,
                                 size: 14,
-                                color: Color(0xff89b4fa),
+                                color: AppColors.overlayAccent,
                               ),
                               SizedBox(width: 5),
                               Text(
@@ -138,7 +136,7 @@ class SubjectToolPalette extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xffcdd6f4),
+                                  color: AppColors.overlayText,
                                 ),
                               ),
                             ],
@@ -154,23 +152,28 @@ class SubjectToolPalette extends StatelessWidget {
                         child: InkWell(
                           key: const Key('btn_palette_save_pdf_highlight'),
                           onTap: () =>
-                              PdfAnnotationExporter.applyHighlightDirectlyToPdf(context, studio),
-                          borderRadius: BorderRadius.circular(16),
+                              PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+                                context,
+                                studio,
+                              ),
+                          borderRadius: BorderRadius.circular(AppRadii.panel),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0x3386efac),
-                              borderRadius: BorderRadius.circular(16),
+                              color: AppColors.overlaySelected,
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.panel,
+                              ),
                               border: Border.all(
-                                color: const Color(0xff86efac),
+                                color: AppColors.border,
                                 width: 1.2,
                               ),
                               boxShadow: const [
                                 BoxShadow(
-                                  color: Color(0x2286efac),
+                                  color: AppColors.overlaySelected,
                                   blurRadius: 6,
                                   offset: Offset(0, 2),
                                 ),
@@ -182,7 +185,7 @@ class SubjectToolPalette extends StatelessWidget {
                                 Icon(
                                   Icons.draw_rounded,
                                   size: 14,
-                                  color: Color(0xff86efac),
+                                  color: AppColors.border,
                                 ),
                                 SizedBox(width: 5),
                                 Text(
@@ -190,7 +193,7 @@ class SubjectToolPalette extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xff86efac),
+                                    color: AppColors.border,
                                   ),
                                 ),
                               ],
@@ -213,22 +216,26 @@ class SubjectToolPalette extends StatelessWidget {
                             isSvoActive ? null : 'svo',
                           );
                         },
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadii.panel),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
+                          duration: AppMotion.duration(
+                            context,
+                            milliseconds: 150,
+                          ),
+                          curve: AppMotion.stateCurve,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
                             color: isSvoActive
-                                ? const Color(0x3d89b4fa)
-                                : const Color(0x1fffffff),
-                            borderRadius: BorderRadius.circular(16),
+                                ? AppColors.overlaySelected
+                                : AppColors.overlayRaised,
+                            borderRadius: BorderRadius.circular(AppRadii.panel),
                             border: Border.all(
                               color: isSvoActive
-                                  ? const Color(0xff89b4fa)
-                                  : const Color(0x33ffffff),
+                                  ? AppColors.overlayAccent
+                                  : AppColors.overlayBorder,
                               width: 1.2,
                             ),
                           ),
@@ -239,8 +246,8 @@ class SubjectToolPalette extends StatelessWidget {
                                 Icons.auto_awesome,
                                 size: 14,
                                 color: isSvoActive
-                                    ? const Color(0xff89b4fa)
-                                    : const Color(0xffd4e8a6),
+                                    ? AppColors.overlayAccent
+                                    : AppColors.overlayAccent,
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -249,7 +256,7 @@ class SubjectToolPalette extends StatelessWidget {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: isSvoActive
-                                      ? const Color(0xff89b4fa)
+                                      ? AppColors.overlayAccent
                                       : Colors.white,
                                 ),
                               ),
@@ -267,17 +274,17 @@ class SubjectToolPalette extends StatelessWidget {
                       child: InkWell(
                         key: const Key('quick_sentence_button'),
                         onTap: () => _showQuickSentenceDialog(context, studio),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadii.panel),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0x1fffffff),
-                            borderRadius: BorderRadius.circular(16),
+                            color: AppColors.overlayRaised,
+                            borderRadius: BorderRadius.circular(AppRadii.panel),
                             border: Border.all(
-                              color: const Color(0x33ffffff),
+                              color: AppColors.overlayBorder,
                               width: 1.2,
                             ),
                           ),
@@ -287,7 +294,7 @@ class SubjectToolPalette extends StatelessWidget {
                               Icon(
                                 Icons.edit_note,
                                 size: 15,
-                                color: Color(0xffd4e8a6),
+                                color: AppColors.overlayAccent,
                               ),
                               SizedBox(width: 4),
                               Text(
@@ -313,18 +320,18 @@ class SubjectToolPalette extends StatelessWidget {
                       child: InkWell(
                         key: const Key('eye_toggle_button'),
                         onTap: () => studio.toggleChalkAnnotationsVisibility(),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadii.panel),
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: isEyeVisible
-                                ? const Color(0x2886efac)
-                                : const Color(0x28f38ba8),
+                                ? AppColors.overlaySelected
+                                : AppColors.overlayRaised,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isEyeVisible
-                                  ? const Color(0x6686efac)
-                                  : const Color(0x66f38ba8),
+                                  ? AppColors.overlaySelected
+                                  : AppColors.overlayRaised,
                             ),
                           ),
                           child: Icon(
@@ -333,8 +340,8 @@ class SubjectToolPalette extends StatelessWidget {
                                 : Icons.visibility_off,
                             size: 14,
                             color: isEyeVisible
-                                ? const Color(0xff86efac)
-                                : const Color(0xfff38ba8),
+                                ? AppColors.border
+                                : AppColors.errorSurface,
                           ),
                         ),
                       ),
@@ -347,17 +354,17 @@ class SubjectToolPalette extends StatelessWidget {
                       child: InkWell(
                         key: const Key('close_palette_button'),
                         onTap: () => studio.closePlugin(),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadii.panel),
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: const BoxDecoration(
-                            color: Color(0x1fffffff),
+                            color: AppColors.overlayRaised,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.close,
                             size: 14,
-                            color: Color(0xffa5b5a8),
+                            color: AppColors.overlayMuted,
                           ),
                         ),
                       ),
@@ -378,19 +385,19 @@ class SubjectToolPalette extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xf5101c17),
+        backgroundColor: AppColors.overlaySurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0x55d4e8a6), width: 1.2),
+          side: const BorderSide(color: AppColors.overlaySelected, width: 1.2),
         ),
         title: Row(
           children: const [
-            Icon(Icons.edit_note, color: Color(0xff89b4fa), size: 20),
+            Icon(Icons.edit_note, color: AppColors.overlayAccent, size: 20),
             SizedBox(width: 8),
             Text(
               'Nhập / Chọn câu bóc tách S-V-O-A',
               style: TextStyle(
-                color: Color(0xffd4e8a6),
+                color: AppColors.overlayAccent,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
               ),
@@ -405,7 +412,7 @@ class SubjectToolPalette extends StatelessWidget {
             children: [
               const Text(
                 'Nhập câu tiếng Anh bất kỳ (thì đơn, thì hoàn thành, bị động, câu ghép...) để spaCy phân tích cú pháp chuẩn xác:',
-                style: TextStyle(color: Color(0x99ffffff), fontSize: 11),
+                style: TextStyle(color: AppColors.overlayMuted, fontSize: 11),
               ),
               const SizedBox(height: 10),
               TextField(
@@ -415,19 +422,21 @@ class SubjectToolPalette extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'Ví dụ: I has been learning Math.',
                   hintStyle: const TextStyle(
-                    color: Color(0x66ffffff),
+                    color: AppColors.overlayMuted,
                     fontSize: 12,
                   ),
                   filled: true,
-                  fillColor: const Color(0x22ffffff),
+                  fillColor: AppColors.overlayBorder,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Color(0x33ffffff)),
+                    borderRadius: BorderRadius.circular(AppRadii.control),
+                    borderSide: const BorderSide(
+                      color: AppColors.overlayBorder,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                     borderSide: const BorderSide(
-                      color: Color(0xff89b4fa),
+                      color: AppColors.overlayAccent,
                       width: 1.4,
                     ),
                   ),
@@ -445,7 +454,7 @@ class SubjectToolPalette extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Hủy',
-              style: TextStyle(color: Color(0x88ffffff)),
+              style: TextStyle(color: AppColors.overlayMuted),
             ),
           ),
           FilledButton.icon(
@@ -459,7 +468,7 @@ class SubjectToolPalette extends StatelessWidget {
             icon: const Icon(Icons.check, size: 14),
             label: const Text('Gạch chân lên bảng'),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xff89b4fa),
+              backgroundColor: AppColors.overlayAccent,
               foregroundColor: const Color(0xff14221d),
               textStyle: const TextStyle(
                 fontWeight: FontWeight.w700,

@@ -32,7 +32,7 @@ class StudioDocumentDrawer extends StatelessWidget {
 
             // Animated Compact Drawer Panel (width: 252)
             AnimatedPositioned(
-              duration: const Duration(milliseconds: 220),
+              duration: AppMotion.duration(context, milliseconds: 220),
               curve: Curves.easeOutCubic,
               left: isOpen ? 0 : -256,
               top: 0,
@@ -40,19 +40,19 @@ class StudioDocumentDrawer extends StatelessWidget {
               width: 252,
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xf70e1a15),
+                  color: AppColors.overlaySurface,
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(14),
                     bottomRight: Radius.circular(14),
                   ),
                   border: Border.all(
-                    color: const Color(0x33ffffff),
+                    color: AppColors.overlayBorder,
                     width: 1.2,
                   ),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x77000000),
-                      blurRadius: 18,
+                      blurRadius: 8,
                       offset: Offset(3, 0),
                     ),
                   ],
@@ -68,7 +68,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                       ),
                       decoration: const BoxDecoration(
                         border: Border(
-                          bottom: BorderSide(color: Color(0x22ffffff)),
+                          bottom: BorderSide(color: AppColors.overlayBorder),
                         ),
                       ),
                       child: Row(
@@ -76,7 +76,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                           const Icon(
                             Icons.collections_bookmark_outlined,
                             size: 15,
-                            color: AppColors.lime,
+                            color: AppColors.overlayAccent,
                           ),
                           const SizedBox(width: 6),
                           const Expanded(
@@ -86,7 +86,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xffe8eae6),
+                                color: AppColors.overlayText,
                               ),
                             ),
                           ),
@@ -97,15 +97,17 @@ class StudioDocumentDrawer extends StatelessWidget {
                             ),
                             margin: const EdgeInsets.only(right: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0x28d4e8a6),
-                              borderRadius: BorderRadius.circular(8),
+                              color: AppColors.overlaySelected,
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.control,
+                              ),
                             ),
                             child: Text(
                               '${studio.pages.length} trang${studio.importedDocs.isNotEmpty ? " · ${studio.importedDocs.length} tệp" : ""}',
                               style: const TextStyle(
                                 fontSize: 8.5,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.lime,
+                                color: AppColors.overlayAccent,
                               ),
                             ),
                           ),
@@ -117,7 +119,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                               child: Icon(
                                 Icons.close,
                                 size: 14,
-                                color: Color(0xffa5b5a8),
+                                color: AppColors.overlayMuted,
                               ),
                             ),
                           ),
@@ -132,114 +134,159 @@ class StudioDocumentDrawer extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                          StudioDocumentPagesList(studio: studio),
-                          StudioDocumentFilesList(studio: studio),
-                          const ExamStudioButton(),
-                          const SizedBox(height: 12),
-                          ListenableBuilder(
-                            listenable: PluginManager.instance,
-                            builder: (context, _) {
-                              final plugins = PluginManager.instance.installedPlugins
-                                  .whereType<InstalledPlugin>()
-                                  .toList();
-                              if (plugins.isEmpty) return const SizedBox.shrink();
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  for (final p in plugins)
-                                    InkWell(
-                                      onTap: () => studio.openPlugin(p),
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Container(
-                                        margin: const EdgeInsets.only(bottom: 6),
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0x1a2e7d32),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: const Color(0x334caf50)),
+                            StudioDocumentPagesList(studio: studio),
+                            StudioDocumentFilesList(studio: studio),
+                            const ExamStudioButton(onDarkSurface: true),
+                            const SizedBox(height: 12),
+                            ListenableBuilder(
+                              listenable: PluginManager.instance,
+                              builder: (context, _) {
+                                final plugins = PluginManager
+                                    .instance
+                                    .installedPlugins
+                                    .whereType<InstalledPlugin>()
+                                    .toList();
+                                if (plugins.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    for (final p in plugins)
+                                      InkWell(
+                                        onTap: () => studio.openPlugin(p),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadii.control,
                                         ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.extension_outlined, size: 14, color: AppColors.lime),
-                                            const SizedBox(width: 6),
-                                            Expanded(
-                                              child: Text(
-                                                p.name,
-                                                style: const TextStyle(
-                                                  fontSize: 10.5,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Color(0xffe8eae6),
+                                        child: Container(
+                                          margin: const EdgeInsets.only(
+                                            bottom: 6,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.overlayRaised,
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadii.control,
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.overlayBorder,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.extension_outlined,
+                                                size: 14,
+                                                color: AppColors.overlayAccent,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  p.name,
+                                                  style: const TextStyle(
+                                                    fontSize: 10.5,
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        AppColors.overlayText,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                            InkWell(
+                              onTap: () async {
+                                final choice = await showDialog<String>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    backgroundColor: const Color(0xff14221d),
+                                    title: const Text(
+                                      'Cài đặt tiện ích mở rộng (.hlep)',
+                                      style: TextStyle(
+                                        color: AppColors.overlayText,
+                                        fontSize: 14,
                                       ),
                                     ),
-                                ],
-                              );
-                            },
-                          ),
-                          InkWell(
-                            onTap: () async {
-                              final choice = await showDialog<String>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  backgroundColor: const Color(0xff14221d),
-                                  title: const Text(
-                                    'Cài đặt tiện ích mở rộng (.hlep)',
-                                    style: TextStyle(color: Color(0xffe8eae6), fontSize: 14),
-                                  ),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ListTile(
-                                        leading: const Icon(Icons.auto_awesome, color: AppColors.lime),
-                                        title: const Text(
-                                          'Cài đặt Plugin Mẫu (Trợ giảng Tiếng Anh)',
-                                          style: TextStyle(color: Color(0xffe8eae6), fontSize: 12),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ListTile(
+                                          leading: const Icon(
+                                            Icons.auto_awesome,
+                                            color: AppColors.overlayAccent,
+                                          ),
+                                          title: const Text(
+                                            'Cài đặt Plugin Mẫu (Trợ giảng Tiếng Anh)',
+                                            style: TextStyle(
+                                              color: AppColors.overlayText,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          onTap: () =>
+                                              Navigator.pop(ctx, 'sample'),
                                         ),
-                                        onTap: () => Navigator.pop(ctx, 'sample'),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
+                                  ),
+                                );
+                                if (choice == 'sample') {
+                                  await PluginManager.instance
+                                      .installSampleEnglishPlugin();
+                                  studio.change(() {});
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.control,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.overlayRaised,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadii.control,
+                                  ),
+                                  border: Border.all(
+                                    color: AppColors.overlayBorder,
                                   ),
                                 ),
-                              );
-                              if (choice == 'sample') {
-                                await PluginManager.instance.installSampleEnglishPlugin();
-                                studio.change(() {});
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0x14ffffff),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0x22ffffff)),
-                              ),
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.add_circle_outline, size: 14, color: AppColors.lime),
-                                  SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      'Cài thêm tiện ích môn',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.lime,
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.add_circle_outline,
+                                      size: 14,
+                                      color: AppColors.overlayAccent,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Cài thêm tiện ích môn',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.overlayAccent,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                   ],
                 ),
               ),
@@ -265,12 +312,12 @@ class StudioDocumentDrawer extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xee112019),
+                        color: AppColors.overlaySurface,
                         borderRadius: const BorderRadius.only(
                           topRight: Radius.circular(7),
                           bottomRight: Radius.circular(7),
                         ),
-                        border: Border.all(color: const Color(0x33ffffff)),
+                        border: Border.all(color: AppColors.overlayBorder),
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x55000000),
@@ -285,7 +332,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                           const Icon(
                             Icons.collections_bookmark_outlined,
                             size: 13,
-                            color: AppColors.lime,
+                            color: AppColors.overlayAccent,
                           ),
                           if (studio.importedDocs.isNotEmpty) ...[
                             const SizedBox(width: 4),
@@ -295,7 +342,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                                 vertical: 1,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xff2b4d3f),
+                                color: AppColors.overlayRaised,
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Text(
@@ -303,7 +350,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                                 style: const TextStyle(
                                   fontSize: 8,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.lime,
+                                  color: AppColors.overlayAccent,
                                 ),
                               ),
                             ),
@@ -312,7 +359,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                           const Icon(
                             Icons.chevron_right,
                             size: 12,
-                            color: Color(0xffa5b5a8),
+                            color: AppColors.overlayMuted,
                           ),
                         ],
                       ),

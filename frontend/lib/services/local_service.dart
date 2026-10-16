@@ -213,6 +213,23 @@ class LocalService {
     }
   }
 
+  Future<Map<String, dynamic>> devLogin() async {
+    try {
+      final res = await client
+          .post(
+            Uri.parse('$base/api/auth/dev-login'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 4));
+      return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Không kết nối được backend dev. Hãy chạy backend với profile dev.',
+      };
+    }
+  }
+
   Future<Map<String, dynamic>> register({
     required String target,
     required String otp,

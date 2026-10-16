@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import '../../constants/theme.dart';
 import '../../services/exam_api.dart';
 import '../../screens/exams/exam_workspace_screen.dart';
 
 /// Keeps exam navigation outside the teaching toolbar and board lifecycle.
 class ExamStudioButton extends StatelessWidget {
-  const ExamStudioButton({super.key, this.api});
+  const ExamStudioButton({super.key, this.api, this.onDarkSurface = false});
   final ExamApi? api;
+  final bool onDarkSurface;
 
   @override
   Widget build(BuildContext context) => Tooltip(
     message: 'Đề thi & năng lực',
     child: TextButton.icon(
+      style: onDarkSurface
+          ? TextButton.styleFrom(foregroundColor: AppColors.overlayAccent)
+          : null,
       onPressed: () => showDialog<void>(
         context: context,
         builder: (dialogContext) => SimpleDialog(

@@ -77,9 +77,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
             });
           },
           onPanEnd: (details) async {
-            if (_isProcessing ||
-                _startPoint == null ||
-                _currentPoint == null) {
+            if (_isProcessing || _startPoint == null || _currentPoint == null) {
               return;
             }
 
@@ -128,7 +126,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                       boxShadow: const [
                         BoxShadow(
                           color: Color(0x88000000),
-                          blurRadius: 16,
+                          blurRadius: 8,
                           offset: Offset(0, 4),
                         ),
                       ],
@@ -187,10 +185,15 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
     final size = MediaQuery.of(context).size;
 
     // 1. Try accurate extraction using active PdfViewerController
-    _PdfSnippetResult? pdfResult = await _extractFromActivePdfViewer(context, studio, screenRect);
+    _PdfSnippetResult? pdfResult = await _extractFromActivePdfViewer(
+      context,
+      studio,
+      screenRect,
+    );
 
     // 2. Fallback to direct page extraction from PDF bytes/file if controller was not ready
-    if (pdfResult == null && (studio.pdfBytes != null || studio.pdfFilePath != null)) {
+    if (pdfResult == null &&
+        (studio.pdfBytes != null || studio.pdfFilePath != null)) {
       pdfResult = await _extractFromPdfFallback(studio, screenRect, size);
     }
 
@@ -226,19 +229,25 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         if (matches.isNotEmpty) {
           for (final m in matches) {
             final matchedBoxes = <Rect>[];
-            for (int ci = m.start; ci < m.end && ci < snippetChars.length; ci++) {
+            for (
+              int ci = m.start;
+              ci < m.end && ci < snippetChars.length;
+              ci++
+            ) {
               matchedBoxes.add(snippetChars[ci].normalizedRect);
             }
             if (matchedBoxes.isNotEmpty) {
               final lineRects = _groupCharBoxesIntoLines(matchedBoxes);
-              spans.add(PdfDgnlHighlightSpan(
-                text: hlText,
-                category: category,
-                level: level,
-                type: type,
-                note: note,
-                normalizedRects: lineRects,
-              ));
+              spans.add(
+                PdfDgnlHighlightSpan(
+                  text: hlText,
+                  category: category,
+                  level: level,
+                  type: type,
+                  note: note,
+                  normalizedRects: lineRects,
+                ),
+              );
             }
           }
         } else {
@@ -253,14 +262,16 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
             }
             if (matchedBoxes.isNotEmpty) {
               final lineRects = _groupCharBoxesIntoLines(matchedBoxes);
-              spans.add(PdfDgnlHighlightSpan(
-                text: hlText,
-                category: category,
-                level: level,
-                type: type,
-                note: note,
-                normalizedRects: lineRects,
-              ));
+              spans.add(
+                PdfDgnlHighlightSpan(
+                  text: hlText,
+                  category: category,
+                  level: level,
+                  type: type,
+                  note: note,
+                  normalizedRects: lineRects,
+                ),
+              );
             }
             sIdx = eIdx;
           }
@@ -287,10 +298,15 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
 
                 int findIdx = 0;
                 final hlLower = hlText.toLowerCase();
-                while ((findIdx = pageFullLower.indexOf(hlLower, findIdx)) != -1) {
+                while ((findIdx = pageFullLower.indexOf(hlLower, findIdx)) !=
+                    -1) {
                   final endIdx = findIdx + hlLower.length;
                   final matchedBoxes = <Rect>[];
-                  for (int ci = findIdx; ci < endIdx && ci < rawPageText.charRects.length; ci++) {
+                  for (
+                    int ci = findIdx;
+                    ci < endIdx && ci < rawPageText.charRects.length;
+                    ci++
+                  ) {
                     final r = rawPageText.charRects[ci];
                     final rFlutter = r.toRect(page: page);
                     final cRect = Rect.fromLTRB(
@@ -303,14 +319,16 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                   }
                   if (matchedBoxes.isNotEmpty) {
                     final lineRects = _groupCharBoxesIntoLines(matchedBoxes);
-                    spans.add(PdfDgnlHighlightSpan(
-                      text: hlText,
-                      category: category,
-                      level: level,
-                      type: type,
-                      note: note,
-                      normalizedRects: lineRects,
-                    ));
+                    spans.add(
+                      PdfDgnlHighlightSpan(
+                        text: hlText,
+                        category: category,
+                        level: level,
+                        type: type,
+                        note: note,
+                        normalizedRects: lineRects,
+                      ),
+                    );
                   }
                   findIdx = endIdx;
                 }
@@ -318,7 +336,9 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
             }
           }
         } catch (e) {
-          debugPrint('[RegionSnippingOverlay] Page fallback span search error: $e');
+          debugPrint(
+            '[RegionSnippingOverlay] Page fallback span search error: $e',
+          );
         }
       }
 
@@ -352,7 +372,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Color(0xff86efac), size: 18),
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xff86efac),
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -369,7 +393,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       }
       return;
     }
-
 
     // 3. Fallback to Chalkboard handwriting annotations if applicable
     String extracted = '';
@@ -401,7 +424,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle, color: Color(0xff86efac), size: 18),
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xff86efac),
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -419,7 +446,9 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       studio.stopSnipping();
       messenger?.showSnackBar(
         const SnackBar(
-          content: Text('Không tìm thấy văn bản trong vùng khoanh. Vui lòng kéo chọn lại!'),
+          content: Text(
+            'Không tìm thấy văn bản trong vùng khoanh. Vui lòng kéo chọn lại!',
+          ),
           duration: Duration(seconds: 2),
         ),
       );
@@ -441,14 +470,17 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         if (overlayBox == null) return null;
 
         final globalTopLeft = overlayBox.localToGlobal(screenRect.topLeft);
-        final globalBottomRight = overlayBox.localToGlobal(screenRect.bottomRight);
+        final globalBottomRight = overlayBox.localToGlobal(
+          screenRect.bottomRight,
+        );
 
         // Convert global screen coordinate to PDF document layout space
         Offset? docTopLeft = controller.globalToDocument(globalTopLeft);
         Offset? docBottomRight = controller.globalToDocument(globalBottomRight);
 
         if (docTopLeft == null || docBottomRight == null) {
-          final viewerBox = viewerKey?.currentContext?.findRenderObject() as RenderBox?;
+          final viewerBox =
+              viewerKey?.currentContext?.findRenderObject() as RenderBox?;
           if (viewerBox != null) {
             final vLocalTL = viewerBox.globalToLocal(globalTopLeft);
             final vLocalBR = viewerBox.globalToLocal(globalBottomRight);
@@ -471,7 +503,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         // Find the page with the highest overlap area with docRect
         int? bestPageIdx;
         double maxOverlapArea = 0.0;
-        for (int i = 0; i < pageLayouts.length && i < controller.pages.length; i++) {
+        for (
+          int i = 0;
+          i < pageLayouts.length && i < controller.pages.length;
+          i++
+        ) {
           final pLayout = pageLayouts[i];
           if (docRect.overlaps(pLayout)) {
             final interL = math.max(docRect.left, pLayout.left);
@@ -489,7 +525,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         // If selection is slightly outside/on border, pick page closest vertically
         if (bestPageIdx == null) {
           double minDist = double.infinity;
-          for (int i = 0; i < pageLayouts.length && i < controller.pages.length; i++) {
+          for (
+            int i = 0;
+            i < pageLayouts.length && i < controller.pages.length;
+            i++
+          ) {
             final pLayout = pageLayouts[i];
             final dist = (docRect.center.dy - pLayout.center.dy).abs();
             if (dist < minDist) {
@@ -499,7 +539,10 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
           }
         }
 
-        bestPageIdx ??= (studio.pdfPage - 1).clamp(0, controller.pages.length - 1);
+        bestPageIdx ??= (studio.pdfPage - 1).clamp(
+          0,
+          controller.pages.length - 1,
+        );
 
         final pLayout = pageLayouts[bestPageIdx];
         final page = controller.pages[bestPageIdx];
@@ -510,18 +553,39 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         final clampTop = math.max(docRect.top, pLayout.top);
         final clampBottom = math.min(docRect.bottom, pLayout.bottom);
 
-        final normLeft = ((clampLeft - pLayout.left) / pLayout.width).clamp(0.0, 1.0);
-        final normTop = ((clampTop - pLayout.top) / pLayout.height).clamp(0.0, 1.0);
-        final normRight = ((clampRight - pLayout.left) / pLayout.width).clamp(0.0, 1.0);
-        final normBottom = ((clampBottom - pLayout.top) / pLayout.height).clamp(0.0, 1.0);
-        final normRect = Rect.fromLTRB(normLeft, normTop, normRight, normBottom);
+        final normLeft = ((clampLeft - pLayout.left) / pLayout.width).clamp(
+          0.0,
+          1.0,
+        );
+        final normTop = ((clampTop - pLayout.top) / pLayout.height).clamp(
+          0.0,
+          1.0,
+        );
+        final normRight = ((clampRight - pLayout.left) / pLayout.width).clamp(
+          0.0,
+          1.0,
+        );
+        final normBottom = ((clampBottom - pLayout.top) / pLayout.height).clamp(
+          0.0,
+          1.0,
+        );
+        final normRect = Rect.fromLTRB(
+          normLeft,
+          normTop,
+          normRight,
+          normBottom,
+        );
 
         final rawText = await page.loadText();
         if (rawText != null && rawText.fullText.isNotEmpty) {
           final boxes = <_PdfCharBox>[];
           final charIndices = <int>{};
 
-          for (int c = 0; c < rawText.charRects.length && c < rawText.fullText.length; c++) {
+          for (
+            int c = 0;
+            c < rawText.charRects.length && c < rawText.fullText.length;
+            c++
+          ) {
             final r = rawText.charRects[c];
             final rFlutter = r.toRect(page: page);
             final cNormLeft = (rFlutter.left / page.width).clamp(0.0, 1.0);
@@ -538,16 +602,22 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
 
             // Expand thin/zero-width space rects slightly for reliable hit-testing
             final hitRect = cRect.width < 0.002
-                ? Rect.fromCenter(center: cRect.center, width: 0.006, height: math.max(0.012, cRect.height))
+                ? Rect.fromCenter(
+                    center: cRect.center,
+                    width: 0.006,
+                    height: math.max(0.012, cRect.height),
+                  )
                 : cRect;
 
             if (hitRect.overlaps(normRect) || normRect.contains(cRect.center)) {
               charIndices.add(c);
-              boxes.add(_PdfCharBox(
-                char: rawText.fullText[c],
-                index: c,
-                normalizedRect: cRect,
-              ));
+              boxes.add(
+                _PdfCharBox(
+                  char: rawText.fullText[c],
+                  index: c,
+                  normalizedRect: cRect,
+                ),
+              );
             }
           }
 
@@ -567,7 +637,9 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                     (rFlutter.right / page.width).clamp(0.0, 1.0),
                     (rFlutter.bottom / page.height).clamp(0.0, 1.0),
                   );
-                  boxes.add(_PdfCharBox(char: ch, index: i, normalizedRect: cRect));
+                  boxes.add(
+                    _PdfCharBox(char: ch, index: i, normalizedRect: cRect),
+                  );
                 }
               }
             }
@@ -581,10 +653,18 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
 
           // Fallback if character boxes missed lines
           if (snippetText.trim().length < 5) {
-            final lines = rawText.fullText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+            final lines = rawText.fullText
+                .split('\n')
+                .map((l) => l.trim())
+                .where((l) => l.isNotEmpty)
+                .toList();
             if (lines.isNotEmpty) {
-              final startLine = (normTop * lines.length).clamp(0, lines.length - 1).toInt();
-              final endLine = (normBottom * lines.length).clamp(startLine, lines.length - 1).toInt();
+              final startLine = (normTop * lines.length)
+                  .clamp(0, lines.length - 1)
+                  .toInt();
+              final endLine = (normBottom * lines.length)
+                  .clamp(startLine, lines.length - 1)
+                  .toInt();
               snippetText = lines.sublist(startLine, endLine + 1).join(' ');
             }
           }
@@ -641,7 +721,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
           final boxes = <_PdfCharBox>[];
           final charIndices = <int>{};
 
-          for (int c = 0; c < rawText.charRects.length && c < rawText.fullText.length; c++) {
+          for (
+            int c = 0;
+            c < rawText.charRects.length && c < rawText.fullText.length;
+            c++
+          ) {
             final r = rawText.charRects[c];
             final rFlutter = r.toRect(page: page);
             final cNormLeft = (rFlutter.left / page.width).clamp(0.0, 1.0);
@@ -657,16 +741,22 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
             );
 
             final hitRect = cRect.width < 0.002
-                ? Rect.fromCenter(center: cRect.center, width: 0.006, height: math.max(0.012, cRect.height))
+                ? Rect.fromCenter(
+                    center: cRect.center,
+                    width: 0.006,
+                    height: math.max(0.012, cRect.height),
+                  )
                 : cRect;
 
             if (hitRect.overlaps(normRect) || normRect.contains(cRect.center)) {
               charIndices.add(c);
-              boxes.add(_PdfCharBox(
-                char: rawText.fullText[c],
-                index: c,
-                normalizedRect: cRect,
-              ));
+              boxes.add(
+                _PdfCharBox(
+                  char: rawText.fullText[c],
+                  index: c,
+                  normalizedRect: cRect,
+                ),
+              );
             }
           }
 
@@ -685,7 +775,9 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                     (rFlutter.right / page.width).clamp(0.0, 1.0),
                     (rFlutter.bottom / page.height).clamp(0.0, 1.0),
                   );
-                  boxes.add(_PdfCharBox(char: ch, index: i, normalizedRect: cRect));
+                  boxes.add(
+                    _PdfCharBox(char: ch, index: i, normalizedRect: cRect),
+                  );
                 }
               }
             }
@@ -723,7 +815,8 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       for (final line in lines) {
         final ref = line.first;
         // Group if vertical overlap exists or top distance is within tolerance
-        if ((ref.top - b.top).abs() < 0.015 || (b.top <= ref.bottom && b.bottom >= ref.top)) {
+        if ((ref.top - b.top).abs() < 0.015 ||
+            (b.top <= ref.bottom && b.bottom >= ref.top)) {
           line.add(b);
           added = true;
           break;
@@ -748,12 +841,14 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         maxY = math.max(maxY, r.bottom);
       }
 
-      merged.add(Rect.fromLTRB(
-        minX,
-        (minY - 0.001).clamp(0.0, 1.0),
-        maxX,
-        (maxY + 0.001).clamp(0.0, 1.0),
-      ));
+      merged.add(
+        Rect.fromLTRB(
+          minX,
+          (minY - 0.001).clamp(0.0, 1.0),
+          maxX,
+          (maxY + 0.001).clamp(0.0, 1.0),
+        ),
+      );
     }
     return merged;
   }
@@ -779,9 +874,7 @@ class _SnippingPainter extends CustomPainter {
     // Cutout hole for clear selection
     final bgPath = Path()..addRect(Offset.zero & size);
     final holePath = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(selRect, const Radius.circular(4)),
-      );
+      ..addRRect(RRect.fromRectAndRadius(selRect, const Radius.circular(4)));
     final cutoutPath = Path.combine(PathOperation.difference, bgPath, holePath);
     canvas.drawPath(cutoutPath, bgPaint);
 
@@ -803,17 +896,49 @@ class _SnippingPainter extends CustomPainter {
 
     const cornerLen = 10.0;
     // Top-left
-    canvas.drawLine(selRect.topLeft, selRect.topLeft + const Offset(cornerLen, 0), cornerPaint);
-    canvas.drawLine(selRect.topLeft, selRect.topLeft + const Offset(0, cornerLen), cornerPaint);
+    canvas.drawLine(
+      selRect.topLeft,
+      selRect.topLeft + const Offset(cornerLen, 0),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      selRect.topLeft,
+      selRect.topLeft + const Offset(0, cornerLen),
+      cornerPaint,
+    );
     // Top-right
-    canvas.drawLine(selRect.topRight, selRect.topRight + const Offset(-cornerLen, 0), cornerPaint);
-    canvas.drawLine(selRect.topRight, selRect.topRight + const Offset(0, cornerLen), cornerPaint);
+    canvas.drawLine(
+      selRect.topRight,
+      selRect.topRight + const Offset(-cornerLen, 0),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      selRect.topRight,
+      selRect.topRight + const Offset(0, cornerLen),
+      cornerPaint,
+    );
     // Bottom-left
-    canvas.drawLine(selRect.bottomLeft, selRect.bottomLeft + const Offset(cornerLen, 0), cornerPaint);
-    canvas.drawLine(selRect.bottomLeft, selRect.bottomLeft + const Offset(0, -cornerLen), cornerPaint);
+    canvas.drawLine(
+      selRect.bottomLeft,
+      selRect.bottomLeft + const Offset(cornerLen, 0),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      selRect.bottomLeft,
+      selRect.bottomLeft + const Offset(0, -cornerLen),
+      cornerPaint,
+    );
     // Bottom-right
-    canvas.drawLine(selRect.bottomRight, selRect.bottomRight + const Offset(-cornerLen, 0), cornerPaint);
-    canvas.drawLine(selRect.bottomRight, selRect.bottomRight + const Offset(0, -cornerLen), cornerPaint);
+    canvas.drawLine(
+      selRect.bottomRight,
+      selRect.bottomRight + const Offset(-cornerLen, 0),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      selRect.bottomRight,
+      selRect.bottomRight + const Offset(0, -cornerLen),
+      cornerPaint,
+    );
 
     // Dimensions badge
     final textSpan = TextSpan(

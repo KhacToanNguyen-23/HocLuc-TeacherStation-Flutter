@@ -20,11 +20,11 @@ internal static class Program {
         string name = args.Length > 0 && args[0] == "--smoke-test" ? "Local\\HocLucTeacher-Test-" + Process.GetCurrentProcess().Id : "Local\\HocLucTeacher-App";
         using (Mutex mutex = new Mutex(true, name, out created)) {
             if (!created) {
-                MessageBox.Show("HocLuc Teacher đang mở. Chọn cửa sổ app trên thanh taskbar.", "HocLuc Teacher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("HocLucStation đang mở. Chọn cửa sổ app trên thanh taskbar.", "HocLucStation", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             try { Application.Run(new TeacherWindow(args)); }
-            catch (Exception error) { MessageBox.Show("Không mở được HocLuc Teacher: " + error.Message, "HocLuc Teacher", MessageBoxButtons.OK, MessageBoxIcon.Error); Environment.ExitCode = 1; }
+            catch (Exception error) { MessageBox.Show("Không mở được HocLucStation: " + error.Message, "HocLucStation", MessageBoxButtons.OK, MessageBoxIcon.Error); Environment.ExitCode = 1; }
             finally { mutex.ReleaseMutex(); }
         }
     }
@@ -55,7 +55,7 @@ internal sealed class TeacherWindow : Form {
         Directory.CreateDirectory(Path.Combine(userRoot, "data"));
         Directory.CreateDirectory(Path.Combine(userRoot, "logs"));
         if (smokeFolder != null) Directory.CreateDirectory(smokeFolder);
-        Text = "HocLuc Teacher";
+        Text = "HocLucStation";
         AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
         Size = new Size(1440, 900);
@@ -64,7 +64,7 @@ internal sealed class TeacherWindow : Form {
         BackColor = Color.FromArgb(245, 245, 237);
         try { Icon = Icon.ExtractAssociatedIcon(Path.Combine(home, "HocLuc-Teacher.exe")); } catch { }
         loading = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter,
-            Font = new Font("Segoe UI", 18), ForeColor = Color.FromArgb(23, 62, 53), Text = "Đang mở HocLuc Teacher…" };
+            Font = new Font("Segoe UI", 18), ForeColor = Color.FromArgb(23, 62, 53), Text = "Đang mở HocLucStation…" };
         Controls.Add(loading);
         Shown += async delegate { await OpenAsync(); };
         FormClosing += delegate { closing = true; };
@@ -159,7 +159,7 @@ internal sealed class TeacherWindow : Form {
             if (smokeFolder != null) {
                 File.WriteAllText(Path.Combine(smokeFolder, "failure.txt"), error.ToString()); Environment.ExitCode = 1; Close();
             } else {
-                MessageBox.Show("Không mở được app: " + error.Message + "\n\nLog: " + Path.Combine(userRoot, "logs", "desktop.log"), "HocLuc Teacher", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Không mở được app: " + error.Message + "\n\nLog: " + Path.Combine(userRoot, "logs", "desktop.log"), "HocLucStation", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Close();
             }
         }

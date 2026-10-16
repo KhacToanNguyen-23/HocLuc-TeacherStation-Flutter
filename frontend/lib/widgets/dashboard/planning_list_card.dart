@@ -30,29 +30,33 @@ class PlanningListCard extends StatelessWidget {
   Color _getSubjectColor(String subject) {
     final lower = subject.toLowerCase();
     if (lower.contains('anh') || lower.contains('english')) {
-      return const Color(0xFF2563EB); // Royal Blue
+      return AppColors.primary; // Royal Blue
     } else if (lower.contains('toán') || lower.contains('math')) {
-      return const Color(0xFFD97706); // Amber
+      return AppColors.warning; // Amber
     } else if (lower.contains('văn') || lower.contains('việt')) {
-      return const Color(0xFF059669); // Emerald
-    } else if (lower.contains('lý') || lower.contains('hóa') || lower.contains('sinh')) {
+      return AppColors.success; // Emerald
+    } else if (lower.contains('lý') ||
+        lower.contains('hóa') ||
+        lower.contains('sinh')) {
       return const Color(0xFF7C3AED); // Purple
     }
-    return const Color(0xFF475569); // Slate
+    return AppColors.textSecondary; // Slate
   }
 
   Color _getSubjectBg(String subject) {
     final lower = subject.toLowerCase();
     if (lower.contains('anh') || lower.contains('english')) {
-      return const Color(0xFFEFF6FF);
+      return AppColors.sky50;
     } else if (lower.contains('toán') || lower.contains('math')) {
-      return const Color(0xFFFFFBEB);
+      return AppColors.warningSurface;
     } else if (lower.contains('văn') || lower.contains('việt')) {
-      return const Color(0xFFECFDF5);
-    } else if (lower.contains('lý') || lower.contains('hóa') || lower.contains('sinh')) {
+      return AppColors.successSurface;
+    } else if (lower.contains('lý') ||
+        lower.contains('hóa') ||
+        lower.contains('sinh')) {
       return const Color(0xFFF5F3FF);
     }
-    return const Color(0xFFF1F5F9);
+    return AppColors.surfaceMuted;
   }
 
   @override
@@ -61,13 +65,13 @@ class PlanningListCard extends StatelessWidget {
       return Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.slate200),
+          borderRadius: BorderRadius.circular(AppRadii.panel),
+          border: Border.all(color: AppColors.border),
         ),
         child: const Center(
           child: CircularProgressIndicator(
             strokeWidth: 3,
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.sky600),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
         ),
       );
@@ -90,12 +94,16 @@ class PlanningListCard extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: onCreateNew,
             icon: const Icon(Icons.add_rounded, size: 22),
-            label: const Text('Soạn bài mới', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+            label: const Text(
+              'Soạn bài mới',
+              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+            ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.sky600,
               foregroundColor: Colors.white,
-              elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadii.control),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 24),
             ),
           ),
@@ -106,15 +114,8 @@ class PlanningListCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.slate200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,7 +124,7 @@ class PlanningListCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.slate200)),
+              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -136,23 +137,26 @@ class PlanningListCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.slate900,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.sky50,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFBAE6FD)),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Text(
                         '${filtered.length} bài',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.sky600,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -164,9 +168,17 @@ class PlanningListCard extends StatelessWidget {
                     DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: selectedSubject,
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: AppColors.slate600),
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 20,
+                          color: AppColors.textSecondary,
+                        ),
                         isDense: true,
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.slate900),
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                         items: subjectOptions.map((item) {
                           return DropdownMenuItem<String>(
                             value: item,
@@ -182,13 +194,22 @@ class PlanningListCard extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: onCreateNew,
                         icon: const Icon(Icons.add_rounded, size: 20),
-                        label: const Text('Soạn mới', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'Soạn mới',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.sky600,
                           foregroundColor: Colors.white,
-                          elevation: 1,
-                          shadowColor: AppColors.sky600.withValues(alpha: 0.3),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
+                          shadowColor: AppColors.primary.withValues(alpha: 0.3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadii.control,
+                            ),
+                          ),
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -204,37 +225,39 @@ class PlanningListCard extends StatelessWidget {
           // Planning List Cards
           Expanded(
             child: ListView.separated(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: filtered.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
+              separatorBuilder: (context, index) =>
+                  const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, index) {
                 final plan = filtered[index];
                 final subjectColor = _getSubjectColor(plan.subject);
                 final subjectBg = _getSubjectBg(plan.subject);
 
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.slate200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.015),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     children: [
                       // Subject icon or badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: subjectBg,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: subjectColor.withValues(alpha: 0.25)),
+                          borderRadius: BorderRadius.circular(AppRadii.control),
+                          border: Border.all(
+                            color: subjectColor.withValues(alpha: 0.25),
+                          ),
                         ),
                         child: Text(
                           plan.subject,
@@ -259,7 +282,7 @@ class PlanningListCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.slate900,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -271,12 +294,19 @@ class PlanningListCard extends StatelessWidget {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.layers_outlined, size: 12, color: AppColors.slate500),
+                                    const Icon(
+                                      Icons.layers_outlined,
+                                      size: 12,
+                                      color: AppColors.textMuted,
+                                    ),
                                     const SizedBox(width: 3),
                                     Flexible(
                                       child: Text(
                                         '${plan.pageCount} trang',
-                                        style: const TextStyle(fontSize: 11, color: AppColors.slate500),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textMuted,
+                                        ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
@@ -285,12 +315,19 @@ class PlanningListCard extends StatelessWidget {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.access_time_rounded, size: 12, color: AppColors.slate500),
+                                    const Icon(
+                                      Icons.access_time_rounded,
+                                      size: 12,
+                                      color: AppColors.textMuted,
+                                    ),
                                     const SizedBox(width: 3),
                                     Flexible(
                                       child: Text(
                                         plan.formattedUpdatedAt,
-                                        style: const TextStyle(fontSize: 11, color: AppColors.slate500),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textMuted,
+                                        ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
@@ -310,16 +347,34 @@ class PlanningListCard extends StatelessWidget {
                             height: 40,
                             child: OutlinedButton.icon(
                               onPressed: () => onEdit(plan),
-                              icon: const Icon(Icons.edit_note_rounded, size: 20),
-                              label: const Text('Soạn tiếp', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              icon: const Icon(
+                                Icons.edit_note_rounded,
+                                size: 20,
+                              ),
+                              label: const Text(
+                                'Soạn tiếp',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.slate700,
                                 backgroundColor: Colors.white,
-                                side: const BorderSide(color: AppColors.slate300, width: 1.2),
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                side: const BorderSide(
+                                  color: AppColors.inputBorder,
+                                  width: 1.2,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadii.control,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -328,17 +383,33 @@ class PlanningListCard extends StatelessWidget {
                             height: 40,
                             child: ElevatedButton.icon(
                               onPressed: () => onLaunch(plan),
-                              icon: const Icon(Icons.videocam_rounded, size: 19),
-                              label: const Text('Dạy ngay', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                              icon: const Icon(
+                                Icons.videocam_rounded,
+                                size: 19,
+                              ),
+                              label: const Text(
+                                'Dạy ngay',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.sky600,
                                 foregroundColor: Colors.white,
-                                elevation: 1,
-                                shadowColor: AppColors.sky600.withValues(alpha: 0.3),
-                                padding: const EdgeInsets.symmetric(horizontal: 18),
+                                elevation: 0,
+                                shadowColor: AppColors.primary.withValues(
+                                  alpha: 0.3,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                ),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadii.control,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -347,12 +418,20 @@ class PlanningListCard extends StatelessWidget {
                             width: 40,
                             height: 40,
                             child: IconButton(
-                              icon: const Icon(Icons.delete_outline_rounded, size: 21, color: AppColors.slate400),
+                              icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                size: 21,
+                                color: AppColors.textMuted,
+                              ),
                               tooltip: 'Xóa kế hoạch bài giảng',
                               padding: EdgeInsets.zero,
-                              hoverColor: const Color(0xFFFEE2E2),
+                              hoverColor: AppColors.errorSurface,
                               style: IconButton.styleFrom(
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadii.control,
+                                  ),
+                                ),
                               ),
                               onPressed: () => onDelete(plan),
                             ),

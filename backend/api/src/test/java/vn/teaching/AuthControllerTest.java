@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.ActiveProfiles;
 import vn.teaching.model.LoginRequest;
 import vn.teaching.model.OtpAuthRequest;
 import vn.teaching.model.RegisterRequest;
@@ -15,8 +16,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.auth.dev-login.enabled=true")
 @AutoConfigureMockMvc
+@ActiveProfiles("prod")
 public class AuthControllerTest {
 
     @Autowired
@@ -24,6 +26,13 @@ public class AuthControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Test
+    void devLoginIsUnavailableOutsideDevProfile() throws Exception {
+        mockMvc.perform(post("/api/auth/dev-login"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false));
+    }
 
     @Test
     void testSendOtpSuccess() throws Exception {

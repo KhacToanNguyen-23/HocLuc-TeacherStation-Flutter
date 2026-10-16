@@ -43,7 +43,8 @@ class LobbyMeetRoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasRealLink = currentMeetingUrl != null && isRealGoogleMeetUrl(currentMeetingUrl);
+    final hasRealLink =
+        currentMeetingUrl != null && isRealGoogleMeetUrl(currentMeetingUrl);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,15 +54,8 @@ class LobbyMeetRoomCard extends StatelessWidget {
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.slate200),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppRadii.panel),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,11 +63,19 @@ class LobbyMeetRoomCard extends StatelessWidget {
               // Header Row: Topic
               const Row(
                 children: [
-                  Icon(Icons.school_rounded, size: 20, color: AppColors.sky600),
+                  Icon(
+                    Icons.school_rounded,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'Thông tin Buổi học',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.slate900),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -82,25 +84,36 @@ class LobbyMeetRoomCard extends StatelessWidget {
               // Title input
               TextField(
                 controller: titleController,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.slate900),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Nhập tên bài học...',
-                  prefixIcon: const Icon(Icons.edit_note_rounded, size: 20, color: AppColors.slate500),
+                  prefixIcon: const Icon(
+                    Icons.edit_note_rounded,
+                    size: 20,
+                    color: AppColors.textMuted,
+                  ),
                   filled: true,
-                  fillColor: AppColors.slate50,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  fillColor: AppColors.background,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.slate200),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.slate200),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                 ),
               ),
               const SizedBox(height: 18),
-              const Divider(height: 1, color: AppColors.slate200),
+              const Divider(height: 1, color: AppColors.border),
               const SizedBox(height: 16),
 
               // Google Meet Channel Header
@@ -112,7 +125,7 @@ class LobbyMeetRoomCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.slate200),
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: const Center(
                       child: Text(
@@ -128,7 +141,11 @@ class LobbyMeetRoomCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   const Text(
                     'Kênh Phát sóng Google Meet',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.slate800),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.slate800,
+                    ),
                   ),
                 ],
               ),
@@ -137,15 +154,22 @@ class LobbyMeetRoomCard extends StatelessWidget {
               if (hasRealLink) ...[
                 // Meeting URL Container with Copy Action
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.slate50,
+                    color: AppColors.background,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.slate300),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.link_rounded, size: 18, color: AppColors.blue600),
+                      const Icon(
+                        Icons.link_rounded,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: SelectableText(
@@ -153,7 +177,7 @@ class LobbyMeetRoomCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -161,14 +185,26 @@ class LobbyMeetRoomCard extends StatelessWidget {
                       ElevatedButton.icon(
                         onPressed: onCopyLink,
                         icon: const Icon(Icons.copy_rounded, size: 13),
-                        label: const Text('Sao chép', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'Sao chép',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.blue600,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           elevation: 0,
                           visualDensity: VisualDensity.compact,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadii.control,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -182,9 +218,19 @@ class LobbyMeetRoomCard extends StatelessWidget {
                   child: TextButton.icon(
                     onPressed: isCreatingMeet ? null : onGenerateNewMeet,
                     icon: isCreatingMeet
-                        ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.autorenew_rounded, size: 14),
-                    label: const Text('Tạo link khác', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                    label: const Text(
+                      'Tạo link khác',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ] else ...[
@@ -194,18 +240,33 @@ class LobbyMeetRoomCard extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: isCreatingMeet ? null : onGenerateNewMeet,
                         icon: isCreatingMeet
-                            ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            ? const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
                             : const Icon(Icons.video_call_rounded, size: 16),
                         label: Text(
-                          isCreatingMeet ? 'Đang tạo phòng ngầm...' : 'Tự động tạo phòng Meet',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          isCreatingMeet
+                              ? 'Đang tạo phòng ngầm...'
+                              : 'Tự động tạo phòng Meet',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.blue600,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadii.control,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -217,7 +278,13 @@ class LobbyMeetRoomCard extends StatelessWidget {
                   child: TextButton.icon(
                     onPressed: onShowCustomLinkDialog,
                     icon: const Icon(Icons.link_rounded, size: 14),
-                    label: const Text('Dán link phòng có sẵn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                    label: const Text(
+                      'Dán link phòng có sẵn',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -232,11 +299,12 @@ class LobbyMeetRoomCard extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onEnterStudio,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0284C7),
               foregroundColor: Colors.white,
               elevation: 3,
-              shadowColor: const Color(0xFF0284C7).withValues(alpha: 0.35),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shadowColor: AppColors.primary.withValues(alpha: 0.35),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -265,15 +333,14 @@ class LobbyMeetRoomCard extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_rounded, size: 16),
             label: const Text(
               'HỦY / QUAY LẠI DASHBOARD',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
             ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.slate600,
-              side: const BorderSide(color: AppColors.slate300),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              foregroundColor: AppColors.textSecondary,
+              side: const BorderSide(color: AppColors.inputBorder),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ),

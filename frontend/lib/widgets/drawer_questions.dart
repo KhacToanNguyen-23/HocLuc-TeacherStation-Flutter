@@ -1,7 +1,7 @@
-
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../services/plugin_manager.dart';
 
@@ -54,7 +54,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
 
             // Animated Compact Drawer Panel (width: 252)
             AnimatedPositioned(
-              duration: const Duration(milliseconds: 220),
+              duration: AppMotion.duration(context, milliseconds: 220),
               curve: Curves.easeOutCubic,
               left: isOpen ? 0 : -256,
               top: 0,
@@ -62,19 +62,19 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
               width: 252,
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xf70e1a15),
+                  color: AppColors.overlaySurface,
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(14),
                     bottomRight: Radius.circular(14),
                   ),
                   border: Border.all(
-                    color: const Color(0x33ffffff),
+                    color: AppColors.overlayBorder,
                     width: 1.2,
                   ),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x77000000),
-                      blurRadius: 18,
+                      blurRadius: 8,
                       offset: Offset(3, 0),
                     ),
                   ],
@@ -90,7 +90,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                       ),
                       decoration: const BoxDecoration(
                         border: Border(
-                          bottom: BorderSide(color: Color(0x22ffffff)),
+                          bottom: BorderSide(color: AppColors.overlayBorder),
                         ),
                       ),
                       child: Row(
@@ -98,7 +98,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           const Icon(
                             Icons.collections_bookmark_outlined,
                             size: 15,
-                            color: Color(0xffd4e8a6),
+                            color: AppColors.overlayAccent,
                           ),
                           const SizedBox(width: 6),
                           const Expanded(
@@ -108,7 +108,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xffe8eae6),
+                                color: AppColors.overlayText,
                               ),
                             ),
                           ),
@@ -119,15 +119,17 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                             ),
                             margin: const EdgeInsets.only(right: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0x28d4e8a6),
-                              borderRadius: BorderRadius.circular(8),
+                              color: AppColors.overlaySelected,
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.control,
+                              ),
                             ),
                             child: Text(
                               '${studio.pages.length} trang${studio.importedDocs.isNotEmpty ? " · ${studio.importedDocs.length} tệp" : ""}',
                               style: const TextStyle(
                                 fontSize: 8.5,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xffd4e8a6),
+                                color: AppColors.overlayAccent,
                               ),
                             ),
                           ),
@@ -139,7 +141,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                               child: Icon(
                                 Icons.close,
                                 size: 14,
-                                color: Color(0xffa5b5a8),
+                                color: AppColors.overlayMuted,
                               ),
                             ),
                           ),
@@ -158,7 +160,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                               const Icon(
                                 Icons.layers_outlined,
                                 size: 13,
-                                color: Color(0xffd4e8a6),
+                                color: AppColors.overlayAccent,
                               ),
                               const SizedBox(width: 5),
                               const Text(
@@ -167,7 +169,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                                   fontSize: 9.5,
                                   letterSpacing: 0.8,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xffd4e8a6),
+                                  color: AppColors.overlayAccent,
                                 ),
                               ),
                               const Spacer(),
@@ -176,7 +178,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                                 style: const TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xffa5b5a8),
+                                  color: AppColors.overlayMuted,
                                 ),
                               ),
                             ],
@@ -223,12 +225,12 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xee112019),
+                        color: AppColors.overlaySurface,
                         borderRadius: const BorderRadius.only(
                           topRight: Radius.circular(7),
                           bottomRight: Radius.circular(7),
                         ),
-                        border: Border.all(color: const Color(0x33ffffff)),
+                        border: Border.all(color: AppColors.overlayBorder),
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x55000000),
@@ -243,7 +245,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           const Icon(
                             Icons.collections_bookmark_outlined,
                             size: 13,
-                            color: Color(0xffd4e8a6),
+                            color: AppColors.overlayAccent,
                           ),
                           if (studio.importedDocs.isNotEmpty) ...[
                             const SizedBox(width: 4),
@@ -253,7 +255,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                                 vertical: 1,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xff2b4d3f),
+                                color: AppColors.overlayRaised,
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Text(
@@ -261,7 +263,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                                 style: const TextStyle(
                                   fontSize: 8,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xffd4e8a6),
+                                  color: AppColors.overlayAccent,
                                 ),
                               ),
                             ),
@@ -270,7 +272,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           const Icon(
                             Icons.chevron_right,
                             size: 12,
-                            color: Color(0xffa5b5a8),
+                            color: AppColors.overlayMuted,
                           ),
                         ],
                       ),
@@ -322,7 +324,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
             style: TextStyle(
               fontSize: 10,
               height: 1.4,
-              color: Color(0xff6e7e72),
+              color: AppColors.overlayMuted,
             ),
           ),
         ),
@@ -377,14 +379,14 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
           children: [
             const Padding(
               padding: EdgeInsets.only(top: 10, bottom: 8),
-              child: Divider(color: Color(0x28ffffff), height: 1),
+              child: Divider(color: AppColors.overlayBorder, height: 1),
             ),
             Row(
               children: [
                 const Icon(
                   Icons.extension_outlined,
                   size: 13,
-                  color: Color(0xffd4e8a6),
+                  color: AppColors.overlayAccent,
                 ),
                 const SizedBox(width: 5),
                 const Expanded(
@@ -395,7 +397,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                       fontSize: 9.5,
                       letterSpacing: 0.8,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xffd4e8a6),
+                      color: AppColors.overlayAccent,
                     ),
                   ),
                 ),
@@ -405,14 +407,14 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                     vertical: 1,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0x28d4e8a6),
+                    color: AppColors.overlaySelected,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     plugins.isEmpty ? 'Plugins' : '${plugins.length}',
                     style: const TextStyle(
                       fontSize: 7.5,
-                      color: Color(0xffd4e8a6),
+                      color: AppColors.overlayAccent,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -429,7 +431,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                     PluginManager.instance.openPlugin(p);
                   }
                 },
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadii.control),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 6),
                   padding: const EdgeInsets.symmetric(
@@ -437,16 +439,16 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                     vertical: 7,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0x24d4e8a6),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0x44d4e8a6)),
+                    color: AppColors.overlaySelected,
+                    borderRadius: BorderRadius.circular(AppRadii.control),
+                    border: Border.all(color: AppColors.overlaySelected),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.extension,
                         size: 14,
-                        color: Color(0xffd4e8a6),
+                        color: AppColors.overlayAccent,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -456,14 +458,14 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           style: const TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xffd4e8a6),
+                            color: AppColors.overlayAccent,
                           ),
                         ),
                       ),
                       const Icon(
                         Icons.arrow_forward_ios,
                         size: 10,
-                        color: Color(0xff8a9a8d),
+                        color: AppColors.overlayMuted,
                       ),
                     ],
                   ),
@@ -472,20 +474,20 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
             ],
             InkWell(
               onTap: () => _showInstallPluginDialog(context),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadii.control),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                 decoration: BoxDecoration(
-                  color: const Color(0x14ffffff),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0x2effffff)),
+                  color: AppColors.overlayRaised,
+                  borderRadius: BorderRadius.circular(AppRadii.control),
+                  border: Border.all(color: AppColors.overlayBorder),
                 ),
                 child: const Row(
                   children: [
                     Icon(
                       Icons.add_circle_outline,
                       size: 14,
-                      color: Color(0xffd4e8a6),
+                      color: AppColors.overlayAccent,
                     ),
                     SizedBox(width: 6),
                     Expanded(
@@ -495,14 +497,14 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                         style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xffd4e8a6),
+                          color: AppColors.overlayAccent,
                         ),
                       ),
                     ),
                     Icon(
                       Icons.arrow_forward_ios,
                       size: 10,
-                      color: Color(0xff8a9a8d),
+                      color: AppColors.overlayMuted,
                     ),
                   ],
                 ),
@@ -521,16 +523,20 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
         backgroundColor: const Color(0xff122019),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: Color(0x33ffffff)),
+          side: const BorderSide(color: AppColors.overlayBorder),
         ),
         title: const Row(
           children: [
-            Icon(Icons.extension_outlined, color: Color(0xffd4e8a6), size: 20),
+            Icon(
+              Icons.extension_outlined,
+              color: AppColors.overlayAccent,
+              size: 20,
+            ),
             SizedBox(width: 8),
             Text(
               'Thêm tiện ích môn học',
               style: TextStyle(
-                color: Color(0xffe8eae6),
+                color: AppColors.overlayText,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
               ),
@@ -543,24 +549,24 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
           children: [
             const Text(
               'Chọn nguồn tiện ích để cài đặt vào Học Lực Studio:',
-              style: TextStyle(color: Color(0xffa5b5a8), fontSize: 12),
+              style: TextStyle(color: AppColors.overlayMuted, fontSize: 12),
             ),
             const SizedBox(height: 14),
             InkWell(
               onTap: () => Navigator.pop(ctx, 'sample'),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadii.control),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0x22d4e8a6),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0x44d4e8a6)),
+                  color: AppColors.overlaySelected,
+                  borderRadius: BorderRadius.circular(AppRadii.control),
+                  border: Border.all(color: AppColors.overlaySelected),
                 ),
                 child: const Row(
                   children: [
                     Icon(
                       Icons.auto_awesome,
-                      color: Color(0xffd4e8a6),
+                      color: AppColors.overlayAccent,
                       size: 20,
                     ),
                     SizedBox(width: 10),
@@ -571,7 +577,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           Text(
                             'Cài đặt Plugin Mẫu (Trợ giảng Tiếng Anh)',
                             style: TextStyle(
-                              color: Color(0xffd4e8a6),
+                              color: AppColors.overlayAccent,
                               fontWeight: FontWeight.bold,
                               fontSize: 12.5,
                             ),
@@ -580,7 +586,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           Text(
                             'Bóc tách S-V-O & bắt lỗi ngữ pháp với spaCy & LanguageTool',
                             style: TextStyle(
-                              color: Color(0xff94a3b8),
+                              color: AppColors.overlayMuted,
                               fontSize: 10.5,
                             ),
                           ),
@@ -594,17 +600,17 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
             const SizedBox(height: 10),
             InkWell(
               onTap: () => Navigator.pop(ctx, 'file'),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadii.control),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0x14ffffff),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0x22ffffff)),
+                  color: AppColors.overlayRaised,
+                  borderRadius: BorderRadius.circular(AppRadii.control),
+                  border: Border.all(color: AppColors.overlayBorder),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.folder_open, color: Color(0xffe2e8f0), size: 20),
+                    Icon(Icons.folder_open, color: AppColors.border, size: 20),
                     SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -613,7 +619,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           Text(
                             'Chọn tệp .hlep từ máy tính...',
                             style: TextStyle(
-                              color: Color(0xffe2e8f0),
+                              color: AppColors.border,
                               fontWeight: FontWeight.w600,
                               fontSize: 12.5,
                             ),
@@ -622,7 +628,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           Text(
                             'Nạp gói plugin đóng gói chuẩn .hlep hoặc .zip',
                             style: TextStyle(
-                              color: Color(0xff94a3b8),
+                              color: AppColors.overlayMuted,
                               fontSize: 10.5,
                             ),
                           ),
@@ -640,7 +646,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Đóng',
-              style: TextStyle(color: Color(0xffa5b5a8)),
+              style: TextStyle(color: AppColors.overlayMuted),
             ),
           ),
         ],
@@ -729,8 +735,8 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
           FilledButton(
             onPressed: () => Navigator.pop(context, input.text.trim()),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xff2d4c3d),
-              foregroundColor: const Color(0xffd4e8a6),
+              backgroundColor: AppColors.overlayRaised,
+              foregroundColor: AppColors.overlayAccent,
             ),
             child: const Text('Lưu'),
           ),
@@ -766,9 +772,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xffc2410c),
-              ),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
               child: const Text('Xóa trang'),
             ),
           ],
@@ -796,21 +800,22 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
           studio.setPage(index);
           studio.view = 'board';
         }),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.control),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: AppMotion.duration(context, milliseconds: 150),
+          curve: AppMotion.stateCurve,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: isCurrent
-                ? const Color(0x33d4e8a6)
-                : const Color(0x14ffffff),
+                ? AppColors.overlaySelected
+                : AppColors.overlayRaised,
             border: Border.all(
               color: isCurrent
-                  ? const Color(0xffd4e8a6)
-                  : const Color(0x22ffffff),
+                  ? AppColors.overlayAccent
+                  : AppColors.overlayBorder,
               width: isCurrent ? 1.4 : 1.0,
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadii.control),
           ),
           child: Row(
             children: [
@@ -819,8 +824,8 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                 height: 22,
                 decoration: BoxDecoration(
                   color: isCurrent
-                      ? const Color(0xffd4e8a6)
-                      : const Color(0x24ffffff),
+                      ? AppColors.overlayAccent
+                      : AppColors.overlayBorder,
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Center(
@@ -828,10 +833,10 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                     '${index + 1}',
                     style: TextStyle(
                       fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: isCurrent
                           ? const Color(0xff14221d)
-                          : const Color(0xffd0ded3),
+                          : AppColors.overlayText,
                     ),
                   ),
                 ),
@@ -844,7 +849,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                    color: isCurrent ? Colors.white : const Color(0xffe0eae2),
+                    color: isCurrent ? Colors.white : AppColors.overlayText,
                   ),
                 ),
               ),
@@ -858,7 +863,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                     child: Icon(
                       Icons.edit_outlined,
                       size: 13,
-                      color: Color(0xffa5b5a8),
+                      color: AppColors.overlayMuted,
                     ),
                   ),
                 ),
@@ -875,7 +880,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                       child: Icon(
                         Icons.delete_outline,
                         size: 13,
-                        color: Color(0xffff7b7b),
+                        color: AppColors.errorSurface,
                       ),
                     ),
                   ),
@@ -886,8 +891,8 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                 hasStrokes ? Icons.draw_outlined : Icons.crop_portrait,
                 size: 12,
                 color: isCurrent
-                    ? const Color(0xffd4e8a6)
-                    : const Color(0x55ffffff),
+                    ? AppColors.overlayAccent
+                    : AppColors.overlayMuted,
               ),
             ],
           ),
@@ -902,19 +907,19 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
         studio.addPage();
         studio.view = 'board';
       }),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadii.control),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
         margin: const EdgeInsets.only(top: 2, bottom: 4),
         decoration: BoxDecoration(
-          color: const Color(0x18d4e8a6),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0x44d4e8a6)),
+          color: AppColors.overlaySelected,
+          borderRadius: BorderRadius.circular(AppRadii.control),
+          border: Border.all(color: AppColors.overlaySelected),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, size: 14, color: Color(0xffd4e8a6)),
+            Icon(Icons.add, size: 14, color: AppColors.overlayAccent),
             SizedBox(width: 4),
             Flexible(
               child: Text(
@@ -924,7 +929,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xffd4e8a6),
+                  color: AppColors.overlayAccent,
                 ),
               ),
             ),
@@ -940,14 +945,14 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Divider(color: Color(0x28ffffff), height: 1),
+          const Divider(color: AppColors.overlayBorder, height: 1),
           const SizedBox(height: 8),
           Row(
             children: [
               const Icon(
                 Icons.folder_open_outlined,
                 size: 13,
-                color: Color(0xffd4e8a6),
+                color: AppColors.overlayAccent,
               ),
               const SizedBox(width: 5),
               Expanded(
@@ -958,7 +963,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                     fontSize: 9.5,
                     letterSpacing: 0.8,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xffd4e8a6),
+                    color: AppColors.overlayAccent,
                   ),
                 ),
               ),
@@ -983,17 +988,18 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
         }
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: AppMotion.duration(context, milliseconds: 150),
+        curve: AppMotion.stateCurve,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: _isDragging
-              ? const Color(0x33d4e8a6)
-              : const Color(0x14ffffff),
-          borderRadius: BorderRadius.circular(8),
+              ? AppColors.overlaySelected
+              : AppColors.overlayRaised,
+          borderRadius: BorderRadius.circular(AppRadii.control),
           border: Border.all(
             color: _isDragging
-                ? const Color(0xffd4e8a6)
-                : const Color(0x2effffff),
+                ? AppColors.overlayAccent
+                : AppColors.overlayBorder,
             width: _isDragging ? 1.5 : 1.0,
           ),
         ),
@@ -1005,8 +1011,8 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                   : Icons.upload_file_outlined,
               size: 16,
               color: _isDragging
-                  ? const Color(0xffd4e8a6)
-                  : const Color(0xffa5b5a8),
+                  ? AppColors.overlayAccent
+                  : AppColors.overlayMuted,
             ),
             const SizedBox(width: 6),
             Expanded(
@@ -1016,8 +1022,8 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                 style: TextStyle(
                   fontSize: 10,
                   color: _isDragging
-                      ? const Color(0xffd4e8a6)
-                      : const Color(0xffa5b5a8),
+                      ? AppColors.overlayAccent
+                      : AppColors.overlayMuted,
                 ),
               ),
             ),
@@ -1027,7 +1033,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xffd4e8a6),
+                  color: AppColors.overlayAccent,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
@@ -1060,13 +1066,13 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xee102019),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xffd4e8a6), width: 1.5),
+              color: AppColors.overlaySurface,
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              border: Border.all(color: AppColors.overlayAccent, width: 1.5),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x88000000),
-                  blurRadius: 12,
+                  blurRadius: 8,
                   offset: Offset(0, 4),
                 ),
               ],
@@ -1077,7 +1083,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                 const Icon(
                   Icons.picture_as_pdf_outlined,
                   size: 14,
-                  color: Color(0xffd4e8a6),
+                  color: AppColors.overlayAccent,
                 ),
                 const SizedBox(width: 6),
                 ConstrainedBox(
@@ -1116,17 +1122,18 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
       },
       borderRadius: BorderRadius.circular(7),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: AppMotion.duration(context, milliseconds: 150),
+        curve: AppMotion.stateCurve,
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
         decoration: BoxDecoration(
           color: isActiveOnBoard
-              ? const Color(0x2ed4e8a6)
-              : const Color(0x14ffffff),
+              ? AppColors.overlaySelected
+              : AppColors.overlayRaised,
           borderRadius: BorderRadius.circular(7),
           border: Border.all(
             color: isActiveOnBoard
-                ? const Color(0xffd4e8a6)
-                : const Color(0x22ffffff),
+                ? AppColors.overlayAccent
+                : AppColors.overlayBorder,
             width: isActiveOnBoard ? 1.3 : 1.0,
           ),
         ),
@@ -1139,8 +1146,8 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                   Icons.picture_as_pdf_outlined,
                   size: 14,
                   color: isActiveOnBoard
-                      ? const Color(0xffd4e8a6)
-                      : const Color(0xffe57373),
+                      ? AppColors.overlayAccent
+                      : AppColors.errorSurface,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -1154,8 +1161,8 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                           ? FontWeight.w700
                           : FontWeight.w500,
                       color: isActiveOnBoard
-                          ? const Color(0xffd4e8a6)
-                          : const Color(0xffe8eae6),
+                          ? AppColors.overlayAccent
+                          : AppColors.overlayText,
                     ),
                   ),
                 ),
@@ -1169,7 +1176,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                       child: Icon(
                         Icons.close,
                         size: 12,
-                        color: Color(0xff8a9a8d),
+                        color: AppColors.overlayMuted,
                       ),
                     ),
                   ),
@@ -1183,7 +1190,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                   '${doc.totalPages > 1 ? "${doc.totalPages} trang" : "1 trang"}${doc.formattedSize.isNotEmpty ? " · ${doc.formattedSize}" : ""}',
                   style: const TextStyle(
                     fontSize: 8.5,
-                    color: Color(0xff8a9a8d),
+                    color: AppColors.overlayMuted,
                   ),
                 ),
                 const Spacer(),
@@ -1194,7 +1201,7 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0x33d4e8a6),
+                      color: AppColors.overlaySelected,
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: const Text(
@@ -1202,14 +1209,17 @@ class _DrawerQuestionsState extends State<DrawerQuestions> {
                       style: TextStyle(
                         fontSize: 7.5,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xffd4e8a6),
+                        color: AppColors.overlayAccent,
                       ),
                     ),
                   )
                 else
                   const Text(
                     'Kéo vào bảng',
-                    style: TextStyle(fontSize: 8, color: Color(0xff6e7e72)),
+                    style: TextStyle(
+                      fontSize: 8,
+                      color: AppColors.overlayMuted,
+                    ),
                   ),
               ],
             ),

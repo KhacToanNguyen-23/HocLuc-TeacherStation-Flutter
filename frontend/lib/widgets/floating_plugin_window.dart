@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../services/plugin_manager.dart';
 import '../services/process_supervisor.dart';
@@ -29,15 +30,15 @@ class FloatingPluginWindow extends StatelessWidget {
           child: Material(
             elevation: 10,
             borderRadius: BorderRadius.circular(12),
-            color: const Color(0xf70e1a15),
+            color: AppColors.overlaySurface,
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0x33ffffff), width: 1.2),
+                border: Border.all(color: AppColors.overlayBorder, width: 1.2),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x77000000),
-                    blurRadius: 18,
+                    blurRadius: 8,
                     offset: Offset(0, 4),
                   ),
                 ],
@@ -57,13 +58,13 @@ class FloatingPluginWindow extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: const BoxDecoration(
-                        color: Color(0x18ffffff),
+                        color: AppColors.overlayRaised,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(11),
                           topRight: Radius.circular(11),
                         ),
                         border: Border(
-                          bottom: BorderSide(color: Color(0x22ffffff)),
+                          bottom: BorderSide(color: AppColors.overlayBorder),
                         ),
                       ),
                       child: Row(
@@ -71,7 +72,7 @@ class FloatingPluginWindow extends StatelessWidget {
                           const Icon(
                             Icons.extension,
                             size: 15,
-                            color: Color(0xffd4e8a6),
+                            color: AppColors.overlayAccent,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -80,14 +81,15 @@ class FloatingPluginWindow extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xffe8eae6),
+                                color: AppColors.overlayText,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           // Quick Scan Paragraph on PDF
                           Tooltip(
-                            message: 'Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng (PrtSc)',
+                            message:
+                                'Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng (PrtSc)',
                             child: InkWell(
                               onTap: () => studio.startSnipping(target: 'dgnl'),
                               borderRadius: BorderRadius.circular(12),
@@ -97,10 +99,10 @@ class FloatingPluginWindow extends StatelessWidget {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0x3d89b4fa),
+                                  color: AppColors.overlaySelected,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: const Color(0x8889b4fa),
+                                    color: AppColors.overlaySelected,
                                   ),
                                 ),
                                 child: Row(
@@ -109,7 +111,7 @@ class FloatingPluginWindow extends StatelessWidget {
                                     Icon(
                                       Icons.crop_free,
                                       size: 13,
-                                      color: Color(0xff89b4fa),
+                                      color: AppColors.overlayAccent,
                                     ),
                                     SizedBox(width: 4),
                                     Text(
@@ -117,7 +119,7 @@ class FloatingPluginWindow extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xffcdd6f4),
+                                        color: AppColors.overlayText,
                                       ),
                                     ),
                                   ],
@@ -130,14 +132,14 @@ class FloatingPluginWindow extends StatelessWidget {
                             icon: const Icon(Icons.vertical_split, size: 15),
                             tooltip: 'Gắn lại vào ngăn kéo',
                             splashRadius: 16,
-                            color: const Color(0xffa5b5a8),
+                            color: AppColors.overlayMuted,
                             onPressed: studio.togglePluginFloating,
                           ),
                           IconButton(
                             icon: const Icon(Icons.close, size: 15),
                             tooltip: 'Đóng',
                             splashRadius: 16,
-                            color: const Color(0xffa5b5a8),
+                            color: AppColors.overlayMuted,
                             onPressed: studio.closePlugin,
                           ),
                         ],

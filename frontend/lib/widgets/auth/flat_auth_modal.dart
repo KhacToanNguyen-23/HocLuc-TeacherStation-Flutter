@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/theme.dart';
 import '../../services/google_meet_auth_service.dart';
 import '../../services/local_service.dart';
 import 'auth_form_card.dart';
@@ -48,23 +49,13 @@ class FlatAuthModal extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppRadii.panel),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Hero Branding Side
-              const Expanded(
-                flex: 5,
-                child: AuthHeroPanel(),
-              ),
+              const Expanded(flex: 5, child: AuthHeroPanel()),
 
               // Form Side
               Expanded(

@@ -71,8 +71,8 @@ class ExamCard extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 16),
     decoration: BoxDecoration(
       color: Colors.white,
-      border: Border.all(color: AppColors.slate200),
-      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: AppColors.border),
+      borderRadius: BorderRadius.circular(AppRadii.panel),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -85,7 +85,7 @@ class ExamCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             ...actions,
           ],
@@ -108,13 +108,13 @@ class ExamEmpty extends StatelessWidget {
         const Icon(
           Icons.description_outlined,
           size: 38,
-          color: AppColors.sky600,
+          color: AppColors.primary,
         ),
         const SizedBox(height: 12),
         Text(
           text,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.slate500, height: 1.5),
+          style: const TextStyle(color: AppColors.textMuted, height: 1.5),
         ),
       ],
     ),
@@ -128,23 +128,20 @@ class ExamError extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: AppColors.rose50,
-      borderRadius: BorderRadius.circular(8),
+      color: AppColors.errorSurface,
+      borderRadius: BorderRadius.circular(AppRadii.control),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          error.toString(),
-          style: const TextStyle(color: AppColors.rose600),
-        ),
+        Text(error.toString(), style: const TextStyle(color: AppColors.error)),
         if (error is ExamApiException)
           for (final detail in (error as ExamApiException).details)
             Text(
               detail is Map
                   ? '${detail['label']}: cần ${detail['required']}, có ${detail['available']}, thiếu ${detail['missing']}'
                   : detail.toString(),
-              style: const TextStyle(color: AppColors.rose600),
+              style: const TextStyle(color: AppColors.error),
             ),
       ],
     ),
@@ -280,10 +277,12 @@ class _ExamFormState extends State<_ExamForm> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadii.panel),
+    ),
     title: Text(
       widget.title,
-      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
     ),
     content: SizedBox(
       width: 560,

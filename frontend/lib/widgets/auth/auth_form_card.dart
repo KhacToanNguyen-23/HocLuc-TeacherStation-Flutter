@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../services/google_meet_auth_service.dart';
@@ -8,7 +9,7 @@ import '../../services/google_connection_flow.dart';
 import '../../services/teaching_launcher.dart';
 
 /// Reusable Authentication Form Card handling Password Login, OTP Signup,
-/// Google Single Sign-On and Quick Demo Teacher Login.
+/// Google Single Sign-On and development-only quick login.
 class AuthFormCard extends StatefulWidget {
   const AuthFormCard({
     super.key,
@@ -32,6 +33,8 @@ class AuthFormCard extends StatefulWidget {
 }
 
 class _AuthFormCardState extends State<AuthFormCard> {
+  static const _devLoginEnabled =
+      kDebugMode || bool.fromEnvironment('HLS_DEV_LOGIN');
   late final LocalService _localService;
   late final GoogleMeetAuthService _authService;
   bool _ownsLocalService = false;
@@ -135,7 +138,10 @@ class _AuthFormCardState extends State<AuthFormCard> {
         );
         widget.onSuccess?.call();
       } else {
-        setState(() => _errorMessage = res['message'] as String? ?? 'Đăng nhập thất bại');
+        setState(
+          () =>
+              _errorMessage = res['message'] as String? ?? 'Đăng nhập thất bại',
+        );
       }
     } catch (e) {
       setState(() => _errorMessage = 'Lỗi kết nối máy chủ: $e');
@@ -144,10 +150,40 @@ class _AuthFormCardState extends State<AuthFormCard> {
     }
   }
 
+  Future<void> _handleDevLogin() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _infoMessage = null;
+    });
+    try {
+      final response = await _localService.devLogin();
+      if (response['success'] != true) {
+        setState(() => _errorMessage = response['message'] as String? ?? 'Đăng nhập dev thất bại');
+        return;
+      }
+      final user = (response['user'] as Map<String, dynamic>?) ?? {};
+      _authService.signInWithOtpSession(
+        token: response['token'] as String? ?? '',
+        name: user['name'] as String? ?? 'Giáo viên Dev',
+        email: user['email'] as String?,
+        phone: user['phone'] as String?,
+      );
+      widget.onSuccess?.call();
+    } catch (e) {
+      setState(() => _errorMessage = 'Không thể đăng nhập dev: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _handleSendSignupOtp() async {
     final target = _signupTargetController.text.trim();
     if (target.isEmpty) {
-      setState(() => _errorMessage = 'Vui lòng nhập Email hoặc Số điện thoại để nhận mã');
+      setState(
+        () =>
+            _errorMessage = 'Vui lòng nhập Email hoặc Số điện thoại để nhận mã',
+      );
       return;
     }
 
@@ -158,18 +194,19 @@ class _AuthFormCardState extends State<AuthFormCard> {
     });
 
     try {
-      final res = await _localService.sendOtp(
-        target: target,
-        type: 'signup',
-      );
+      final res = await _localService.sendOtp(target: target, type: 'signup');
 
       if (res['success'] == true) {
         _startCooldown((res['cooldown'] as num?)?.toInt() ?? 60);
         setState(() {
-          _infoMessage = res['message'] as String? ?? 'Đã gửi mã xác thực thành công';
+          _infoMessage =
+              res['message'] as String? ?? 'Đã gửi mã xác thực thành công';
         });
       } else {
-        setState(() => _errorMessage = res['message'] as String? ?? 'Không thể gửi mã xác thực');
+        setState(
+          () => _errorMessage =
+              res['message'] as String? ?? 'Không thể gửi mã xác thực',
+        );
       }
     } catch (e) {
       setState(() => _errorMessage = 'Lỗi kết nối máy chủ: $e');
@@ -184,7 +221,9 @@ class _AuthFormCardState extends State<AuthFormCard> {
     final password = _signupPasswordController.text.trim();
 
     if (target.isEmpty || otp.isEmpty) {
-      setState(() => _errorMessage = 'Vui lòng nhập đầy đủ thông tin và mã OTP');
+      setState(
+        () => _errorMessage = 'Vui lòng nhập đầy đủ thông tin và mã OTP',
+      );
       return;
     }
     if (password.length < 6) {
@@ -223,7 +262,11 @@ class _AuthFormCardState extends State<AuthFormCard> {
         );
         widget.onSuccess?.call();
       } else {
-        setState(() => _errorMessage = res['message'] as String? ?? 'Mã xác thực không đúng hoặc đã hết hạn');
+        setState(
+          () => _errorMessage =
+              res['message'] as String? ??
+              'Mã xác thực không đúng hoặc đã hết hạn',
+        );
       }
     } catch (e) {
       setState(() => _errorMessage = 'Lỗi đăng ký: $e');
@@ -235,7 +278,10 @@ class _AuthFormCardState extends State<AuthFormCard> {
   Future<void> _handleForgotPassword() async {
     final identifier = _identifierController.text.trim();
     if (identifier.isEmpty) {
-      setState(() => _errorMessage = 'Vui lòng nhập Email hoặc SĐT để khôi phục mật khẩu');
+      setState(
+        () => _errorMessage =
+            'Vui lòng nhập Email hoặc SĐT để khôi phục mật khẩu',
+      );
       return;
     }
 
@@ -244,7 +290,6 @@ class _AuthFormCardState extends State<AuthFormCard> {
       _errorMessage = null;
     });
   }
-
 
   Future<void> _handleGoogleSignInAction() async {
     if (_isLoading) return;
@@ -279,7 +324,11 @@ class _AuthFormCardState extends State<AuthFormCard> {
             top: 14,
             right: 14,
             child: IconButton(
-              icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF6B7280)),
+              icon: const Icon(
+                Icons.close_rounded,
+                size: 20,
+                color: AppColors.textMuted,
+              ),
               tooltip: 'Đóng',
               onPressed: widget.onClose ?? () => Navigator.of(context).pop(),
             ),
@@ -294,9 +343,9 @@ class _AuthFormCardState extends State<AuthFormCard> {
                 if (_errorMessage != null) ...[
                   _buildBanner(
                     icon: Icons.error_outline_rounded,
-                    color: const Color(0xFFDC2626),
-                    bgColor: const Color(0xFFFEE2E2),
-                    borderColor: const Color(0xFFFCA5A5),
+                    color: AppColors.error,
+                    bgColor: AppColors.errorSurface,
+                    borderColor: AppColors.error,
                     text: _errorMessage!,
                   ),
                   const SizedBox(height: 12),
@@ -305,16 +354,19 @@ class _AuthFormCardState extends State<AuthFormCard> {
                 if (_infoMessage != null) ...[
                   _buildBanner(
                     icon: Icons.check_circle_outline_rounded,
-                    color: const Color(0xFF059669),
-                    bgColor: const Color(0xFFECFDF5),
-                    borderColor: const Color(0xFFA7F3D0),
+                    color: AppColors.success,
+                    bgColor: AppColors.successSurface,
+                    borderColor: AppColors.border,
                     text: _infoMessage!,
                   ),
                   const SizedBox(height: 12),
                 ],
 
                 // Form tương ứng
-                if (!_isSignUpMode) _buildPasswordLoginForm() else _buildSignupOtpForm(),
+                if (!_isSignUpMode)
+                  _buildPasswordLoginForm()
+                else
+                  _buildSignupOtpForm(),
               ],
             ),
           ),
@@ -334,7 +386,7 @@ class _AuthFormCardState extends State<AuthFormCard> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.control),
         border: Border.all(color: borderColor),
       ),
       child: Row(
@@ -344,7 +396,11 @@ class _AuthFormCardState extends State<AuthFormCard> {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -355,20 +411,22 @@ class _AuthFormCardState extends State<AuthFormCard> {
   Widget _buildDividerText(String label) {
     return Row(
       children: [
-        const Expanded(child: Divider(color: Color(0xFFE5E7EB))),
+        const Expanded(child: Divider(color: AppColors.border)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        const Expanded(child: Divider(color: Color(0xFFE5E7EB))),
+        const Expanded(child: Divider(color: AppColors.border)),
       ],
     );
   }
-
-
 
   Widget _buildPasswordLoginForm() {
     return Column(
@@ -377,18 +435,31 @@ class _AuthFormCardState extends State<AuthFormCard> {
         TextField(
           controller: _identifierController,
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.person_outline_rounded, size: 18, color: Color(0xFF6B7280)),
+            prefixIcon: const Icon(
+              Icons.person_outline_rounded,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
             hintText: 'Email hoặc số điện thoại',
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+            hintStyle: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textMuted,
+            ),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(color: AppColors.inputBorder),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: AppColors.sky600, width: 1.5),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -397,26 +468,42 @@ class _AuthFormCardState extends State<AuthFormCard> {
           controller: _passwordController,
           obscureText: _obscurePassword,
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, color: Color(0xFF6B7280)),
+            prefixIcon: const Icon(
+              Icons.lock_outline_rounded,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
             hintText: 'Mật khẩu',
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+            hintStyle: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textMuted,
+            ),
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 size: 18,
-                color: const Color(0xFF6B7280),
+                color: AppColors.textMuted,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(color: AppColors.inputBorder),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: AppColors.sky600, width: 1.5),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -434,7 +521,7 @@ class _AuthFormCardState extends State<AuthFormCard> {
               'Quên mật khẩu?',
               style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF2563EB),
+                color: AppColors.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -446,16 +533,20 @@ class _AuthFormCardState extends State<AuthFormCard> {
           child: ElevatedButton(
             onPressed: _isLoading ? null : _handlePasswordLogin,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.slate900,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadii.control),
+              ),
               elevation: 0,
             ),
             child: _isLoading
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text(
                     'Đăng nhập',
@@ -463,6 +554,22 @@ class _AuthFormCardState extends State<AuthFormCard> {
                   ),
           ),
         ),
+        if (_devLoginEnabled) ...[
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: _isLoading ? null : _handleDevLogin,
+            icon: const Icon(Icons.developer_mode_rounded, size: 18),
+            label: const Text('Đăng nhập nhanh · môi trường dev'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.border),
+              minimumSize: const Size.fromHeight(42),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadii.control),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         Center(
           child: TextButton(
@@ -481,7 +588,7 @@ class _AuthFormCardState extends State<AuthFormCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.sky600,
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -489,9 +596,7 @@ class _AuthFormCardState extends State<AuthFormCard> {
         const SizedBox(height: 12),
         _buildDividerText('Hoặc đăng nhập bằng'),
         const SizedBox(height: 12),
-        Center(
-          child: _buildGoogleCircleButton(),
-        ),
+        Center(child: _buildGoogleCircleButton()),
       ],
     );
   }
@@ -510,7 +615,7 @@ class _AuthFormCardState extends State<AuthFormCard> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
-              border: Border.all(color: const Color(0xFFD1D5DB), width: 1.2),
+              border: Border.all(color: AppColors.inputBorder, width: 1.2),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.06),
@@ -526,7 +631,7 @@ class _AuthFormCardState extends State<AuthFormCard> {
                   color: Color(0xFF4285F4),
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
-                  fontFamily: 'Roboto',
+                  fontFamily: 'Manrope',
                 ),
               ),
             ),
@@ -542,7 +647,11 @@ class _AuthFormCardState extends State<AuthFormCard> {
       children: [
         const Text(
           'Đăng ký tài khoản',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.slate900),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -555,21 +664,30 @@ class _AuthFormCardState extends State<AuthFormCard> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF374151),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
             hintText: 'Email hoặc số điện thoại',
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+            hintStyle: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textMuted,
+            ),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(color: AppColors.inputBorder),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: AppColors.sky600, width: 1.5),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -577,29 +695,46 @@ class _AuthFormCardState extends State<AuthFormCard> {
         TextField(
           controller: _signupOtpController,
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.shield_outlined, size: 18, color: Color(0xFF6B7280)),
+            prefixIcon: const Icon(
+              Icons.shield_outlined,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
             hintText: 'Nhập mã xác thực',
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+            hintStyle: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textMuted,
+            ),
             suffixIcon: TextButton(
-              onPressed: (_otpCooldown > 0 || _isLoading) ? null : _handleSendSignupOtp,
+              onPressed: (_otpCooldown > 0 || _isLoading)
+                  ? null
+                  : _handleSendSignupOtp,
               child: Text(
                 _otpCooldown > 0 ? '$_otpCooldown s' : 'Gửi mã',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: _otpCooldown > 0 ? const Color(0xFF9CA3AF) : AppColors.sky600,
+                  color: _otpCooldown > 0
+                      ? AppColors.textMuted
+                      : AppColors.primary,
                 ),
               ),
             ),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(color: AppColors.inputBorder),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: AppColors.sky600, width: 1.5),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -608,26 +743,42 @@ class _AuthFormCardState extends State<AuthFormCard> {
           controller: _signupPasswordController,
           obscureText: _obscurePassword,
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, color: Color(0xFF6B7280)),
+            prefixIcon: const Icon(
+              Icons.lock_outline_rounded,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
             hintText: 'Nhập mật khẩu',
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+            hintStyle: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textMuted,
+            ),
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 size: 18,
-                color: const Color(0xFF6B7280),
+                color: AppColors.textMuted,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(color: AppColors.inputBorder),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: const BorderSide(color: AppColors.sky600, width: 1.5),
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -639,15 +790,16 @@ class _AuthFormCardState extends State<AuthFormCard> {
               height: 20,
               child: Checkbox(
                 value: _acceptedTerms,
-                activeColor: AppColors.sky600,
-                onChanged: (val) => setState(() => _acceptedTerms = val ?? false),
+                activeColor: AppColors.primary,
+                onChanged: (val) =>
+                    setState(() => _acceptedTerms = val ?? false),
               ),
             ),
             const SizedBox(width: 8),
             const Expanded(
               child: Text(
                 'Tôi đồng ý với Điều khoản & Chính sách bảo mật',
-                style: TextStyle(fontSize: 11, color: Color(0xFF4B5563)),
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
             ),
           ],
@@ -656,17 +808,21 @@ class _AuthFormCardState extends State<AuthFormCard> {
         ElevatedButton(
           onPressed: _isLoading ? null : _handleVerifySignupOtp,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.sky600,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 13),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadii.control),
+            ),
             elevation: 0,
           ),
           child: _isLoading
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
                 )
               : const Text(
                   'Đăng ký',
@@ -691,7 +847,7 @@ class _AuthFormCardState extends State<AuthFormCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.sky600,
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -699,6 +855,4 @@ class _AuthFormCardState extends State<AuthFormCard> {
       ],
     );
   }
-
-
 }

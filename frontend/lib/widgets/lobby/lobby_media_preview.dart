@@ -74,15 +74,8 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.slate200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,27 +83,36 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
           // Header Row
           Row(
             children: [
-              const Icon(Icons.videocam_rounded, size: 20, color: AppColors.sky600),
+              const Icon(
+                Icons.videocam_rounded,
+                size: 20,
+                color: AppColors.primary,
+              ),
               const SizedBox(width: 8),
               const Text(
                 'Kiểm tra Thiết bị & Hình ảnh',
                 style: TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.slate900,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const Spacer(),
               // Toggle Device Settings Cog Button
               IconButton(
                 icon: Icon(
-                  _showDeviceSettings ? Icons.tune_rounded : Icons.settings_outlined,
+                  _showDeviceSettings
+                      ? Icons.tune_rounded
+                      : Icons.settings_outlined,
                   size: 18,
-                  color: _showDeviceSettings ? AppColors.sky600 : AppColors.slate600,
+                  color: _showDeviceSettings
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
                 ),
                 tooltip: 'Cài đặt Camera & Micro',
                 visualDensity: VisualDensity.compact,
-                onPressed: () => setState(() => _showDeviceSettings = !_showDeviceSettings),
+                onPressed: () =>
+                    setState(() => _showDeviceSettings = !_showDeviceSettings),
               ),
             ],
           ),
@@ -122,16 +124,9 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
             child: Container(
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: const Color(0xFF0F172A),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF334155)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                color: AppColors.textPrimary,
+                borderRadius: BorderRadius.circular(AppRadii.panel),
+                border: Border.all(color: AppColors.slate700),
               ),
               child: Stack(
                 children: [
@@ -139,7 +134,9 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                   Positioned.fill(
                     child: ListenableBuilder(
                       listenable: mediaService,
-                      builder: (context, _) => mediaService.buildCameraPreview(),
+                      builder: (context, _) => mediaService.isCameraActive
+                          ? mediaService.buildCameraPreview()
+                          : const ColoredBox(color: AppColors.overlaySurface),
                     ),
                   ),
 
@@ -151,29 +148,40 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                       listenable: mediaService,
                       builder: (context, _) {
                         final isMicOn = mediaService.isMicActive;
-                        final isTalking = isMicOn && mediaService.audioLevel > 0.05;
+                        final isTalking =
+                            isMicOn && mediaService.audioLevel > 0.05;
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.65),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(AppRadii.panel),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               AnimatedContainer(
-                                duration: const Duration(milliseconds: 80),
+                                duration: AppMotion.duration(
+                                  context,
+                                  milliseconds: 80,
+                                ),
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: isMicOn
-                                      ? (isTalking ? const Color(0xFF4ADE80) : AppColors.emerald500)
-                                      : AppColors.rose500,
+                                      ? (isTalking
+                                            ? const Color(0xFF4ADE80)
+                                            : AppColors.success)
+                                      : AppColors.error,
                                   boxShadow: isTalking
                                       ? [
                                           BoxShadow(
-                                            color: const Color(0xFF4ADE80).withValues(alpha: 0.8),
+                                            color: const Color(
+                                              0xFF4ADE80,
+                                            ).withValues(alpha: 0.8),
                                             blurRadius: 6,
                                             spreadRadius: 2,
                                           ),
@@ -184,7 +192,11 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                               const SizedBox(width: 6),
                               Text(
                                 isMicOn ? 'Mic đang bật' : 'Mic đã tắt',
-                                style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
@@ -197,28 +209,36 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                   ListenableBuilder(
                     listenable: mediaService,
                     builder: (context, _) {
-                      if (mediaService.isCameraActive) return const SizedBox.shrink();
+                      if (mediaService.isCameraActive) {
+                        return const SizedBox.shrink();
+                      }
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CircleAvatar(
                               radius: 36,
-                              backgroundColor: const Color(0xFF1E293B),
+                              backgroundColor: AppColors.slate800,
                               child: const Text(
                                 'GV',
                                 style: TextStyle(
                                   fontSize: 22,
-                                  color: Color(0xFF94A3B8),
-                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.overlayMuted,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Giáo viên giảng dạy',
-                              style: TextStyle(
-                                color: Color(0xFF94A3B8),
+                            Text(
+                              mediaService.errorMessage ??
+                                  (mediaService.isInitializing
+                                      ? 'Đang mở webcam…'
+                                      : 'Giáo viên giảng dạy'),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.overlayMuted,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -251,20 +271,19 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                                   width: 46,
                                   height: 46,
                                   decoration: BoxDecoration(
-                                    color: isActive ? Colors.white : AppColors.rose600,
+                                    color: isActive
+                                        ? Colors.white
+                                        : AppColors.error,
                                     shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.3),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
                                   ),
                                   child: Icon(
-                                    isActive ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+                                    isActive
+                                        ? Icons.videocam_rounded
+                                        : Icons.videocam_off_rounded,
                                     size: 22,
-                                    color: isActive ? const Color(0xFF1E293B) : Colors.white,
+                                    color: isActive
+                                        ? AppColors.slate800
+                                        : Colors.white,
                                   ),
                                 ),
                               ),
@@ -287,20 +306,19 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                                   width: 46,
                                   height: 46,
                                   decoration: BoxDecoration(
-                                    color: isActive ? Colors.white : AppColors.rose600,
+                                    color: isActive
+                                        ? Colors.white
+                                        : AppColors.error,
                                     shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.3),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
                                   ),
                                   child: Icon(
-                                    isActive ? Icons.mic_rounded : Icons.mic_off_rounded,
+                                    isActive
+                                        ? Icons.mic_rounded
+                                        : Icons.mic_off_rounded,
                                     size: 22,
-                                    color: isActive ? const Color(0xFF1E293B) : Colors.white,
+                                    color: isActive
+                                        ? AppColors.slate800
+                                        : Colors.white,
                                   ),
                                 ),
                               ),
@@ -324,19 +342,23 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
               return Container(
                 height: 6,
                 decoration: BoxDecoration(
-                  color: AppColors.slate100,
+                  color: AppColors.surfaceMuted,
                   borderRadius: BorderRadius.circular(3),
                 ),
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: isMicOn ? level.clamp(0.01, 1.0) : 0.0,
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 60),
+                    duration: AppMotion.duration(context, milliseconds: 60),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: level > 0.8
-                            ? [AppColors.emerald500, AppColors.amber500, AppColors.rose500]
-                            : [AppColors.emerald600, AppColors.emerald500],
+                            ? [
+                                AppColors.success,
+                                AppColors.warning,
+                                AppColors.error,
+                              ]
+                            : [AppColors.success, AppColors.success],
                       ),
                       borderRadius: BorderRadius.circular(3),
                     ),
@@ -351,9 +373,9 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.slate50,
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.slate200),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 children: [
@@ -364,13 +386,22 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Thiết bị Camera',
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       isDense: true,
                     ),
                     items: _cameras
-                        .map((cam) => DropdownMenuItem(
+                        .map(
+                          (cam) => DropdownMenuItem(
                             value: cam,
-                            child: Text(cam, style: const TextStyle(fontSize: 12))))
+                            child: Text(
+                              cam,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        )
                         .toList(),
                     onChanged: (val) {
                       if (val != null) {
@@ -387,13 +418,22 @@ class _LobbyMediaPreviewState extends State<LobbyMediaPreview> {
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Thiết bị Micro',
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       isDense: true,
                     ),
                     items: _mics
-                        .map((mic) => DropdownMenuItem(
+                        .map(
+                          (mic) => DropdownMenuItem(
                             value: mic,
-                            child: Text(mic, style: const TextStyle(fontSize: 12))))
+                            child: Text(
+                              mic,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        )
                         .toList(),
                     onChanged: (val) {
                       if (val != null) {
