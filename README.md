@@ -60,6 +60,8 @@ Before setting up the project, ensure you have the following installed and added
 
 ## Quick Start (Development Workflow)
 
+For Windows virtual-camera testing, first follow the one-time [UnityCapture setup instructions](third_party/UnityCapture/README.md). Run the included install script as administrator and keep its DLLs in place until unregistered.
+
 For active development with instant Hot Reload and live logging, use the recommended dual-terminal setup:
 
 ### Terminal 1: Backend Companion Service (Spring Boot)
