@@ -1,0 +1,49 @@
+name: Frontend CI (Flutter)
+
+on:
+  push:
+    branches: [ develop, main, master ]
+    paths:
+      - 'frontend/**'
+      - 'plugins/**'
+      - '.github/workflows/ci-frontend.yml'
+  pull_request:
+    branches: [ develop, main, master ]
+    paths:
+      - 'frontend/**'
+      - 'plugins/**'
+      - '.github/workflows/ci-frontend.yml'
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-test:
+    name: Flutter Lint & Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter Environment
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+          cache-path: "${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:"
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Analyze Static Code Quality
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Architecture & Unit Tests
+        run: flutter test

@@ -61,7 +61,7 @@ class FakeService extends LocalService {
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? data,
-    Duration timeout = const Duration(seconds: 10),
+    bool retryLocalSession = true,
   }) {
     posts++;
     return pending.future;
