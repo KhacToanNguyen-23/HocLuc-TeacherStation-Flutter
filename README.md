@@ -60,6 +60,45 @@ Before setting up the project, ensure you have the following installed and added
 
 ## Quick Start (Development Workflow)
 
+### Automatic local Google configuration
+
+Preferred configuration: a shared `.env` at the repository root. Copy `.env.example`
+to `.env` and set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from the desktop
+JSON's `installed` object. Both login and Workspace use these values. Backend
+startup discovers `.env` even when launched from `backend/api`; no shell import
+is necessary. Process environment and explicit Spring properties take precedence.
+Use one `NAME=value` per line; full-line comments, optional `export`, and matching
+single/double quotes are supported. Values are literal (no shell expansion or inline
+comments). The real `.env` remains ignored; `.env.example` contains placeholders.
+With `.env` present, the JSON is unnecessary unless `HOCLUC_GOOGLE_CLIENT_FILE`
+explicitly selects it. The encryption key remains in `.hocluc-local` beside `.env`.
+
+Alternatively, without `.env`, place the Google Cloud **Desktop app** OAuth download at the repository root as
+`google-desktop-client.json` (the JSON must contain `installed.client_id` and
+`installed.client_secret`). Then build/run the backend and frontend using the
+commands below. No manual environment variables or Flutter Google defines are needed.
+The backend searches its working directory and parent directories up to the repository
+root, so launching from `backend/api` also works. For another location, set
+`HOCLUC_GOOGLE_CLIENT_FILE` to the JSON path.
+
+At backend startup, both Google login and Workspace integration read this client.
+The backend generates a random encryption key once in
+`.hocluc-local/google-encryption.key` beside the JSON and reuses it on subsequent
+runs and branch switches. Keep this key with the database: replacing/deleting it
+makes existing saved Google connections unreadable. Existing environment variables
+and explicit Spring properties take precedence; remove empty environment overrides
+to use automatic defaults. Callback URLs follow `server.port` unless overridden.
+
+The JSON, `.env`, and local key directory are ignored by Git.
+Neither credential file is embedded in the JAR or
+Flutter bundle. For a portable package, put the JSON in the backend working
+directory or set `HOCLUC_GOOGLE_CLIENT_FILE`. No file means Google remains optional;
+an invalid file or damaged key produces a configuration error at startup.
+
+Google Cloud must still have the required APIs enabled and OAuth consent/test users
+configured for the accounts in use. PostgreSQL deployments still require their own
+database configuration; the default local database is H2.
+
 For active development with instant Hot Reload and live logging, use the recommended dual-terminal setup:
 
 ### Terminal 1: Backend Companion Service (Spring Boot)

@@ -27,6 +27,8 @@ whiteboard-host/dist/
 *.pid
 
 # Local credentials and editor/OS artifacts. Keep dependency lockfiles in Git.
+.hocluc-local/
+google-desktop-client.json
 .env
 .env.*
 !.env.example
