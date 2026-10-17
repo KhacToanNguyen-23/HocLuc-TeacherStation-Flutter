@@ -24,11 +24,23 @@ void main() {
     test('2. Init populates camera and microphone devices', () async {
       await service.init(
         mockCameras: [
-          const MediaDeviceInfo(id: 'cam_1', label: 'Integrated Webcam', kind: MediaDeviceKind.videoInput),
-          const MediaDeviceInfo(id: 'cam_2', label: 'USB HD Camera', kind: MediaDeviceKind.videoInput),
+          const MediaDeviceInfo(
+            id: 'cam_1',
+            label: 'Integrated Webcam',
+            kind: MediaDeviceKind.videoInput,
+          ),
+          const MediaDeviceInfo(
+            id: 'cam_2',
+            label: 'USB HD Camera',
+            kind: MediaDeviceKind.videoInput,
+          ),
         ],
         mockMicrophones: [
-          const MediaDeviceInfo(id: 'mic_1', label: 'Internal Microphone', kind: MediaDeviceKind.audioInput),
+          const MediaDeviceInfo(
+            id: 'mic_1',
+            label: 'Internal Microphone',
+            kind: MediaDeviceKind.audioInput,
+          ),
         ],
       );
 
@@ -43,10 +55,18 @@ void main() {
     test('3. Toggle and set camera and microphone mute states', () async {
       await service.init(
         mockCameras: [
-          const MediaDeviceInfo(id: 'cam_1', label: 'Webcam', kind: MediaDeviceKind.videoInput),
+          const MediaDeviceInfo(
+            id: 'cam_1',
+            label: 'Webcam',
+            kind: MediaDeviceKind.videoInput,
+          ),
         ],
         mockMicrophones: [
-          const MediaDeviceInfo(id: 'mic_1', label: 'Mic', kind: MediaDeviceKind.audioInput),
+          const MediaDeviceInfo(
+            id: 'mic_1',
+            label: 'Mic',
+            kind: MediaDeviceKind.audioInput,
+          ),
         ],
       );
 
@@ -72,7 +92,10 @@ void main() {
     test('4. calculateRmsLevel normalizes PCM16 buffer to [0.0, 1.0]', () {
       // 0 amplitude silence
       final silence = Uint8List(100);
-      expect(MediaDeviceService.calculateRmsLevel(silence), closeTo(0.0, 0.001));
+      expect(
+        MediaDeviceService.calculateRmsLevel(silence),
+        closeTo(0.0, 0.001),
+      );
 
       // Max amplitude sine/square (full scale 32767)
       final loudBytes = ByteData(4);
@@ -83,32 +106,39 @@ void main() {
       expect(level, greaterThan(0.9));
     });
 
-    test('5. AudioLevelStream emits normalized amplitude values when audio is active and unmuted', () async {
-      await service.init(
-        mockMicrophones: [
-          const MediaDeviceInfo(id: 'mic_1', label: 'Mic', kind: MediaDeviceKind.audioInput),
-        ],
-      );
+    test(
+      '5. AudioLevelStream emits normalized amplitude values when audio is active and unmuted',
+      () async {
+        await service.init(
+          mockMicrophones: [
+            const MediaDeviceInfo(
+              id: 'mic_1',
+              label: 'Mic',
+              kind: MediaDeviceKind.audioInput,
+            ),
+          ],
+        );
 
-      final levels = <double>[];
-      final sub = service.audioLevelStream.listen(levels.add);
+        final levels = <double>[];
+        final sub = service.audioLevelStream.listen(levels.add);
 
-      // Simulate audio chunk
-      service.simulateAudioLevel(0.75);
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+        // Simulate audio chunk
+        service.simulateAudioLevel(0.75);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      expect(service.currentAudioLevel, equals(0.75));
-      expect(levels.contains(0.75), isTrue);
+        expect(service.currentAudioLevel, equals(0.75));
+        expect(levels.contains(0.75), isTrue);
 
-      // When mic is muted, audio level should be 0.0
-      service.setMicrophoneMuted(true);
-      service.simulateAudioLevel(0.85);
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+        // When mic is muted, audio level should be 0.0
+        service.setMicrophoneMuted(true);
+        service.simulateAudioLevel(0.85);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      expect(service.currentAudioLevel, equals(0.0));
-      expect(levels.last, equals(0.0));
+        expect(service.currentAudioLevel, equals(0.0));
+        expect(levels.last, equals(0.0));
 
-      await sub.cancel();
-    });
+        await sub.cancel();
+      },
+    );
   });
 }

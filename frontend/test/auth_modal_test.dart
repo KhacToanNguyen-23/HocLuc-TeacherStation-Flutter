@@ -36,18 +36,16 @@ void main() {
   });
 
   group('FlatAuthModal widget tests', () {
-    testWidgets('renders Password Login and Verification Signup flow', (tester) async {
+    testWidgets('renders Password Login and Verification Signup flow', (
+      tester,
+    ) async {
       // Set desktop screen size
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: FlatAuthModal(initialTab: 0),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: FlatAuthModal(initialTab: 0))),
       );
 
       // Verify hero panel renders SVG illustration exclusively with zero text
@@ -69,7 +67,10 @@ void main() {
       expect(find.text('Nhập mã xác thực'), findsOneWidget);
       expect(find.text('Gửi mã'), findsOneWidget);
       expect(find.text('Nhập mật khẩu'), findsOneWidget);
-      expect(find.text('Tôi đồng ý với Điều khoản & Chính sách bảo mật'), findsOneWidget);
+      expect(
+        find.text('Tôi đồng ý với Điều khoản & Chính sách bảo mật'),
+        findsOneWidget,
+      );
       expect(find.text('Quay lại'), findsOneWidget); // Chữ nhỏ dưới nút signup
 
       // 3. Click chữ nhỏ "Quay lại" -> Trở về form Đăng nhập
@@ -84,7 +85,11 @@ void main() {
       auth.signOut();
       expect(auth.isSignedIn, isFalse);
 
-      auth.signInWithOtpSession(token: 'test-token', name: 'Giáo viên Real', phone: '+84988888888');
+      auth.signInWithOtpSession(
+        token: 'test-token',
+        name: 'Giáo viên Real',
+        phone: '+84988888888',
+      );
       expect(auth.isSignedIn, isTrue);
       expect(auth.teacherPhone, '+84988888888');
     });

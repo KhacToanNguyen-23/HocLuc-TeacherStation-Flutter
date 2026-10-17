@@ -21,8 +21,12 @@ class PlanningMeta {
       title: json['title']?.toString() ?? 'Kế hoạch bài giảng',
       subject: json['subject']?.toString() ?? 'Chung',
       pageCount: (json['pageCount'] as num?)?.toInt() ?? 1,
-      createdAt: (json['createdAt'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
-      updatedAt: (json['updatedAt'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
+      createdAt:
+          (json['createdAt'] as num?)?.toInt() ??
+          DateTime.now().millisecondsSinceEpoch,
+      updatedAt:
+          (json['updatedAt'] as num?)?.toInt() ??
+          DateTime.now().millisecondsSinceEpoch,
     );
   }
 

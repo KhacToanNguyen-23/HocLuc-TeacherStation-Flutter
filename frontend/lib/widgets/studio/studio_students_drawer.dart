@@ -23,9 +23,7 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
   Widget build(BuildContext context) {
     return Container(
       width: 280,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-      ),
+      decoration: const BoxDecoration(color: Colors.white),
       child: ListenableBuilder(
         listenable: widget.meetService,
         builder: (context, _) {
@@ -189,9 +187,7 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                   horizontal: 14,
                   vertical: 12,
                 ),
-                decoration: const BoxDecoration(
-                  color: AppColors.background,
-                ),
+                decoration: const BoxDecoration(color: AppColors.background),
                 child: Row(
                   children: [
                     Expanded(

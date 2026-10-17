@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,12 +7,12 @@ import '../services/teacher_media_service.dart';
 import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../screens/classroom_dashboard_screen.dart';
-import 'google_workspace_screen.dart';
 import '../services/local_service.dart';
 import '../services/meet_automation_service.dart';
 import '../widgets/stage_container.dart';
 import '../widgets/studio/studio_drawing_toolbar.dart';
 import '../widgets/studio/studio_inspector_panel.dart';
+import '../widgets/studio/studio_speaker_notes_bar.dart';
 import '../widgets/studio/studio_preview_dialog.dart';
 import '../widgets/studio/studio_question_view.dart';
 import '../widgets/studio/studio_rename_dialog.dart';
@@ -21,6 +22,9 @@ import '../services/plugin_manager.dart';
 import '../widgets/studio/studio_plugins_marketplace_panel.dart';
 import '../widgets/studio/save_classroom_dialog.dart';
 import '../models/teaching_target.dart';
+import '../models/planning_meta.dart';
+import '../widgets/auth/google_webview_login_dialog.dart';
+import '../widgets/dashboard/select_classroom_dialog.dart';
 
 class StudioScreen extends StatefulWidget {
   const StudioScreen({
@@ -53,6 +57,7 @@ class _StudioScreenState extends State<StudioScreen> {
   final endpoint = TextEditingController();
   bool initializedControllers = false;
   bool showInspector = false;
+  bool showInspectorModal = false;
   bool showStudentsDrawer = false;
   bool showPluginsMarketplace = false;
   String? _currentPlanningId;
@@ -106,10 +111,19 @@ class _StudioScreenState extends State<StudioScreen> {
     try {
       meet.linkedTeacherEmail = target.isLinked ? target.teacherEmail : null;
       meet.showEmbeddedMeet = true;
-      final url = await meet.generateAndJoinRealMeetRoom(
+      var url = await meet.generateAndJoinRealMeetRoom(
         existingUrl: target.meetingUrl,
         autoJoin: target.isOneOff,
       );
+      if (url == null && meet.needsGoogleLogin && mounted) {
+        final loginResult = await GoogleWebviewLoginDialog.show(context);
+        if (loginResult != null && mounted) {
+          url = await meet.generateAndJoinRealMeetRoom(
+            existingUrl: target.meetingUrl,
+            autoJoin: target.isOneOff,
+          );
+        }
+      }
       if (url == null) {
         throw StateError(
           'Chưa mở được Meet. Thử lại ngay tại đây; phòng liên kết sẽ được giữ nguyên.',
@@ -156,6 +170,70 @@ class _StudioScreenState extends State<StudioScreen> {
     );
   }
 
+  Future<Map<String, dynamic>?> _ensureTeachingSessionRecorded() async {
+    final meet = MeetAutomationService();
+    await meet.pendingSessionRegistration;
+
+    final candidateUrl =
+        widget.teachingTarget?.meetingUrl ??
+        widget.meetingUrl ??
+        meet.meetingUrl;
+    final knownUrl = candidateUrl?.trim().isEmpty == true
+        ? null
+        : candidateUrl?.trim();
+    final active = await _sessionApi.getActiveClassroom(strict: true);
+    if (active['status'] == 'ONGOING' &&
+        (knownUrl == null || active['meetingUrl'] == knownUrl)) {
+      final id = active['id'] as String?;
+      if (id == null || id.isEmpty) {
+        throw StateError('Buổi học đang mở nhưng thiếu mã phiên.');
+      }
+      if (mounted) {
+        setState(() {
+          _sessionId = id;
+          _sessionRecorded = true;
+          _sessionError = null;
+        });
+      }
+      return active;
+    }
+    if (active['status'] == 'ONGOING') {
+      throw StateError('Đang có một buổi học khác mở trên hệ thống.');
+    }
+    if (knownUrl == null) {
+      if (widget.teachingTarget != null) {
+        throw StateError(
+          'Không xác định được đường dẫn Meet để ghi nhận buổi học.',
+        );
+      }
+      return null;
+    }
+
+    final result = await _sessionApi.post(
+      'classroom/create',
+      data: {
+        'directUrl': knownUrl,
+        'title':
+            widget.lessonTitle ?? widget.teachingTarget?.title ?? studio.title,
+      },
+    );
+    if (result['success'] != true ||
+        result['status'] != 'ONGOING' ||
+        result['id'] is! String) {
+      throw StateError(
+        result['error']?.toString() ?? 'Chưa ghi nhận được buổi học.',
+      );
+    }
+    if (mounted) {
+      setState(() {
+        _sessionId = result['id'] as String;
+        _sessionRecorded = true;
+        _sessionError = null;
+      });
+    }
+    return result;
+  }
+
   Future<void> _recordTeachingSession() async {
     if (_recordingSession || _sessionRecorded || !mounted) return;
     final meet = MeetAutomationService();
@@ -176,9 +254,10 @@ class _StudioScreenState extends State<StudioScreen> {
       if (result['success'] != true) {
         throw StateError('Chưa ghi nhận được buổi dạy.');
       }
+      final id = result['id'] as String?;
       if (!mounted) return;
       setState(() {
-        _sessionId = result['id'] as String?;
+        _sessionId = id;
         _sessionRecorded = true;
       });
     } catch (e) {
@@ -283,7 +362,7 @@ class _StudioScreenState extends State<StudioScreen> {
         return;
       }
     } catch (e) {
-      debugPrint('[StudioScreen] Failed to load planning: $e');
+      FrontendLogger.write('[StudioScreen] Failed to load planning: $e');
     }
     studio.initialize();
   }
@@ -327,8 +406,8 @@ class _StudioScreenState extends State<StudioScreen> {
       try {
         final lessonSnapshot = studio.exportLessonJson();
         final targetId = _currentPlanningId ?? widget.planningId;
-        debugPrint(
-          '[StudioScreen] Starting save planning: title="${studio.title}", targetId=$targetId, pdf=${studio.pdfFilePath}, page=${studio.pdfPage}',
+        FrontendLogger.write(
+          '[StudioScreen] Starting save planning | target_id=$targetId page=${studio.pdfPage}',
         );
 
         bool success = false;
@@ -352,7 +431,7 @@ class _StudioScreenState extends State<StudioScreen> {
           success = res != null;
           if (res != null) {
             _currentPlanningId = res.id;
-            debugPrint('[StudioScreen] Saved new planning with id: ${res.id}');
+            FrontendLogger.write('[StudioScreen] Saved new planning');
           } else {
             errorMessage = 'Backend từ chối tạo bài giảng mới';
           }
@@ -394,8 +473,10 @@ class _StudioScreenState extends State<StudioScreen> {
             ),
           );
         }
-      } catch (e, st) {
-        debugPrint('[StudioScreen] Save planning exception: $e\n$st');
+      } catch (e) {
+        FrontendLogger.write(
+          '[StudioScreen] Save planning failed | cause=${e.runtimeType}',
+        );
         if (mounted) message('Lỗi khi lưu bài giảng: $e');
       } finally {
         studio.change(() => studio.saving = false, persist: false);
@@ -470,12 +551,15 @@ class _StudioScreenState extends State<StudioScreen> {
       message('Lưu bài giảng trước khi chọn lớp để dạy.');
       return;
     }
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) =>
-            GoogleWorkspaceScreen(planningId: id, lessonTitle: studio.title),
-      ),
+    final meta = PlanningMeta(
+      id: id,
+      title: studio.title,
+      subject: studio.subject,
+      pageCount: studio.pages.length,
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
+    await SelectClassroomDialog.show(context, plan: meta);
   }
 
   void preview() => StudioPreviewDialog.show(context, studio);
@@ -607,6 +691,12 @@ class _StudioScreenState extends State<StudioScreen> {
     );
 
     if (action == 'pause' && mounted) {
+      try {
+        await _ensureTeachingSessionRecorded();
+      } catch (e) {
+        if (mounted) message('Chưa thể tạm rời phòng: $e');
+        return;
+      }
       if (widget.teachingTarget != null) {
         await MeetAutomationService().stopBroadcast();
         if (mounted) {
@@ -624,23 +714,27 @@ class _StudioScreenState extends State<StudioScreen> {
         );
       }
     } else if (action == 'end' && mounted) {
-      if (widget.teachingTarget != null && _recordingSession) {
-        message('Đang ghi nhận buổi học. Vui lòng thử lại sau.');
-        return;
-      }
       final local = LocalService();
       try {
+        final session = await _ensureTeachingSessionRecorded();
         final active = await local.getActiveClassroom(strict: true);
         if (active['status'] == 'ONGOING') {
+          final snapshot = studio.exportLessonJson();
           if (!await local.endClassroom(
             classroomId: _sessionId ?? active['id'] as String?,
+            content: snapshot,
           )) {
-            message('Chưa kết thúc được buổi học. Vui lòng thử lại.');
-            return;
+            throw StateError(
+              'Chưa lưu được buổi học vào lịch sử. Vui lòng thử lại.',
+            );
           }
+        } else if (session != null) {
+          throw StateError(
+            'Không tìm thấy buổi học đang mở để lưu vào lịch sử.',
+          );
         }
-      } catch (_) {
-        message('Không kết nối được backend để kết thúc buổi học.');
+      } catch (e) {
+        message('Buổi học vẫn mở trong Studio: $e');
         return;
       } finally {
         local.dispose();
@@ -656,20 +750,28 @@ class _StudioScreenState extends State<StudioScreen> {
     }
   }
 
-  void openInspector() => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    builder: (context) => SizedBox(
-      height: 520,
-      child: StudioInspectorPanel(
-        studio: studio,
-        notesController: notes,
-        questionController: question,
-        endpointController: endpoint,
-        onPreview: preview,
-      ),
-    ),
-  );
+  Future<void> openInspector() async {
+    if (showInspectorModal) return;
+    setState(() => showInspectorModal = true);
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => SizedBox(
+          height: 520,
+          child: StudioInspectorPanel(
+            studio: studio,
+            notesController: notes,
+            questionController: question,
+            endpointController: endpoint,
+            onPreview: preview,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => showInspectorModal = false);
+    }
+  }
 
   Widget fittedStage({bool interactive = true}) {
     if (studio.view == 'question') {
@@ -776,7 +878,7 @@ class _StudioScreenState extends State<StudioScreen> {
                         studio: studio,
                         width: box.maxWidth,
 
-                        hasInspector: hasInspector,
+                        hasInspector: hasInspector || showInspectorModal,
                         hasStudents: showStudentsDrawer,
                         hasPlugins: showPluginsMarketplace,
                         isPlanningMode: widget.isPlanningMode,
@@ -844,7 +946,20 @@ class _StudioScreenState extends State<StudioScreen> {
                                       10,
                                       4,
                                     ),
-                                    child: fittedStage(),
+                                    child: Stack(
+                                      children: [
+                                        Positioned.fill(child: fittedStage()),
+                                        if (studio.view == 'board')
+                                          Positioned(
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            child: StudioSpeakerNotesBar(
+                                              studio: studio,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
@@ -861,15 +976,16 @@ class _StudioScreenState extends State<StudioScreen> {
                                 switchInCurve: AppMotion.enterCurve,
                                 switchOutCurve: AppMotion.exitCurve,
                                 transitionBuilder: (child, animation) {
-                                  final slide = Tween<Offset>(
-                                    begin: const Offset(0.06, 0),
-                                    end: Offset.zero,
-                                  ).animate(
-                                    CurvedAnimation(
-                                      parent: animation,
-                                      curve: AppMotion.enterCurve,
-                                    ),
-                                  );
+                                  final slide =
+                                      Tween<Offset>(
+                                        begin: const Offset(0.06, 0),
+                                        end: Offset.zero,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: AppMotion.enterCurve,
+                                        ),
+                                      );
                                   return FadeTransition(
                                     opacity: animation,
                                     child: SlideTransition(
@@ -878,8 +994,8 @@ class _StudioScreenState extends State<StudioScreen> {
                                     ),
                                   );
                                 },
-                                layoutBuilder: (currentChild, previousChildren) =>
-                                    Stack(
+                                layoutBuilder:
+                                    (currentChild, previousChildren) => Stack(
                                       alignment: Alignment.centerRight,
                                       clipBehavior: Clip.none,
                                       children: [

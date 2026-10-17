@@ -46,7 +46,11 @@ class WorkspaceConnectionPanel extends StatelessWidget {
             runSpacing: 12,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Icon(Icons.hub_outlined, color: AppColors.primary, size: 32),
+              const Icon(
+                Icons.hub_outlined,
+                color: AppColors.primary,
+                size: 32,
+              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -58,16 +62,23 @@ class WorkspaceConnectionPanel extends StatelessWidget {
                         : retryConnection
                         ? 'Chưa kiểm tra được kết nối'
                         : 'Kết nối Google',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   Text(
-                    email.isEmpty ? 'Chọn tài khoản Google để sử dụng HocLucStation.' : email,
+                    email.isEmpty
+                        ? 'Chọn tài khoản Google để sử dụng HocLucStation.'
+                        : email,
                   ),
                 ],
               ),
               if (!polling)
                 FilledButton.icon(
-                  onPressed: disabled || connection['configured'] != true ? null : onConnect,
+                  onPressed: disabled || connection['configured'] != true
+                      ? null
+                      : onConnect,
                   icon: const Icon(Icons.link),
                   label: Text(
                     connected

@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,7 @@ import 'google_meet_auth_service.dart';
 import 'local_service.dart';
 import 'meet_bridge_script.dart';
 import 'meet_admission_bridge_script.dart';
+import 'meet_focus_style_script.dart';
 import 'webview_environment_service.dart';
 
 enum MeetStatus { idle, creating, ready, error }
@@ -173,13 +175,13 @@ class MeetAutomationService extends ChangeNotifier {
           setMeetingUrl(response['meetingUrl'] as String);
           return;
         } else {
-          debugPrint(
-            '[MeetAutomation] Backend returned response without meetingUrl: $response',
+          FrontendLogger.write(
+            '[MeetAutomation] Backend response missing meeting URL',
           );
         }
       } catch (e) {
-        debugPrint(
-          '[MeetAutomation] Backend service create classroom failed: $e',
+        FrontendLogger.write(
+          '[MeetAutomation] Backend classroom request failed | cause=${e.runtimeType}',
         );
       }
 
@@ -218,7 +220,6 @@ class MeetAutomationService extends ChangeNotifier {
     }
     _resetAdmissions();
     _hostJoined = false;
-    if (autoJoin) linkedTeacherEmail = null;
     _manualJoin = !autoJoin;
     _meetingUrl = existingUrl;
     _needsGoogleLogin = false;
@@ -281,8 +282,8 @@ class MeetAutomationService extends ChangeNotifier {
         if (existingUrl == null &&
             previousUrl != null &&
             realUrl == previousUrl) {
-          debugPrint(
-            '[MeetAutomation] Skipping previous room URL lingering in WebView: $realUrl',
+          FrontendLogger.write(
+            '[MeetAutomation] Ignored previous meeting URL detected in WebView',
           );
           return;
         }
@@ -302,7 +303,15 @@ class MeetAutomationService extends ChangeNotifier {
 
       _urlSubscription?.cancel();
       _urlSubscription = controller.url.listen((url) {
-        debugPrint('[MeetAutomation] Navigation URL: $url');
+        FrontendLogger.write('[MeetAutomation] Navigation state changed');
+        if (url.contains('accounts.google.com')) {
+          _needsGoogleLogin = true;
+          notifyListeners();
+          if (!completer.isCompleted) {
+            completer.complete(null);
+          }
+          return;
+        }
         final match = RegExp(
           r'meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})',
           caseSensitive: false,
@@ -317,7 +326,7 @@ class MeetAutomationService extends ChangeNotifier {
       final targetUrl = (existingUrl != null && existingUrl.trim().isNotEmpty)
           ? existingUrl.trim()
           : 'https://meet.google.com/new?hs=193';
-      debugPrint('[MeetAutomation] Loading target URL: $targetUrl');
+      FrontendLogger.write('[MeetAutomation] Loading meeting page');
       await controller.loadUrl(targetUrl);
       _controllerMeetingUrl ??= existingUrl;
       if (!autoJoin) {
@@ -375,9 +384,10 @@ class MeetAutomationService extends ChangeNotifier {
                              a.includes('tham gia ngay') ||
                              a.includes('join now') ||
                              js === 'Qx7uuf';
-                return isJoin && !b.disabled && b.offsetParent !== null;
+                return isJoin && !b.disabled;
               });
               if (joinBtn) {
+                try { joinBtn.scrollIntoView({block: 'center'}); } catch(e){}
                 joinBtn.click();
               }
 
@@ -390,6 +400,11 @@ class MeetAutomationService extends ChangeNotifier {
             if (cleaned.startsWith('IN_CALL:')) {
               final callCode = cleaned.replaceFirst('IN_CALL:', '').trim();
               if (callCode.isNotEmpty) {
+                if (!_hostJoined) {
+                  _hostJoined = true;
+                  _status = MeetStatus.ready;
+                  notifyListeners();
+                }
                 onMeetingUrlDetected('https://meet.google.com/$callCode');
               }
             } else if (RegExp(
@@ -550,7 +565,7 @@ class MeetAutomationService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('[MeetAutomation] Error parsing web message: $e');
+      FrontendLogger.write('[MeetAutomation] Error parsing web message: $e');
     }
   }
 
@@ -737,7 +752,7 @@ class MeetAutomationService extends ChangeNotifier {
         );
       }
     } catch (e) {
-      debugPrint('[MeetAutomation] syncMuteState error: $e');
+      FrontendLogger.write('[MeetAutomation] syncMuteState error: $e');
     }
   }
 
@@ -767,7 +782,9 @@ class MeetAutomationService extends ChangeNotifier {
           'window.MeetBridge && window.MeetBridge.sendChat("$escaped");',
         );
       } catch (e) {
-        debugPrint('[MeetAutomation] Error executing sendChat script: $e');
+        FrontendLogger.write(
+          '[MeetAutomation] Error executing sendChat script: $e',
+        );
       }
     }
   }
@@ -815,7 +832,9 @@ class MeetAutomationService extends ChangeNotifier {
           'window.MeetBridge && window.MeetBridge.muteAll();',
         );
       } catch (e) {
-        debugPrint('[MeetAutomation] Error executing muteAll script: $e');
+        FrontendLogger.write(
+          '[MeetAutomation] Error executing muteAll script: $e',
+        );
       }
     }
   }
@@ -858,7 +877,9 @@ class MeetAutomationService extends ChangeNotifier {
         'window.MeetBridge && window.MeetBridge.removeParticipant("$safeName");',
       );
     } catch (e) {
-      debugPrint('[MeetAutomation] Error executing removeParticipant: $e');
+      FrontendLogger.write(
+        '[MeetAutomation] Error executing removeParticipant: $e',
+      );
     }
   }
 
@@ -883,8 +904,8 @@ class MeetAutomationService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Đóng lớp học hoàn toàn
-  Future<void> leaveClassroom() async {
+  /// Đóng lớp học hoàn toàn (mặc định kết thúc cuộc gọi cho tất cả mọi người trên Google Meet)
+  Future<void> leaveClassroom({bool endForEveryone = true}) async {
     _bridgeTimer?.cancel();
     await stopBroadcast();
     linkedTeacherEmail = null;
@@ -901,16 +922,59 @@ class MeetAutomationService extends ChangeNotifier {
     _webMessageSubscription?.cancel();
     _webMessageSubscription = null;
 
+    if (endForEveryone && _controller != null) {
+      try {
+        await _controller!.executeScript(r'''
+          (async function() {
+            try {
+              function findEl(sel, kws) {
+                var els = Array.from(document.querySelectorAll(sel));
+                return els.find(function(el) {
+                  var t = (el.innerText || el.textContent || el.getAttribute('aria-label') || '').toLowerCase();
+                  return kws.some(function(kw) { return t.includes(kw); });
+                }) || null;
+              }
+
+              var hangup = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i], button[aria-label*="leave" i], button[data-call-action="end"]')
+                || findEl('button', ['rời khỏi cuộc gọi', 'leave call', 'leave the call', 'kết thúc cuộc gọi']);
+
+              if (hangup) {
+                hangup.click();
+                await new Promise(function(r) { setTimeout(r, 400); });
+                var endAll = findEl('button, [role="menuitem"], [role="button"], li, div[role="menuitem"]', [
+                  'kết thúc cuộc gọi cho mọi người',
+                  'kết thúc cuộc gọi cho tất cả',
+                  'kết thúc cho mọi người',
+                  'end the call for everyone',
+                  'end call for everyone',
+                  'end for everyone'
+                ]);
+                if (endAll) {
+                  endAll.click();
+                  await new Promise(function(r) { setTimeout(r, 600); });
+                }
+              }
+            } catch (e) {}
+          })();
+        ''');
+        await Future.delayed(const Duration(milliseconds: 700));
+      } catch (e) {
+        FrontendLogger.write(
+          '[MeetAutomation] Error ending call for everyone: $e',
+        );
+      }
+    }
+
     if (_controller != null) {
       try {
         await _controller!.loadUrl('about:blank');
       } catch (e) {
-        debugPrint('[MeetAutomation] Error resetting webview: $e');
+        FrontendLogger.write('[MeetAutomation] Error resetting webview: $e');
       }
       try {
         _controller!.dispose();
       } catch (e) {
-        debugPrint('[MeetAutomation] Error disposing webview: $e');
+        FrontendLogger.write('[MeetAutomation] Error disposing webview: $e');
       }
       _controller = null;
       _controllerMeetingUrl = null;
@@ -944,10 +1008,11 @@ class MeetAutomationService extends ChangeNotifier {
         await controller.executeScript(
           'window.__hoclucManualJoin = $_manualJoin;',
         );
+        await controller.executeScript(MeetFocusStyleScript.script);
         await controller.executeScript(MeetBridgeScript.script);
         await controller.executeScript(MeetAdmissionBridgeScript.script);
       } catch (err) {
-        debugPrint('[MeetAutomation] Bridge inject error: $err');
+        FrontendLogger.write('[MeetAutomation] Bridge inject error: $err');
       } finally {
         injecting = false;
       }
@@ -978,7 +1043,7 @@ class MeetAutomationService extends ChangeNotifier {
         })();
       ''');
     } catch (e) {
-      debugPrint('[MeetAutomation] ensureHostJoined error: $e');
+      FrontendLogger.write('[MeetAutomation] ensureHostJoined error: $e');
     }
   }
 

@@ -6,6 +6,7 @@ import '../../services/google_meet_auth_service.dart';
 import '../../services/meet_automation_service.dart';
 import '../../services/url_opener.dart';
 import '../google_meet_view.dart';
+import '../google_brand_icon.dart';
 
 class StudioMeetCockpitTab extends StatefulWidget {
   const StudioMeetCockpitTab({
@@ -79,11 +80,7 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Google Meet · ${widget.meetService.linkedTeacherEmail}',
-                    ),
-                  ),
+                  const Expanded(child: Text('Google Meet')),
                   IconButton(
                     tooltip: 'Thu gọn Meet',
                     onPressed: () => Navigator.pop(ctx),
@@ -172,6 +169,8 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
               children: [
                 Row(
                   children: [
+                    const GoogleBrandIcon(size: 16),
+                    const SizedBox(width: 6),
                     Icon(
                       meetService.isHostJoined
                           ? Icons.check_circle_outline
@@ -203,30 +202,13 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                     ),
                   ],
                 ),
-                if (meetService.linkedTeacherEmail != null)
-                  Text(
-                    'Dùng tài khoản ${meetService.linkedTeacherEmail}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                if (meetService.linkedTeacherEmail != null &&
-                    !meetService.isHostJoined)
-                  const Text(
-                    'Lần đầu: nếu Meet yêu cầu đăng nhập, chọn tài khoản đã kết nối ở trên. Các lần sau dùng lại phiên đã lưu.',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
               ],
             ),
           ),
           Expanded(
             child: _meetExpanded
                 ? const Center(child: Text('Meet đang mở trong cửa sổ lớn.'))
-                : GoogleMeetView(service: meetService),
+                : SizedBox.expand(child: GoogleMeetView(service: meetService)),
           ),
         ],
       );
@@ -248,6 +230,8 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
               children: [
                 Row(
                   children: [
+                    const GoogleBrandIcon(size: 16),
+                    const SizedBox(width: 6),
                     Icon(
                       meetService.isHostJoined
                           ? Icons.check_circle_rounded
@@ -421,13 +405,15 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
 
         if (meetService.showEmbeddedMeet)
           Expanded(
+            flex: meetService.isHostJoined ? 1 : 2,
             child: _meetExpanded
                 ? const Center(child: Text('Meet đang mở trong cửa sổ lớn.'))
-                : GoogleMeetView(service: meetService),
+                : SizedBox.expand(child: GoogleMeetView(service: meetService)),
           ),
 
         // Live Chat Area
         Expanded(
+          flex: 1,
           child: messages.isEmpty
               ? Center(
                   child: Padding(

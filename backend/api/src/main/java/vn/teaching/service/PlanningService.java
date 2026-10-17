@@ -6,6 +6,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import vn.teaching.model.Planning;
 
@@ -21,6 +23,7 @@ import java.util.List;
 
 @Service
 public class PlanningService {
+    private static final Logger log = LoggerFactory.getLogger(PlanningService.class);
     private final Path dataDirectory;
     private final Path planningsDir;
     private final Path indexFile;
@@ -42,6 +45,7 @@ public class PlanningService {
     }
 
     public List<Planning> getAllPlannings() {
+        long startedAt = System.nanoTime();
         synchronized (fileLock) {
             try {
                 if (Files.exists(indexFile)) {
@@ -54,13 +58,15 @@ public class PlanningService {
                     }
                 }
             } catch (Exception e) {
-                System.err.println("[PlanningService] Failed to read plannings index: " + e.getMessage());
+                log.warn("[planning] Failed to read index | duration_ms={} cause={}",
+                        (System.nanoTime() - startedAt) / 1_000_000, e.getClass().getSimpleName());
             }
             return new ArrayList<>();
         }
     }
 
     public JsonObject getPlanningContent(String id) {
+        long startedAt = System.nanoTime();
         synchronized (fileLock) {
             try {
                 Path contentPath = planningsDir.resolve(id + ".json");
@@ -69,13 +75,15 @@ public class PlanningService {
                     return JsonParser.parseString(json).getAsJsonObject();
                 }
             } catch (Exception e) {
-                System.err.println("[PlanningService] Failed to read planning content: " + e.getMessage());
+                log.warn("[planning] Failed to read content | duration_ms={} cause={}",
+                        (System.nanoTime() - startedAt) / 1_000_000, e.getClass().getSimpleName());
             }
             return null;
         }
     }
 
     public Planning saveOrUpdatePlanning(String id, String title, String subject, JsonObject content) {
+        long startedAt = System.nanoTime();
         synchronized (fileLock) {
             try {
                 List<Planning> list = getAllPlannings();
@@ -137,17 +145,19 @@ public class PlanningService {
                 // Write metadata index
                 writeJsonSafely(indexFile, gson.toJsonTree(list));
 
-                System.out.println("[PlanningService] Successfully saved planning: " + target.getId() + " - " + target.getTitle());
+                log.info("[planning] Saved | pages={} duration_ms={}", pageCount,
+                        (System.nanoTime() - startedAt) / 1_000_000);
                 return target;
             } catch (Exception e) {
-                System.err.println("[PlanningService] Failed to save planning: " + e.getMessage());
-                e.printStackTrace();
+                log.error("[planning] Failed to save | duration_ms={} cause={}",
+                        (System.nanoTime() - startedAt) / 1_000_000, e.getClass().getSimpleName());
                 return null;
             }
         }
     }
 
     public boolean deletePlanning(String id) {
+        long startedAt = System.nanoTime();
         synchronized (fileLock) {
             try {
                 List<Planning> list = getAllPlannings();
@@ -158,10 +168,12 @@ public class PlanningService {
                     if (Files.exists(contentFile)) {
                         Files.delete(contentFile);
                     }
+                    log.info("[planning] Deleted | duration_ms={}", (System.nanoTime() - startedAt) / 1_000_000);
                     return true;
                 }
             } catch (Exception e) {
-                System.err.println("[PlanningService] Failed to delete planning: " + e.getMessage());
+                log.error("[planning] Failed to delete | duration_ms={} cause={}",
+                        (System.nanoTime() - startedAt) / 1_000_000, e.getClass().getSimpleName());
             }
             return false;
         }
@@ -172,7 +184,7 @@ public class PlanningService {
             try {
                 Path planFile = planningsDir.resolve(planningId + ".json");
                 if (!Files.exists(planFile)) {
-                    System.err.println("[PlanningService] Plan file not found: " + planFile);
+                    log.warn("[planning] Clone source missing");
                     return false;
                 }
                 String content = Files.readString(planFile, StandardCharsets.UTF_8);
@@ -183,7 +195,7 @@ public class PlanningService {
                 writeJsonSafely(lessonFile, parsed);
                 return true;
             } catch (Exception e) {
-                System.err.println("[PlanningService] Failed to clone planning to classroom: " + e.getMessage());
+                log.error("[planning] Failed to clone to classroom | cause={}", e.getClass().getSimpleName());
                 return false;
             }
         }

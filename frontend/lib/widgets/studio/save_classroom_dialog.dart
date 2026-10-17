@@ -111,6 +111,25 @@ class SaveClassroomDialog extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
+              // Option 2: Tài liệu Handout (Slide kèm Ghi chú bài giảng)
+              _buildOptionCard(
+                context: context,
+                icon: Icons.auto_stories_rounded,
+                iconColor: const Color(0xff0284c7),
+                iconBg: AppColors.sky50,
+                title: 'Tài liệu Handout (Slide + Ghi chú)',
+                buttonText: 'Xuất Handout',
+                buttonColor: AppColors.primary,
+                onTap: () async {
+                  Navigator.pop(context);
+                  await PdfAnnotationExporter.exportHandoutWithNotesToPdf(
+                    context,
+                    studio,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+
               // Option 2: Lưu file PDF
               _buildOptionCard(
                 context: context,

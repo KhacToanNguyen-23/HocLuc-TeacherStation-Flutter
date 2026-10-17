@@ -83,9 +83,7 @@ class _StudioPluginsMarketplacePanelState
 
     return Container(
       width: 320,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-      ),
+      decoration: const BoxDecoration(color: Colors.white),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

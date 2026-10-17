@@ -42,7 +42,8 @@ class WorkspaceScheduleDialog extends StatefulWidget {
   }
 
   @override
-  State<WorkspaceScheduleDialog> createState() => _WorkspaceScheduleDialogState();
+  State<WorkspaceScheduleDialog> createState() =>
+      _WorkspaceScheduleDialogState();
 }
 
 class _WorkspaceScheduleDialogState extends State<WorkspaceScheduleDialog> {
@@ -86,7 +87,10 @@ class _WorkspaceScheduleDialogState extends State<WorkspaceScheduleDialog> {
         body: {
           'requestId': _requestId,
           'start': widget.start.toUtc().toIso8601String(),
-          'end': widget.start.add(Duration(minutes: minutes)).toUtc().toIso8601String(),
+          'end': widget.start
+              .add(Duration(minutes: minutes))
+              .toUtc()
+              .toIso8601String(),
         },
       );
       widget.onSuccess(result);
@@ -107,7 +111,9 @@ class _WorkspaceScheduleDialogState extends State<WorkspaceScheduleDialog> {
       canPop: !_saving,
       child: AlertDialog(
         title: Text(
-          widget.isNow ? 'Chuẩn bị phòng Calendar' : 'Lên lịch và tạo phòng Meet',
+          widget.isNow
+              ? 'Chuẩn bị phòng Calendar'
+              : 'Lên lịch và tạo phòng Meet',
         ),
         content: SizedBox(
           width: 420,

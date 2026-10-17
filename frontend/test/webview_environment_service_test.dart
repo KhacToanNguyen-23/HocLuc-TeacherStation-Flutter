@@ -17,12 +17,15 @@ void main() {
       }
     });
 
-    test('chromiumAdditionalArguments contains fake-ui and fake-device flags', () {
-      final args = WebviewEnvironmentService.chromiumAdditionalArguments;
-      expect(args, contains('--use-fake-ui-for-media-stream'));
-      expect(args, contains('--use-fake-device-for-media-stream'));
-      expect(args, contains('--enable-usermedia-screen-capturing'));
-    });
+    test(
+      'chromiumAdditionalArguments contains fake-ui and fake-device flags',
+      () {
+        final args = WebviewEnvironmentService.chromiumAdditionalArguments;
+        expect(args, contains('--use-fake-ui-for-media-stream'));
+        expect(args, contains('--use-fake-device-for-media-stream'));
+        expect(args, contains('--enable-usermedia-screen-capturing'));
+      },
+    );
 
     test('ensureInitialized handles execution gracefully', () async {
       // In flutter test runner (mock platform), ensureInitialized should complete safely

@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -9,8 +10,9 @@ class VirtualMediaBridge extends ChangeNotifier {
   VirtualMediaBridge._internal();
 
   @visibleForTesting
-  static const MethodChannel channel =
-      MethodChannel('com.hocluc.teacher_station/virtual_media');
+  static const MethodChannel channel = MethodChannel(
+    'com.hocluc.teacher_station/virtual_media',
+  );
 
   bool _isStreaming = false;
   int _framesSent = 0;
@@ -23,14 +25,15 @@ class VirtualMediaBridge extends ChangeNotifier {
   /// Checks if DirectShow HocLucVirtualCam filter is registered on Windows
   Future<bool> isVirtualCamInstalled() async {
     try {
-      final result =
-          await channel.invokeMethod<bool>('isVirtualCamInstalled');
+      final result = await channel.invokeMethod<bool>('isVirtualCamInstalled');
       return result ?? false;
     } on MissingPluginException {
       // In testing or without native runner, return true as mock fallback
       return true;
     } catch (e) {
-      debugPrint('[VirtualMediaBridge] Check virtual cam installed error: $e');
+      FrontendLogger.write(
+        '[VirtualMediaBridge] Check virtual cam installed error: $e',
+      );
       return false;
     }
   }
@@ -55,7 +58,7 @@ class VirtualMediaBridge extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('[VirtualMediaBridge] startVirtualCam error: $e');
+      FrontendLogger.write('[VirtualMediaBridge] startVirtualCam error: $e');
       return false;
     }
   }
@@ -72,7 +75,7 @@ class VirtualMediaBridge extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('[VirtualMediaBridge] stopVirtualCam error: $e');
+      FrontendLogger.write('[VirtualMediaBridge] stopVirtualCam error: $e');
       return false;
     }
   }

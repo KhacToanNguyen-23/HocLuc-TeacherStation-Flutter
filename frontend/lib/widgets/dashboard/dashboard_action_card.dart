@@ -76,8 +76,16 @@ class _DashboardActionCardState extends State<DashboardActionCard> {
                         : _isHovered
                         ? AppColors.primary.withValues(alpha: 0.55)
                         : AppColors.surfaceBorder,
-                    width: _isFocused ? 2 : 1,
+                    width: 1,
                   ),
+                  boxShadow: _isFocused
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   children: [

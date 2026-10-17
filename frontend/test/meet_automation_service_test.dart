@@ -16,7 +16,10 @@ void main() {
       final service = MeetAutomationService();
       service.setMeetingUrl('meet.google.com/test-room-abc');
       expect(service.hasRoom, isTrue);
-      expect(service.meetingUrl, equals('https://meet.google.com/test-room-abc'));
+      expect(
+        service.meetingUrl,
+        equals('https://meet.google.com/test-room-abc'),
+      );
       expect(service.status, equals(MeetStatus.ready));
     });
 
@@ -40,19 +43,28 @@ void main() {
       expect(service.isBridgeReady, isFalse);
     });
 
-    test('removeParticipant removes participant and notifies listeners', () async {
-      final service = MeetAutomationService();
-      service.handleWebMessageForTesting({
-        'type': 'PARTICIPANTS_UPDATE',
-        'payload': [
-          {'id': 'p1', 'name': 'Nguyễn Văn A', 'isMuted': false, 'isHandRaised': true, 'isSpeaking': false},
-        ],
-      });
-      expect(service.participants.length, equals(1));
+    test(
+      'removeParticipant removes participant and notifies listeners',
+      () async {
+        final service = MeetAutomationService();
+        service.handleWebMessageForTesting({
+          'type': 'PARTICIPANTS_UPDATE',
+          'payload': [
+            {
+              'id': 'p1',
+              'name': 'Nguyễn Văn A',
+              'isMuted': false,
+              'isHandRaised': true,
+              'isSpeaking': false,
+            },
+          ],
+        });
+        expect(service.participants.length, equals(1));
 
-      await service.removeParticipant('p1', 'Nguyễn Văn A');
-      expect(service.participants, isEmpty);
-    });
+        await service.removeParticipant('p1', 'Nguyễn Văn A');
+        expect(service.participants, isEmpty);
+      },
+    );
 
     test('linked classes prevent auto-admit and restore legacy preference', () {
       final service = MeetAutomationService();
@@ -65,17 +77,25 @@ void main() {
       expect(service.autoAdmitEnabled, isTrue);
     });
 
-    test('room URL alone is preparation; joined event must match exact room', () {
-      final service = MeetAutomationService();
-      service.clearMeetingEvents();
-      service.setMeetingUrl('https://meet.google.com/abc-defg-hij');
-      expect(service.isHostJoined, isFalse);
-      service.handleWebMessageForTesting({'type': 'MEET_JOINED', 'payload': {'url': 'https://meet.google.com/klm-nopq-rst'}});
-      expect(service.isHostJoined, isFalse);
-      service.handleWebMessageForTesting({'type': 'MEET_JOINED', 'payload': {'url': 'https://meet.google.com/abc-defg-hij?authuser=0'}});
-      expect(service.isHostJoined, isTrue);
-      service.clearMeetingEvents();
-    });
+    test(
+      'room URL alone is preparation; joined event must match exact room',
+      () {
+        final service = MeetAutomationService();
+        service.clearMeetingEvents();
+        service.setMeetingUrl('https://meet.google.com/abc-defg-hij');
+        expect(service.isHostJoined, isFalse);
+        service.handleWebMessageForTesting({
+          'type': 'MEET_JOINED',
+          'payload': {'url': 'https://meet.google.com/klm-nopq-rst'},
+        });
+        expect(service.isHostJoined, isFalse);
+        service.handleWebMessageForTesting({
+          'type': 'MEET_JOINED',
+          'payload': {'url': 'https://meet.google.com/abc-defg-hij?authuser=0'},
+        });
+        expect(service.isHostJoined, isTrue);
+        service.clearMeetingEvents();
+      },
+    );
   });
 }
-

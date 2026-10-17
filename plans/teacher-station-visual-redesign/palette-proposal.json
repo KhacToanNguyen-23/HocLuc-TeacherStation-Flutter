@@ -1,0 +1,45 @@
+{
+  "name": "HocLucStation",
+  "status": "implemented-and-verified",
+  "scope": "Visual restyle only; preserve current screen composition, navigation, geometry and login illustration.",
+  "preview": "palette-proposal.png",
+  "colors": {
+    "primary": "#0369A1",
+    "primaryHover": "#075985",
+    "primaryPressed": "#0C4A6E",
+    "background": "#F8FAFC",
+    "surface": "#FFFFFF",
+    "surfaceMuted": "#F1F5F9",
+    "text": "#0F172A",
+    "textSecondary": "#475569",
+    "placeholder": "#64748B",
+    "border": "#CBD5E1",
+    "selectedBackground": "#E0F2FE",
+    "selectedText": "#075985",
+    "success": "#047857",
+    "warning": "#92400E",
+    "error": "#B91C1C",
+    "inputBorder": "#64748B"
+  },
+  "fonts": {
+    "ui": "Manrope",
+    "existingBrandMark": "Literata"
+  },
+  "verification": {
+    "method": "sRGB relative luminance contrast, calculated",
+    "primaryOnWhite": 5.93,
+    "secondaryOnBackground": 7.24,
+    "placeholderOnWhite": 4.76,
+    "selectedTextOnSelectedBackground": 6.59
+  },
+  "sdk": {
+    "flutter": "3.47.6",
+    "dart": "3.13.5",
+    "access": "Flutter SDK cache requires elevated command execution."
+  },
+  "appearancePreview": "dashboard-appearance-proposal.png",
+  "nextGate": "Implementation verified; no remaining design approval gate. See implementation.md for evidence and physical-device verification limitations.",
+  "implementationReport": "implementation.md",
+  "actualRender": "evidence/dashboard.png",
+  "verifiedAt": "2026-10-16T06:37:34.400203+00:00"
+}

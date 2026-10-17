@@ -58,7 +58,7 @@ public class AuthService {
         String generatedOtp = String.valueOf(100000 + random.nextInt(900000));
         otpStorage.put(cleanTarget, new OtpEntry(generatedOtp, 5 * 60 * 1000)); // 5 mins TTL
 
-        log.info("[AuthService] Generated OTP for {}: {} (Dev mock: 123456)", cleanTarget, generatedOtp);
+        log.info("[auth] OTP generated | expires_in_seconds=300");
 
         return new AuthResponse(
                 true,
@@ -116,7 +116,7 @@ public class AuthService {
 
         userStorage.put(userToken, userData);
 
-        log.info("[AuthService] Verified user {} successfully. Token granted.", cleanTarget);
+        log.info("[auth] OTP verified | result=success");
 
         return new AuthResponse(
                 true,

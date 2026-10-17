@@ -1,0 +1,757 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-15T16:26:49.626Z",
+  "title": "Design System: HocLucStation",
+  "extensions": {
+    "provenance": {
+      "mode": "source-scan",
+      "renderedVerified": false,
+      "runtimeTitle": "Mộc · Teaching Studio",
+      "documentName": "HocLucStation",
+      "sources": [
+        "frontend/lib/main.dart",
+        "frontend/lib/constants/theme.dart",
+        "frontend/lib/theme/app_color_theme.dart",
+        "frontend/pubspec.yaml",
+        "frontend/lib/widgets/auth/auth_form_card.dart",
+        "frontend/lib/widgets/dashboard/dashboard_action_card.dart",
+        "frontend/lib/screens/classroom_dashboard_screen.dart",
+        "frontend/lib/widgets/dashboard/planning_list_card.dart",
+        "frontend/lib/widgets/dashboard/exam_dashboard_card.dart",
+        "frontend/lib/widgets/dashboard/dashboard_empty_card.dart",
+        "frontend/lib/widgets/studio/studio_drawing_toolbar.dart",
+        "frontend/lib/widgets/studio/studio_top_bar.dart",
+        "frontend/lib/widgets/stage_container.dart",
+        "frontend/lib/widgets/grid_painter.dart",
+        "frontend/lib/models/studio_state.dart"
+      ],
+      "limitations": [
+        "Browser backend unavailable; no Flutter rendered or computed-style verification.",
+        "CSS specimens translate logical-pixel source values; CSS shadows and Flutter blur are not render-identical.",
+        "Material-resolved states are approximated in previews and must not be treated as extracted state tokens.",
+        "Browser specimens use Manrope/Literata only when installed or loaded; they do not fetch the bundled Flutter fonts.",
+        "Preview-only reduced-motion and keyboard focus styles do not imply that the app implements those behaviors.",
+        "Existing source tonal scales retain their actual lengths; synthesized eight-step ramps are preview exploration, not application tokens.",
+        "The document name change does not rename app runtime labels."
+      ]
+    },
+    "colorMeta": {
+      "sky600": {
+        "role": "primary",
+        "displayName": "Xanh trời · sky600",
+        "tonalRamp": [
+          "#0369A1",
+          "#0284C7",
+          "#0EA5E9",
+          "#38BDF8",
+          "#E0F2FE",
+          "#F0F9FF"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "sky100": {
+        "role": "primary",
+        "displayName": "Xanh trời · sky100",
+        "tonalRamp": [
+          "#0369A1",
+          "#0284C7",
+          "#0EA5E9",
+          "#38BDF8",
+          "#E0F2FE",
+          "#F0F9FF"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "sky50": {
+        "role": "primary",
+        "displayName": "Xanh trời · sky50",
+        "tonalRamp": [
+          "#0369A1",
+          "#0284C7",
+          "#0EA5E9",
+          "#38BDF8",
+          "#E0F2FE",
+          "#F0F9FF"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate900": {
+        "role": "neutral",
+        "displayName": "Slate · slate900",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate800": {
+        "role": "neutral",
+        "displayName": "Slate · slate800",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate700": {
+        "role": "neutral",
+        "displayName": "Slate · slate700",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate600": {
+        "role": "neutral",
+        "displayName": "Slate · slate600",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate500": {
+        "role": "neutral",
+        "displayName": "Slate · slate500",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate400": {
+        "role": "neutral",
+        "displayName": "Slate · slate400",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate300": {
+        "role": "neutral",
+        "displayName": "Slate · slate300",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate200": {
+        "role": "neutral",
+        "displayName": "Slate · slate200",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate100": {
+        "role": "neutral",
+        "displayName": "Slate · slate100",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "slate50": {
+        "role": "neutral",
+        "displayName": "Slate · slate50",
+        "tonalRamp": [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#475569",
+          "#64748B",
+          "#94A3B8",
+          "#CBD5E1",
+          "#E2E8F0",
+          "#F1F5F9",
+          "#F8FAFC"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "surface",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ],
+        "rampSource": "generated-preview-only-oklch"
+      },
+      "blue600": {
+        "role": "secondary",
+        "displayName": "Xanh dương · blue600",
+        "tonalRamp": [
+          "#1D4ED8",
+          "#2563EB",
+          "#3B82F6",
+          "#DBEAFE",
+          "#EFF6FF"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "blue50": {
+        "role": "secondary",
+        "displayName": "Xanh dương · blue50",
+        "tonalRamp": [
+          "#1D4ED8",
+          "#2563EB",
+          "#3B82F6",
+          "#DBEAFE",
+          "#EFF6FF"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "amber500": {
+        "role": "semantic",
+        "displayName": "amber · amber500",
+        "tonalRamp": [
+          "#D97706",
+          "#F59E0B",
+          "#FEF3C7",
+          "#FFFBEB"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "amber100": {
+        "role": "semantic",
+        "displayName": "amber · amber100",
+        "tonalRamp": [
+          "#D97706",
+          "#F59E0B",
+          "#FEF3C7",
+          "#FFFBEB"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "amber50": {
+        "role": "semantic",
+        "displayName": "amber · amber50",
+        "tonalRamp": [
+          "#D97706",
+          "#F59E0B",
+          "#FEF3C7",
+          "#FFFBEB"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "emerald600": {
+        "role": "semantic",
+        "displayName": "emerald · emerald600",
+        "tonalRamp": [
+          "#059669",
+          "#10B981",
+          "#D1FAE5",
+          "#ECFDF5"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "emerald500": {
+        "role": "semantic",
+        "displayName": "emerald · emerald500",
+        "tonalRamp": [
+          "#059669",
+          "#10B981",
+          "#D1FAE5",
+          "#ECFDF5"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "emerald50": {
+        "role": "semantic",
+        "displayName": "emerald · emerald50",
+        "tonalRamp": [
+          "#059669",
+          "#10B981",
+          "#D1FAE5",
+          "#ECFDF5"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "rose600": {
+        "role": "semantic",
+        "displayName": "rose · rose600",
+        "tonalRamp": [
+          "#E11D48",
+          "#F43F5E",
+          "#FFE4E6",
+          "#FFF1F2"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "rose500": {
+        "role": "semantic",
+        "displayName": "rose · rose500",
+        "tonalRamp": [
+          "#E11D48",
+          "#F43F5E",
+          "#FFE4E6",
+          "#FFF1F2"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "rose50": {
+        "role": "semantic",
+        "displayName": "rose · rose50",
+        "tonalRamp": [
+          "#E11D48",
+          "#F43F5E",
+          "#FFE4E6",
+          "#FFF1F2"
+        ],
+        "rampSource": "existing-source-scale"
+      },
+      "input-fill-observed": {
+        "role": "neutral",
+        "displayName": "input-fill-observed",
+        "tonalRamp": [
+          "#0B0C08",
+          "#252522",
+          "#42423E",
+          "#61625D",
+          "#82837E",
+          "#A5A6A1",
+          "#C9CAC5",
+          "#EEEFEA"
+        ],
+        "rampSource": "generated-preview-only-oklch"
+      },
+      "auth-field-border": {
+        "role": "neutral",
+        "displayName": "auth-field-border",
+        "tonalRamp": [
+          "#090B0F",
+          "#22252A",
+          "#3F4247",
+          "#5E6167",
+          "#7F8388",
+          "#A1A5AB",
+          "#C5C9CF",
+          "#EBEFF5"
+        ],
+        "rampSource": "generated-preview-only-oklch"
+      },
+      "auth-placeholder": {
+        "role": "neutral",
+        "displayName": "auth-placeholder",
+        "tonalRamp": [
+          "#070B13",
+          "#20252F",
+          "#3C424C",
+          "#5B626C",
+          "#7C838E",
+          "#9EA5B1",
+          "#C2CAD6",
+          "#E7EFFC"
+        ],
+        "rampSource": "generated-preview-only-oklch"
+      },
+      "leave-room": {
+        "role": "neutral",
+        "displayName": "leave-room",
+        "tonalRamp": [
+          "#1F0000",
+          "#4D0003",
+          "#810008",
+          "#B80010",
+          "#E73430",
+          "#FF7367",
+          "#FFB3A9",
+          "#FFE9E5"
+        ],
+        "rampSource": "generated-preview-only-oklch"
+      },
+      "chalkboard-bg": {
+        "role": "neutral",
+        "displayName": "chalkboard-bg",
+        "tonalRamp": [
+          "#030E0A",
+          "#1A2923",
+          "#374640",
+          "#55655F",
+          "#768780",
+          "#98AAA3",
+          "#BCCEC7",
+          "#E1F3EC"
+        ],
+        "rampSource": "generated-preview-only-oklch"
+      },
+      "chalk-ink-default": {
+        "role": "neutral",
+        "displayName": "chalk-ink-default",
+        "tonalRamp": [
+          "#0A0C08",
+          "#242622",
+          "#41433E",
+          "#60625D",
+          "#81837E",
+          "#A3A6A0",
+          "#C7CAC4",
+          "#EDF0EA"
+        ],
+        "rampSource": "generated-preview-only-oklch"
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "title",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "title-compact": {
+        "displayName": "title-compact",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "body": {
+        "displayName": "body",
+        "purpose": "Explicit root body size; inherited weight and line-height omitted."
+      },
+      "body-small": {
+        "displayName": "body-small",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "label": {
+        "displayName": "label",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "button-primary": {
+        "displayName": "button-primary",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "button-secondary": {
+        "displayName": "button-secondary",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "button-auth": {
+        "displayName": "button-auth",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "tab-selected": {
+        "displayName": "tab-selected",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "tab-idle": {
+        "displayName": "tab-idle",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "action-title": {
+        "displayName": "action-title",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      },
+      "brand-mark": {
+        "displayName": "brand-mark",
+        "purpose": "Observed role; consult DESIGN.md Typography for source scope."
+      }
+    },
+    "shadows": [
+      {
+        "name": "action-rest-observed",
+        "value": "0 2px 6px rgba(0,0,0,0.03)",
+        "purpose": "Legacy action card at rest; CSS approximation of Flutter blur."
+      },
+      {
+        "name": "action-hover-observed",
+        "value": "0 7px 18px 1px rgba(2,132,199,0.18)",
+        "purpose": "Legacy action hover glow, not a proposed reusable target."
+      },
+      {
+        "name": "list-card-observed",
+        "value": "0 3px 10px rgba(0,0,0,0.02)",
+        "purpose": "Planning and empty panel shadow."
+      },
+      {
+        "name": "planning-row-observed",
+        "value": "0 1px 4px rgba(0,0,0,0.015)",
+        "purpose": "Planning row shadow."
+      },
+      {
+        "name": "tab-selected-observed",
+        "value": "0 2px 8px rgba(2,132,199,0.08)",
+        "purpose": "Selected dashboard tab."
+      },
+      {
+        "name": "auth-shell-observed",
+        "value": "0 14px 36px rgba(0,0,0,0.08)",
+        "purpose": "Existing login shell."
+      },
+      {
+        "name": "stage-observed",
+        "value": "0 4px 16px rgba(0,0,0,0.2)",
+        "purpose": "Stage surface; do not apply to unrelated cards."
+      }
+    ],
+    "motion": [
+      {
+        "name": "action-duration",
+        "value": "180ms",
+        "purpose": "Action card, icon surface and arrow transition."
+      },
+      {
+        "name": "action-ease",
+        "value": "cubic-bezier(0.215,0.61,0.355,1)",
+        "purpose": "CSS equivalent of the action container's explicitly set Flutter Curves.easeOutCubic."
+      },
+      {
+        "name": "action-hover-lift",
+        "value": "translateY(-3px)",
+        "purpose": "Observed legacy action-card hover."
+      },
+      {
+        "name": "action-arrow-hover",
+        "value": "translateX(2px)",
+        "purpose": "Observed arrow displacement."
+      },
+      {
+        "name": "dashboard-tab-duration",
+        "value": "200ms",
+        "purpose": "Dashboard AnimatedContainer duration; source does not set its curve."
+      },
+      {
+        "name": "stage-switch-duration",
+        "value": "200ms",
+        "purpose": "Stage AnimatedSwitcher duration."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "login-compact",
+        "value": "740px",
+        "purpose": "Viewport width; smaller uses compact login."
+      },
+      {
+        "name": "dashboard-compact",
+        "value": "800px",
+        "purpose": "Viewport width; smaller uses compact dashboard."
+      },
+      {
+        "name": "lobby-compact",
+        "value": "960px",
+        "purpose": "Viewport width; smaller stacks preview and meeting info."
+      },
+      {
+        "name": "studio-inspector",
+        "value": "1250px",
+        "purpose": "Studio constraints width; minimum docked inspector width."
+      },
+      {
+        "name": "action-compact",
+        "value": "220px",
+        "purpose": "Action card constraints width; smaller adjusts padding/icon/text."
+      },
+      {
+        "name": "exam-shortcuts-two-columns",
+        "value": "600px",
+        "purpose": "Container width, not viewport."
+      },
+      {
+        "name": "exam-shortcuts-three-columns",
+        "value": "1000px",
+        "purpose": "Container width, not viewport."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Dạy ngay",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Source-derived appearance. Browser hover/focus for Material-resolved states is illustrative, not an extracted Flutter state.",
+      "html": "<button type=\"button\" class=\"ds-primary\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M17 10.5V7c0-1.1-.9-2-2-2H3C1.9 5 1 5.9 1 7v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-3.5l4 4v-11l-4 4z\"/></svg><span>Dạy ngay</span></button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;background:#0284C7;color:#FFFFFF;border:0;border-radius:9px;font:700 14px Manrope,sans-serif;cursor:pointer}.ds-primary:hover{background:#0284C7;box-shadow:inset 0 0 0 999px rgba(15,23,42,.04)}.ds-primary:focus-visible{outline:2px solid #0284C7;outline-offset:2px}"
+    },
+    {
+      "name": "Soạn tiếp",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Source-derived appearance. Browser hover/focus for Material-resolved states is illustrative, not an extracted Flutter state.",
+      "html": "<button type=\"button\" class=\"ds-secondary\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z\"/></svg><span>Soạn tiếp</span></button>",
+      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;background:#FFFFFF;color:#334155;border:1.2px solid #CBD5E1;border-radius:9px;font:600 14px Manrope,sans-serif;cursor:pointer}.ds-secondary:hover{background:#F8FAFC}.ds-secondary:focus-visible{outline:2px solid #0284C7;outline-offset:2px}"
+    },
+    {
+      "name": "Đăng nhập",
+      "kind": "button",
+      "refersTo": "button-auth",
+      "description": "Source-derived appearance. Browser hover/focus for Material-resolved states is illustrative, not an extracted Flutter state. Source does not set horizontal button padding; this preview uses 24px for standalone display.",
+      "html": "<button type=\"button\" class=\"ds-auth-button\">Đăng nhập</button>",
+      "css": ".ds-auth-button{height:44px;padding:0 24px;background:#0F172A;color:#FFFFFF;border:0;border-radius:6px;font:700 13px Manrope,sans-serif;cursor:pointer}.ds-auth-button:hover{box-shadow:inset 0 0 0 999px rgba(255,255,255,.06)}.ds-auth-button:focus-visible{outline:2px solid #0284C7;outline-offset:2px}"
+    },
+    {
+      "name": "Input mặc định",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Source-derived appearance. Browser hover/focus for Material-resolved states is illustrative, not an extracted Flutter state. Outer height/width follow browser text metrics; not a Flutter layout measurement.",
+      "html": "<input class=\"ds-input\" aria-label=\"Tên bài giảng\" value=\"Bài giảng mới\">",
+      "css": ".ds-input{padding:12px;background:#F6F7F2;color:#0F172A;border:1px solid #E2E8F0;border-radius:9px;font:13px Manrope,sans-serif}.ds-input:hover{cursor:text}.ds-input:focus-visible{outline:2px solid #0284C7;outline-offset:2px}"
+    },
+    {
+      "name": "Input đăng nhập",
+      "kind": "input",
+      "refersTo": "input-auth",
+      "description": "Root fill and auth-local padding/radius/hint/focusedBorder. Browser normal border illustrates the auth-local border; Flutter enabled-border inheritance is not rendered here.",
+      "html": "<label class=\"ds-auth-input\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\"/></svg><input aria-label=\"Email hoặc số điện thoại\" placeholder=\"Email hoặc số điện thoại\"></label>",
+      "css": ".ds-auth-input{display:inline-flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #D1D5DB;border-radius:6px;background:#F6F7F2;color:#6B7280}.ds-auth-input input{border:0;outline:0;padding:0;background:transparent;color:#0F172A;font:13px Manrope,sans-serif}.ds-auth-input input::placeholder{color:#9CA3AF;opacity:1}.ds-auth-input:hover{cursor:text}.ds-auth-input:focus-within{border:1.5px solid #0284C7}.ds-auth-input input:focus-visible{outline:2px solid #0284C7;outline-offset:2px}"
+    },
+    {
+      "name": "Tab dashboard",
+      "kind": "nav",
+      "refersTo": "nav-dashboard-selected",
+      "description": "Selected/idle styles and 200ms container duration are observed. Browser focus and hover are preview approximations; this is a static tab specimen.",
+      "html": "<div class=\"ds-nav\" role=\"tablist\" aria-label=\"Dashboard\"><button type=\"button\" class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">Phòng học</button><button type=\"button\" class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Kế hoạch bài giảng</button><button type=\"button\" class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Lịch sử</button></div>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ds-tab{padding:11px 20px;border:1.5px solid transparent;border-radius:12px;background:transparent;color:#334155;font:600 14px Manrope,sans-serif;cursor:pointer;transition:color 200ms,background-color 200ms}.ds-tab[aria-selected=true]{background:#FFFFFF;color:#0284C7;border-color:#0284C7;font-weight:700;box-shadow:0 2px 8px rgba(2,132,199,.08)}.ds-tab:hover{color:#0284C7}.ds-tab:focus-visible{outline:2px solid #0284C7;outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-tab{transition:none}}"
+    },
+    {
+      "name": "Badge đếm đã chọn",
+      "kind": "chip",
+      "refersTo": "chip-count-selected",
+      "description": "Non-interactive selected dashboard count badge; no hover/focus behavior is invented.",
+      "html": "<span class=\"ds-count\">3</span>",
+      "css": ".ds-count{display:inline-block;padding:2.5px 8px;border-radius:10px;background:#F0F9FF;color:#0284C7;font:700 12px Manrope,sans-serif}"
+    },
+    {
+      "name": "Action card kế thừa",
+      "kind": "card",
+      "refersTo": "card-action-observed",
+      "description": "Observed desktop card and hover lift/glow; records legacy styling, not the redesign target. Preview button semantics and focus are not evidence of Flutter keyboard support.",
+      "html": "<button type=\"button\" class=\"ds-action\"><span class=\"ds-action-icon\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M17 10.5V7c0-1.1-.9-2-2-2H3C1.9 5 1 5.9 1 7v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-3.5l4 4v-11l-4 4z\"/></svg></span><span class=\"ds-action-title\">Bắt đầu</span><span class=\"ds-action-arrow\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z\"/></svg></span></button>",
+      "css": ".ds-action{display:flex;align-items:center;gap:12px;width:320px;max-width:100%;padding:20px 24px;background:#FFFFFF;color:#0F172A;border:1.2px solid #E2E8F0;border-radius:16px;font:800 16px Manrope,sans-serif;letter-spacing:-.2px;box-shadow:0 2px 6px rgba(0,0,0,.03);cursor:pointer;transition:transform 180ms cubic-bezier(.215,.61,.355,1),border-color 180ms,box-shadow 180ms}.ds-action-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:48px;height:48px;border-radius:12px;border:1px solid #BAE6FD;background:#F0F9FF;color:#0284C7}.ds-action-icon svg{width:24px;height:24px}.ds-action-title{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-action-arrow{color:#94A3B8;transition:transform 180ms}.ds-action:hover{transform:translateY(-3px);border:1.5px solid #0284C7;box-shadow:0 7px 18px 1px rgba(2,132,199,.18);color:#0284C7}.ds-action:hover .ds-action-icon{background:#E0F2FE;border:1.4px solid #0284C7}.ds-action:hover .ds-action-arrow{transform:translateX(2px);color:#0284C7}.ds-action:focus-visible{outline:2px solid #0284C7;outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-action,.ds-action-arrow{transition:none}.ds-action:hover,.ds-action:hover .ds-action-arrow{transform:none}}"
+    },
+    {
+      "name": "Khối đề thi",
+      "kind": "card",
+      "refersTo": "card-exam",
+      "description": "Source-derived white panel without a shadow. Content is an illustrative excerpt, not a new app screen.",
+      "html": "<section class=\"ds-exam-card\"><strong>Đề thi &amp; năng lực</strong><p>V-ACT · HSA — quản lý đề, lớp học và kết quả kiểm tra.</p></section>",
+      "css": ".ds-exam-card{padding:24px;border:1px solid #E2E8F0;border-radius:16px;background:#FFFFFF;color:#0F172A;font-family:Manrope,sans-serif}.ds-exam-card strong{font-size:18px;font-weight:800}.ds-exam-card p{margin:6px 0 0;color:#475569;font-size:13px}"
+    },
+    {
+      "name": "Công cụ bút đang chọn",
+      "kind": "custom",
+      "refersTo": "tool-selected",
+      "description": "Source-derived appearance. Browser hover/focus for Material-resolved states is illustrative, not an extracted Flutter state. The source sets a 36px minimum, not a fixed size or explicit per-button radius. Preview dimensions are illustrative.",
+      "html": "<button type=\"button\" class=\"ds-tool\" aria-label=\"Bút vẽ\" aria-pressed=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z\"/></svg></button>",
+      "css": ".ds-tool{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:0;border:0;background:#E0F2FE;color:#0284C7;cursor:pointer}.ds-tool:hover{box-shadow:inset 0 0 0 999px rgba(2,132,199,.04)}.ds-tool:focus-visible{outline:2px solid #0284C7;outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "HocLucStation",
+    "overview": "HocLucStation là trạm hỗ trợ giáo viên chuẩn bị bài, giảng dạy và ôn thi, với tính cách “đồng hành, rõ ràng, đáng tin cậy” đã được xác nhận trong PRODUCT.md. Hệ hiện tại kết hợp bề mặt sáng sky/slate, chữ Manrope và vùng bảng phấn tối. Tên HocLucStation được dùng cho tài liệu này theo yêu cầu người dùng; nhãn runtime hiện tại vẫn là “Mộc · Teaching Studio”.\n\nĐây là bản ghi hiện trạng từ source code, không phải thiết kế đích của lượt redesign. Chưa có đối chiếu rendered/computed styles vì Browser không kết nối được. Giá trị YAML là mốc trích xuất cho đúng component/phạm vi được ghi; trạng thái do Material 3 tự giải quyết không được coi là đã đo. Kế hoạch tại plans/teacher-station-visual-redesign/plan.md mô tả thay đổi diện mạo đang chờ xác nhận; không áp dụng chúng ngược vào bản ghi này.",
+    "keyCharacteristics": [
+      "Desktop trước; hỗ trợ chuột, bàn phím và bút theo các luồng hiện có.",
+      "Nền sáng và một họ màu tương tác chủ đạo; bảng phấn có palette nội dung riêng.",
+      "UI tương đối dày, nhiều nhãn và dữ liệu; typography theo kích thước cố định.",
+      "Chưa có một bộ component thị giác thống nhất cho mọi màn hình."
+    ],
+    "rules": [
+      {
+        "name": "The Current Layout Rule",
+        "body": "Giữ vị trí, kích thước vùng làm việc, thứ tự điều khiển, breakpoint và luồng thao tác của hiện trạng khi thay diện mạo.",
+        "section": "overview"
+      },
+      {
+        "name": "The Canvas Boundary Rule",
+        "body": "Không thay màu nền bảng, màu nét bút hoặc nội dung PDF chỉ vì chúng khác palette chrome của ứng dụng.",
+        "section": "colors"
+      },
+      {
+        "name": "The Observed State Rule",
+        "body": "Không suy ra hover, focus, disabled hoặc motion từ tên token; chỉ coi là xác nhận khi source cấu hình rõ hoặc có bằng chứng render.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do giữ yêu cầu “supportive, clear, and trustworthy” trong PRODUCT.md; dùng tên HocLucStation cho tài liệu thiết kế.",
+      "Do dùng token màu theo vai trò và phạm vi component; primary mặc định của MaterialApp là slate900, còn nút dạy học được style riêng bằng sky600.",
+      "Do giữ nguyên bố cục hiện tại khi thực hiện kế hoạch thay diện mạo; thang AppSpacing hiện có không đồng nghĩa được phép dàn lại trang.",
+      "Do giữ font Manrope cho UI, Literata cho dấu nhận diện hiện có và hệ màu riêng cho bảng/nét bút.",
+      "Do kiểm tra contrast, clipping nhãn và trạng thái bàn phím bằng app render trước khi kết luận đạt chất lượng."
+    ],
+    "donts": [
+      "Don't thêm “visual or interaction choices that make teaching tasks harder to understand or interrupt classroom flow” — nguyên văn anti-reference trong PRODUCT.md; người dùng không cung cấp mẫu cần tránh có tên riêng.",
+      "Don't biến gradient, thẻ nhấc khi hover, bóng rộng hoặc bo góc shell đăng nhập thành quy tắc cho component mới; đây là các đặc điểm kế thừa được ghi nhận.",
+      "Don't đổi bố cục theo ảnh A/B/C, thêm sidebar/filmstrip hoặc thay điều hướng trong lượt thay diện mạo.",
+      "Don't thêm minh họa giáo dục, biểu tượng lấp lánh hoặc lớp trang trí chỉ để tạo cảm giác giáo dục.",
+      "Don't gọi preset dark, skyHover hoặc các trạng thái kế thừa Material là hành vi đã hoạt động/được đo khi chưa có bằng chứng."
+    ]
+  }
+}
