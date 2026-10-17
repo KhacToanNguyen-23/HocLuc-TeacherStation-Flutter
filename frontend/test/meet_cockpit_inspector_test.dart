@@ -5,7 +5,9 @@ import 'package:teaching_companion/services/meet_automation_service.dart';
 import 'package:teaching_companion/widgets/studio/studio_inspector_panel.dart';
 
 void main() {
-  testWidgets('StudioInspectorPanel renders live cockpit tabs and chat', (tester) async {
+  testWidgets('StudioInspectorPanel renders live cockpit tabs and chat', (
+    tester,
+  ) async {
     final studio = StudioState();
     final notesController = TextEditingController();
     final questionController = TextEditingController();
@@ -34,7 +36,7 @@ void main() {
 
     // Initial tab 0: Trực tiếp
     expect(find.text('Trực tiếp'), findsOneWidget);
-    expect(find.text('Cài đặt & Ghi chú'), findsOneWidget);
+    expect(find.text('Thiết bị & Cài đặt'), findsOneWidget);
     expect(find.text('Chuẩn bị Google Meet'), findsOneWidget);
     expect(find.text('LIVE'), findsNothing);
     expect(find.text('Tắt tiếng cả lớp'), findsOneWidget);
@@ -47,8 +49,8 @@ void main() {
     expect(find.text('Chào các em!'), findsOneWidget);
     expect(find.text('Tôi (Giáo viên)'), findsOneWidget);
 
-    // Switch to Tab 1: Cài đặt & Ghi chú
-    await tester.tap(find.text('Cài đặt & Ghi chú'));
+    // Switch to Tab 1: Thiết bị & Cài đặt
+    await tester.tap(find.text('Thiết bị & Cài đặt'));
     await tester.pumpAndSettle();
 
     expect(find.text('ĐẦU RA CHO MEETING'), findsOneWidget);
