@@ -22,7 +22,7 @@ Remove the required manual **Đồng bộ** click after accepting a Google Class
 
 The existing `GoogleWorkspaceScreen` is a `StatefulWidget` without a lifecycle observer. The current manual sync callback calls `POST courses/{id}/sync`. The Classroom course URL is opened with `openExternalUrl` while the workspace remains mounted. Backend `GoogleClassService.create()` may return a pending course; `sync()` reads the course from Google when stored `classroomState != ACTIVE`, and reconciles the roster only when Google returns `courseState == ACTIVE`. `PROVISIONED` means not yet activated.
 
-Use the existing create and sync APIs. The create endpoint already attempts activation and roster sync when the returned course is active; display that response and do not repeat the sync request. If its result says `PROVISIONED`, retain the course ID as the pending activation target and show the Classroom instruction. Observe Flutter `AppLifecycleState.resumed`; for a `PROVISIONED` target, issue one sync attempt per resume event, with a course-scoped in-flight guard shared with manual sync. Update the selected course and show an in-app result. Do not automatically retry other non-`ACTIVE` states such as `DECLINED`, `ARCHIVED`, or `SUSPENDED`. Classify clean roster success only when active and no `classroomWarnings` are returned; surface active responses with warnings as partial/needs-attention rather than clean success. Do not infer roster success from `classroomState` or `syncedAt` alone. Keep errors distinct from pending state and allow a later resume or manual sync to retry. Avoid periodic polling, new packages, backend API changes, and OS notifications unless implementation research proves the existing contract insufficient.
+Use the existing create and sync APIs. The create endpoint already attempts activation and roster sync when the returned course is active; display that response and do not repeat the sync request. If its result says `PROVISIONED`, retain the course ID as the pending activation target and show the Classroom instruction. Observe Flutter `AppLifecycleState.resumed`; for a `PROVISIONED` target, issue one sync attempt per resume event, with a course-scoped in-flight guard shared with manual sync. Update the selected course and show an in-app result. Do not automatically retry other non-`ACTIVE` states such as `DECLINED`, `ARCHIVED`, or `SUSPENDED`. Classify clean roster success only when active, `classroomWarnings` are empty, and the backend reports `classroomSyncedAt`; surface active responses with warnings as partial/needs-attention rather than clean success. Do not infer roster success from `classroomState` or Calendar's `syncedAt` alone. Keep errors distinct from pending state and allow a later resume or manual sync to retry. Avoid periodic polling, new packages, and OS notifications unless implementation research proves they are necessary.
 
 ## Phases
 
@@ -40,7 +40,7 @@ Use the existing create and sync APIs. The create endpoint already attempts acti
 
 - **A resume event can occur more than once or during an active request.** Guard by course ID and in-flight state; ignore overlapping resumes.
 - **An extra post-create request can duplicate backend work.** The create endpoint already attempts member sync when Classroom reports `ACTIVE`; use its response and only retry when the state is pending.
-- **The backend may return HTTP success with roster/invitation warnings.** Use `classroomState` plus `classroomWarnings` to distinguish pending, clean success, and partial/needs-attention; do not infer full roster completion from `ACTIVE` or `syncedAt` alone.
+- **The backend may return HTTP success with roster/invitation warnings.** Use `classroomState`, `classroomWarnings`, and the Classroom-specific `classroomSyncedAt` to distinguish pending, clean success, and partial/needs-attention; do not infer full roster completion from `ACTIVE` or Calendar's `syncedAt` alone.
 - **Manual sync can overlap an automatic resume check.** Route both paths through the same course-scoped guard and result handler.
 - **Google may still return `PROVISIONED` after the teacher returns.** Keep the course pending, report that it needs acceptance/activation, and wait for a later resume or manual sync; do not poll. Do not retry `DECLINED`, `ARCHIVED`, or `SUSPENDED` automatically.
 - **API/auth/network failures can resemble a pending result if errors are collapsed.** Preserve error classification and show an actionable error separately from pending activation.
@@ -71,12 +71,12 @@ Targeted tests to add/update:
 
 ### Decisions made this session
 - Reused the create response and did not send a duplicate `/sync` request.
-- Showed pending, clean active, partial active, and other Classroom states in the course card. Clean success requires `ACTIVE`, no Classroom warnings, and a `syncedAt` value.
-- Added coverage for active responses both with and without `syncedAt`.
+- Showed pending, clean active, partial active, and other Classroom states in the course card. Clean success requires `ACTIVE`, no Classroom warnings, and a `classroomSyncedAt` value.
+- Added coverage for active responses with and without `classroomSyncedAt`, including that Calendar's `syncedAt` alone is insufficient.
 - Added a lifecycle observer for `resumed`, retained a selected `PROVISIONED` course for the screen session, and routed manual/automatic sync through one course-scoped in-flight guard.
 - Queued a resume retry if another workspace operation is running; the retry rechecks that the selected course is still pending when that operation finishes.
 - Kept the pending guidance visible after sync errors, allowed retry on the next resume, and ignored responses after disposal.
-- Added in-card progress and per-course sync errors; clean success requires `ACTIVE`, no Classroom warnings, and `syncedAt`.
+- Added in-card progress and per-course sync errors; clean success requires `ACTIVE`, no Classroom warnings, and `classroomSyncedAt`.
 - Limited resume-retry guidance to `PROVISIONED`; other sync errors direct teachers to the manual retry action.
 - Verified the focused retry test, all 33 Google Workspace tests, and all 5 architecture tests.
 
