@@ -101,6 +101,7 @@ public class GoogleClassService {
     public synchronized Map<String,Object> sync(String email,String id) {
         String subject=connections.subject(email),token=connections.access(email); var course=store.course(subject,id);
         var students=students(course); var classroomWarnings=new ArrayList<String>();
+        boolean classroomSyncCompleted=false;
         // Migrate only emails explicitly entered/invited by the teacher, never a whole imported roster.
         migrateMeetAccess(course,students);
         try {
@@ -136,7 +137,9 @@ public class GoogleClassService {
                     row.put("classroomError",failure.getMessage()); classroomWarnings.add(string(row,"email")+": Classroom: "+failure.getMessage());
                 }
             }
+            classroomSyncCompleted=true;
         } catch(GoogleFailure failure) { classroomWarnings.add(failure.getMessage()); }
+        if(classroomSyncCompleted) course.put("classroomSyncedAt",Instant.now().toString());
         course.put("classroomWarnings",classroomWarnings); course.put("students",students); store.saveCourse(subject,course);
         return syncMeet(subject,course,token);
     }
