@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
@@ -107,7 +108,7 @@ class MediaDeviceService extends ChangeNotifier {
       try {
         CameraWindows.registerWith();
       } catch (e) {
-        debugPrint('[MediaDeviceService] CameraWindows register: $e');
+        FrontendLogger.write('[MediaDeviceService] CameraWindows register: $e');
       }
     }
 
@@ -141,7 +142,9 @@ class MediaDeviceService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('[MediaDeviceService] Physical Camera init error: $e');
+      FrontendLogger.write(
+        '[MediaDeviceService] Physical Camera init error: $e',
+      );
     }
 
     // 2. Physical Microphone Detection & Audio Recording
@@ -184,7 +187,7 @@ class MediaDeviceService extends ChangeNotifier {
         _isMicActive = true;
       }
     } catch (e) {
-      debugPrint('[MediaDeviceService] Physical Mic init error: $e');
+      FrontendLogger.write('[MediaDeviceService] Physical Mic init error: $e');
     }
 
     // Fallbacks if hardware detection returned empty
@@ -312,7 +315,7 @@ class MediaDeviceService extends ChangeNotifier {
         _activeCameraId = id;
         _isCameraActive = true;
       } catch (e) {
-        debugPrint('[MediaDeviceService] switchCamera error: $e');
+        FrontendLogger.write('[MediaDeviceService] switchCamera error: $e');
       }
     }
     notifyListeners();

@@ -364,7 +364,7 @@ void main() {
         'classroomState': 'PROVISIONED',
         'classroomWarnings': <String>[],
         'students': <Map<String, dynamic>>[],
-        'syncedAt': null,
+        'classroomSyncedAt': null,
       };
       final api = GoogleWorkspaceApi(
         email: 'teacher@example.com',
@@ -382,7 +382,7 @@ void main() {
             data = {
               ...createResponse,
               'classroomState': 'ACTIVE',
-              'syncedAt': '2026-10-17T10:00:00Z',
+              'classroomSyncedAt': '2026-10-17T10:00:00Z',
             };
           } else {
             data = {
@@ -452,7 +452,7 @@ void main() {
             ? <String>[]
             : <String>['Google Classroom state: $state'],
         'students': <Map<String, dynamic>>[],
-        'syncedAt': state == 'ACTIVE' ? '2026-10-17T10:00:00Z' : null,
+        'classroomSyncedAt': state == 'ACTIVE' ? '2026-10-17T10:00:00Z' : null,
       };
       final api = GoogleWorkspaceApi(
         email: 'teacher@example.com',
@@ -513,7 +513,7 @@ void main() {
         'classroomState': 'ACTIVE',
         'classroomWarnings': ['One student could not be invited'],
         'students': <Map<String, dynamic>>[],
-        'syncedAt': '2026-10-17T10:00:00Z',
+        'classroomSyncedAt': '2026-10-17T10:00:00Z',
       };
       final api = GoogleWorkspaceApi(
         email: 'teacher@example.com',
@@ -550,47 +550,50 @@ void main() {
     },
   );
 
-  testWidgets('syncedAt alone does not claim a clean ACTIVE roster sync', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1280, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final course = <String, dynamic>{
-      'id': 'no-state-class',
-      'title': 'Toán 12A',
-      'courseId': 'google-course-1',
-      'classroomWarnings': <String>[],
-      'students': <Map<String, dynamic>>[],
-      'syncedAt': '2026-10-17T10:00:00Z',
-    };
-    final api = GoogleWorkspaceApi(
-      email: 'teacher@example.com',
-      client: MockClient((request) async {
-        Object data;
-        if (request.url.path.endsWith('bootstrap')) {
-          data = {'token': 'local'};
-        } else if (request.url.path.endsWith('status')) {
-          data = {'configured': true, 'connected': true};
-        } else {
-          data = {
-            'courses': [course],
-          };
-        }
-        return http.Response(
-          jsonEncode(data),
-          200,
-          headers: {'content-type': 'application/json; charset=utf-8'},
-        );
-      }),
-    );
-    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
-    await tester.pumpWidget(const SizedBox());
-    api.close();
-  });
+  testWidgets(
+    'calendar syncedAt alone does not claim a clean ACTIVE roster sync',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final course = <String, dynamic>{
+        'id': 'no-state-class',
+        'title': 'Toán 12A',
+        'courseId': 'google-course-1',
+        'classroomWarnings': <String>[],
+        'students': <Map<String, dynamic>>[],
+        'syncedAt': '2026-10-17T10:00:00Z',
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          Object data;
+          if (request.url.path.endsWith('bootstrap')) {
+            data = {'token': 'local'};
+          } else if (request.url.path.endsWith('status')) {
+            data = {'configured': true, 'connected': true};
+          } else {
+            data = {
+              'courses': [course],
+            };
+          }
+          return http.Response(
+            jsonEncode(data),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
 
   testWidgets('ACTIVE without syncedAt does not claim a clean roster sync', (
     tester,
@@ -606,7 +609,7 @@ void main() {
       'classroomState': 'ACTIVE',
       'classroomWarnings': <String>[],
       'students': <Map<String, dynamic>>[],
-      'syncedAt': null,
+      'classroomSyncedAt': null,
     };
     final api = GoogleWorkspaceApi(
       email: 'teacher@example.com',
@@ -648,9 +651,10 @@ void main() {
     final course = <String, dynamic>{
       'id': 'already-active',
       'title': 'Active class',
+      'courseId': 'google-course-1',
       'classroomState': 'ACTIVE',
       'classroomWarnings': <String>[],
-      'syncedAt': '2026-10-17T10:00:00Z',
+      'classroomSyncedAt': '2026-10-17T10:00:00Z',
       'students': <Map<String, dynamic>>[],
     };
     final api = GoogleWorkspaceApi(
@@ -682,6 +686,67 @@ void main() {
   });
 
   testWidgets(
+    'resume retries an ACTIVE course without confirmed Classroom sync',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var syncRequests = 0;
+      final activeCourse = <String, dynamic>{
+        'id': 'active-unconfirmed',
+        'title': 'Active class',
+        'courseId': 'google-course-1',
+        'classroomState': 'ACTIVE',
+        'classroomWarnings': ['Temporary roster check failure'],
+        'students': <Map<String, dynamic>>[],
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"local"}', 200);
+          }
+          if (request.url.path.endsWith('status')) {
+            return http.Response('{"configured":true,"connected":true}', 200);
+          }
+          if (request.url.path.endsWith('/sync')) {
+            syncRequests++;
+            return http.Response(
+              jsonEncode({
+                ...activeCourse,
+                'classroomWarnings': <String>[],
+                'classroomSyncedAt': '2026-10-17T10:00:00Z',
+              }),
+              200,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'courses': [activeCourse],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(syncRequests, 1);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets(
     'resume syncs a loaded PROVISIONED course and applies ACTIVE response',
     (tester) async {
       tester.view.physicalSize = const Size(1280, 900);
@@ -697,13 +762,13 @@ void main() {
         'classroomState': 'PROVISIONED',
         'classroomWarnings': <String>[],
         'students': <Map<String, dynamic>>[],
-        'syncedAt': null,
+        'classroomSyncedAt': null,
       };
       final activeCourse = <String, dynamic>{
         ...pendingCourse,
         'classroomState': 'ACTIVE',
         'classroomWarnings': <String>[],
-        'syncedAt': '2026-10-17T10:00:00Z',
+        'classroomSyncedAt': '2026-10-17T10:00:00Z',
       };
       final api = GoogleWorkspaceApi(
         email: 'teacher@example.com',
@@ -767,7 +832,7 @@ void main() {
       'classroomState': 'PROVISIONED',
       'classroomWarnings': <String>[],
       'students': <Map<String, dynamic>>[],
-      'syncedAt': null,
+      'classroomSyncedAt': null,
     };
     final api = GoogleWorkspaceApi(
       email: 'teacher@example.com',
@@ -803,7 +868,7 @@ void main() {
         jsonEncode({
           ...pendingCourse,
           'classroomState': 'ACTIVE',
-          'syncedAt': '2026-10-17T10:00:00Z',
+          'classroomSyncedAt': '2026-10-17T10:00:00Z',
         }),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},
@@ -830,7 +895,7 @@ void main() {
         'classroomState': 'PROVISIONED',
         'classroomWarnings': <String>[],
         'students': <Map<String, dynamic>>[],
-        'syncedAt': null,
+        'classroomSyncedAt': null,
       };
       final api = GoogleWorkspaceApi(
         email: 'teacher@example.com',
@@ -861,7 +926,7 @@ void main() {
               jsonEncode({
                 ...pendingCourse,
                 'classroomState': 'ACTIVE',
-                'syncedAt': '2026-10-17T10:00:00Z',
+                'classroomSyncedAt': '2026-10-17T10:00:00Z',
               }),
               200,
               headers: {'content-type': 'application/json; charset=utf-8'},
@@ -939,7 +1004,7 @@ void main() {
         'classroomState': 'PROVISIONED',
         'classroomWarnings': <String>[],
         'students': <Map<String, dynamic>>[],
-        'syncedAt': null,
+        'classroomSyncedAt': null,
       };
       final api = GoogleWorkspaceApi(
         email: 'teacher@example.com',
@@ -990,7 +1055,7 @@ void main() {
           jsonEncode({
             ...pendingCourse,
             'classroomState': 'ACTIVE',
-            'syncedAt': '2026-10-17T10:00:00Z',
+            'classroomSyncedAt': '2026-10-17T10:00:00Z',
           }),
           200,
           headers: {'content-type': 'application/json; charset=utf-8'},
@@ -1015,7 +1080,7 @@ void main() {
         'title': 'Active class',
         'classroomState': 'ACTIVE',
         'classroomWarnings': <String>[],
-        'syncedAt': '2026-10-17T10:00:00Z',
+        'classroomSyncedAt': '2026-10-17T10:00:00Z',
         'students': <Map<String, dynamic>>[],
       };
       final pendingCourse = <String, dynamic>{
@@ -1024,7 +1089,7 @@ void main() {
         'courseId': 'google-classroom-id',
         'classroomState': 'PROVISIONED',
         'classroomWarnings': <String>[],
-        'syncedAt': null,
+        'classroomSyncedAt': null,
         'students': <Map<String, dynamic>>[],
       };
       final api = GoogleWorkspaceApi(
@@ -1042,7 +1107,7 @@ void main() {
               jsonEncode({
                 ...pendingCourse,
                 'classroomState': 'ACTIVE',
-                'syncedAt': '2026-10-17T10:00:00Z',
+                'classroomSyncedAt': '2026-10-17T10:00:00Z',
               }),
               200,
               headers: {'content-type': 'application/json; charset=utf-8'},
@@ -1089,7 +1154,7 @@ void main() {
         'classroomState': 'PROVISIONED',
         'classroomWarnings': <String>[],
         'students': <Map<String, dynamic>>[],
-        'syncedAt': null,
+        'classroomSyncedAt': null,
       };
       final api = GoogleWorkspaceApi(
         email: 'teacher@example.com',
@@ -1109,7 +1174,7 @@ void main() {
                     : {
                         ...pendingCourse,
                         'classroomState': 'ACTIVE',
-                        'syncedAt': '2026-10-17T10:00:00Z',
+                        'classroomSyncedAt': '2026-10-17T10:00:00Z',
                       },
               ),
               200,
@@ -1162,7 +1227,7 @@ void main() {
       'classroomState': 'PROVISIONED',
       'classroomWarnings': <String>[],
       'students': <Map<String, dynamic>>[],
-      'syncedAt': null,
+      'classroomSyncedAt': null,
     };
     final api = GoogleWorkspaceApi(
       email: 'teacher@example.com',
@@ -1179,7 +1244,7 @@ void main() {
             jsonEncode({
               ...pendingCourse,
               'classroomState': 'ACTIVE',
-              'syncedAt': '2026-10-17T10:00:00Z',
+              'classroomSyncedAt': '2026-10-17T10:00:00Z',
             }),
             200,
             headers: {'content-type': 'application/json; charset=utf-8'},
@@ -1237,7 +1302,7 @@ void main() {
         'classroomState': 'PROVISIONED',
         'classroomWarnings': <String>[],
         'students': <Map<String, dynamic>>[],
-        'syncedAt': null,
+        'classroomSyncedAt': null,
       };
       final api = GoogleWorkspaceApi(
         email: 'teacher@example.com',
@@ -1261,7 +1326,7 @@ void main() {
               jsonEncode({
                 ...pendingCourse,
                 'classroomState': 'ACTIVE',
-                'syncedAt': '2026-10-17T10:00:00Z',
+                'classroomSyncedAt': '2026-10-17T10:00:00Z',
               }),
               200,
               headers: {'content-type': 'application/json; charset=utf-8'},
@@ -1315,7 +1380,7 @@ void main() {
         'classroomState': 'PROVISIONED',
         'classroomWarnings': <String>[],
         'students': <Map<String, dynamic>>[],
-        'syncedAt': null,
+        'classroomSyncedAt': null,
       };
       final api = GoogleWorkspaceApi(
         email: 'teacher@example.com',

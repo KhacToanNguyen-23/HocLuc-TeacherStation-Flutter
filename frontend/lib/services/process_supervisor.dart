@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -38,7 +39,9 @@ class ProcessSupervisor {
       await server.close();
       return port;
     } catch (e) {
-      debugPrint('[ProcessSupervisor] Error binding ephemeral port: $e');
+      FrontendLogger.write(
+        '[ProcessSupervisor] Error binding ephemeral port: $e',
+      );
       return 20000 + (DateTime.now().millisecond % 10000);
     }
   }
@@ -69,7 +72,8 @@ class ProcessSupervisor {
     }
 
     final port = await findAvailablePort();
-    final entryRel = backend?.entry ?? manifest.backendExecutable ?? 'engine/service.py';
+    final entryRel =
+        backend?.entry ?? manifest.backendExecutable ?? 'engine/service.py';
 
     final possiblePaths = [
       '$pluginDirectory/$entryRel',
@@ -86,7 +90,9 @@ class ProcessSupervisor {
     }
 
     if (entryFile == null) {
-      debugPrint('[ProcessSupervisor] Backend entry file not found for $pluginId at $possiblePaths');
+      FrontendLogger.write(
+        '[ProcessSupervisor] Sidecar entry point missing | plugin_id=$pluginId',
+      );
       return null;
     }
 
@@ -97,7 +103,9 @@ class ProcessSupervisor {
         : ['--port', port.toString()];
 
     try {
-      debugPrint('[ProcessSupervisor] Spawning $executable ${args.join(" ")} (dir: $pluginDirectory)');
+      FrontendLogger.write(
+        '[ProcessSupervisor] Starting sidecar | plugin_id=$pluginId port=$port',
+      );
       final process = await Process.start(
         executable,
         args,
@@ -109,23 +117,27 @@ class ProcessSupervisor {
         mode: ProcessStartMode.normal,
       );
 
-      // Log process output for debugging
-      process.stdout.transform(utf8.decoder).listen((line) {
-        debugPrint('[$pluginId:stdout] $line');
-      });
-      process.stderr.transform(utf8.decoder).listen((line) {
-        debugPrint('[$pluginId:stderr] $line');
-      });
+      // Drain sidecar output without echoing arbitrary plugin payloads.
+      process.stdout.transform(utf8.decoder).listen((_) {});
+      process.stderr.transform(utf8.decoder).listen((_) {});
 
       process.exitCode.then((code) {
-        debugPrint('[ProcessSupervisor] Process $pluginId exited with code $code');
+        FrontendLogger.write(
+          '[ProcessSupervisor] Process $pluginId exited with code $code',
+        );
         _activeProcesses.remove(pluginId);
       });
 
       // Health-check loop (poll up to 6 seconds)
-      final healthy = await _pollHealth(port, backend?.healthEndpoint, timeoutMs: 6000);
+      final healthy = await _pollHealth(
+        port,
+        backend?.healthEndpoint,
+        timeoutMs: 6000,
+      );
       if (!healthy) {
-        debugPrint('[ProcessSupervisor] Health check failed for $pluginId on port $port');
+        FrontendLogger.write(
+          '[ProcessSupervisor] Health check failed for $pluginId on port $port',
+        );
       }
 
       final instance = ProcessInstance(
@@ -138,7 +150,9 @@ class ProcessSupervisor {
       _activeProcesses[pluginId] = instance;
       return instance;
     } catch (e) {
-      debugPrint('[ProcessSupervisor] Failed to start sidecar for $pluginId: $e');
+      FrontendLogger.write(
+        '[ProcessSupervisor] Failed to start sidecar | plugin_id=$pluginId cause=${e.runtimeType}',
+      );
       return null;
     }
   }
@@ -149,12 +163,16 @@ class ProcessSupervisor {
     if (instance == null) return;
 
     try {
-      debugPrint('[ProcessSupervisor] Stopping sidecar for $pluginId (pid: ${instance.process.pid})');
+      FrontendLogger.write(
+        '[ProcessSupervisor] Stopping sidecar for $pluginId (pid: ${instance.process.pid})',
+      );
       instance.process.kill(ProcessSignal.sigterm);
       await Future.delayed(const Duration(milliseconds: 200));
       instance.process.kill(ProcessSignal.sigkill);
     } catch (e) {
-      debugPrint('[ProcessSupervisor] Error killing process $pluginId: $e');
+      FrontendLogger.write(
+        '[ProcessSupervisor] Error killing sidecar | plugin_id=$pluginId cause=${e.runtimeType}',
+      );
     }
   }
 
@@ -167,14 +185,20 @@ class ProcessSupervisor {
     _activeProcesses.clear();
   }
 
-  Future<bool> _pollHealth(int port, String? endpoint, {int timeoutMs = 5000}) async {
+  Future<bool> _pollHealth(
+    int port,
+    String? endpoint, {
+    int timeoutMs = 5000,
+  }) async {
     final ep = endpoint ?? '/health';
     final targetUri = Uri.parse('http://127.0.0.1:$port$ep');
     final stopwatch = Stopwatch()..start();
 
     while (stopwatch.elapsedMilliseconds < timeoutMs) {
       try {
-        final res = await http.get(targetUri).timeout(const Duration(milliseconds: 400));
+        final res = await http
+            .get(targetUri)
+            .timeout(const Duration(milliseconds: 400));
         if (res.statusCode == 200) {
           return true;
         }

@@ -5,11 +5,23 @@ import 'package:http/http.dart' as http;
 import 'local_service.dart';
 
 class GoogleWorkspaceFailure extends StateError {
-  GoogleWorkspaceFailure(this.code, String message, {this.status = 0}) : super(message);
+  GoogleWorkspaceFailure(this.code, String message, {this.status = 0})
+    : super(message);
   final String code;
   final int status;
-  bool get needsConsent => const {'RECONNECT_GOOGLE', 'GOOGLE_401', 'SCOPE_MISSING', 'REFRESH_MISSING'}.contains(code);
-  bool get temporary => const {'GOOGLE_NETWORK', 'GOOGLE_TEMPORARY', 'GOOGLE_RATE_LIMIT'}.contains(code) || status >= 500 && code != 'GOOGLE_CLIENT_CONFIG';
+  bool get needsConsent => const {
+    'RECONNECT_GOOGLE',
+    'GOOGLE_401',
+    'SCOPE_MISSING',
+    'REFRESH_MISSING',
+  }.contains(code);
+  bool get temporary =>
+      const {
+        'GOOGLE_NETWORK',
+        'GOOGLE_TEMPORARY',
+        'GOOGLE_RATE_LIMIT',
+      }.contains(code) ||
+      status >= 500 && code != 'GOOGLE_CLIENT_CONFIG';
 }
 
 /// Local provider bridge. Google credentials never leave the companion backend.
@@ -36,18 +48,25 @@ class GoogleWorkspaceApi {
     };
     late http.Response response;
     try {
-      response = await (post
-                ? _local.client.post(
-                    uri,
-                    headers: headers,
-                    body: jsonEncode(body ?? {}),
-                  )
-                : _local.client.get(uri, headers: headers))
-            .timeout(const Duration(minutes: 4));
+      response =
+          await (post
+                  ? _local.client.post(
+                      uri,
+                      headers: headers,
+                      body: jsonEncode(body ?? {}),
+                    )
+                  : _local.client.get(uri, headers: headers))
+              .timeout(const Duration(minutes: 4));
     } on TimeoutException {
-      throw GoogleWorkspaceFailure('GOOGLE_NETWORK', 'Kết nối quá lâu. Kiểm tra mạng rồi thử lại; chưa cần cấp quyền lại.');
+      throw GoogleWorkspaceFailure(
+        'GOOGLE_NETWORK',
+        'Kết nối quá lâu. Kiểm tra mạng rồi thử lại; chưa cần cấp quyền lại.',
+      );
     } on http.ClientException {
-      throw GoogleWorkspaceFailure('GOOGLE_NETWORK', 'Không kết nối được dịch vụ. Kiểm tra mạng và thử lại.');
+      throw GoogleWorkspaceFailure(
+        'GOOGLE_NETWORK',
+        'Không kết nối được dịch vụ. Kiểm tra mạng và thử lại.',
+      );
     }
     Map<String, dynamic> data;
     try {
@@ -63,7 +82,8 @@ class GoogleWorkspaceApi {
         await _local.connect();
         return call(path, body: body, post: post, retryLocalSession: false);
       }
-      throw GoogleWorkspaceFailure(data['code'] as String? ?? 'REQUEST_FAILED',
+      throw GoogleWorkspaceFailure(
+        data['code'] as String? ?? 'REQUEST_FAILED',
         data['message'] as String? ??
             'Không hoàn tất thao tác (${response.statusCode}).',
         status: response.statusCode,

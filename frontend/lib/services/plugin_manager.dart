@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -83,8 +84,9 @@ class PluginManager extends ChangeNotifier {
 
   List<SubjectPlugin> get availablePlugins => _registry.values.toList();
 
-  List<SubjectPlugin> get installedPlugins =>
-      _registry.values.where((p) => _installedPluginIds.contains(p.id)).toList();
+  List<SubjectPlugin> get installedPlugins => _registry.values
+      .where((p) => _installedPluginIds.contains(p.id))
+      .toList();
 
   InstalledPlugin? getPlugin(String id) => _installedPackages[id];
 
@@ -102,7 +104,9 @@ class PluginManager extends ChangeNotifier {
       for (final id in savedIds) {
         final dir = PluginStorageManager.instance.getInstalledDirectory(id);
         if (dir != null) {
-          final manifest = PluginStorageManager.instance.loadManifestFromDir(dir);
+          final manifest = PluginStorageManager.instance.loadManifestFromDir(
+            dir,
+          );
           if (manifest != null) {
             final installed = InstalledPlugin(
               manifest: manifest,
@@ -117,7 +121,7 @@ class PluginManager extends ChangeNotifier {
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('[PluginManager] Error initializing: $e');
+      FrontendLogger.write('[PluginManager] Error initializing: $e');
     }
   }
 
@@ -137,7 +141,7 @@ class PluginManager extends ChangeNotifier {
     try {
       await plugin.onInstall();
     } catch (e) {
-      debugPrint('[PluginManager] onInstall error for $id: $e');
+      FrontendLogger.write('[PluginManager] onInstall error for $id: $e');
     }
     notifyListeners();
   }
@@ -151,7 +155,7 @@ class PluginManager extends ChangeNotifier {
       try {
         await plugin.onUninstall();
       } catch (e) {
-        debugPrint('[PluginManager] onUninstall error for $id: $e');
+        FrontendLogger.write('[PluginManager] onUninstall error for $id: $e');
       }
     }
     notifyListeners();
@@ -192,9 +196,13 @@ class PluginManager extends ChangeNotifier {
       customFilename: filename,
     );
 
-    final manifest = PluginStorageManager.instance.loadManifestFromDir(targetDir);
+    final manifest = PluginStorageManager.instance.loadManifestFromDir(
+      targetDir,
+    );
     if (manifest == null) {
-      throw const FormatException('Không thể đọc tệp manifest.json sau khi giải nén.');
+      throw const FormatException(
+        'Không thể đọc tệp manifest.json sau khi giải nén.',
+      );
     }
 
     final installed = InstalledPlugin(
@@ -228,7 +236,9 @@ class PluginManager extends ChangeNotifier {
             .toList();
         if (hlepFiles.isNotEmpty) {
           final target = hlepFiles.first;
-          final filename = target.uri.pathSegments.where((s) => s.isNotEmpty).last;
+          final filename = target.uri.pathSegments
+              .where((s) => s.isNotEmpty)
+              .last;
           return installPluginFromBytes(target.readAsBytesSync(), filename);
         }
 
@@ -236,7 +246,9 @@ class PluginManager extends ChangeNotifier {
         for (final d in subDirs) {
           final manifest = PluginStorageManager.instance.loadManifestFromDir(d);
           if (manifest != null) {
-            final segments = d.uri.pathSegments.where((s) => s.isNotEmpty).toList();
+            final segments = d.uri.pathSegments
+                .where((s) => s.isNotEmpty)
+                .toList();
             final dirname = segments.isNotEmpty ? segments.last : 'plugin';
             final installed = InstalledPlugin(
               manifest: manifest,
@@ -274,7 +286,9 @@ class PluginManager extends ChangeNotifier {
       await PluginStorageManager.instance.uninstall(id);
       await _persistInstalledIds();
     } catch (e) {
-      debugPrint('[PluginManager] Error during async uninstall for $id: $e');
+      FrontendLogger.write(
+        '[PluginManager] Error during async uninstall for $id: $e',
+      );
     }
   }
 
@@ -298,9 +312,14 @@ class PluginManager extends ChangeNotifier {
   Future<void> _persistInstalledIds() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(_kInstalledPluginsKey, _installedPluginIds.toList());
+      await prefs.setStringList(
+        _kInstalledPluginsKey,
+        _installedPluginIds.toList(),
+      );
     } catch (e) {
-      debugPrint('[PluginManager] Error persisting installed plugins: $e');
+      FrontendLogger.write(
+        '[PluginManager] Error persisting installed plugins: $e',
+      );
     }
   }
 }

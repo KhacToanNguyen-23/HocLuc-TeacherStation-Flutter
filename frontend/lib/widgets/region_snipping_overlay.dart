@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -336,7 +337,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
             }
           }
         } catch (e) {
-          debugPrint(
+          FrontendLogger.write(
             '[RegionSnippingOverlay] Page fallback span search error: $e',
           );
         }
@@ -680,7 +681,9 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         }
       }
     } catch (e) {
-      debugPrint('[RegionSnippingOverlay] Accurate PDF extraction error: $e');
+      FrontendLogger.write(
+        '[RegionSnippingOverlay] Accurate PDF extraction error: $e',
+      );
     }
     return null;
   }
@@ -800,7 +803,9 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         }
       }
     } catch (e) {
-      debugPrint('[RegionSnippingOverlay] Fallback extraction error: $e');
+      FrontendLogger.write(
+        '[RegionSnippingOverlay] Fallback extraction error: $e',
+      );
     }
     return null;
   }

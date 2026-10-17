@@ -11,6 +11,7 @@ import '../widgets/workspace/workspace_connection_panel.dart';
 import '../widgets/workspace/workspace_invite_dialog.dart';
 import '../widgets/workspace/workspace_schedule_dialog.dart';
 import '../widgets/workspace/workspace_course_detail.dart';
+import '../widgets/google_brand_icon.dart';
 
 class GoogleWorkspaceScreen extends StatefulWidget {
   const GoogleWorkspaceScreen({
@@ -89,12 +90,13 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
         }
       });
       final trackedPendingCourse = _courseById(_pendingClassroomCourseId);
-      if (trackedPendingCourse?['classroomState'] != 'PROVISIONED') {
+      if (trackedPendingCourse == null ||
+          !_needsClassroomSync(trackedPendingCourse)) {
         _pendingClassroomCourseId = null;
       }
       final selectedCourse = _courseById(_selected);
-      if (selectedCourse?['classroomState'] == 'PROVISIONED') {
-        _rememberPendingCourse(selectedCourse!);
+      if (selectedCourse != null && _needsClassroomSync(selectedCourse)) {
+        _rememberPendingCourse(selectedCourse);
       }
     } catch (e) {
       _handleError(e);
@@ -149,13 +151,21 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
   void _rememberPendingCourse(Map<String, dynamic> course) {
     final id = course['id'];
     if (id is! String) return;
-    if (course['classroomState'] == 'PROVISIONED' &&
-        course['courseId'] is String &&
-        (course['courseId'] as String).isNotEmpty) {
+    if (_needsClassroomSync(course)) {
       _pendingClassroomCourseId = id;
     } else if (_pendingClassroomCourseId == id) {
       _pendingClassroomCourseId = null;
     }
+  }
+
+  bool _needsClassroomSync(Map<String, dynamic> course) {
+    final courseId = course['courseId'];
+    if (courseId is! String || courseId.isEmpty) return false;
+    if (course['classroomState'] == 'PROVISIONED') return true;
+    final classroomSyncedAt = course['classroomSyncedAt'];
+    final hasClassroomSync =
+        classroomSyncedAt is String && classroomSyncedAt.isNotEmpty;
+    return course['classroomState'] == 'ACTIVE' && !hasClassroomSync;
   }
 
   @override
@@ -164,7 +174,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
     final courseId = _pendingClassroomCourseId;
     if (courseId == null || courseId != _selected) return;
     final course = _courseById(courseId);
-    if (course?['classroomState'] != 'PROVISIONED') return;
+    if (course == null || !_needsClassroomSync(course)) return;
     if (_syncingClassrooms.contains(courseId)) return;
     if (_busy) {
       _resumeRetryQueued = true;
@@ -179,7 +189,8 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
     final courseId = _pendingClassroomCourseId;
     if (courseId == null || courseId != _selected) return;
     final course = _courseById(courseId);
-    if (course?['classroomState'] != 'PROVISIONED' ||
+    if (course == null ||
+        !_needsClassroomSync(course) ||
         _syncingClassrooms.contains(courseId)) {
       return;
     }
@@ -518,9 +529,19 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Lớp học & kết nối Google',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: const Row(
+          children: [
+            GoogleBrandIcon(size: 20),
+            SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                'Lớp học & kết nối Google',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton.icon(
@@ -620,10 +641,12 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                                         final id = course['id'] as String;
                                         setState(() => _selected = id);
                                         final selectedCourse = _courseById(id);
-                                        if (selectedCourse?['classroomState'] ==
-                                            'PROVISIONED') {
+                                        if (selectedCourse != null &&
+                                            _needsClassroomSync(
+                                              selectedCourse,
+                                            )) {
                                           _rememberPendingCourse(
-                                            selectedCourse!,
+                                            selectedCourse,
                                           );
                                         }
                                       },

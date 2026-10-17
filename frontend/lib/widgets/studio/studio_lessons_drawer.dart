@@ -25,9 +25,7 @@ class StudioLessonsDrawer extends StatelessWidget {
     const line = AppColors.line;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-      ),
+      decoration: const BoxDecoration(color: Colors.white),
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         children: [

@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'google_workspace_api.dart';
@@ -21,29 +20,37 @@ class GoogleConnectionFlow {
     final authUrl = flow['authorizationUrl'] as String;
 
     // 1. In-app WebView2 Dialog on Windows Desktop (Zero external clicks)
-    if (context != null && !kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+    if (context != null &&
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.windows) {
       if (!context.mounted) throw StateError('Giao diện không còn khả dụng.');
       bool dialogClosed = false;
-      final dialogFuture = GoogleWebviewLoginDialog.show(
-        context,
-        initialUrl: authUrl,
-      ).then((val) {
-        dialogClosed = true;
-        return val;
-      });
+      final dialogFuture =
+          GoogleWebviewLoginDialog.show(context, initialUrl: authUrl).then((
+            val,
+          ) {
+            dialogClosed = true;
+            return val;
+          });
 
       // Poll until backend receives callback or dialog is dismissed
-      while (isActive() && !dialogClosed && DateTime.now().millisecondsSinceEpoch < (flow['expiresAt'] as num)) {
+      while (isActive() &&
+          !dialogClosed &&
+          DateTime.now().millisecondsSinceEpoch < (flow['expiresAt'] as num)) {
         await Future<void>.delayed(const Duration(milliseconds: 1000));
         if (!isActive() || dialogClosed) break;
         try {
-          final result = await api.call('poll', post: true, body: {
-            'state': flow['state'],
-            'pollToken': flow['pollToken'],
-          });
+          final result = await api.call(
+            'poll',
+            post: true,
+            body: {'state': flow['state'], 'pollToken': flow['pollToken']},
+          );
           if (result['status'] == 'COMPLETE') {
             if (!dialogClosed && context.mounted) {
-              Navigator.of(context, rootNavigator: true).pop(result['email'] as String);
+              Navigator.of(
+                context,
+                rootNavigator: true,
+              ).pop(result['email'] as String);
             }
             return result['email'] as String;
           }
@@ -54,10 +61,11 @@ class GoogleConnectionFlow {
 
       // Final check: poll one more time in case dialog completed right as callback arrived
       try {
-        final result = await api.call('poll', post: true, body: {
-          'state': flow['state'],
-          'pollToken': flow['pollToken'],
-        });
+        final result = await api.call(
+          'poll',
+          post: true,
+          body: {'state': flow['state'], 'pollToken': flow['pollToken']},
+        );
         if (result['status'] == 'COMPLETE') {
           return result['email'] as String;
         }
@@ -68,13 +76,15 @@ class GoogleConnectionFlow {
 
     // 2. Fallback to System Browser (Web or other platforms)
     await openExternalUrl(authUrl);
-    while (isActive() && DateTime.now().millisecondsSinceEpoch < (flow['expiresAt'] as num)) {
+    while (isActive() &&
+        DateTime.now().millisecondsSinceEpoch < (flow['expiresAt'] as num)) {
       await Future<void>.delayed(const Duration(seconds: 2));
       if (!isActive()) break;
-      final result = await api.call('poll', post: true, body: {
-        'state': flow['state'],
-        'pollToken': flow['pollToken'],
-      });
+      final result = await api.call(
+        'poll',
+        post: true,
+        body: {'state': flow['state'], 'pollToken': flow['pollToken']},
+      );
       if (result['status'] == 'COMPLETE') return result['email'] as String;
     }
     throw StateError('Phiên kết nối đã kết thúc. Vui lòng thử lại.');

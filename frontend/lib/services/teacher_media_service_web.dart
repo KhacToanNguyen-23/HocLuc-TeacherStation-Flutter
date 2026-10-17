@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';
@@ -67,7 +68,8 @@ class TeacherMediaService extends ChangeNotifier {
           .toDart;
       _stream = stream;
 
-      _videoElement = web.document.createElement('video') as web.HTMLVideoElement;
+      _videoElement =
+          web.document.createElement('video') as web.HTMLVideoElement;
       _videoElement!
         ..srcObject = stream
         ..autoplay = true
@@ -92,7 +94,7 @@ class TeacherMediaService extends ChangeNotifier {
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('[TeacherMediaService] initMedia error: $e');
+      FrontendLogger.write('[TeacherMediaService] initMedia error: $e');
       _errorMessage = e.toString();
       _isInitialized = true;
       notifyListeners();
@@ -128,7 +130,9 @@ class TeacherMediaService extends ChangeNotifier {
         notifyListeners();
       });
     } catch (err) {
-      debugPrint('[TeacherMediaService] setupAudioAnalyser err: $err');
+      FrontendLogger.write(
+        '[TeacherMediaService] setupAudioAnalyser err: $err',
+      );
     }
   }
 
@@ -165,11 +169,7 @@ class TeacherMediaService extends ChangeNotifier {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.videocam_off_rounded,
-                size: 36,
-                color: Colors.white38,
-              ),
+              Icon(Icons.videocam_off_rounded, size: 36, color: Colors.white38),
               SizedBox(height: 6),
               Text(
                 'Camera đã tắt',
@@ -197,10 +197,7 @@ class TeacherMediaService extends ChangeNotifier {
               decoration: BoxDecoration(
                 color: const Color(0x33d4e8a6),
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0x55d4e8a6),
-                  width: 1.5,
-                ),
+                border: Border.all(color: const Color(0x55d4e8a6), width: 1.5),
               ),
               child: const Center(
                 child: Text(

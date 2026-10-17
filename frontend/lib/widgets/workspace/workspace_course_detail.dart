@@ -105,8 +105,8 @@ class WorkspaceCourseDetail extends StatelessWidget {
           error: true,
         );
       }
-      if (course['syncedAt'] is String &&
-          (course['syncedAt'] as String).isNotEmpty) {
+      if (course['classroomSyncedAt'] is String &&
+          (course['classroomSyncedAt'] as String).isNotEmpty) {
         return (message: 'Đã đồng bộ thành viên từ Classroom.', error: false);
       }
       return (
@@ -240,9 +240,9 @@ class WorkspaceCourseDetail extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                course['syncedAt'] == null
+                course['classroomSyncedAt'] == null
                     ? 'Chưa đồng bộ thành viên.'
-                    : 'Đồng bộ gần nhất: ${_date(course['syncedAt'] as String)}',
+                    : 'Đồng bộ gần nhất: ${_date(course['classroomSyncedAt'] as String)}',
                 style: const TextStyle(color: AppColors.textMuted),
               ),
               if (classroomStatus != null) ...[

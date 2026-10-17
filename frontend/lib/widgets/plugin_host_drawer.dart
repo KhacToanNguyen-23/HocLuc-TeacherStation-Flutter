@@ -169,7 +169,9 @@ class PluginHostDrawer extends StatelessWidget {
 
     final port = ProcessSupervisor.instance.getPort(plugin.manifest.id);
     if (port != null) {
-      targetUrl = targetUrl.contains('?') ? '$targetUrl&port=$port' : '$targetUrl?port=$port';
+      targetUrl = targetUrl.contains('?')
+          ? '$targetUrl&port=$port'
+          : '$targetUrl?port=$port';
     }
 
     void Function(String)? executeJs;

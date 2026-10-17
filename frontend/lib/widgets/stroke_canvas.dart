@@ -269,10 +269,14 @@ class CommittedStrokesPainter extends CustomPainter {
         ..color = stroke.isHollow
             ? stroke.color.withValues(alpha: 0.95)
             : (isHighlight
-                ? stroke.color.withValues(alpha: stroke.rect != null ? 0.38 : 0.35)
-                : stroke.color)
+                  ? stroke.color.withValues(
+                      alpha: stroke.rect != null ? 0.38 : 0.35,
+                    )
+                  : stroke.color)
         ..style = stroke.isHollow ? PaintingStyle.stroke : PaintingStyle.fill
-        ..strokeWidth = stroke.isHollow ? (stroke.width <= 3.0 ? stroke.width : 1.6) : stroke.width;
+        ..strokeWidth = stroke.isHollow
+            ? (stroke.width <= 3.0 ? stroke.width : 1.6)
+            : stroke.width;
 
       final path = stroke.getPath(size);
       canvas.drawPath(path, paint);

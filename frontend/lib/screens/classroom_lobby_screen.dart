@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -88,7 +89,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
 
     _mediaService.initMedia();
     _startSimulatedMicMeter();
-
   }
 
   @override
@@ -114,22 +114,6 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     });
   }
 
-  Future<void> _syncClassroomToBackend(String meetingUrl) async {
-    try {
-      final local = LocalService();
-      await local.post(
-        'classroom/create',
-        data: {
-          'directUrl': meetingUrl,
-          'title': _titleController.text.trim(),
-          'teacherName': _authService.teacherName ?? 'Giáo viên',
-          'teacherEmail': _authService.teacherEmail,
-        },
-      );
-    } catch (e) {
-      debugPrint('[ClassroomLobby] Sync classroom to backend error: $e');
-    }
-  }
 
   void _copyMeetingLink() {
     if (_currentMeetingUrl == null) return;
@@ -170,7 +154,9 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
       final local = LocalService();
       await local.endClassroom();
     } catch (e) {
-      debugPrint('[ClassroomLobby] Error ending classroom on cancel: $e');
+      FrontendLogger.write(
+        '[ClassroomLobby] Error ending classroom on cancel: $e',
+      );
     }
     await _meetService.leaveClassroom();
     if (mounted) {
@@ -205,7 +191,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
         }
       }
     } catch (e) {
-      debugPrint('[ClassroomLobby] Error creating real meet: $e');
+      FrontendLogger.write('[ClassroomLobby] Error creating real meet: $e');
     } finally {
       if (mounted) setState(() => _isCreatingMeet = false);
     }
@@ -392,10 +378,22 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
 
   void _proceedToStudio({String? meetingUrl}) {
     if (meetingUrl == null) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => StudioScreen(lessonTitle: _titleController.text.trim())));
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) =>
+              StudioScreen(lessonTitle: _titleController.text.trim()),
+        ),
+      );
       return;
     }
-    TeachingLauncher.open(context, TeachingTarget(title: _titleController.text.trim(), meetingUrl: meetingUrl), localService: widget.localService);
+    TeachingLauncher.open(
+      context,
+      TeachingTarget(
+        title: _titleController.text.trim(),
+        meetingUrl: meetingUrl,
+      ),
+      localService: widget.localService,
+    );
   }
 
   @override

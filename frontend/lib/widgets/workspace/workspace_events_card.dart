@@ -3,10 +3,7 @@ import '../../constants/theme.dart';
 import '../../services/url_opener.dart';
 
 class WorkspaceEventsCard extends StatelessWidget {
-  const WorkspaceEventsCard({
-    super.key,
-    required this.events,
-  });
+  const WorkspaceEventsCard({super.key, required this.events});
 
   final List<Map<String, dynamic>> events;
 

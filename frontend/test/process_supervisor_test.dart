@@ -37,37 +37,40 @@ void main() {
       expect(res['data']['appVersion'], equals('2.0.0'));
     });
 
-    test('storage:set and storage:get persists key-values per plugin', () async {
-      final studio = StudioState();
-      final manifest = PluginManifest(
-        id: 'com.hocluc.test',
-        name: 'Test Plugin',
-      );
+    test(
+      'storage:set and storage:get persists key-values per plugin',
+      () async {
+        final studio = StudioState();
+        final manifest = PluginManifest(
+          id: 'com.hocluc.test',
+          name: 'Test Plugin',
+        );
 
-      await HostBridge.instance.handleMessage(
-        rawMessage: {
-          'id': 'set_1',
-          'action': 'storage:set',
-          'payload': {'key': 'theme', 'value': 'dark_emerald'}
-        },
-        studio: studio,
-        manifest: manifest,
-        executeJs: null,
-      );
+        await HostBridge.instance.handleMessage(
+          rawMessage: {
+            'id': 'set_1',
+            'action': 'storage:set',
+            'payload': {'key': 'theme', 'value': 'dark_emerald'},
+          },
+          studio: studio,
+          manifest: manifest,
+          executeJs: null,
+        );
 
-      final getRes = await HostBridge.instance.handleMessage(
-        rawMessage: {
-          'id': 'get_1',
-          'action': 'storage:get',
-          'payload': {'key': 'theme'}
-        },
-        studio: studio,
-        manifest: manifest,
-        executeJs: null,
-      );
+        final getRes = await HostBridge.instance.handleMessage(
+          rawMessage: {
+            'id': 'get_1',
+            'action': 'storage:get',
+            'payload': {'key': 'theme'},
+          },
+          studio: studio,
+          manifest: manifest,
+          executeJs: null,
+        );
 
-      expect(getRes['success'], isTrue);
-      expect(getRes['data']['value'], equals('dark_emerald'));
-    });
+        expect(getRes['success'], isTrue);
+        expect(getRes['data']['value'], equals('dark_emerald'));
+      },
+    );
   });
 }

@@ -31,34 +31,45 @@ void main() {
       expect(root.path, equals(tempTestDir.path));
     });
 
-    test('installFromZip extracts archive to disk and parses manifest', () async {
-      final archive = Archive();
-      final manifestJson = jsonEncode({
-        'id': 'com.hocluc.test.math',
-        'name': 'Math Tool',
-        'version': '1.0.0',
-        'main': 'ui/index.html',
-      });
+    test(
+      'installFromZip extracts archive to disk and parses manifest',
+      () async {
+        final archive = Archive();
+        final manifestJson = jsonEncode({
+          'id': 'com.hocluc.test.math',
+          'name': 'Math Tool',
+          'version': '1.0.0',
+          'main': 'ui/index.html',
+        });
 
-      archive.addFile(
-        ArchiveFile('manifest.json', manifestJson.length, utf8.encode(manifestJson)),
-      );
-      archive.addFile(
-        ArchiveFile('ui/index.html', 12, utf8.encode('<h1>Math</h1>')),
-      );
+        archive.addFile(
+          ArchiveFile(
+            'manifest.json',
+            manifestJson.length,
+            utf8.encode(manifestJson),
+          ),
+        );
+        archive.addFile(
+          ArchiveFile('ui/index.html', 12, utf8.encode('<h1>Math</h1>')),
+        );
 
-      final zipBytes = ZipEncoder().encode(archive);
-      final installedDir = await PluginStorageManager.instance.installFromZip(zipBytes);
+        final zipBytes = ZipEncoder().encode(archive);
+        final installedDir = await PluginStorageManager.instance.installFromZip(
+          zipBytes,
+        );
 
-      expect(installedDir.existsSync(), isTrue);
-      expect(File('${installedDir.path}/manifest.json').existsSync(), isTrue);
-      expect(File('${installedDir.path}/ui/index.html').existsSync(), isTrue);
+        expect(installedDir.existsSync(), isTrue);
+        expect(File('${installedDir.path}/manifest.json').existsSync(), isTrue);
+        expect(File('${installedDir.path}/ui/index.html').existsSync(), isTrue);
 
-      final manifest = PluginStorageManager.instance.loadManifestFromDir(installedDir);
-      expect(manifest, isNotNull);
-      expect(manifest!.id, equals('com.hocluc.test.math'));
-      expect(manifest.name, equals('Math Tool'));
-    });
+        final manifest = PluginStorageManager.instance.loadManifestFromDir(
+          installedDir,
+        );
+        expect(manifest, isNotNull);
+        expect(manifest!.id, equals('com.hocluc.test.math'));
+        expect(manifest.name, equals('Math Tool'));
+      },
+    );
 
     test('uninstall removes plugin directory from disk', () async {
       final archive = Archive();
@@ -68,43 +79,65 @@ void main() {
         'version': '1.0.0',
       });
       archive.addFile(
-        ArchiveFile('manifest.json', manifestJson.length, utf8.encode(manifestJson)),
+        ArchiveFile(
+          'manifest.json',
+          manifestJson.length,
+          utf8.encode(manifestJson),
+        ),
       );
       final zipBytes = ZipEncoder().encode(archive);
-      final installedDir = await PluginStorageManager.instance.installFromZip(zipBytes);
+      final installedDir = await PluginStorageManager.instance.installFromZip(
+        zipBytes,
+      );
       expect(installedDir.existsSync(), isTrue);
 
       await PluginStorageManager.instance.uninstall('com.hocluc.test.remove');
       expect(installedDir.existsSync(), isFalse);
     });
 
-    test('PluginManager installPluginFromBytes installs and reads files from disk', () async {
-      final archive = Archive();
-      final manifestJson = jsonEncode({
-        'id': 'com.hocluc.test.reader',
-        'name': 'Reader',
-        'version': '2.0.0',
-        'main': 'ui/index.html',
-      });
-      archive.addFile(
-        ArchiveFile('manifest.json', manifestJson.length, utf8.encode(manifestJson)),
-      );
-      archive.addFile(
-        ArchiveFile('ui/index.html', 15, utf8.encode('<html>Read</html>')),
-      );
-      final zipBytes = ZipEncoder().encode(archive);
+    test(
+      'PluginManager installPluginFromBytes installs and reads files from disk',
+      () async {
+        final archive = Archive();
+        final manifestJson = jsonEncode({
+          'id': 'com.hocluc.test.reader',
+          'name': 'Reader',
+          'version': '2.0.0',
+          'main': 'ui/index.html',
+        });
+        archive.addFile(
+          ArchiveFile(
+            'manifest.json',
+            manifestJson.length,
+            utf8.encode(manifestJson),
+          ),
+        );
+        archive.addFile(
+          ArchiveFile('ui/index.html', 15, utf8.encode('<html>Read</html>')),
+        );
+        final zipBytes = ZipEncoder().encode(archive);
 
-      final plugin = await PluginManager.instance.installPluginFromBytes(
-        zipBytes,
-        'reader.hlep',
-      );
+        final plugin = await PluginManager.instance.installPluginFromBytes(
+          zipBytes,
+          'reader.hlep',
+        );
 
-      expect(plugin.id, equals('com.hocluc.test.reader'));
-      expect(PluginManager.instance.isInstalled('com.hocluc.test.reader'), isTrue);
-      expect(plugin.getFileString('ui/index.html'), equals('<html>Read</html>'));
+        expect(plugin.id, equals('com.hocluc.test.reader'));
+        expect(
+          PluginManager.instance.isInstalled('com.hocluc.test.reader'),
+          isTrue,
+        );
+        expect(
+          plugin.getFileString('ui/index.html'),
+          equals('<html>Read</html>'),
+        );
 
-      await PluginManager.instance.uninstallPlugin('com.hocluc.test.reader');
-      expect(PluginManager.instance.isInstalled('com.hocluc.test.reader'), isFalse);
-    });
+        await PluginManager.instance.uninstallPlugin('com.hocluc.test.reader');
+        expect(
+          PluginManager.instance.isInstalled('com.hocluc.test.reader'),
+          isFalse,
+        );
+      },
+    );
   });
 }

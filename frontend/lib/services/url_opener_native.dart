@@ -1,5 +1,5 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 
 Future<void> openExternalUrl(String url) async {
   try {
@@ -14,7 +14,9 @@ Future<void> openExternalUrl(String url) async {
       }
     }
   } catch (e) {
-    debugPrint('[UrlOpenerNative] Failed to open external URL "$url": $e');
+    FrontendLogger.write(
+      '[UrlOpenerNative] Failed to open external URL | cause=${e.runtimeType}',
+    );
     rethrow;
   }
 }
