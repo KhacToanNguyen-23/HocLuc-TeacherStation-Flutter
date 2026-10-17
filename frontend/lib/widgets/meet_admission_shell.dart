@@ -174,10 +174,12 @@ class _MeetAdmissionShellState extends State<MeetAdmissionShell> {
                           autofocus: true,
                           child: Material(
                             key: const Key('meet-admission-popup'),
-                            color: Colors.white,
-                            elevation: 12,
-                            shadowColor: Colors.black26,
-                            borderRadius: BorderRadius.circular(16),
+                            color: AppColors.surface,
+                            elevation: 4,
+                            shadowColor: AppColors.textPrimary.withValues(
+                              alpha: .12,
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadii.panel),
                             clipBehavior: Clip.antiAlias,
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
@@ -203,7 +205,7 @@ class _MeetAdmissionShellState extends State<MeetAdmissionShell> {
                                                 : 'Yêu cầu vào lớp ($pending)',
                                             style: const TextStyle(
                                               fontSize: 16,
-                                              fontWeight: FontWeight.w800,
+                                              fontWeight: FontWeight.w700,
                                             ),
                                           ),
                                         ),
@@ -252,9 +254,9 @@ class _MeetAdmissionShellState extends State<MeetAdmissionShell> {
                                                   children: [
                                                     const CircleAvatar(
                                                       backgroundColor:
-                                                          AppColors.sky50,
+                                                          AppColors.selected,
                                                       foregroundColor:
-                                                          AppColors.sky700,
+                                                          AppColors.primary,
                                                       child: Icon(
                                                         Icons
                                                             .person_outline_rounded,
@@ -285,7 +287,7 @@ class _MeetAdmissionShellState extends State<MeetAdmissionShell> {
                                                               style: const TextStyle(
                                                                 fontSize: 12,
                                                                 color: AppColors
-                                                                    .slate600,
+                                                                    .textSecondary,
                                                               ),
                                                             ),
                                                           const SizedBox(
@@ -310,9 +312,9 @@ class _MeetAdmissionShellState extends State<MeetAdmissionShell> {
                                                                       ) ==
                                                                       null
                                                                   ? AppColors
-                                                                        .slate600
+                                                                        .textSecondary
                                                                   : AppColors
-                                                                        .rose600,
+                                                                        .error,
                                                             ),
                                                           ),
                                                         ],
@@ -326,7 +328,8 @@ class _MeetAdmissionShellState extends State<MeetAdmissionShell> {
                                               Text(
                                                 '${service.unknownAdmissionCount} yêu cầu chưa đọc được tên tài khoản. Kiểm tra Meet trong app để duyệt.',
                                                 style: const TextStyle(
-                                                  color: AppColors.slate600,
+                                                  color:
+                                                      AppColors.textSecondary,
                                                   fontSize: 13,
                                                 ),
                                               ),
@@ -346,7 +349,6 @@ class _MeetAdmissionShellState extends State<MeetAdmissionShell> {
                                               'meet-admission-approve-all',
                                             ),
                                             style: FilledButton.styleFrom(
-                                              backgroundColor: AppColors.sky700,
                                               minimumSize: const Size(44, 48),
                                             ),
                                             onPressed:

@@ -36,17 +36,25 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
             margin: const EdgeInsets.fromLTRB(10, 2, 10, 2),
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              color: const Color(0xee0e1813),
+              color: AppColors.overlaySurface,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0x22ffffff)),
+              border: Border.all(color: AppColors.overlayBorder),
             ),
             child: Row(
               children: [
-                const Icon(Icons.groups_rounded, size: 13, color: AppColors.lime),
+                const Icon(
+                  Icons.groups_rounded,
+                  size: 13,
+                  color: AppColors.overlayAccent,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Học sinh trực tuyến: ${participants.length}',
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lime),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.overlayAccent,
+                  ),
                 ),
                 const Spacer(),
                 InkWell(
@@ -56,9 +64,19 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     child: Row(
                       children: [
-                        Text('Mở dải học sinh', style: TextStyle(fontSize: 9.5, color: Color(0xffa5b5a8))),
+                        Text(
+                          'Mở dải học sinh',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            color: AppColors.overlayMuted,
+                          ),
+                        ),
                         SizedBox(width: 2),
-                        Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: Color(0xffa5b5a8)),
+                        Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 14,
+                          color: AppColors.overlayMuted,
+                        ),
                       ],
                     ),
                   ),
@@ -73,13 +91,13 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
           margin: const EdgeInsets.fromLTRB(10, 4, 10, 4),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xf40e1914),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0x28ffffff)),
+            color: AppColors.overlaySurface,
+            borderRadius: BorderRadius.circular(AppRadii.control),
+            border: Border.all(color: AppColors.overlayBorder),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x55000000),
-                blurRadius: 10,
+                blurRadius: 8,
                 offset: Offset(0, 2),
               ),
             ],
@@ -91,7 +109,10 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                 onTap: widget.onOpenStudentsDrawer,
                 borderRadius: BorderRadius.circular(6),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -103,7 +124,7 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                             height: 6,
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.emerald500,
+                              color: AppColors.success,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -111,8 +132,8 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                             'LỚP (${participants.length})',
                             style: const TextStyle(
                               fontSize: 9.5,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.lime,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.overlayAccent,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -121,13 +142,20 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                       const SizedBox(height: 2),
                       const Text(
                         'Chi tiết →',
-                        style: TextStyle(fontSize: 8.5, color: Color(0xff8a9a8d)),
+                        style: TextStyle(
+                          fontSize: 8.5,
+                          color: AppColors.overlayMuted,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const VerticalDivider(width: 14, thickness: 1, color: Color(0x22ffffff)),
+              const VerticalDivider(
+                width: 14,
+                thickness: 1,
+                color: AppColors.overlayBorder,
+              ),
 
               // Scrollable Cards of Participants
               Expanded(
@@ -144,12 +172,19 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                     : const Center(
                         child: Text(
                           'Đang đợi học sinh tham gia qua Google Meet link...',
-                          style: TextStyle(fontSize: 11, color: Color(0xff6e7e72)),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.overlayMuted,
+                          ),
                         ),
                       ),
               ),
 
-              const VerticalDivider(width: 14, thickness: 1, color: Color(0x22ffffff)),
+              const VerticalDivider(
+                width: 14,
+                thickness: 1,
+                color: AppColors.overlayBorder,
+              ),
               // Collapse button
               Tooltip(
                 message: 'Thu gọn dải học sinh (mở rộng bảng)',
@@ -158,7 +193,11 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                   borderRadius: BorderRadius.circular(6),
                   child: const Padding(
                     padding: EdgeInsets.all(6),
-                    child: Icon(Icons.keyboard_arrow_up_rounded, size: 16, color: Color(0xffa5b5a8)),
+                    child: Icon(
+                      Icons.keyboard_arrow_up_rounded,
+                      size: 16,
+                      color: AppColors.overlayMuted,
+                    ),
                   ),
                 ),
               ),
@@ -175,25 +214,21 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
         : 'H';
 
     return Tooltip(
-      message: '${p.name}\n${p.isMuted ? "Đã tắt mic" : "Đang bật mic"}${p.isHandRaised ? " • Đang giơ tay" : ""}',
+      message:
+          '${p.name}\n${p.isMuted ? "Đã tắt mic" : "Đang bật mic"}${p.isHandRaised ? " • Đang giơ tay" : ""}',
       child: InkWell(
         onTap: () => widget.meetService.toggleMuteParticipant(p.id),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.control),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: AppMotion.duration(context, milliseconds: 200),
+          curve: AppMotion.stateCurve,
           width: 104,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
-            color: p.isSpeaking ? const Color(0x2e22c55e) : const Color(0x18ffffff),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: p.isSpeaking
-                  ? AppColors.emerald500
-                  : p.isHandRaised
-                  ? const Color(0xfff97316)
-                  : const Color(0x24ffffff),
-              width: p.isSpeaking || p.isHandRaised ? 1.5 : 1.0,
-            ),
+            color: p.isSpeaking
+                ? AppColors.overlaySelected
+                : AppColors.overlayRaised,
+            borderRadius: BorderRadius.circular(AppRadii.control),
           ),
           child: Row(
             children: [
@@ -203,12 +238,14 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                 children: [
                   CircleAvatar(
                     radius: 14,
-                    backgroundColor: p.isSpeaking ? AppColors.emerald600 : const Color(0xff2d4c3d),
+                    backgroundColor: p.isSpeaking
+                        ? AppColors.success
+                        : AppColors.overlaySelected,
                     child: Text(
                       initials,
                       style: const TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),
@@ -246,8 +283,12 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight: p.isSpeaking ? FontWeight.w700 : FontWeight.w600,
-                        color: p.isSpeaking ? Colors.white : const Color(0xffdbe5de),
+                        fontWeight: p.isSpeaking
+                            ? FontWeight.w700
+                            : FontWeight.w600,
+                        color: p.isSpeaking
+                            ? Colors.white
+                            : AppColors.overlayText,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -256,13 +297,19 @@ class _StudioStudentStripState extends State<StudioStudentStrip> {
                         Icon(
                           p.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
                           size: 11,
-                          color: p.isMuted ? AppColors.rose500 : AppColors.emerald500,
+                          color: p.isMuted
+                              ? AppColors.rose100
+                              : AppColors.emerald100,
                         ),
                         const SizedBox(width: 4),
                         Icon(
-                          p.isCameraOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+                          p.isCameraOn
+                              ? Icons.videocam_rounded
+                              : Icons.videocam_off_rounded,
                           size: 11,
-                          color: p.isCameraOn ? const Color(0xff94a3b8) : AppColors.rose500,
+                          color: p.isCameraOn
+                              ? AppColors.overlayMuted
+                              : AppColors.rose100,
                         ),
                       ],
                     ),

@@ -20,16 +20,17 @@ class StudioNotesSettingsTab extends StatelessWidget {
   final VoidCallback onPreview;
 
   static Widget _sectionLabel(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 10,
-          letterSpacing: 1.2,
-          fontWeight: FontWeight.w700,
-          color: AppColors.muted,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 10,
+      letterSpacing: 1.2,
+      fontWeight: FontWeight.w700,
+      color: AppColors.muted,
+    ),
+  );
 
-  static Widget _statusLine(IconData icon, String text, String status) => Padding(
+  static Widget _statusLine(IconData icon, String text, String status) =>
+      Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
@@ -38,7 +39,11 @@ class StudioNotesSettingsTab extends StatelessWidget {
             Expanded(child: Text(text, style: const TextStyle(fontSize: 11))),
             Text(
               status,
-              style: const TextStyle(fontSize: 10, color: Color(0xff16a34a), fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.success,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -75,17 +80,27 @@ class StudioNotesSettingsTab extends StatelessWidget {
             children: [
               const Icon(Icons.videocam_off_outlined, size: 24, color: muted),
               const SizedBox(height: 7),
-              const Text('Khung trình bày bảng vẽ', style: TextStyle(fontSize: 12)),
+              const Text(
+                'Khung trình bày bảng vẽ',
+                style: TextStyle(fontSize: 12),
+              ),
               const SizedBox(height: 4),
               TextButton(
                 onPressed: onPreview,
-                child: const Text('Xem khung trình bày →', style: TextStyle(fontSize: 11)),
+                child: const Text(
+                  'Xem khung trình bày →',
+                  style: TextStyle(fontSize: 11),
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        _statusLine(Icons.videocam_outlined, 'Camera bảng vẽ', '1080p WGC Sẵn sàng'),
+        _statusLine(
+          Icons.videocam_outlined,
+          'Camera bảng vẽ',
+          '1080p WGC Sẵn sàng',
+        ),
         _statusLine(Icons.mic_none_outlined, 'Micro thu âm', 'Theo thiết bị'),
         const SizedBox(height: 16),
         const Divider(color: line),

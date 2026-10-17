@@ -2,6 +2,9 @@ package vn.teaching.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Service;
 import vn.teaching.model.AuthResponse;
 
@@ -124,8 +127,30 @@ public class AuthService {
     }
 
     private final vn.teaching.exam.ExamAuth sharedAuth;
+    private final boolean devLoginEnabled;
+    private final String devLoginEmail;
+    private final String devLoginPassword;
+    private final Environment environment;
 
-    public AuthService(vn.teaching.exam.ExamAuth sharedAuth) { this.sharedAuth=sharedAuth; }
+    public AuthService(vn.teaching.exam.ExamAuth sharedAuth,
+                       Environment environment,
+                       @Value("${app.auth.dev-login.enabled:false}") boolean devLoginEnabled,
+                       @Value("${exam.admin.email:}") String devLoginEmail,
+                       @Value("${exam.admin.password:}") String devLoginPassword) {
+        this.sharedAuth=sharedAuth;
+        this.environment=environment;
+        this.devLoginEnabled=devLoginEnabled;
+        this.devLoginEmail=devLoginEmail;
+        this.devLoginPassword=devLoginPassword;
+    }
+
+    public AuthResponse devLogin() {
+        if (!environment.acceptsProfiles(Profiles.of("dev & !prod")) || !devLoginEnabled || devLoginEmail.isBlank()) {
+            return AuthResponse.error("Đăng nhập dev chưa được bật ở môi trường này.");
+        }
+        try { return sharedResponse(sharedAuth.login(devLoginEmail, devLoginPassword), devLoginEmail); }
+        catch (vn.teaching.exam.ExamException e) { return AuthResponse.error(e.getMessage()); }
+    }
 
     private String accountEmail(String target) {
         String clean=target.trim().toLowerCase(java.util.Locale.ROOT);

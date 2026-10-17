@@ -57,25 +57,25 @@ class StudioTopBar extends StatelessWidget {
         message: studio.error ?? 'Chưa kết nối Java. Bấm để thử lại.',
         child: InkWell(
           onTap: studio.loading ? null : onRetryConnect,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadii.control),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xffffeed9),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xffffcc80)),
+              color: AppColors.warningSurface,
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              border: Border.all(color: AppColors.warning),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.wifi_off, size: 11, color: Color(0xffe65100)),
+                Icon(Icons.wifi_off, size: 11, color: AppColors.warning),
                 SizedBox(width: 4),
                 Text(
                   'Thử lại',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xffe65100),
+                    color: AppColors.warning,
                   ),
                 ),
               ],
@@ -89,9 +89,8 @@ class StudioTopBar extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFBFDBFE)),
+          color: AppColors.sky50,
+          borderRadius: BorderRadius.circular(AppRadii.control),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
@@ -101,7 +100,7 @@ class StudioTopBar extends StatelessWidget {
               height: 7,
               child: CircularProgressIndicator(
                 strokeWidth: 1.5,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
               ),
             ),
             SizedBox(width: 4),
@@ -110,7 +109,7 @@ class StudioTopBar extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1D4ED8),
+                color: AppColors.primaryHover,
               ),
             ),
           ],
@@ -124,9 +123,8 @@ class StudioTopBar extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(
-            color: const Color(0xFFF0FDF4),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFBBF7D0)),
+            color: AppColors.successSurface,
+            borderRadius: BorderRadius.circular(AppRadii.control),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -134,7 +132,7 @@ class StudioTopBar extends StatelessWidget {
               const Icon(
                 Icons.check_circle_rounded,
                 size: 11,
-                color: Color(0xFF16A34A),
+                color: AppColors.success,
               ),
               const SizedBox(width: 4),
               Text(
@@ -142,7 +140,7 @@ class StudioTopBar extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF15803D),
+                  color: AppColors.success,
                 ),
               ),
             ],
@@ -156,25 +154,24 @@ class StudioTopBar extends StatelessWidget {
       message: 'Có thay đổi chưa lưu. Bấm để lưu (Ctrl+S)',
       child: InkWell(
         onTap: onSave,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.control),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(
-            color: const Color(0xfffff7ed),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xfffed7aa)),
+            color: AppColors.warningSurface,
+            borderRadius: BorderRadius.circular(AppRadii.control),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.circle, size: 6, color: Color(0xffea580c)),
+              Icon(Icons.circle, size: 6, color: AppColors.warning),
               SizedBox(width: 4),
               Text(
                 'Chưa lưu',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xffc2410c),
+                  color: AppColors.warning,
                 ),
               ),
             ],
@@ -204,6 +201,7 @@ class StudioTopBar extends StatelessWidget {
           // ==================== CỤM BÊN TRÁI (GIÓNG SÁT LỀ TRÁI) ====================
           Expanded(
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 1. Logo
@@ -211,12 +209,12 @@ class StudioTopBar extends StatelessWidget {
                   width: 30,
                   height: 30,
                   decoration: BoxDecoration(
-                    color: AppColors.sky600,
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
                   child: const Center(
                     child: Text(
-                      'm',
+                      'H',
                       style: TextStyle(
                         fontFamily: 'Literata',
                         fontSize: 18,
@@ -292,9 +290,8 @@ class StudioTopBar extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0FDF4),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                      color: AppColors.selected,
+                      borderRadius: BorderRadius.circular(AppRadii.control),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -302,7 +299,7 @@ class StudioTopBar extends StatelessWidget {
                         Icon(
                           Icons.edit_calendar_rounded,
                           size: 13,
-                          color: Color(0xFF16A34A),
+                          color: AppColors.onSelected,
                         ),
                         SizedBox(width: 5),
                         Text(
@@ -310,7 +307,7 @@ class StudioTopBar extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF15803D),
+                            color: AppColors.onSelected,
                           ),
                         ),
                       ],
@@ -326,9 +323,8 @@ class StudioTopBar extends StatelessWidget {
                       return Container(
                         padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xffeff6ff),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xffbfdbfe)),
+                          color: AppColors.sky50,
+                          borderRadius: BorderRadius.circular(AppRadii.control),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -336,7 +332,7 @@ class StudioTopBar extends StatelessWidget {
                             const Icon(
                               Icons.link_rounded,
                               size: 15,
-                              color: Color(0xFF2563EB),
+                              color: AppColors.primary,
                             ),
                             const SizedBox(width: 5),
                             ConstrainedBox(
@@ -347,7 +343,7 @@ class StudioTopBar extends StatelessWidget {
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1D4ED8),
+                                  color: AppColors.primaryHover,
                                 ),
                               ),
                             ),
@@ -373,7 +369,7 @@ class StudioTopBar extends StatelessWidget {
                                   child: Icon(
                                     Icons.copy_rounded,
                                     size: 14,
-                                    color: Color(0xFF2563EB),
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -389,7 +385,7 @@ class StudioTopBar extends StatelessWidget {
                                   child: Icon(
                                     Icons.open_in_new_rounded,
                                     size: 14,
-                                    color: Color(0xFF2563EB),
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -408,8 +404,139 @@ class StudioTopBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (studio.view != 'board') const MeetAdmissionButton(),
+              ...[
+                IconButton(
+                  tooltip: 'Bảng giảng',
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: () => studio.setView('board'),
+                  style: IconButton.styleFrom(
+                    backgroundColor: studio.view == 'board'
+                        ? AppColors.selected
+                        : Colors.transparent,
+                  ),
+                  icon: Icon(
+                    Icons.dashboard_outlined,
+                    color: studio.view == 'board' ? pine : muted,
+                  ),
+                ),
+                const SizedBox(width: 3),
+                IconButton(
+                  tooltip: 'Câu hỏi',
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: () => studio.setView(
+                    studio.view == 'question' ? 'board' : 'question',
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: studio.view == 'question'
+                        ? AppColors.selected
+                        : Colors.transparent,
+                  ),
+                  icon: Icon(
+                    Icons.quiz_outlined,
+                    color: studio.view == 'question' ? pine : muted,
+                  ),
+                ),
+                const SizedBox(width: 3),
+                IconButton(
+                  tooltip: 'Xem khung trình bày',
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: onPreview,
+                  icon: const Icon(Icons.slideshow_outlined, color: pine),
+                ),
+                if (width > 800 && onTogglePlugins != null) ...[
+                  const SizedBox(width: 3),
+                  IconButton(
+                    tooltip: 'Hoạt động & Tiện ích môn',
+                    iconSize: 18,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    onPressed: onTogglePlugins,
+                    style: IconButton.styleFrom(
+                      backgroundColor: hasPlugins
+                          ? AppColors.selected
+                          : Colors.transparent,
+                    ),
+                    icon: Icon(
+                      hasPlugins ? Icons.extension : Icons.extension_outlined,
+                      color: pine,
+                    ),
+                  ),
+                ],
+              ],
+              // Nút Thiết bị và API AI (Giữ nguyên IconButton gốc, trong không gian cố định 36x36)
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: IconButton(
+                  tooltip: 'Thiết bị và API AI',
+                  iconSize: 19,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  onPressed: onToggleInspector,
+                  icon: Icon(
+                    hasInspector ? Icons.tune : Icons.tune_outlined,
+                    color: hasInspector ? pine : muted,
+                  ),
+                ),
+              ),
+
               // Các nút hành động cho Chế độ Soạn bài giảng (Planning Mode)
               if (isPlanningMode) ...[
+                if (onExitPlanning != null) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 95,
+                    height: 38,
+                    child: OutlinedButton.icon(
+                      onPressed: onExitPlanning,
+                      icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                      label: const Text(
+                        'Thoát',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.slate700,
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(
+                          color: AppColors.inputBorder,
+                          width: 1.2,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.control),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 8),
                 // Nút Lưu bài soạn với không gian 140px cố định: Khi bấm lưu và hiện "Đang lưu...", không làm xê dịch nút kế bên
                 SizedBox(
@@ -441,17 +568,14 @@ class StudioTopBar extends StatelessWidget {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF059669),
                       foregroundColor: Colors.white,
-                      elevation: 1,
-                      shadowColor: const Color(
-                        0xFF059669,
-                      ).withValues(alpha: 0.35),
+                      elevation: 0,
+                      shadowColor: AppColors.success.withValues(alpha: 0.35),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9),
+                        borderRadius: BorderRadius.circular(AppRadii.control),
                       ),
                     ),
                   ),
@@ -478,21 +602,86 @@ class StudioTopBar extends StatelessWidget {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.sky600,
                         foregroundColor: Colors.white,
-                        elevation: 1,
-                        shadowColor: AppColors.sky600.withValues(alpha: 0.35),
+                        elevation: 0,
+                        shadowColor: AppColors.primary.withValues(alpha: 0.35),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9),
+                          borderRadius: BorderRadius.circular(AppRadii.control),
                         ),
                       ),
                     ),
                   ),
                 ],
               ] else ...[
+                // Các nút hành động cho Chế độ Lớp học trực tiếp (Live Mode)
+                const SizedBox(width: 4),
+                SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: IconButton(
+                    tooltip: studio.saving ? 'Đang lưu…' : 'Lưu bài giảng',
+                    iconSize: 18,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    onPressed: studio.saving || studio.loading ? null : onSave,
+                    icon: Icon(
+                      studio.saving
+                          ? Icons.hourglass_top_rounded
+                          : Icons.save_outlined,
+                      color: pine,
+                    ),
+                  ),
+                ),
+                if (onToggleStudents != null) ...[
+                  const SizedBox(width: 4),
+                  ListenableBuilder(
+                    listenable: MeetAutomationService(),
+                    builder: (context, _) {
+                      final pendingCount =
+                          MeetAutomationService().pendingAdmitCount;
+                      Widget icon = Icon(
+                        hasStudents ? Icons.groups : Icons.groups_outlined,
+                        color: pine,
+                      );
+                      if (pendingCount > 0) {
+                        icon = Badge.count(
+                          count: pendingCount,
+                          backgroundColor: AppColors.error,
+                          textColor: Colors.white,
+                          child: icon,
+                        );
+                      }
+                      return SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: IconButton(
+                          tooltip: pendingCount > 0
+                              ? 'Danh sách học sinh ($pendingCount đang chờ duyệt)'
+                              : 'Danh sách học sinh',
+                          iconSize: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                          onPressed: onToggleStudents,
+                          style: IconButton.styleFrom(
+                            backgroundColor: hasStudents
+                                ? AppColors.selected
+                                : Colors.transparent,
+                          ),
+                          icon: icon,
+                        ),
+                      );
+                    },
+                  ),
+                ],
                 ListenableBuilder(
                   listenable: MeetAutomationService(),
                   builder: (context, _) {
@@ -501,7 +690,10 @@ class StudioTopBar extends StatelessWidget {
                     if (meetService.showEmbeddedMeet && url == null) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Text('Chuẩn bị Meet', style: TextStyle(fontSize: 11)),
+                        child: Text(
+                          'Chuẩn bị Meet',
+                          style: TextStyle(fontSize: 11),
+                        ),
                       );
                     }
                     if (url == null && onLeaveClassroom == null) {
@@ -532,14 +724,18 @@ class StudioTopBar extends StatelessWidget {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2563EB),
                               foregroundColor: Colors.white,
-                              elevation: 1,
+                              elevation: 0,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
                               ),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.control,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -548,186 +744,47 @@ class StudioTopBar extends StatelessWidget {
                     return const SizedBox.shrink();
                   },
                 ),
+                if (onLeaveClassroom != null) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 125,
+                    height: 38,
+                    child: ElevatedButton.icon(
+                      onPressed: onLeaveClassroom,
+                      icon: const Icon(
+                        Icons.call_end_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Rời phòng',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shadowColor: AppColors.error.withValues(alpha: 0.35),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.control),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
-          if (studio.view != 'board') const MeetAdmissionButton(),
-          IconButton(
-            tooltip: 'Bảng giảng',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () => studio.setView('board'),
-            style: IconButton.styleFrom(
-              backgroundColor: studio.view == 'board'
-                  ? const Color(0xffedf2e5)
-                  : Colors.transparent,
-            ),
-            icon: Icon(
-              Icons.dashboard_outlined,
-              color: studio.view == 'board' ? pine : muted,
-            ),
-          ),
-          const SizedBox(width: 3),
-          IconButton(
-            tooltip: 'Câu hỏi',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () =>
-                studio.setView(studio.view == 'question' ? 'board' : 'question'),
-            style: IconButton.styleFrom(
-              backgroundColor: studio.view == 'question'
-                  ? const Color(0xffedf2e5)
-                  : Colors.transparent,
-            ),
-            icon: Icon(
-              Icons.quiz_outlined,
-              color: studio.view == 'question' ? pine : muted,
-            ),
-          ),
-          const SizedBox(width: 3),
-          IconButton(
-            tooltip: 'Xem khung trình bày',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: onPreview,
-            icon: const Icon(Icons.slideshow_outlined, color: pine),
-          ),
-          const SizedBox(width: 3),
-          IconButton(
-            tooltip: 'Thiết bị và API AI',
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: onToggleInspector,
-            icon: Icon(
-              hasInspector ? Icons.tune : Icons.tune_outlined,
-              color: hasInspector ? pine : muted,
-            ),
-          ),
-          if (!isPlanningMode)
-            IconButton(
-              tooltip: studio.saving ? 'Đang lưu…' : 'Lưu bài giảng',
-              iconSize: 18,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: studio.saving || studio.loading ? null : onSave,
-              icon: Icon(
-                studio.saving ? Icons.hourglass_top_rounded : Icons.save_outlined,
-                color: pine,
-              ),
-            ),
-          if (!isPlanningMode && onToggleStudents != null) ...[
-            const SizedBox(width: 3),
-            ListenableBuilder(
-              listenable: MeetAutomationService(),
-              builder: (context, _) {
-                final pendingCount = MeetAutomationService().pendingAdmitCount;
-                Widget icon = Icon(
-                  hasStudents ? Icons.groups : Icons.groups_outlined,
-                  color: pine,
-                );
-                if (pendingCount > 0) {
-                  icon = Badge.count(
-                    count: pendingCount,
-                    backgroundColor: const Color(0xFFDC2626),
-                    textColor: Colors.white,
-                    child: icon,
-                  );
-                }
-                return IconButton(
-                  tooltip: pendingCount > 0
-                      ? 'Danh sách học sinh ($pendingCount đang chờ duyệt)'
-                      : 'Danh sách học sinh',
-                  iconSize: 18,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  onPressed: onToggleStudents,
-                  style: IconButton.styleFrom(
-                    backgroundColor: hasStudents ? const Color(0xffedf2e5) : Colors.transparent,
-                  ),
-                  icon: icon,
-                );
-              },
-            ),
-          ],
-          if (width > 800 && onTogglePlugins != null) ...[
-            const SizedBox(width: 3),
-            IconButton(
-              tooltip: 'Hoạt động & Tiện ích môn',
-              iconSize: 18,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: onTogglePlugins,
-              style: IconButton.styleFrom(
-                backgroundColor: hasPlugins ? const Color(0xffedf2e5) : Colors.transparent,
-              ),
-              icon: Icon(hasPlugins ? Icons.extension : Icons.extension_outlined, color: pine),
-            ),
-          ],
-          if (isPlanningMode) ...[
-            if (onExitPlanning != null) ...[
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 38,
-                child: OutlinedButton.icon(
-                  onPressed: onExitPlanning,
-                  icon: const Icon(Icons.arrow_back_rounded, size: 17),
-                  label: Text(
-                    width > 850 ? 'Thoát' : '',
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.1,
-                    ),
-                  ),
-                ),
-              ),
             ],
-          ] else ...[
-            if (onLeaveClassroom != null) ...[
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 125,
-                height: 38,
-                child: ElevatedButton.icon(
-                  onPressed: onLeaveClassroom,
-                  icon: const Icon(
-                    Icons.call_end_rounded,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    'Rời phòng',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: -0.1,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC2626),
-                    foregroundColor: Colors.white,
-                    elevation: 1,
-                    shadowColor: const Color(
-                      0xFFDC2626,
-                    ).withValues(alpha: 0.35),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
+          ),
         ],
       ),
-    ],
-  ),
-);
+    );
   }
 }

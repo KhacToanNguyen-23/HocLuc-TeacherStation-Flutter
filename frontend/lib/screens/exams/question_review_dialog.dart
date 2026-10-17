@@ -253,9 +253,9 @@ class _QuestionReviewDialogState extends State<QuestionReviewDialog> {
                       child: IgnorePointer(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: AppColors.sky100.withValues(alpha: .4),
+                            color: AppColors.selected.withValues(alpha: .4),
                             border: Border.all(
-                              color: AppColors.sky600,
+                              color: AppColors.primary,
                               width: 2,
                             ),
                           ),
@@ -270,7 +270,7 @@ class _QuestionReviewDialogState extends State<QuestionReviewDialog> {
       const SizedBox(height: 12),
       const Text(
         'Kéo vùng cắt để giữ công thức, hình và bảng. Ảnh câu hỏi không chứa đáp án/lời giải.',
-        style: TextStyle(color: AppColors.slate500, fontSize: 12),
+        style: TextStyle(color: AppColors.textMuted, fontSize: 12),
       ),
       SwitchListTile(
         contentPadding: EdgeInsets.zero,
@@ -341,7 +341,7 @@ class _QuestionReviewDialogState extends State<QuestionReviewDialog> {
       if (approved)
         const Text(
           'Câu đã duyệt là bất biến. Tạo bản mới để hiệu chỉnh.',
-          style: TextStyle(color: AppColors.sky600),
+          style: TextStyle(color: AppColors.primary),
         ),
       textField('stem', 'Nội dung câu', lines: 4),
       if (sections.isNotEmpty)
@@ -443,7 +443,7 @@ class _QuestionReviewDialogState extends State<QuestionReviewDialog> {
           ListTile(
             title: Text(
               'Duyệt câu · ${widget.source['relativePath']}',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             trailing: IconButton(
               onPressed: busy ? null : () => Navigator.pop(context),

@@ -43,19 +43,21 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
           child: Container(
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.slate100,
-              borderRadius: BorderRadius.circular(9),
+              color: AppColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(AppRadii.control),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: InkWell(
                     onTap: () => setState(() => _selectedTab = 0),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: _selectedTab == 0 ? Colors.white : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
+                        color: _selectedTab == 0
+                            ? Colors.white
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadii.control),
                         boxShadow: _selectedTab == 0
                             ? [
                                 BoxShadow(
@@ -75,8 +77,8 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: hasLiveRoom
-                                  ? AppColors.emerald500
-                                  : AppColors.slate400,
+                                  ? AppColors.success
+                                  : AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(width: 5),
@@ -94,10 +96,15 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                           if (handCount > 0) ...[
                             const SizedBox(width: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 1,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xfff97316),
-                                borderRadius: BorderRadius.circular(10),
+                                color: AppColors.warning,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.control,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -124,11 +131,13 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                 Expanded(
                   child: InkWell(
                     onTap: () => setState(() => _selectedTab = 1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: _selectedTab == 1 ? Colors.white : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
+                        color: _selectedTab == 1
+                            ? Colors.white
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadii.control),
                         boxShadow: _selectedTab == 1
                             ? [
                                 BoxShadow(
@@ -146,7 +155,7 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.slate600,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),

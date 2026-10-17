@@ -114,7 +114,22 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     });
   }
 
-
+  Future<void> _syncClassroomToBackend(String meetingUrl) async {
+    try {
+      final local = LocalService();
+      await local.post(
+        'classroom/create',
+        data: {
+          'directUrl': meetingUrl,
+          'title': _titleController.text.trim(),
+          'teacherName': _authService.teacherName ?? 'Giáo viên',
+          'teacherEmail': _authService.teacherEmail,
+        },
+      );
+    } catch (e) {
+      debugPrint('[ClassroomLobby] Sync classroom to backend error: $e');
+    }
+  }
 
   void _copyMeetingLink() {
     if (_currentMeetingUrl == null) return;
@@ -123,20 +138,29 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Đã sao chép link lớp học: $_currentMeetingUrl',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF0F766E),
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.control),
+        ),
       ),
     );
   }
@@ -174,7 +198,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Đã kết nối phòng Google Meet thật: $formatted'),
-              backgroundColor: const Color(0xFF16A34A),
+              backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -194,8 +218,10 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Bộ nhớ tạm trống! Vui lòng sao chép link Google Meet trước.'),
-            backgroundColor: Color(0xFFDC2626),
+            content: Text(
+              'Bộ nhớ tạm trống! Vui lòng sao chép link Google Meet trước.',
+            ),
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -211,7 +237,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Đã nhận diện link Google Meet thật: $extracted'),
-            backgroundColor: const Color(0xFF16A34A),
+            backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -222,7 +248,9 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
   }
 
   void _showCustomLinkDialog({String? initialText}) {
-    final customUrlController = TextEditingController(text: initialText ?? _currentMeetingUrl ?? '');
+    final customUrlController = TextEditingController(
+      text: initialText ?? _currentMeetingUrl ?? '',
+    );
     String? validationError;
 
     showDialog<void>(
@@ -230,10 +258,12 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadii.panel),
+            ),
             title: const Row(
               children: [
-                Icon(Icons.link_rounded, color: AppColors.sky600),
+                Icon(Icons.link_rounded, color: AppColors.primary),
                 SizedBox(width: 8),
                 Text(
                   'Dán link Google Meet',
@@ -258,8 +288,11 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                         icon: const Icon(Icons.paste_rounded, size: 18),
                         tooltip: 'Dán từ bộ nhớ tạm',
                         onPressed: () async {
-                          final data = await Clipboard.getData(Clipboard.kTextPlain);
-                          if (data?.text != null && data!.text!.trim().isNotEmpty) {
+                          final data = await Clipboard.getData(
+                            Clipboard.kTextPlain,
+                          );
+                          if (data?.text != null &&
+                              data!.text!.trim().isNotEmpty) {
                             customUrlController.text = data.text!.trim();
                             setDialogState(() => validationError = null);
                           }
@@ -290,11 +323,12 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                     Navigator.of(ctx).pop();
                   } else {
                     setDialogState(() {
-                      validationError = 'Đường dẫn không hợp lệ. Vui lòng nhập link dạng meet.google.com/xxx-yyyy-zzz';
+                      validationError =
+                          'Đường dẫn không hợp lệ. Vui lòng nhập link dạng meet.google.com/xxx-yyyy-zzz';
                     });
                   }
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.sky600, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
                 child: const Text('Xác nhận link'),
               ),
             ],
@@ -305,16 +339,22 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
   }
 
   void _enterTeachingStudio() {
-    if (_currentMeetingUrl == null || !isRealGoogleMeetUrl(_currentMeetingUrl)) {
+    if (_currentMeetingUrl == null ||
+        !isRealGoogleMeetUrl(_currentMeetingUrl)) {
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.panel),
+          ),
           title: const Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706)),
+              Icon(Icons.warning_amber_rounded, color: AppColors.warning),
               SizedBox(width: 8),
-              Text('Chưa có link Google Meet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                'Chưa có link Google Meet',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           content: const Text(
@@ -327,7 +367,10 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                 Navigator.of(ctx).pop();
                 _proceedToStudio(meetingUrl: null);
               },
-              child: const Text('Vào dạy ngoại tuyến', style: TextStyle(color: Color(0xFF64748B))),
+              child: const Text(
+                'Vào dạy ngoại tuyến',
+                style: TextStyle(color: AppColors.textMuted),
+              ),
             ),
             ElevatedButton.icon(
               onPressed: () {
@@ -336,10 +379,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
               },
               icon: const Icon(Icons.video_call_rounded, size: 16),
               label: const Text('Tự động tạo phòng Meet'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0284C7),
-                foregroundColor: Colors.white,
-              ),
+              style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
             ),
           ],
         ),
@@ -371,85 +411,93 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: AppColors.background,
         appBar: LobbyHeader(
           authService: _authService,
           onBack: _handleCancelLobby,
         ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: isCompact
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        LobbyMediaPreview(
-                          mediaService: _mediaService,
-                          selectedBackground: _selectedBackground,
-                          selectedCamera: _selectedCamera,
-                          selectedMic: _selectedMic,
-                          simulatedDb: _simulatedDb,
-                          onBackgroundSelected: (bg) => setState(() => _selectedBackground = bg),
-                          onCameraChanged: (cam) => setState(() => _selectedCamera = cam),
-                          onMicChanged: (mic) => setState(() => _selectedMic = mic),
-                        ),
-                        const SizedBox(height: 24),
-                        LobbyMeetRoomCard(
-                          titleController: _titleController,
-                          currentMeetingUrl: _currentMeetingUrl,
-                          isCreatingMeet: _isCreatingMeet,
-                          mediaService: _mediaService,
-                          onCopyLink: _copyMeetingLink,
-                          onGenerateNewMeet: _handleGenerateNewMeetRoom,
-                          onPasteFromClipboard: _pasteMeetingLinkFromClipboard,
-                          onShowCustomLinkDialog: _showCustomLinkDialog,
-                          onEnterStudio: _enterTeachingStudio,
-                          onCancel: _handleCancelLobby,
-                        ),
-                      ],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child: LobbyMediaPreview(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: isCompact
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          LobbyMediaPreview(
                             mediaService: _mediaService,
                             selectedBackground: _selectedBackground,
                             selectedCamera: _selectedCamera,
                             selectedMic: _selectedMic,
                             simulatedDb: _simulatedDb,
-                            onBackgroundSelected: (bg) => setState(() => _selectedBackground = bg),
-                            onCameraChanged: (cam) => setState(() => _selectedCamera = cam),
-                            onMicChanged: (mic) => setState(() => _selectedMic = mic),
+                            onBackgroundSelected: (bg) =>
+                                setState(() => _selectedBackground = bg),
+                            onCameraChanged: (cam) =>
+                                setState(() => _selectedCamera = cam),
+                            onMicChanged: (mic) =>
+                                setState(() => _selectedMic = mic),
                           ),
-                        ),
-                        const SizedBox(width: 28),
-                        Expanded(
-                          flex: 1,
-                          child: LobbyMeetRoomCard(
+                          const SizedBox(height: 24),
+                          LobbyMeetRoomCard(
                             titleController: _titleController,
                             currentMeetingUrl: _currentMeetingUrl,
                             isCreatingMeet: _isCreatingMeet,
                             mediaService: _mediaService,
                             onCopyLink: _copyMeetingLink,
                             onGenerateNewMeet: _handleGenerateNewMeetRoom,
-                            onPasteFromClipboard: _pasteMeetingLinkFromClipboard,
+                            onPasteFromClipboard:
+                                _pasteMeetingLinkFromClipboard,
                             onShowCustomLinkDialog: _showCustomLinkDialog,
                             onEnterStudio: _enterTeachingStudio,
                             onCancel: _handleCancelLobby,
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 1,
+                            child: LobbyMediaPreview(
+                              mediaService: _mediaService,
+                              selectedBackground: _selectedBackground,
+                              selectedCamera: _selectedCamera,
+                              selectedMic: _selectedMic,
+                              simulatedDb: _simulatedDb,
+                              onBackgroundSelected: (bg) =>
+                                  setState(() => _selectedBackground = bg),
+                              onCameraChanged: (cam) =>
+                                  setState(() => _selectedCamera = cam),
+                              onMicChanged: (mic) =>
+                                  setState(() => _selectedMic = mic),
+                            ),
+                          ),
+                          const SizedBox(width: 28),
+                          Expanded(
+                            flex: 1,
+                            child: LobbyMeetRoomCard(
+                              titleController: _titleController,
+                              currentMeetingUrl: _currentMeetingUrl,
+                              isCreatingMeet: _isCreatingMeet,
+                              mediaService: _mediaService,
+                              onCopyLink: _copyMeetingLink,
+                              onGenerateNewMeet: _handleGenerateNewMeetRoom,
+                              onPasteFromClipboard:
+                                  _pasteMeetingLinkFromClipboard,
+                              onShowCustomLinkDialog: _showCustomLinkDialog,
+                              onEnterStudio: _enterTeachingStudio,
+                              onCancel: _handleCancelLobby,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 }

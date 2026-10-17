@@ -27,14 +27,7 @@ class StudioDrawingToolbar extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: line),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(AppRadii.panel),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -53,7 +46,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                       studio.change(() => studio.tool = name, persist: false),
                   style: IconButton.styleFrom(
                     backgroundColor: studio.tool == name
-                        ? AppColors.sky100
+                        ? AppColors.selected
                         : Colors.transparent,
                     minimumSize: const Size(36, 36),
                     padding: EdgeInsets.zero,
@@ -61,7 +54,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                   icon: Icon(
                     icon,
                     size: 18,
-                    color: studio.tool == name ? AppColors.sky600 : pine,
+                    color: studio.tool == name ? AppColors.primary : pine,
                   ),
                 ),
               const SizedBox(height: 6),
@@ -88,19 +81,9 @@ class StudioDrawingToolbar extends StatelessWidget {
                         color: color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: studio.ink == color
-                              ? pine
-                              : const Color(0xffd5dcd2),
+                          color: studio.ink == color ? pine : AppColors.border,
                           width: studio.ink == color ? 2.5 : 1.5,
                         ),
-                        boxShadow: [
-                          if (studio.ink == color)
-                            BoxShadow(
-                              color: color.withValues(alpha: 0.5),
-                              blurRadius: 4,
-                              spreadRadius: 1,
-                            ),
-                        ],
                       ),
                     ),
                   ),
@@ -146,9 +129,9 @@ class StudioDrawingToolbar extends StatelessWidget {
                         onPressed: () => _openVerticalCameraMenu(btnContext),
                         style: IconButton.styleFrom(
                           backgroundColor: isBroadcasting
-                              ? const Color(0xFFDCFCE7)
+                              ? AppColors.successSurface
                               : (isPip
-                                    ? const Color(0xffedf2e5)
+                                    ? AppColors.selected
                                     : Colors.transparent),
                           minimumSize: const Size(36, 36),
                           padding: EdgeInsets.zero,
@@ -161,9 +144,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                                   ? Icons.videocam
                                   : Icons.videocam_off_outlined,
                               size: 18,
-                              color: isBroadcasting
-                                  ? const Color(0xFF16A34A)
-                                  : pine,
+                              color: isBroadcasting ? AppColors.success : pine,
                             ),
                             if (isBroadcasting)
                               Positioned(
@@ -173,7 +154,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                                   width: 7,
                                   height: 7,
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFF16A34A),
+                                    color: AppColors.success,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -192,7 +173,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                 onPressed: studio.toggleQuestionsDrawer,
                 style: IconButton.styleFrom(
                   backgroundColor: studio.showQuestionsDrawer
-                      ? const Color(0xffedf2e5)
+                      ? AppColors.selected
                       : Colors.transparent,
                   minimumSize: const Size(36, 36),
                   padding: EdgeInsets.zero,
@@ -236,13 +217,13 @@ class StudioDrawingToolbar extends StatelessWidget {
                       studio.change(() => studio.tool = name, persist: false),
                   style: IconButton.styleFrom(
                     backgroundColor: studio.tool == name
-                        ? AppColors.sky100
+                        ? AppColors.selected
                         : Colors.transparent,
                   ),
                   icon: Icon(
                     icon,
                     size: 19,
-                    color: studio.tool == name ? AppColors.sky600 : pine,
+                    color: studio.tool == name ? AppColors.primary : pine,
                   ),
                 ),
               const SizedBox(width: 8),
@@ -266,19 +247,9 @@ class StudioDrawingToolbar extends StatelessWidget {
                         color: color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: studio.ink == color
-                              ? pine
-                              : const Color(0xffd5dcd2),
+                          color: studio.ink == color ? pine : AppColors.border,
                           width: studio.ink == color ? 2.5 : 1.5,
                         ),
-                        boxShadow: [
-                          if (studio.ink == color)
-                            BoxShadow(
-                              color: color.withValues(alpha: 0.5),
-                              blurRadius: 4,
-                              spreadRadius: 1,
-                            ),
-                        ],
                       ),
                     ),
                   ),
@@ -314,9 +285,9 @@ class StudioDrawingToolbar extends StatelessWidget {
                         onPressed: () => _openHorizontalCameraMenu(btnContext),
                         style: IconButton.styleFrom(
                           backgroundColor: isBroadcasting
-                              ? const Color(0xFFDCFCE7)
+                              ? AppColors.successSurface
                               : (isPip
-                                    ? const Color(0xffedf2e5)
+                                    ? AppColors.selected
                                     : Colors.transparent),
                         ),
                         icon: Icon(
@@ -324,9 +295,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                               ? Icons.videocam
                               : Icons.videocam_off_outlined,
                           size: 19,
-                          color: isBroadcasting
-                              ? const Color(0xFF16A34A)
-                              : pine,
+                          color: isBroadcasting ? AppColors.success : pine,
                         ),
                       );
                     },
@@ -340,7 +309,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                 onPressed: studio.toggleQuestionsDrawer,
                 style: IconButton.styleFrom(
                   backgroundColor: studio.showQuestionsDrawer
-                      ? const Color(0xffedf2e5)
+                      ? AppColors.selected
                       : Colors.transparent,
                 ),
                 icon: const Icon(

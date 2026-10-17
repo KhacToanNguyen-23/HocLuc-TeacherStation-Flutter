@@ -1,5 +1,6 @@
 package vn.teaching.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.teaching.model.AuthResponse;
@@ -28,6 +29,15 @@ public class AuthController {
         AuthResponse response = authService.login(req.getIdentifier(), req.getPassword());
         if (!response.isSuccess()) {
             return ResponseEntity.badRequest().body(response);
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/dev-login")
+    public ResponseEntity<AuthResponse> handleDevLogin() {
+        AuthResponse response = authService.devLogin();
+        if (!response.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
         return ResponseEntity.ok(response);
     }

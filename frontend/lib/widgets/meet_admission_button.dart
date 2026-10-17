@@ -50,12 +50,12 @@ class MeetAdmissionButton extends StatelessWidget {
         style: IconButton.styleFrom(
           minimumSize: const Size(44, 44),
           padding: EdgeInsets.zero,
-          foregroundColor: color ?? AppColors.sky700,
+          foregroundColor: color ?? AppColors.primary,
         ),
         icon: Badge(
           key: const Key('meet-admission-dot'),
           isLabelVisible: count > 0,
-          backgroundColor: AppColors.rose600,
+          backgroundColor: AppColors.error,
           child: const Icon(Icons.person_add_alt_1_rounded, size: 20),
         ),
       ),

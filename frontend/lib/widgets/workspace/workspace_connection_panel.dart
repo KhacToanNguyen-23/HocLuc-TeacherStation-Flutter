@@ -23,8 +23,6 @@ class WorkspaceConnectionPanel extends StatelessWidget {
   final VoidCallback onDisconnect;
   final VoidCallback onCancelPolling;
 
-  static const _teal = Color(0xff087f83);
-
   @override
   Widget build(BuildContext context) {
     final connected = connection['connected'] == true;
@@ -36,9 +34,9 @@ class WorkspaceConnectionPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.slate200),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        border: Border.all(color: AppColors.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +46,7 @@ class WorkspaceConnectionPanel extends StatelessWidget {
             runSpacing: 12,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Icon(Icons.hub_outlined, color: _teal, size: 32),
+              const Icon(Icons.hub_outlined, color: AppColors.primary, size: 32),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -60,10 +58,10 @@ class WorkspaceConnectionPanel extends StatelessWidget {
                         : retryConnection
                         ? 'Chưa kiểm tra được kết nối'
                         : 'Kết nối Google',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                   ),
                   Text(
-                    email.isEmpty ? 'Chọn tài khoản Google để sử dụng HocLuc.' : email,
+                    email.isEmpty ? 'Chọn tài khoản Google để sử dụng HocLucStation.' : email,
                   ),
                 ],
               ),
@@ -102,8 +100,8 @@ class WorkspaceConnectionPanel extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           const Text(
-            'Đăng xuất HocLuc giữ quyền đã cấp. Ngắt kết nối Google sẽ thu hồi quyền API của tài khoản này.',
-            style: TextStyle(fontSize: 12, color: AppColors.slate600),
+            'Đăng xuất HocLucStation giữ quyền đã cấp. Ngắt kết nối Google sẽ thu hồi quyền API của tài khoản này.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
           const Wrap(
@@ -135,11 +133,11 @@ class WorkspaceConnectionPanel extends StatelessWidget {
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, size: 20, color: _teal),
+                  Icon(Icons.info_outline, size: 20, color: AppColors.primary),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Ứng dụng chưa được cấu hình kết nối Google. Người cài đặt HocLuc cần hoàn tất cấu hình; giáo viên không cần tạo Client ID.',
+                      'Ứng dụng chưa được cấu hình kết nối Google. Người cài đặt HocLucStation cần hoàn tất cấu hình; giáo viên không cần tạo Client ID.',
                     ),
                   ),
                 ],
@@ -156,7 +154,7 @@ class WorkspaceConnectionPanel extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    'Chọn tài khoản và cấp quyền trong trình duyệt, rồi trở về HocLuc.',
+                    'Chọn tài khoản và cấp quyền trong trình duyệt, rồi trở về HocLucStation.',
                   ),
                 ),
                 TextButton(
@@ -169,8 +167,8 @@ class WorkspaceConnectionPanel extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.only(top: 12),
               child: Text(
-                '1. Chọn tài khoản Google   →   2. Đồng ý cấp quyền   →   3. Tạo lớp trong HocLuc',
-                style: TextStyle(color: AppColors.slate600),
+                '1. Chọn tài khoản Google   →   2. Đồng ý cấp quyền   →   3. Tạo lớp trong HocLucStation',
+                style: TextStyle(color: AppColors.textSecondary),
               ),
             ),
         ],

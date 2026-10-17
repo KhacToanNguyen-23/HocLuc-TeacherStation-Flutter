@@ -9,7 +9,8 @@ class StudioDocumentFilesList extends StatefulWidget {
   final StudioState studio;
 
   @override
-  State<StudioDocumentFilesList> createState() => _StudioDocumentFilesListState();
+  State<StudioDocumentFilesList> createState() =>
+      _StudioDocumentFilesListState();
 }
 
 class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
@@ -21,7 +22,9 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          const Expanded(child: Divider(color: Color(0x28ffffff), height: 1)),
+          const Expanded(
+            child: Divider(color: AppColors.overlayBorder, height: 1),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
@@ -30,7 +33,7 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                 const Icon(
                   Icons.folder_open_outlined,
                   size: 12,
-                  color: Color(0xff8a9a8d),
+                  color: AppColors.overlayMuted,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -39,13 +42,15 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                     fontSize: 8.5,
                     letterSpacing: 0.8,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xff8a9a8d),
+                    color: AppColors.overlayMuted,
                   ),
                 ),
               ],
             ),
           ),
-          const Expanded(child: Divider(color: Color(0x28ffffff), height: 1)),
+          const Expanded(
+            child: Divider(color: AppColors.overlayBorder, height: 1),
+          ),
         ],
       ),
     );
@@ -66,22 +71,29 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
         }
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: AppMotion.duration(context, milliseconds: 150),
+        curve: AppMotion.stateCurve,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: _isDragging ? const Color(0x33d4e8a6) : const Color(0x14ffffff),
-          borderRadius: BorderRadius.circular(8),
+          color: _isDragging
+              ? AppColors.overlaySelected
+              : AppColors.overlayRaised,
+          borderRadius: BorderRadius.circular(AppRadii.control),
           border: Border.all(
-            color: _isDragging ? AppColors.lime : const Color(0x2effffff),
-            width: _isDragging ? 1.5 : 1.0,
+            color: _isDragging ? AppColors.overlayAccent : Colors.transparent,
+            width: 1.5,
           ),
         ),
         child: Row(
           children: [
             Icon(
-              _isDragging ? Icons.file_download_outlined : Icons.upload_file_outlined,
+              _isDragging
+                  ? Icons.file_download_outlined
+                  : Icons.upload_file_outlined,
               size: 16,
-              color: _isDragging ? AppColors.lime : const Color(0xffa5b5a8),
+              color: _isDragging
+                  ? AppColors.overlayAccent
+                  : AppColors.overlayMuted,
             ),
             const SizedBox(width: 6),
             Expanded(
@@ -90,7 +102,9 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 10,
-                  color: _isDragging ? AppColors.lime : const Color(0xffa5b5a8),
+                  color: _isDragging
+                      ? AppColors.overlayAccent
+                      : AppColors.overlayMuted,
                 ),
               ),
             ),
@@ -100,7 +114,7 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.lime,
+                  color: AppColors.overlayAccent,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
@@ -127,14 +141,17 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
       },
       borderRadius: BorderRadius.circular(7),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: AppMotion.duration(context, milliseconds: 150),
+        curve: AppMotion.stateCurve,
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
         decoration: BoxDecoration(
-          color: isActiveOnBoard ? const Color(0x2ed4e8a6) : const Color(0x14ffffff),
+          color: isActiveOnBoard
+              ? AppColors.overlaySelected
+              : AppColors.overlayRaised,
           borderRadius: BorderRadius.circular(7),
           border: Border.all(
-            color: isActiveOnBoard ? AppColors.lime : const Color(0x22ffffff),
-            width: isActiveOnBoard ? 1.3 : 1.0,
+            color: isActiveOnBoard ? AppColors.overlayAccent : Colors.transparent,
+            width: 1.3,
           ),
         ),
         child: Column(
@@ -145,7 +162,9 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                 Icon(
                   Icons.picture_as_pdf_outlined,
                   size: 14,
-                  color: isActiveOnBoard ? AppColors.lime : const Color(0xffe57373),
+                  color: isActiveOnBoard
+                      ? AppColors.overlayAccent
+                      : AppColors.errorSurface,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -155,8 +174,12 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 10.5,
-                      fontWeight: isActiveOnBoard ? FontWeight.w700 : FontWeight.w500,
-                      color: isActiveOnBoard ? AppColors.lime : const Color(0xffe8eae6),
+                      fontWeight: isActiveOnBoard
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isActiveOnBoard
+                          ? AppColors.overlayAccent
+                          : AppColors.overlayText,
                     ),
                   ),
                 ),
@@ -170,7 +193,7 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                       child: Icon(
                         Icons.close,
                         size: 12,
-                        color: Color(0xff8a9a8d),
+                        color: AppColors.overlayMuted,
                       ),
                     ),
                   ),
@@ -184,7 +207,7 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                   '${doc.totalPages > 1 ? "${doc.totalPages} trang" : "1 trang"}${doc.formattedSize.isNotEmpty ? " · ${doc.formattedSize}" : ""}',
                   style: const TextStyle(
                     fontSize: 8.5,
-                    color: Color(0xff8a9a8d),
+                    color: AppColors.overlayMuted,
                   ),
                 ),
                 const Spacer(),
@@ -195,7 +218,7 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0x33d4e8a6),
+                      color: AppColors.overlaySelected,
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: const Text(
@@ -203,14 +226,17 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                       style: TextStyle(
                         fontSize: 7.5,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.lime,
+                        color: AppColors.overlayAccent,
                       ),
                     ),
                   )
                 else
                   const Text(
                     'Kéo vào bảng',
-                    style: TextStyle(fontSize: 8, color: Color(0xff6e7e72)),
+                    style: TextStyle(
+                      fontSize: 8,
+                      color: AppColors.overlayMuted,
+                    ),
                   ),
               ],
             ),
@@ -230,13 +256,13 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xee102019),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.lime, width: 1.5),
+              color: AppColors.overlaySurface,
+              borderRadius: BorderRadius.circular(AppRadii.control),
+              border: Border.all(color: AppColors.overlayAccent, width: 1.5),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x88000000),
-                  blurRadius: 12,
+                  blurRadius: 8,
                   offset: Offset(0, 4),
                 ),
               ],
@@ -247,7 +273,7 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
                 const Icon(
                   Icons.picture_as_pdf_outlined,
                   size: 14,
-                  color: AppColors.lime,
+                  color: AppColors.overlayAccent,
                 ),
                 const SizedBox(width: 6),
                 ConstrainedBox(
@@ -287,17 +313,14 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
         if (studio.importedDocs.isEmpty)
           const Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Text(
                 'Chưa có tài liệu nào\nKéo thả tệp hoặc bấm + Nhập tệp',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 10,
                   height: 1.4,
-                  color: Color(0xff6e7e72),
+                  color: AppColors.overlayMuted,
                 ),
               ),
             ),

@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "vn.teaching" "\0"
-            VALUE "FileDescription", "teaching_companion" "\0"
+            VALUE "FileDescription", "HocLucStation" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "teaching_companion" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 vn.teaching. All rights reserved." "\0"
             VALUE "OriginalFilename", "teaching_companion.exe" "\0"
-            VALUE "ProductName", "teaching_companion" "\0"
+            VALUE "ProductName", "HocLucStation" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

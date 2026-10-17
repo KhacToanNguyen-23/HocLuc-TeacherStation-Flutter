@@ -23,7 +23,6 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
       width: 320,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(left: BorderSide(color: AppColors.slate200)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -32,21 +31,21 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
           Container(
             height: 56,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.slate200)),
-            ),
             child: Row(
               children: [
                 Container(
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                    color: AppColors.successSurface,
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
                   child: const Center(
-                    child: Icon(Icons.extension_rounded, size: 18, color: Color(0xFF16A34A)),
+                    child: Icon(
+                      Icons.extension_rounded,
+                      size: 18,
+                      color: AppColors.success,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -55,14 +54,18 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
                     'Hoạt động & Tiện ích',
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.slate900,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                       letterSpacing: -0.2,
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.slate600),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: AppColors.textSecondary,
+                  ),
                   tooltip: 'Đóng tiện ích',
                   onPressed: onClose,
                 ),
@@ -84,11 +87,17 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: plugins.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final plugin = plugins[index];
                     final isInstalled = manager.isInstalled(plugin.id);
-                    return _buildPluginCard(context, manager, plugin, isInstalled);
+                    return _buildPluginCard(
+                      context,
+                      manager,
+                      plugin,
+                      isInstalled,
+                    );
                   },
                 );
               },
@@ -110,14 +119,13 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: AppColors.surfaceMuted,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: const Icon(
                 Icons.extension_outlined,
                 size: 28,
-                color: AppColors.slate400,
+                color: AppColors.textMuted,
               ),
             ),
             const SizedBox(height: 16),
@@ -135,7 +143,7 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
               'Hệ thống Extension Microkernel sẵn sàng kết nối tiện ích bộ môn THPT và kỳ thi ĐGNL.',
               style: TextStyle(
                 fontSize: 11.5,
-                color: AppColors.slate500,
+                color: AppColors.textMuted,
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
@@ -157,9 +165,6 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isInstalled ? const Color(0xFFBAE6FD) : AppColors.slate200,
-        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -175,7 +180,7 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: plugin.color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadii.control),
             ),
             child: Icon(plugin.icon, color: plugin.color, size: 22),
           ),
@@ -189,7 +194,7 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.slate900,
+                    color: AppColors.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -198,7 +203,10 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     plugin.summary,
-                    style: const TextStyle(fontSize: 11, color: AppColors.slate500),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -211,29 +219,48 @@ class StudioPluginsMarketplacePanel extends StatelessWidget {
             ElevatedButton(
               onPressed: () => manager.install(plugin.id),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.sky600,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadii.control),
+                ),
                 elevation: 0,
               ),
-              child: const Text('Cài đặt', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+              child: const Text(
+                'Cài đặt',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              ),
             )
           else ...[
             ElevatedButton(
               onPressed: () => manager.openPlugin(plugin),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF16A34A),
+                backgroundColor: AppColors.success,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadii.control),
+                ),
                 elevation: 0,
               ),
-              child: const Text('Mở', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+              child: const Text(
+                'Mở',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              ),
             ),
             const SizedBox(width: 4),
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFF94A3B8)),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
               tooltip: 'Gỡ tiện ích',
               onPressed: () => manager.uninstall(plugin.id),
             ),

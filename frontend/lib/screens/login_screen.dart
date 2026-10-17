@@ -46,22 +46,17 @@ class LoginScreen extends StatelessWidget {
           body: SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 child: Container(
                   width: isCompact ? 420 : 860,
                   height: isCompact ? 650 : 570,
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE1E5DB)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 36,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(AppRadii.panel),
                   ),
                   child: isCompact
                       ? AuthFormCard(
@@ -72,10 +67,7 @@ class LoginScreen extends StatelessWidget {
                         )
                       : Row(
                           children: [
-                            const Expanded(
-                              flex: 5,
-                              child: AuthHeroPanel(),
-                            ),
+                            const Expanded(flex: 5, child: AuthHeroPanel()),
                             Expanded(
                               flex: 6,
                               child: AuthFormCard(

@@ -28,7 +28,7 @@ class _FloatingTimerState extends State<FloatingTimer> {
         final isRunning = studio.timerRunning;
 
         final borderColor = isZero
-            ? AppColors.rose600
+            ? AppColors.error
             : isRunning
             ? AppColors.lime
             : const Color(0x33ffffff);
@@ -39,16 +39,17 @@ class _FloatingTimerState extends State<FloatingTimer> {
             // Pill Badge
             InkWell(
               onTap: () => setState(() => _isExpanded = !_isExpanded),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadii.panel),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: AppMotion.duration(context, milliseconds: 200),
+                curve: AppMotion.stateCurve,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
                   color: const Color(0xee14221d),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppRadii.panel),
                   border: Border.all(color: borderColor, width: 1.5),
                   boxShadow: [
                     BoxShadow(
@@ -73,7 +74,7 @@ class _FloatingTimerState extends State<FloatingTimer> {
                           : Icons.hourglass_empty,
                       size: 15,
                       color: isZero
-                          ? AppColors.rose600
+                          ? AppColors.error
                           : isRunning
                           ? AppColors.lime
                           : const Color(0xffc5d2c8),
@@ -87,7 +88,7 @@ class _FloatingTimerState extends State<FloatingTimer> {
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                         color: isZero
-                            ? AppColors.rose600
+                            ? AppColors.error
                             : isRunning
                             ? AppColors.lime
                             : const Color(0xffe8eae6),
@@ -118,7 +119,7 @@ class _FloatingTimerState extends State<FloatingTimer> {
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x66000000),
-                      blurRadius: 16,
+                      blurRadius: 8,
                       offset: Offset(0, 4),
                     ),
                   ],
@@ -174,7 +175,7 @@ class _FloatingTimerState extends State<FloatingTimer> {
                           onPressed: studio.toggleTimer,
                           style: FilledButton.styleFrom(
                             backgroundColor: isRunning
-                                ? AppColors.rose600
+                                ? AppColors.error
                                 : AppColors.lime,
                             foregroundColor: const Color(0xff14221d),
                             padding: const EdgeInsets.symmetric(
@@ -248,7 +249,8 @@ class _FloatingTimerState extends State<FloatingTimer> {
       onTap: () => studio.setTimerSeconds(seconds),
       borderRadius: BorderRadius.circular(6),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: AppMotion.duration(context, milliseconds: 150),
+        curve: AppMotion.stateCurve,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.lime : const Color(0x22ffffff),

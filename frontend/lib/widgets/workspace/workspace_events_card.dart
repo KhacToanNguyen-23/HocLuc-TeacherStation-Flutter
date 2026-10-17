@@ -9,7 +9,6 @@ class WorkspaceEventsCard extends StatelessWidget {
   });
 
   final List<Map<String, dynamic>> events;
-  static const _teal = Color(0xff087f83);
 
   static String _date(String iso) {
     final date = DateTime.tryParse(iso)?.toLocal();
@@ -25,9 +24,9 @@ class WorkspaceEventsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.slate200),
+        border: Border.all(color: AppColors.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +40,7 @@ class WorkspaceEventsCard extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(
                 Icons.event_available_outlined,
-                color: _teal,
+                color: AppColors.primary,
               ),
               title: Text(_date(event['start'] as String)),
               subtitle: Text(

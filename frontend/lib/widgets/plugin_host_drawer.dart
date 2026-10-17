@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../services/plugin_manager.dart';
 import '../services/process_supervisor.dart';
@@ -22,7 +23,7 @@ class PluginHostDrawer extends StatelessWidget {
         final drawerWidth = plugin?.manifest.uiDefaultWidth ?? 420.0;
 
         return AnimatedPositioned(
-          duration: const Duration(milliseconds: 220),
+          duration: AppMotion.duration(context, milliseconds: 220),
           curve: Curves.easeOutCubic,
           right: isOpen ? 0 : -(drawerWidth + 20),
           top: 0,
@@ -30,16 +31,16 @@ class PluginHostDrawer extends StatelessWidget {
           width: drawerWidth,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xf70e1a15),
+              color: AppColors.overlaySurface,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(14),
                 bottomLeft: Radius.circular(14),
               ),
-              border: Border.all(color: const Color(0x33ffffff), width: 1.2),
+              border: Border.all(color: AppColors.overlayBorder, width: 1.2),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x77000000),
-                  blurRadius: 18,
+                  blurRadius: 8,
                   offset: Offset(-3, 0),
                 ),
               ],
@@ -55,7 +56,7 @@ class PluginHostDrawer extends StatelessWidget {
                   ),
                   decoration: const BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Color(0x22ffffff)),
+                      bottom: BorderSide(color: AppColors.overlayBorder),
                     ),
                   ),
                   child: Row(
@@ -63,7 +64,7 @@ class PluginHostDrawer extends StatelessWidget {
                       const Icon(
                         Icons.extension,
                         size: 16,
-                        color: Color(0xffd4e8a6),
+                        color: AppColors.overlayAccent,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -73,13 +74,14 @@ class PluginHostDrawer extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xffe8eae6),
+                            color: AppColors.overlayText,
                           ),
                         ),
                       ),
                       // Quick Scan Paragraph on PDF
                       Tooltip(
-                        message: 'Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng (PrtSc)',
+                        message:
+                            'Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng (PrtSc)',
                         child: InkWell(
                           onTap: () => studio.startSnipping(target: 'dgnl'),
                           borderRadius: BorderRadius.circular(12),
@@ -89,10 +91,10 @@ class PluginHostDrawer extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0x3d89b4fa),
+                              color: AppColors.overlaySelected,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0x8889b4fa),
+                                color: AppColors.overlaySelected,
                               ),
                             ),
                             child: Row(
@@ -101,7 +103,7 @@ class PluginHostDrawer extends StatelessWidget {
                                 Icon(
                                   Icons.crop_free,
                                   size: 13,
-                                  color: Color(0xff89b4fa),
+                                  color: AppColors.overlayAccent,
                                 ),
                                 SizedBox(width: 4),
                                 Text(
@@ -109,7 +111,7 @@ class PluginHostDrawer extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xffcdd6f4),
+                                    color: AppColors.overlayText,
                                   ),
                                 ),
                               ],
@@ -122,14 +124,14 @@ class PluginHostDrawer extends StatelessWidget {
                         icon: const Icon(Icons.open_in_new, size: 16),
                         tooltip: 'Tách thành cửa sổ nổi',
                         splashRadius: 16,
-                        color: const Color(0xffa5b5a8),
+                        color: AppColors.overlayMuted,
                         onPressed: studio.togglePluginFloating,
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, size: 16),
                         tooltip: 'Đóng',
                         splashRadius: 16,
-                        color: const Color(0xffa5b5a8),
+                        color: AppColors.overlayMuted,
                         onPressed: studio.closePlugin,
                       ),
                     ],

@@ -190,11 +190,11 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
       surfaceTintColor: Colors.white,
       title: const Text(
         'Đề thi & năng lực',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: AppColors.slate200),
+        child: Container(height: 1, color: AppColors.border),
       ),
       actions: [
         const MeetAdmissionButton(),
@@ -269,16 +269,16 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
                     icons[index],
                     size: 17,
                     color: selected == index
-                        ? AppColors.sky600
-                        : AppColors.slate500,
+                        ? AppColors.primary
+                        : AppColors.textMuted,
                   ),
                   label: Text(names[index]),
-                  selectedColor: AppColors.sky100,
+                  selectedColor: AppColors.selected,
                   backgroundColor: Colors.white,
                   side: BorderSide(
                     color: selected == index
-                        ? AppColors.sky600
-                        : AppColors.slate200,
+                        ? AppColors.primary
+                        : AppColors.border,
                   ),
                 ),
               ),
@@ -297,7 +297,7 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
                           names[selected],
                           style: const TextStyle(
                             fontSize: 22,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -347,7 +347,7 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
                     '${summary[entry.$1]}',
                     style: const TextStyle(
                       fontSize: 30,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -373,7 +373,7 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
             children: [
               Text(
                 report['limitation'].toString(),
-                style: const TextStyle(color: AppColors.slate500),
+                style: const TextStyle(color: AppColors.textMuted),
               ),
               ...examRows(report['recommendations']).map(
                 (r) => ListTile(
@@ -473,7 +473,7 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'Đáp án: ${q['answer']}',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 Text(q['solution']?.toString() ?? ''),
                 for (final id in q['solutionAssets'] as List? ?? [])
@@ -710,7 +710,7 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
               ListTile(
                 title: Text(
                   p['title'].toString(),
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 subtitle: Text('${p['status']} · Exam ID: ${p['id']}'),
                 trailing: IconButton(
@@ -811,7 +811,7 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
                       const SizedBox(height: 20),
                       Text(
                         'Câu ${index + 1}',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       for (final id in q['assets'] as List)
                         ExamAsset(api: api, id: id.toString()),
@@ -1245,7 +1245,7 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
                 for (final error in errors)
                   Text(
                     error.toString(),
-                    style: const TextStyle(color: AppColors.rose600),
+                    style: const TextStyle(color: AppColors.error),
                   ),
                 for (final row in rows.take(20))
                   Padding(
@@ -1376,14 +1376,14 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
                                 value:
                                     (item['accuracyRate'] as num).toDouble() /
                                     100,
-                                color: AppColors.sky600,
-                                backgroundColor: AppColors.sky100,
+                                color: AppColors.primary,
+                                backgroundColor: AppColors.selected,
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 '${item['correctAnswers']}/${item['questionsAttempted']} câu đúng · ${item['evidenceLevel']} · ${item['trend']}',
                                 style: const TextStyle(
-                                  color: AppColors.slate500,
+                                  color: AppColors.textMuted,
                                 ),
                               ),
                             ],
@@ -1488,7 +1488,7 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
                             Text(
                               s['relativePath'].toString(),
                               style: const TextStyle(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                             Text(

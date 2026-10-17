@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../services/english_analyzer.dart';
 
@@ -52,7 +53,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle, color: Color(0xff86efac), size: 16),
+            const Icon(Icons.check_circle, color: AppColors.border, size: 16),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -62,7 +63,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
             ),
           ],
         ),
-        backgroundColor: const Color(0xff12221b),
+        backgroundColor: AppColors.overlaySurface,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
@@ -80,13 +81,13 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
         constraints: const BoxConstraints(maxWidth: 820),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xf5101c17), // Deep slate green chalkboard tone
+          color: AppColors.overlaySurface, // Deep slate green chalkboard tone
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0x55d4e8a6), width: 1.2),
+          border: Border.all(color: AppColors.overlaySelected, width: 1.2),
           boxShadow: const [
             BoxShadow(
               color: Color(0x66000000),
-              blurRadius: 18,
+              blurRadius: 8,
               offset: Offset(0, 4),
             ),
           ],
@@ -105,9 +106,9 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0x28d4e8a6),
+                    color: AppColors.overlaySelected,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0x44d4e8a6)),
+                    border: Border.all(color: AppColors.overlaySelected),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -115,7 +116,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                       const Icon(
                         Icons.extension,
                         size: 14,
-                        color: Color(0xffd4e8a6),
+                        color: AppColors.overlayAccent,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -123,7 +124,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xffd4e8a6),
+                          color: AppColors.overlayAccent,
                         ),
                       ),
                     ],
@@ -137,9 +138,9 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                     height: 32,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0x1fffffff),
+                      color: AppColors.overlayRaised,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0x33ffffff)),
+                      border: Border.all(color: AppColors.overlayBorder),
                     ),
                     alignment: Alignment.centerLeft,
                     child: TextField(
@@ -154,7 +155,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                             'Nhập câu tiếng Anh... (ví dụ: I go to school.)',
                         hintStyle: TextStyle(
                           fontSize: 11,
-                          color: Color(0xff8a9a8d),
+                          color: AppColors.overlayMuted,
                         ),
                       ),
                       onSubmitted: (val) => _analyzeAndPin(context, val),
@@ -172,8 +173,8 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xff2d4c3d),
-                    foregroundColor: const Color(0xffd4e8a6),
+                    backgroundColor: AppColors.overlayRaised,
+                    foregroundColor: AppColors.overlayAccent,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 0,
@@ -181,7 +182,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                     minimumSize: const Size(0, 32),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
-                      side: const BorderSide(color: Color(0x44d4e8a6)),
+                      side: const BorderSide(color: AppColors.overlaySelected),
                     ),
                   ),
                 ),
@@ -200,7 +201,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                       child: const Icon(
                         Icons.close,
                         size: 15,
-                        color: Color(0xffa5b5a8),
+                        color: AppColors.overlayMuted,
                       ),
                     ),
                   ),
@@ -216,7 +217,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                   'Mẫu nhanh:',
                   style: TextStyle(
                     fontSize: 9.5,
-                    color: Color(0xff8a9a8d),
+                    color: AppColors.overlayMuted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -240,17 +241,17 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0x18ffffff),
+                                color: AppColors.overlayRaised,
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                  color: const Color(0x28ffffff),
+                                  color: AppColors.overlayBorder,
                                 ),
                               ),
                               child: Text(
                                 sample,
                                 style: const TextStyle(
                                   fontSize: 10,
-                                  color: Color(0xffd4e8a6),
+                                  color: AppColors.overlayAccent,
                                 ),
                               ),
                             ),

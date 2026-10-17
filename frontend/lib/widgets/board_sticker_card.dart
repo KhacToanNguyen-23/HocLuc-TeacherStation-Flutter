@@ -60,7 +60,7 @@ class BoardStickerCard extends StatelessWidget {
             boxShadow: const [
               BoxShadow(
                 color: Color(0x66000000),
-                blurRadius: 12,
+                blurRadius: 8,
                 offset: Offset(0, 4),
               ),
             ],

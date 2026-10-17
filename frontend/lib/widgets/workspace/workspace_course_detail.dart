@@ -33,8 +33,6 @@ class WorkspaceCourseDetail extends StatelessWidget {
   final VoidCallback onSchedule;
   final void Function(Map<String, dynamic> course, Map<String, dynamic> student) onSetMeetAccess;
 
-  static const _teal = Color(0xff087f83);
-
   static String _date(String iso) {
     final date = DateTime.tryParse(iso)?.toLocal();
     if (date == null) return iso;
@@ -55,7 +53,7 @@ class WorkspaceCourseDetail extends StatelessWidget {
         Icon(
           error ? Icons.error_outline : Icons.info_outline,
           size: 20,
-          color: error ? Colors.red.shade700 : _teal,
+          color: error ? AppColors.error : AppColors.primary,
         ),
         const SizedBox(width: 10),
         Expanded(child: Text(text)),
@@ -83,16 +81,16 @@ class WorkspaceCourseDetail extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.slate200),
+            border: Border.all(color: AppColors.surfaceBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 course['title'] as String,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(
@@ -168,12 +166,12 @@ class WorkspaceCourseDetail extends StatelessWidget {
                 course['syncedAt'] == null
                     ? 'Chưa đồng bộ thành viên.'
                     : 'Đồng bộ gần nhất: ${_date(course['syncedAt'] as String)}',
-                style: const TextStyle(color: AppColors.slate500),
+                style: const TextStyle(color: AppColors.textMuted),
               ),
               const SizedBox(height: 6),
               const Text(
-                'Nhập email học sinh một lần, sau đó bấm Bắt đầu dạy. HocLuc tự chuẩn bị phòng và gửi lời mời cho buổi học. Học sinh dùng link của buổi này và đúng email được mời.',
-                style: TextStyle(color: AppColors.slate600),
+                'Nhập email học sinh một lần, sau đó bấm Bắt đầu dạy. HocLucStation tự chuẩn bị phòng và gửi lời mời cho buổi học. Học sinh dùng link của buổi này và đúng email được mời.',
+                style: TextStyle(color: AppColors.textSecondary),
               ),
             ],
           ),

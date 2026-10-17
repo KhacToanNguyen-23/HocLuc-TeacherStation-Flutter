@@ -150,14 +150,14 @@ class _WorkspaceInviteDialogState extends State<WorkspaceInviteDialog> {
                   const SizedBox(height: 16),
                   const Text(
                     'Thêm email vào danh sách lớp. Chuẩn bị phòng Calendar để gửi lời mời Meet; không cần học sinh chấp nhận Classroom.',
-                    style: TextStyle(color: AppColors.slate600, height: 1.5),
+                    style: TextStyle(color: AppColors.textSecondary, height: 1.5),
                   ),
                   if (_error != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
                         _error!,
-                        style: const TextStyle(color: Colors.red),
+                        style: const TextStyle(color: AppColors.error),
                       ),
                     ),
                   if (_saving)

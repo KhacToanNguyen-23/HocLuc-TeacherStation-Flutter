@@ -153,7 +153,7 @@ class _ExamPaperEditorState extends State<ExamPaperEditor> {
           ListTile(
             title: const Text(
               'Chỉnh sửa đề',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w700),
             ),
             trailing: IconButton(
               onPressed: busy ? null : () => Navigator.pop(context),

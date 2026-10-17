@@ -1,5 +1,6 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import 'package:flutter/services.dart';
 import '../models/studio_state.dart';
 import 'grid_painter.dart';
@@ -93,14 +94,14 @@ class StageContainer extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                               border: isHovering
                                   ? Border.all(
-                                      color: const Color(0xffd4e8a6),
+                                      color: AppColors.onPrimary,
                                       width: 2.5,
                                     )
                                   : null,
                               boxShadow: const [
                                 BoxShadow(
                                   color: Color(0x33000000),
-                                  blurRadius: 16,
+                                  blurRadius: 8,
                                   offset: Offset(0, 4),
                                 ),
                               ],
@@ -115,9 +116,12 @@ class StageContainer extends StatelessWidget {
                                     studio: studio,
                                     broadcastSource: interactive,
                                     child: AnimatedSwitcher(
-                                      duration: const Duration(
+                                      duration: AppMotion.duration(
+                                        context,
                                         milliseconds: 200,
                                       ),
+                                      switchInCurve: AppMotion.enterCurve,
+                                      switchOutCurve: AppMotion.exitCurve,
                                       child: KeyedSubtree(
                                         key: ValueKey(
                                           '${studio.viewportMode}_${studio.pdfOnRight}',
@@ -207,14 +211,15 @@ class ViewportModeSwitcher extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: const Color(0xffedf1e8),
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: const Color(0xffdbe2d5)),
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppRadii.control),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildButton(
+            context: context,
             mode: StudioViewportMode.fullBoard,
             icon: Icons.border_clear,
             label: 'Bảng (F1)',
@@ -222,6 +227,7 @@ class ViewportModeSwitcher extends StatelessWidget {
           ),
           const SizedBox(width: 2),
           _buildButton(
+            context: context,
             mode: StudioViewportMode.split,
             icon: Icons.vertical_split_outlined,
             label: 'Chia đôi (F3)',
@@ -229,13 +235,14 @@ class ViewportModeSwitcher extends StatelessWidget {
           ),
           const SizedBox(width: 2),
           _buildButton(
+            context: context,
             mode: StudioViewportMode.fullPdf,
             icon: Icons.picture_as_pdf_outlined,
             label: 'PDF (F2)',
             tooltip: 'Toàn màn hình Tài liệu PDF (F2)',
           ),
           const SizedBox(width: 4),
-          Container(width: 1, height: 16, color: const Color(0xffd0d7ca)),
+          Container(width: 1, height: 16, color: AppColors.border),
           const SizedBox(width: 4),
           Tooltip(
             message: 'Nhập tệp PDF từ máy tính',
@@ -243,20 +250,25 @@ class ViewportModeSwitcher extends StatelessWidget {
               onTap: studio.importPdfDialog,
               borderRadius: BorderRadius.circular(7),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+                duration: AppMotion.duration(context, milliseconds: 150),
+                curve: AppMotion.stateCurve,
                 padding: EdgeInsets.symmetric(
                   horizontal: compact ? 7 : 10,
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xffdcebd0),
+                  color: AppColors.selected,
                   borderRadius: BorderRadius.circular(7),
-                  border: Border.all(color: const Color(0xffb8d8a2)),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.add, size: 14, color: Color(0xff1b473b)),
+                    const Icon(
+                      Icons.add,
+                      size: 14,
+                      color: AppColors.onSelected,
+                    ),
                     if (!compact) ...[
                       const SizedBox(width: 4),
                       const Text(
@@ -264,7 +276,7 @@ class ViewportModeSwitcher extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff1b473b),
+                          color: AppColors.onSelected,
                         ),
                       ),
                     ],
@@ -296,6 +308,7 @@ class ViewportModeSwitcher extends StatelessWidget {
   }
 
   Widget _buildButton({
+    required BuildContext context,
     required StudioViewportMode mode,
     required IconData icon,
     required String label,
@@ -308,13 +321,14 @@ class ViewportModeSwitcher extends StatelessWidget {
         onTap: () => studio.setViewportMode(mode),
         borderRadius: BorderRadius.circular(7),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: AppMotion.duration(context, milliseconds: 150),
+          curve: AppMotion.stateCurve,
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 7 : 10,
             vertical: 5,
           ),
           decoration: BoxDecoration(
-            color: active ? const Color(0xff173e35) : Colors.transparent,
+            color: active ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(7),
           ),
           child: Row(
@@ -323,9 +337,7 @@ class ViewportModeSwitcher extends StatelessWidget {
               Icon(
                 icon,
                 size: 14,
-                color: active
-                    ? const Color(0xffd4e8a6)
-                    : const Color(0xff4a5f54),
+                color: active ? AppColors.onPrimary : AppColors.textSecondary,
               ),
               if (!compact) ...[
                 const SizedBox(width: 5),
@@ -334,7 +346,7 @@ class ViewportModeSwitcher extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    color: active ? Colors.white : const Color(0xff4a5f54),
+                    color: active ? Colors.white : AppColors.textSecondary,
                   ),
                 ),
               ],

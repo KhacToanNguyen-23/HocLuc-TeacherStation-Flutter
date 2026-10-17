@@ -26,121 +26,132 @@ class DashboardActionCard extends StatefulWidget {
 
 class _DashboardActionCardState extends State<DashboardActionCard> {
   bool _isHovered = false;
+  bool _isFocused = false;
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final sky = AppColors.sky600;
-    final slate = AppColors.slate900;
-    final slateBorder = AppColors.slate200;
+    final sky = AppColors.primary;
+    final slate = AppColors.textPrimary;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          // Hover hiện lên (nhấc nhẹ 3px lên trên)
-          transform: Matrix4.translationValues(0, _isHovered ? -3 : 0, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _isHovered ? sky : slateBorder,
-              width: _isHovered ? 1.5 : 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _isHovered
-                    ? sky.withValues(alpha: 0.18)
-                    : Colors.black.withValues(alpha: 0.03),
-                blurRadius: _isHovered ? 18 : 6,
-                spreadRadius: _isHovered ? 1 : 0,
-                offset: Offset(0, _isHovered ? 7 : 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Icon container
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 48,
-                height: 48,
+    return FocusableActionDetector(
+      mouseCursor: SystemMouseCursors.click,
+      onShowHoverHighlight: (value) => setState(() => _isHovered = value),
+      onShowFocusHighlight: (value) => setState(() => _isFocused = value),
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            widget.onTap();
+            return null;
+          },
+        ),
+      },
+      child: Semantics(
+        button: true,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 220;
+              return AnimatedContainer(
+                duration: AppMotion.duration(context),
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsets.symmetric(
+                  horizontal: compact ? AppSpacing.md : AppSpacing.xxl,
+                  vertical: compact ? AppSpacing.lg : AppSpacing.xl,
+                ),
                 decoration: BoxDecoration(
-                  color: _isHovered ? AppColors.sky100 : AppColors.sky50,
-                  borderRadius: BorderRadius.circular(12),
+                  color: _isPressed
+                      ? AppColors.selected
+                      : _isHovered
+                      ? AppColors.sky50
+                      : AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(AppRadii.panel),
                   border: Border.all(
-                    color: _isHovered ? sky : const Color(0xFFBAE6FD),
-                    width: _isHovered ? 1.4 : 1.0,
+                    color: _isFocused
+                        ? AppColors.primary
+                        : _isHovered
+                        ? AppColors.primary.withValues(alpha: 0.55)
+                        : AppColors.surfaceBorder,
+                    width: _isFocused ? 2 : 1,
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    widget.icon,
-                    size: 24,
-                    color: sky,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              // Labels
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            widget.title,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: _isHovered ? sky : slate,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ),
-                        if (widget.badgeText != null) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.sky100,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              widget.badgeText!,
-                              style: const TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.sky600,
+                    // Icon container
+                    AnimatedContainer(
+                      duration: AppMotion.duration(context),
+                      curve: AppMotion.stateCurve,
+                      width: compact ? 40 : 48,
+                      height: compact ? 40 : 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.selected,
+                        borderRadius: BorderRadius.circular(AppRadii.control),
+                      ),
+                      child: Center(
+                        child: Icon(widget.icon, size: 24, color: sky),
+                      ),
+                    ),
+                    SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
+                    // Labels
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.title,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    fontSize: compact ? 14 : 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: _isHovered ? sky : slate,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
                               ),
-                            ),
+                              if (widget.badgeText != null) ...[
+                                const SizedBox(width: AppSpacing.xs),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm,
+                                    vertical: AppSpacing.xs,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.selected,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    widget.badgeText!,
+                                    style: const TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
-                      ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 13,
+                      color: _isHovered ? sky : AppColors.textMuted,
                     ),
                   ],
                 ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                transform: Matrix4.translationValues(_isHovered ? 2 : 0, 0, 0),
-                child: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 13,
-                  color: _isHovered ? sky : const Color(0xFF94A3B8),
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

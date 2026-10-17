@@ -15,8 +15,6 @@ class WorkspaceRosterTable extends StatelessWidget {
   final bool disabled;
   final void Function(Map<String, dynamic> course, Map<String, dynamic> student) onSetMeetAccess;
 
-  static const _teal = Color(0xff087f83);
-
   static Widget statusBadge(String status) {
     const labels = {
       'JOINED': 'Đã tham gia',
@@ -29,7 +27,7 @@ class WorkspaceRosterTable extends StatelessWidget {
       'CALENDAR_INVITED': 'Có trong lời mời Calendar',
       'VERIFYING': 'Đang xác nhận',
       'VERIFY_FAILED': 'Chưa xác nhận quyền',
-      'EXTERNAL_ACCESS': 'Quyền ngoài HocLuc',
+      'EXTERNAL_ACCESS': 'Quyền ngoài HocLucStation',
       'NOT_GRANTED': 'Chưa cấp quyền',
       'GRANT_FAILED': 'Cấp quyền thất bại',
       'REVOKE_FAILED': 'Chưa gỡ được quyền',
@@ -37,15 +35,19 @@ class WorkspaceRosterTable extends StatelessWidget {
     final success = status == 'JOINED' || status == 'GRANTED';
     final failed = status.endsWith('FAILED');
     final color = success
-        ? _teal
+        ? AppColors.success
         : failed
-        ? Colors.red.shade700
-        : AppColors.slate600;
+        ? AppColors.error
+        : AppColors.textSecondary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(6),
+        color: success
+            ? AppColors.successSurface
+            : failed
+            ? AppColors.errorSurface
+            : AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppRadii.badge),
       ),
       child: Text(
         labels[status] ?? 'Chưa xác định',
@@ -59,9 +61,9 @@ class WorkspaceRosterTable extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.slate200),
+        border: Border.all(color: AppColors.surfaceBorder),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -108,7 +110,7 @@ class WorkspaceRosterTable extends StatelessWidget {
                           if (student['error'] != null)
                             Text(
                               student['error'] as String,
-                              style: const TextStyle(color: Colors.red),
+                              style: const TextStyle(color: AppColors.error),
                             ),
                         ],
                       ),
@@ -145,7 +147,7 @@ class WorkspaceRosterTable extends StatelessWidget {
                                   s['email'] as String,
                                   style: const TextStyle(
                                     fontSize: 11,
-                                    color: AppColors.slate500,
+                                    color: AppColors.textMuted,
                                   ),
                                 ),
                               ],

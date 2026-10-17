@@ -37,7 +37,6 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   final Map<String, String> _startRequests = {};
   String? _startingCourse;
   int _connectGeneration = 0;
-  static const _teal = Color(0xff087f83);
 
   @override
   void initState() {
@@ -100,9 +99,12 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
       if (e is GoogleWorkspaceFailure && e.needsConsent) {
         _connection = {
           ..._connection,
+          'connected': false,
           'state': 'REAUTH_REQUIRED',
           'message': _error,
         };
+        _courses = [];
+        _selected = null;
       }
     });
   }
@@ -143,6 +145,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
       try {
         final email = await GoogleConnectionFlow.connect(
           _api,
+          context: context,
           forceConsent: repair,
           isActive: () => mounted && generation == _connectGeneration,
         );
@@ -182,7 +185,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Ngắt kết nối Google?'),
         content: const Text(
-          'HocLuc sẽ thu hồi quyền truy cập Classroom, Meet và Calendar của tài khoản này.',
+          'HocLucStation sẽ thu hồi quyền truy cập Classroom, Meet và Calendar của tài khoản này.',
         ),
         actions: [
           TextButton(
@@ -198,6 +201,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     );
     if (confirmed != true || !mounted) return;
     await _run(() async {
+      await TeachingLauncher.requireIdleForAccountChange();
       await _api.call('disconnect', post: true);
       await _load();
     });
@@ -393,7 +397,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
         Icon(
           error ? Icons.error_outline : Icons.info_outline,
           size: 20,
-          color: error ? Colors.red.shade700 : _teal,
+          color: error ? AppColors.error : AppColors.primary,
         ),
         const SizedBox(width: 10),
         Expanded(child: Text(text)),
@@ -404,9 +408,9 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   Widget _panel({required Widget child}) => Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppColors.slate200),
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadii.panel),
+      border: Border.all(color: AppColors.surfaceBorder),
     ),
     child: child,
   );
@@ -418,9 +422,12 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     final selected = _courses.where((c) => c['id'] == _selected).firstOrNull;
 
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Lớp học & kết nối Google'),
+        title: const Text(
+          'Lớp học & kết nối Google',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         actions: [
           TextButton.icon(
             onPressed: disabled ? null : _oneOff,

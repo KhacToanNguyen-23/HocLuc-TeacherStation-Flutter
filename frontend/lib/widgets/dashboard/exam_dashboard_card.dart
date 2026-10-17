@@ -14,18 +14,18 @@ class ExamDashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(20),
+    padding: const EdgeInsets.all(AppSpacing.xxl),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.slate200),
+      borderRadius: BorderRadius.circular(AppRadii.panel),
+      border: Border.all(color: AppColors.surfaceBorder),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Wrap(
-          spacing: 16,
-          runSpacing: 12,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.md,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             const Text.rich(
@@ -34,10 +34,10 @@ class ExamDashboardCard extends StatelessWidget {
                   WidgetSpan(
                     alignment: PlaceholderAlignment.middle,
                     child: Padding(
-                      padding: EdgeInsets.only(right: 10),
+                      padding: EdgeInsets.only(right: AppSpacing.md),
                       child: Icon(
                         Icons.assignment_outlined,
-                        color: AppColors.sky600,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -46,8 +46,8 @@ class ExamDashboardCard extends StatelessWidget {
               ),
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.slate900,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
             ),
             TextButton.icon(
@@ -57,7 +57,12 @@ class ExamDashboardCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 6),
+        const Text(
+          'V-ACT · HSA — quản lý đề, lớp học và kết quả kiểm tra.',
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 18),
         LayoutBuilder(
           builder: (context, box) {
             final columns = box.maxWidth < 600
@@ -84,28 +89,40 @@ class ExamDashboardCard extends StatelessWidget {
                 ])
                   SizedBox(
                     width: tileWidth,
-                    child: OutlinedButton.icon(
+                    child: TextButton.icon(
                       onPressed: () => onOpen(page),
-                      icon: Icon(icon, size: 20, color: AppColors.sky600),
+                      icon: Icon(icon, size: 20, color: AppColors.primary),
                       label: Text(
                         label,
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.slate900,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.surfaceMuted,
+                        foregroundColor: AppColors.textPrimary,
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 16,
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.lg,
                         ),
                         minimumSize: const Size(0, 48),
-                        side: const BorderSide(color: AppColors.slate200),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(AppRadii.control),
                         ),
+                      ).copyWith(
+                        backgroundColor: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.pressed)) {
+                            return AppColors.selected;
+                          }
+                          if (states.contains(WidgetState.hovered) ||
+                              states.contains(WidgetState.focused)) {
+                            return AppColors.sky50;
+                          }
+                          return AppColors.surfaceMuted;
+                        }),
                       ),
                     ),
                   ),

@@ -29,12 +29,11 @@ class StudioCameraControlPanel extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.slate200),
+            borderRadius: BorderRadius.circular(AppRadii.panel),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.14),
-                blurRadius: 18,
+                blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -50,15 +49,15 @@ class StudioCameraControlPanel extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: isBroadcasting
-                          ? const Color(0xFFDCFCE7)
-                          : const Color(0xFFF1F5F9),
+                          ? AppColors.successSurface
+                          : AppColors.surfaceMuted,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isBroadcasting ? Icons.videocam : Icons.videocam_outlined,
                       size: 16,
                       color: isBroadcasting
-                          ? const Color(0xFF16A34A)
+                          ? AppColors.success
                           : AppColors.slate700,
                     ),
                   ),
@@ -69,7 +68,7 @@ class StudioCameraControlPanel extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.slate900,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -122,12 +121,12 @@ class StudioCameraControlPanel extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: isBroadcasting
-                      ? const Color(0xFFDC2626)
-                      : const Color(0xFF2563EB),
+                      ? AppColors.error
+                      : AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
                 ),
               ),
@@ -140,16 +139,15 @@ class StudioCameraControlPanel extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(AppRadii.control),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.crop_free,
                       size: 16,
-                      color: AppColors.slate600,
+                      color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 8),
                     const Text(
@@ -168,7 +166,7 @@ class StudioCameraControlPanel extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.slate900,
+                        color: AppColors.textPrimary,
                       ),
                       items: const [
                         DropdownMenuItem(
@@ -192,7 +190,7 @@ class StudioCameraControlPanel extends StatelessWidget {
               // Bật/tắt Webcam PIP trên bảng
               InkWell(
                 onTap: studio.toggleCameraPip,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadii.control),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -200,14 +198,9 @@ class StudioCameraControlPanel extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: studio.showCameraPip
-                        ? const Color(0xFFF0FDF4)
-                        : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: studio.showCameraPip
-                          ? const Color(0xFFBBF7D0)
-                          : const Color(0xFFE2E8F0),
-                    ),
+                        ? AppColors.successSurface
+                        : AppColors.background,
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
                   child: Row(
                     children: [
@@ -217,8 +210,8 @@ class StudioCameraControlPanel extends StatelessWidget {
                             : Icons.picture_in_picture_alt_outlined,
                         size: 16,
                         color: studio.showCameraPip
-                            ? const Color(0xFF16A34A)
-                            : AppColors.slate600,
+                            ? AppColors.success
+                            : AppColors.textSecondary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -230,7 +223,7 @@ class StudioCameraControlPanel extends StatelessWidget {
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: studio.showCameraPip
-                                ? const Color(0xFF15803D)
+                                ? AppColors.success
                                 : AppColors.slate700,
                           ),
                         ),
@@ -240,7 +233,7 @@ class StudioCameraControlPanel extends StatelessWidget {
                         child: Switch(
                           value: studio.showCameraPip,
                           onChanged: (_) => studio.toggleCameraPip(),
-                          activeThumbColor: const Color(0xFF16A34A),
+                          activeThumbColor: AppColors.success,
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -259,16 +252,15 @@ class StudioCameraControlPanel extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.videocam_outlined,
                         size: 16,
-                        color: AppColors.slate600,
+                        color: AppColors.textSecondary,
                       ),
                       const SizedBox(width: 8),
                       const Text(
@@ -289,11 +281,11 @@ class StudioCameraControlPanel extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.slate900,
+                            color: AppColors.textPrimary,
                           ),
                           items: media.cameras
                               .map(
-                                (c) => DropdownMenuItem(
+                                (c) => DropdownMenuItem<String>(
                                   value: c.name,
                                   child: Text(
                                     c.name,
@@ -321,8 +313,8 @@ class StudioCameraControlPanel extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isBroadcasting
-                      ? const Color(0xFFF0FDF4)
-                      : const Color(0xFFF1F5F9),
+                      ? AppColors.successSurface
+                      : AppColors.surfaceMuted,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -332,8 +324,8 @@ class StudioCameraControlPanel extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     color: isBroadcasting
-                        ? const Color(0xFF15803D)
-                        : AppColors.slate600,
+                        ? AppColors.success
+                        : AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -343,7 +335,7 @@ class StudioCameraControlPanel extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   broadcast.errorMessage!,
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                  style: const TextStyle(color: AppColors.error, fontSize: 11),
                 ),
               ],
             ],

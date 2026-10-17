@@ -30,8 +30,8 @@ class StudioDocumentPagesList extends StatelessWidget {
           FilledButton(
             onPressed: () => Navigator.pop(context, input.text.trim()),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xff2d4c3d),
-              foregroundColor: AppColors.lime,
+              backgroundColor: AppColors.overlayRaised,
+              foregroundColor: AppColors.overlayAccent,
             ),
             child: const Text('Lưu'),
           ),
@@ -66,9 +66,7 @@ class StudioDocumentPagesList extends StatelessWidget {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.rose600,
-              ),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
               child: const Text('Xóa trang'),
             ),
           ],
@@ -96,17 +94,16 @@ class StudioDocumentPagesList extends StatelessWidget {
           studio.setPage(index);
           studio.view = 'board';
         }),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.control),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: AppMotion.duration(context, milliseconds: 150),
+          curve: AppMotion.stateCurve,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: isCurrent ? const Color(0x33d4e8a6) : const Color(0x14ffffff),
-            border: Border.all(
-              color: isCurrent ? AppColors.lime : const Color(0x22ffffff),
-              width: isCurrent ? 1.4 : 1.0,
-            ),
-            borderRadius: BorderRadius.circular(8),
+            color: isCurrent
+                ? AppColors.overlaySelected
+                : AppColors.overlayRaised,
+            borderRadius: BorderRadius.circular(AppRadii.control),
           ),
           child: Row(
             children: [
@@ -114,7 +111,9 @@ class StudioDocumentPagesList extends StatelessWidget {
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
-                  color: isCurrent ? AppColors.lime : const Color(0x24ffffff),
+                  color: isCurrent
+                      ? AppColors.overlayAccent
+                      : AppColors.overlayBorder,
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Center(
@@ -122,8 +121,10 @@ class StudioDocumentPagesList extends StatelessWidget {
                     '${index + 1}',
                     style: TextStyle(
                       fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      color: isCurrent ? const Color(0xff14221d) : const Color(0xffd0ded3),
+                      fontWeight: FontWeight.w700,
+                      color: isCurrent
+                          ? const Color(0xff14221d)
+                          : AppColors.overlayText,
                     ),
                   ),
                 ),
@@ -136,7 +137,7 @@ class StudioDocumentPagesList extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                    color: isCurrent ? Colors.white : const Color(0xffe0eae2),
+                    color: isCurrent ? Colors.white : AppColors.overlayText,
                   ),
                 ),
               ),
@@ -150,7 +151,7 @@ class StudioDocumentPagesList extends StatelessWidget {
                     child: Icon(
                       Icons.edit_outlined,
                       size: 13,
-                      color: Color(0xffa5b5a8),
+                      color: AppColors.overlayMuted,
                     ),
                   ),
                 ),
@@ -167,7 +168,7 @@ class StudioDocumentPagesList extends StatelessWidget {
                       child: Icon(
                         Icons.delete_outline,
                         size: 13,
-                        color: Color(0xffff7b7b),
+                        color: AppColors.errorSurface,
                       ),
                     ),
                   ),
@@ -177,7 +178,9 @@ class StudioDocumentPagesList extends StatelessWidget {
               Icon(
                 hasStrokes ? Icons.draw_outlined : Icons.crop_portrait,
                 size: 12,
-                color: isCurrent ? AppColors.lime : const Color(0x55ffffff),
+                color: isCurrent
+                    ? AppColors.overlayAccent
+                    : AppColors.overlayMuted,
               ),
             ],
           ),
@@ -192,20 +195,19 @@ class StudioDocumentPagesList extends StatelessWidget {
         studio.addPage();
         studio.view = 'board';
       }),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadii.control),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
         margin: const EdgeInsets.only(top: 2, bottom: 4),
         decoration: BoxDecoration(
-          color: const Color(0x18d4e8a6),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0x44d4e8a6)),
+          color: AppColors.overlaySelected,
+          borderRadius: BorderRadius.circular(AppRadii.control),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: 14, color: AppColors.lime),
+            Icon(Icons.add, size: 14, color: AppColors.overlayAccent),
             SizedBox(width: 4),
             Flexible(
               child: Text(
@@ -214,7 +216,7 @@ class StudioDocumentPagesList extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.lime,
+                  color: AppColors.overlayAccent,
                 ),
               ),
             ),
@@ -234,7 +236,7 @@ class StudioDocumentPagesList extends StatelessWidget {
             const Icon(
               Icons.layers_outlined,
               size: 13,
-              color: AppColors.lime,
+              color: AppColors.overlayAccent,
             ),
             const SizedBox(width: 5),
             const Text(
@@ -243,7 +245,7 @@ class StudioDocumentPagesList extends StatelessWidget {
                 fontSize: 9.5,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w700,
-                color: AppColors.lime,
+                color: AppColors.overlayAccent,
               ),
             ),
             const Spacer(),
@@ -252,7 +254,7 @@ class StudioDocumentPagesList extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.bold,
-                color: Color(0xffa5b5a8),
+                color: AppColors.overlayMuted,
               ),
             ),
           ],

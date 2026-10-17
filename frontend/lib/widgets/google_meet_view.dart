@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_windows/webview_windows.dart' as win;
 import '../services/meet_automation_service.dart';
+import '../constants/theme.dart';
 
 /// Uses the existing Meet controller/cookies; never creates a second session.
 class GoogleMeetView extends StatelessWidget {
@@ -15,7 +16,7 @@ class GoogleMeetView extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(16),
           child: Text(
-            'Phòng Meet trong ứng dụng cần HocLuc trên Windows và WebView2.',
+            'Phòng Meet trong ứng dụng cần HocLucStation trên Windows và WebView2.',
           ),
         ),
       );
@@ -25,7 +26,10 @@ class GoogleMeetView extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: service.errorMessage != null
-              ? Text(service.errorMessage!)
+              ? Text(
+                  service.errorMessage!,
+                  style: const TextStyle(color: AppColors.error),
+                )
               : const Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [

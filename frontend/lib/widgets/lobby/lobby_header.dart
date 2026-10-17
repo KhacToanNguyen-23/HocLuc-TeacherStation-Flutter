@@ -26,7 +26,7 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
       scrolledUnderElevation: 0,
       bottom: const PreferredSize(
         preferredSize: Size.fromHeight(1),
-        child: Divider(height: 1, color: AppColors.slate200),
+        child: Divider(height: 1, color: AppColors.border),
       ),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_rounded, color: AppColors.slate700),
@@ -38,16 +38,16 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFEEF2FF),
+              color: AppColors.selected,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFFC7D2FE)),
+              border: Border.all(color: AppColors.border),
             ),
             child: const Text(
               'LOBBY',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF4338CA),
+                color: AppColors.onSelected,
                 letterSpacing: 0.8,
               ),
             ),
@@ -57,8 +57,8 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
             'Chuẩn bị phòng giảng dạy',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: AppColors.slate900,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -74,24 +74,36 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
             return Padding(
               padding: const EdgeInsets.only(right: 16),
               child: InkWell(
-                onTap: () => GoogleWebviewLoginDialog.show(context, authService: authService),
-                borderRadius: BorderRadius.circular(20),
+                onTap: () => GoogleWebviewLoginDialog.show(
+                  context,
+                  authService: authService,
+                ),
+                borderRadius: BorderRadius.circular(AppRadii.panel),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSignedIn ? const Color(0xFFF0FDF4) : const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(20),
+                    color: isSignedIn
+                        ? AppColors.successSurface
+                        : AppColors.warningSurface,
+                    borderRadius: BorderRadius.circular(AppRadii.panel),
                     border: Border.all(
-                      color: isSignedIn ? const Color(0xFFBBF7D0) : const Color(0xFFFDE68A),
+                      color: isSignedIn ? AppColors.border : AppColors.warning,
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isSignedIn ? Icons.check_circle_rounded : Icons.account_circle_outlined,
+                        isSignedIn
+                            ? Icons.check_circle_rounded
+                            : Icons.account_circle_outlined,
                         size: 14,
-                        color: isSignedIn ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                        color: isSignedIn
+                            ? AppColors.success
+                            : AppColors.warning,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -99,7 +111,9 @@ class LobbyHeader extends StatelessWidget implements PreferredSizeWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: isSignedIn ? const Color(0xFF15803D) : const Color(0xFFB45309),
+                          color: isSignedIn
+                              ? AppColors.success
+                              : AppColors.warning,
                         ),
                       ),
                     ],

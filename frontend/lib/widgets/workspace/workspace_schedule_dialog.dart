@@ -136,7 +136,7 @@ class _WorkspaceScheduleDialogState extends State<WorkspaceScheduleDialog> {
                     padding: const EdgeInsets.only(top: 12),
                     child: Text(
                       _error!,
-                      style: const TextStyle(color: Colors.red),
+                      style: const TextStyle(color: AppColors.error),
                     ),
                   ),
                 if (_saving)

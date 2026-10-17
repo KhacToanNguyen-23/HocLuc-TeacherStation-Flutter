@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/theme.dart';
 import '../../services/audio_translation_service.dart';
 import '../../services/teacher_media_service.dart';
 import 'package:file_picker/file_picker.dart';
@@ -264,7 +265,7 @@ class AudioTranslationControls extends StatelessWidget {
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: audio.mode == 'english'
-                ? const Color(0xff0284c7)
+                ? AppColors.primary
                 : Theme.of(context).colorScheme.onSurface,
           ),
         ),
@@ -284,7 +285,7 @@ class AudioTranslationControls extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             audio.en,
-            style: const TextStyle(fontSize: 12, color: Color(0xff0284c7)),
+            style: const TextStyle(fontSize: 12, color: AppColors.primary),
           ),
         ],
         const SizedBox(height: 10),

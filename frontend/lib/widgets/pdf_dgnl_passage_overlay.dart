@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../services/pdf_annotation_exporter.dart';
 
@@ -7,10 +8,7 @@ class _DashedBorderPainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
 
-  const _DashedBorderPainter({
-    required this.color,
-    this.strokeWidth = 1.6,
-  });
+  const _DashedBorderPainter({required this.color, this.strokeWidth = 1.6});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -62,27 +60,34 @@ class PdfDgnlPassageOverlay extends StatefulWidget {
 
 class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
   int _activeSpanIndex = 0;
-  String? _activeCategoryFilter; // null = all, or 'grammar', 'collocation', 'vocabulary'
+  String?
+  _activeCategoryFilter; // null = all, or 'grammar', 'collocation', 'vocabulary'
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: widget.studio,
       builder: (context, _) {
-        final passages = widget.studio.getPdfDgnlPassagesForPage(widget.pageNumber);
+        final passages = widget.studio.getPdfDgnlPassagesForPage(
+          widget.pageNumber,
+        );
         if (passages.isEmpty) return const SizedBox.shrink();
 
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            for (final passage in passages) ..._buildPassageWidgets(context, passage),
+            for (final passage in passages)
+              ..._buildPassageWidgets(context, passage),
           ],
         );
       },
     );
   }
 
-  bool _isSpanContained(PdfDgnlHighlightSpan inner, PdfDgnlHighlightSpan outer) {
+  bool _isSpanContained(
+    PdfDgnlHighlightSpan inner,
+    PdfDgnlHighlightSpan outer,
+  ) {
     if (identical(inner, outer)) return false;
     final innerText = inner.text.toLowerCase().trim();
     final outerText = outer.text.toLowerCase().trim();
@@ -105,7 +110,10 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
     return false;
   }
 
-  List<Widget> _buildPassageWidgets(BuildContext context, PdfDgnlPassage passage) {
+  List<Widget> _buildPassageWidgets(
+    BuildContext context,
+    PdfDgnlPassage passage,
+  ) {
     final widgets = <Widget>[];
     final pageRect = widget.pageRect;
     final studio = widget.studio;
@@ -119,25 +127,46 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
     final visibleSpans = _activeCategoryFilter == null
         ? passage.spans
         : passage.spans.where((s) {
-            if (_activeCategoryFilter == 'grammar') return s.category == 'grammar';
-            if (_activeCategoryFilter == 'collocation') return s.category == 'collocation';
-            if (_activeCategoryFilter == 'B2') return s.category == 'vocabulary' && s.level == 'B2';
+            if (_activeCategoryFilter == 'grammar') {
+              return s.category == 'grammar';
+            }
+            if (_activeCategoryFilter == 'collocation') {
+              return s.category == 'collocation';
+            }
+            if (_activeCategoryFilter == 'B2') {
+              return s.category == 'vocabulary' && s.level == 'B2';
+            }
             if (_activeCategoryFilter == 'C1') {
-              return s.category == 'vocabulary' && (s.level == 'C1' || s.level == 'C2');
+              return s.category == 'vocabulary' &&
+                  (s.level == 'C1' || s.level == 'C2');
             }
             return true;
           }).toList();
 
-    final grammarCount = passage.spans.where((s) => s.category == 'grammar').length;
-    final collocCount = passage.spans.where((s) => s.category == 'collocation').length;
-    final b2Count = passage.spans.where((s) => s.category == 'vocabulary' && s.level == 'B2').length;
-    final c1Count = passage.spans.where((s) => s.category == 'vocabulary' && (s.level == 'C1' || s.level == 'C2')).length;
+    final grammarCount = passage.spans
+        .where((s) => s.category == 'grammar')
+        .length;
+    final collocCount = passage.spans
+        .where((s) => s.category == 'collocation')
+        .length;
+    final b2Count = passage.spans
+        .where((s) => s.category == 'vocabulary' && s.level == 'B2')
+        .length;
+    final c1Count = passage.spans
+        .where(
+          (s) =>
+              s.category == 'vocabulary' &&
+              (s.level == 'C1' || s.level == 'C2'),
+        )
+        .length;
 
     // Ensure active index is within bounds
     if (_activeSpanIndex >= visibleSpans.length && visibleSpans.isNotEmpty) {
       _activeSpanIndex = 0;
     }
-    final activeSpan = visibleSpans.isNotEmpty ? visibleSpans[_activeSpanIndex] : null;
+    final activeSpan = visibleSpans.isNotEmpty
+        ? visibleSpans[_activeSpanIndex]
+        : null;
 
     // 1. Passage boundary box (soft glowing border on the PDF page)
     widgets.add(
@@ -151,14 +180,11 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
             decoration: BoxDecoration(
               color: const Color(0x0c89b4fa),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: const Color(0x5589b4fa),
-                width: 1.5,
-              ),
+              border: Border.all(color: const Color(0x5589b4fa), width: 1.5),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x18000000),
-                  blurRadius: 10,
+                  blurRadius: 8,
                   offset: Offset(0, 2),
                 ),
               ],
@@ -173,17 +199,28 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
       final span = passage.spans[spanIdx];
       final isCurrentActive = activeSpan != null && identical(span, activeSpan);
 
-      final matchesFilter = _activeCategoryFilter == null ||
+      final matchesFilter =
+          _activeCategoryFilter == null ||
           (_activeCategoryFilter == 'grammar' && span.category == 'grammar') ||
-          (_activeCategoryFilter == 'collocation' && span.category == 'collocation') ||
-          (_activeCategoryFilter == 'B2' && span.category == 'vocabulary' && span.level == 'B2') ||
-          (_activeCategoryFilter == 'C1' && span.category == 'vocabulary' && (span.level == 'C1' || span.level == 'C2'));
+          (_activeCategoryFilter == 'collocation' &&
+              span.category == 'collocation') ||
+          (_activeCategoryFilter == 'B2' &&
+              span.category == 'vocabulary' &&
+              span.level == 'B2') ||
+          (_activeCategoryFilter == 'C1' &&
+              span.category == 'vocabulary' &&
+              (span.level == 'C1' || span.level == 'C2'));
 
       final spanOpacity = matchesFilter ? 1.0 : 0.14;
 
       // Check if vocabulary span is nested inside a collocation span
-      final isNestedVocab = span.category == 'vocabulary' &&
-          passage.spans.any((other) => other.category == 'collocation' && _isSpanContained(span, other));
+      final isNestedVocab =
+          span.category == 'vocabulary' &&
+          passage.spans.any(
+            (other) =>
+                other.category == 'collocation' &&
+                _isSpanContained(span, other),
+          );
 
       for (final normR in span.normalizedRects) {
         // Expand grammar dashed box slightly so it neatly wraps around inner spans
@@ -200,23 +237,31 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
 
         if (isGrammar) {
           // Grammar: outer dashed border, ZERO background fill to avoid color mud
-          bgColor = isCurrentActive ? const Color(0x2289b4fa) : Colors.transparent;
+          bgColor = isCurrentActive
+              ? const Color(0x2289b4fa)
+              : Colors.transparent;
           accentColor = const Color(0xff89b4fa); // Neon blue
         } else if (span.category == 'collocation') {
           // Collocation: Soft green pastel fill
-          bgColor = isCurrentActive ? const Color(0x4d86efac) : const Color(0x2886efac);
+          bgColor = isCurrentActive
+              ? const Color(0x4d86efac)
+              : const Color(0x2886efac);
           accentColor = const Color(0xff86efac); // Vibrant green
         } else if (span.level == 'C1' || span.level == 'C2') {
           // C1 Vocab: If nested inside collocation, use transparent fill with crisp border
           bgColor = isNestedVocab
               ? (isCurrentActive ? const Color(0x35cba6f7) : Colors.transparent)
-              : (isCurrentActive ? const Color(0x55cba6f7) : const Color(0x28cba6f7));
+              : (isCurrentActive
+                    ? const Color(0x55cba6f7)
+                    : const Color(0x28cba6f7));
           accentColor = const Color(0xffcba6f7); // Purple C1
         } else {
           // B2 Vocab: If nested inside collocation, use transparent fill with crisp border
           bgColor = isNestedVocab
               ? (isCurrentActive ? const Color(0x35f9e2af) : Colors.transparent)
-              : (isCurrentActive ? const Color(0x55f9e2af) : const Color(0x28f9e2af));
+              : (isCurrentActive
+                    ? const Color(0x55f9e2af)
+                    : const Color(0x28f9e2af));
           accentColor = const Color(0xfff9e2af); // Amber/yellow B2
         }
 
@@ -230,7 +275,10 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
               opacity: spanOpacity,
               child: Tooltip(
                 message: '[${span.type}] ${span.text}\n• ${span.note}',
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 textStyle: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
@@ -242,7 +290,11 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: accentColor, width: 1.2),
                   boxShadow: const [
-                    BoxShadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 3)),
+                    BoxShadow(
+                      color: Colors.black54,
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    ),
                   ],
                 ),
                 child: InkWell(
@@ -252,16 +304,28 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                         _activeCategoryFilter = span.category == 'grammar'
                             ? 'grammar'
                             : (span.category == 'collocation'
-                                ? 'collocation'
-                                : (span.level == 'C1' || span.level == 'C2' ? 'C1' : 'B2'));
+                                  ? 'collocation'
+                                  : (span.level == 'C1' || span.level == 'C2'
+                                        ? 'C1'
+                                        : 'B2'));
                       }
                       final targetVisible = _activeCategoryFilter == null
                           ? passage.spans
                           : passage.spans.where((s) {
-                              if (_activeCategoryFilter == 'grammar') return s.category == 'grammar';
-                              if (_activeCategoryFilter == 'collocation') return s.category == 'collocation';
-                              if (_activeCategoryFilter == 'B2') return s.category == 'vocabulary' && s.level == 'B2';
-                              if (_activeCategoryFilter == 'C1') return s.category == 'vocabulary' && (s.level == 'C1' || s.level == 'C2');
+                              if (_activeCategoryFilter == 'grammar') {
+                                return s.category == 'grammar';
+                              }
+                              if (_activeCategoryFilter == 'collocation') {
+                                return s.category == 'collocation';
+                              }
+                              if (_activeCategoryFilter == 'B2') {
+                                return s.category == 'vocabulary' &&
+                                    s.level == 'B2';
+                              }
+                              if (_activeCategoryFilter == 'C1') {
+                                return s.category == 'vocabulary' &&
+                                    (s.level == 'C1' || s.level == 'C2');
+                              }
                               return true;
                             }).toList();
                       final idx = targetVisible.indexOf(span);
@@ -279,16 +343,22 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: bgColor,
-                        borderRadius: BorderRadius.circular(isGrammar ? 4.5 : 3.5),
+                        borderRadius: BorderRadius.circular(
+                          isGrammar ? 4.5 : 3.5,
+                        ),
                         border: isGrammar
                             ? null
                             : Border.all(
                                 color: isCurrentActive
                                     ? Colors.white
                                     : (isNestedVocab
-                                        ? accentColor.withValues(alpha: 0.95)
-                                        : accentColor.withValues(alpha: 0.45)),
-                                width: isCurrentActive ? 1.6 : (isNestedVocab ? 1.2 : 0.8),
+                                          ? accentColor.withValues(alpha: 0.95)
+                                          : accentColor.withValues(
+                                              alpha: 0.45,
+                                            )),
+                                width: isCurrentActive
+                                    ? 1.6
+                                    : (isNestedVocab ? 1.2 : 0.8),
                               ),
                         boxShadow: isCurrentActive
                             ? [
@@ -313,10 +383,14 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
     // 3. Legend Header Bar (bounded inside PDF page dimensions, never overflowing)
     final headerTop = (pTop - 44).clamp(6.0, pageRect.height - 50).toDouble();
     const estimatedBarWidth = 620.0;
-    final headerLeft = ((pLeft + estimatedBarWidth > pageRect.width - 8.0)
-        ? (pageRect.width - estimatedBarWidth - 8.0).clamp(8.0, pLeft)
-        : pLeft.clamp(8.0, math.max(8.0, pageRect.width - 100.0))).toDouble();
-    final maxBarWidth = (pageRect.width - headerLeft - 8.0).clamp(120.0, pageRect.width).toDouble();
+    final headerLeft =
+        ((pLeft + estimatedBarWidth > pageRect.width - 8.0)
+                ? (pageRect.width - estimatedBarWidth - 8.0).clamp(8.0, pLeft)
+                : pLeft.clamp(8.0, math.max(8.0, pageRect.width - 100.0)))
+            .toDouble();
+    final maxBarWidth = (pageRect.width - headerLeft - 8.0)
+        .clamp(120.0, pageRect.width)
+        .toDouble();
 
     widgets.add(
       Positioned(
@@ -333,7 +407,7 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x99000000),
-                  blurRadius: 12,
+                  blurRadius: 8,
                   offset: Offset(0, 3),
                 ),
               ],
@@ -382,7 +456,9 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                     onTap: () {
                       setState(() {
                         _activeCategoryFilter =
-                            _activeCategoryFilter == 'grammar' ? null : 'grammar';
+                            _activeCategoryFilter == 'grammar'
+                            ? null
+                            : 'grammar';
                         _activeSpanIndex = 0;
                       });
                     },
@@ -399,7 +475,9 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                     onTap: () {
                       setState(() {
                         _activeCategoryFilter =
-                            _activeCategoryFilter == 'collocation' ? null : 'collocation';
+                            _activeCategoryFilter == 'collocation'
+                            ? null
+                            : 'collocation';
                         _activeSpanIndex = 0;
                       });
                     },
@@ -415,8 +493,9 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                     isSelected: _activeCategoryFilter == 'B2',
                     onTap: () {
                       setState(() {
-                        _activeCategoryFilter =
-                            _activeCategoryFilter == 'B2' ? null : 'B2';
+                        _activeCategoryFilter = _activeCategoryFilter == 'B2'
+                            ? null
+                            : 'B2';
                         _activeSpanIndex = 0;
                       });
                     },
@@ -433,8 +512,9 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                       isSelected: _activeCategoryFilter == 'C1',
                       onTap: () {
                         setState(() {
-                          _activeCategoryFilter =
-                              _activeCategoryFilter == 'C1' ? null : 'C1';
+                          _activeCategoryFilter = _activeCategoryFilter == 'C1'
+                              ? null
+                              : 'C1';
                           _activeSpanIndex = 0;
                         });
                       },
@@ -450,7 +530,10 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                       onTap: () => _showClozeModal(context, passage),
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0x3386efac),
                           borderRadius: BorderRadius.circular(8),
@@ -459,7 +542,11 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.quiz_outlined, size: 12, color: Color(0xff86efac)),
+                            const Icon(
+                              Icons.quiz_outlined,
+                              size: 12,
+                              color: Color(0xff86efac),
+                            ),
                             const SizedBox(width: 3),
                             Text(
                               '${passage.clozeQuestions.length} Cloze',
@@ -479,19 +566,33 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                   // Button: Highlight trực tiếp lên file PDF
                   InkWell(
                     key: const Key('btn_export_pdf_highlights'),
-                    onTap: () => PdfAnnotationExporter.applyHighlightDirectlyToPdf(context, studio),
+                    onTap: () =>
+                        PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+                          context,
+                          studio,
+                        ),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0x3389b4fa),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xff89b4fa), width: 1.1),
+                        border: Border.all(
+                          color: const Color(0xff89b4fa),
+                          width: 1.1,
+                        ),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.draw_rounded, size: 12, color: Color(0xff89b4fa)),
+                          Icon(
+                            Icons.draw_rounded,
+                            size: 12,
+                            color: Color(0xff89b4fa),
+                          ),
                           SizedBox(width: 3),
                           Text(
                             'Ghi vào PDF',
@@ -517,7 +618,11 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                         color: Color(0x28ffffff),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close, size: 12, color: Color(0xffa6adc8)),
+                      child: const Icon(
+                        Icons.close,
+                        size: 12,
+                        color: Color(0xffa6adc8),
+                      ),
                     ),
                   ),
                 ],
@@ -530,9 +635,16 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
 
     // 4. Floating Lecturer Explanation Card (Directly on the document file)
     if (activeSpan != null) {
-      final cardTop = (pTop + pHeight + 10).clamp(8.0, pageRect.height - 130).toDouble();
-      final cardWidth = math.max(pWidth, 420.0).clamp(340.0, pageRect.width - 24).toDouble();
-      final cardLeft = pLeft.clamp(8.0, math.max(8.0, pageRect.width - cardWidth - 8)).toDouble();
+      final cardTop = (pTop + pHeight + 10)
+          .clamp(8.0, pageRect.height - 130)
+          .toDouble();
+      final cardWidth = math
+          .max(pWidth, 420.0)
+          .clamp(340.0, pageRect.width - 24)
+          .toDouble();
+      final cardLeft = pLeft
+          .clamp(8.0, math.max(8.0, pageRect.width - cardWidth - 8))
+          .toDouble();
 
       Color categoryColor = const Color(0xff89b4fa);
       if (activeSpan.category == 'collocation') {
@@ -560,7 +672,7 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
               boxShadow: const [
                 BoxShadow(
                   color: Color(0xbb000000),
-                  blurRadius: 18,
+                  blurRadius: 8,
                   offset: Offset(0, 6),
                 ),
               ],
@@ -599,16 +711,23 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: categoryColor.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: categoryColor.withValues(alpha: 0.6)),
+                        border: Border.all(
+                          color: categoryColor.withValues(alpha: 0.6),
+                        ),
                       ),
                       child: Text(
                         activeSpan.category == 'grammar'
                             ? 'GRAMMAR'
-                            : (activeSpan.category == 'collocation' ? 'COLLOCATION' : activeSpan.level),
+                            : (activeSpan.category == 'collocation'
+                                  ? 'COLLOCATION'
+                                  : activeSpan.level),
                         style: TextStyle(
                           color: categoryColor,
                           fontSize: 10,
@@ -619,10 +738,17 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                     ),
                     const SizedBox(width: 6),
                     InkWell(
-                      onTap: () => PdfAnnotationExporter.applyHighlightDirectlyToPdf(context, studio),
+                      onTap: () =>
+                          PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+                            context,
+                            studio,
+                          ),
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0x2889b4fa),
                           borderRadius: BorderRadius.circular(8),
@@ -631,7 +757,11 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.draw_rounded, size: 11, color: Color(0xff89b4fa)),
+                            Icon(
+                              Icons.draw_rounded,
+                              size: 11,
+                              color: Color(0xff89b4fa),
+                            ),
                             SizedBox(width: 3),
                             Text(
                               'Áp lên file',
@@ -664,7 +794,10 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                 // Target text snippet
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0x22ffffff),
                     borderRadius: BorderRadius.circular(6),
@@ -686,7 +819,8 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                 Builder(
                   builder: (context) {
                     final canGoPrev = _activeSpanIndex > 0;
-                    final canGoNext = _activeSpanIndex < visibleSpans.length - 1;
+                    final canGoNext =
+                        _activeSpanIndex < visibleSpans.length - 1;
 
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -701,15 +835,26 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                               : null,
                           borderRadius: BorderRadius.circular(6),
                           child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 150),
+                            duration: AppMotion.duration(
+                              context,
+                              milliseconds: 150,
+                            ),
+                            curve: AppMotion.stateCurve,
                             opacity: canGoPrev ? 1.0 : 0.35,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3.5,
+                              ),
                               decoration: BoxDecoration(
-                                color: canGoPrev ? const Color(0x22ffffff) : const Color(0x0affffff),
+                                color: canGoPrev
+                                    ? const Color(0x22ffffff)
+                                    : const Color(0x0affffff),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: canGoPrev ? Colors.white24 : Colors.transparent,
+                                  color: canGoPrev
+                                      ? Colors.white24
+                                      : Colors.transparent,
                                   width: 0.8,
                                 ),
                               ),
@@ -719,14 +864,18 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                                   Icon(
                                     Icons.chevron_left,
                                     size: 14,
-                                    color: canGoPrev ? Colors.white : Colors.white38,
+                                    color: canGoPrev
+                                        ? Colors.white
+                                        : Colors.white38,
                                   ),
                                   const SizedBox(width: 2),
                                   Text(
                                     'Trước',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: canGoPrev ? Colors.white : Colors.white38,
+                                      color: canGoPrev
+                                          ? Colors.white
+                                          : Colors.white38,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -753,10 +902,17 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                               : null,
                           borderRadius: BorderRadius.circular(6),
                           child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 150),
+                            duration: AppMotion.duration(
+                              context,
+                              milliseconds: 150,
+                            ),
+                            curve: AppMotion.stateCurve,
                             opacity: canGoNext ? 1.0 : 0.35,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3.5,
+                              ),
                               decoration: BoxDecoration(
                                 color: canGoNext
                                     ? categoryColor.withValues(alpha: 0.25)
@@ -776,7 +932,9 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                                     'Tiếp theo',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: canGoNext ? categoryColor : Colors.white38,
+                                      color: canGoNext
+                                          ? categoryColor
+                                          : Colors.white38,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -784,7 +942,9 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                                   Icon(
                                     Icons.chevron_right,
                                     size: 14,
-                                    color: canGoNext ? categoryColor : Colors.white38,
+                                    color: canGoNext
+                                        ? categoryColor
+                                        : Colors.white38,
                                   ),
                                 ],
                               ),
@@ -819,7 +979,9 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.3) : color.withValues(alpha: 0.12),
+          color: isSelected
+              ? color.withValues(alpha: 0.3)
+              : color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(6),
           border: isDashed
               ? null
@@ -887,11 +1049,19 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                 const Expanded(
                   child: Text(
                     'Bài tập Đục lỗ (Cloze Test) tự sinh theo chuẩn ĐGNL',
-                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white70, size: 18),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
                   onPressed: () => Navigator.pop(ctx),
                 ),
               ],
@@ -905,7 +1075,11 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                 itemBuilder: (context, idx) {
                   final q = passage.clozeQuestions[idx];
                   final sentence = q['sentence']?.toString() ?? '';
-                  final options = (q['options'] as List?)?.map((e) => e.toString()).toList() ?? [];
+                  final options =
+                      (q['options'] as List?)
+                          ?.map((e) => e.toString())
+                          .toList() ??
+                      [];
                   final answer = q['answer']?.toString() ?? '';
                   final explanation = q['explanation']?.toString() ?? '';
 
@@ -921,29 +1095,48 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                       children: [
                         Text(
                           'Câu ${idx + 1}: $sentence',
-                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
                           runSpacing: 6,
                           children: [
-                            for (int optIdx = 0; optIdx < options.length; optIdx++) ...[
+                            for (
+                              int optIdx = 0;
+                              optIdx < options.length;
+                              optIdx++
+                            ) ...[
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: options[optIdx] == answer ? const Color(0x3386efac) : const Color(0x18ffffff),
+                                  color: options[optIdx] == answer
+                                      ? const Color(0x3386efac)
+                                      : const Color(0x18ffffff),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: options[optIdx] == answer ? const Color(0x8886efac) : const Color(0x28ffffff),
+                                    color: options[optIdx] == answer
+                                        ? const Color(0x8886efac)
+                                        : const Color(0x28ffffff),
                                   ),
                                 ),
                                 child: Text(
                                   '${String.fromCharCode(65 + optIdx)}. ${options[optIdx]}',
                                   style: TextStyle(
-                                    color: options[optIdx] == answer ? const Color(0xff86efac) : const Color(0xffcdd6f4),
+                                    color: options[optIdx] == answer
+                                        ? const Color(0xff86efac)
+                                        : const Color(0xffcdd6f4),
                                     fontSize: 11.5,
-                                    fontWeight: options[optIdx] == answer ? FontWeight.bold : FontWeight.normal,
+                                    fontWeight: options[optIdx] == answer
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                   ),
                                 ),
                               ),
@@ -954,7 +1147,10 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                           const SizedBox(height: 6),
                           Text(
                             '• $explanation',
-                            style: const TextStyle(color: Color(0xff94a3b8), fontSize: 11),
+                            style: const TextStyle(
+                              color: Color(0xff94a3b8),
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ],
