@@ -341,6 +341,7 @@ class StudioState extends ChangeNotifier {
   bool hasCustomPdfWindowPos = false;
 
   InstalledPlugin? activePlugin;
+  InstalledPlugin? floatingPlugin;
   bool showPluginDrawer = false;
   bool pluginFloating = false;
   Offset pluginFloatingPosition = const Offset(80, 80);
@@ -366,23 +367,67 @@ class StudioState extends ChangeNotifier {
   }
 
   void openPlugin(InstalledPlugin plugin, {bool openModal = false}) {
-    activePlugin = plugin;
-    showPluginDrawer = openModal;
-    pluginFloating = false;
+    if (plugin.manifest.uiPlacement == 'floating_window') {
+      floatingPlugin = plugin;
+      pluginFloating = true;
+      pluginFloatingSize = Size(
+        plugin.manifest.uiDefaultWidth,
+        plugin.manifest.uiDefaultHeight,
+      );
+      if (activePlugin == null ||
+          activePlugin!.manifest.uiPlacement == 'floating_window') {
+        activePlugin = plugin;
+      }
+    } else {
+      activePlugin = plugin;
+      showPluginDrawer = openModal;
+      if (floatingPlugin == null) {
+        pluginFloating = false;
+      }
+    }
     showQuestionsDrawer = false;
     notifyListeners();
   }
 
   void closePlugin() {
+    if (activePlugin != null &&
+        floatingPlugin != null &&
+        activePlugin!.id == floatingPlugin!.id) {
+      floatingPlugin = null;
+      pluginFloating = false;
+    } else if (floatingPlugin == null) {
+      pluginFloating = false;
+    }
     activePlugin = null;
     showPluginDrawer = false;
-    pluginFloating = false;
     activeSubjectTool = null;
+    notifyListeners();
+  }
+
+  void closeFloatingPlugin() {
+    final closingId = floatingPlugin?.id;
+    floatingPlugin = null;
+    pluginFloating = false;
+    if (activePlugin != null &&
+        (activePlugin!.id == closingId ||
+            activePlugin!.manifest.uiPlacement == 'floating_window')) {
+      activePlugin = null;
+      showPluginDrawer = false;
+      activeSubjectTool = null;
+    }
     notifyListeners();
   }
 
   void togglePluginFloating() {
     pluginFloating = !pluginFloating;
+    if (pluginFloating && floatingPlugin == null && activePlugin != null) {
+      floatingPlugin = activePlugin;
+    } else if (!pluginFloating &&
+        floatingPlugin != null &&
+        activePlugin?.id == floatingPlugin?.id) {
+      floatingPlugin = null;
+      showPluginDrawer = true;
+    }
     notifyListeners();
   }
 
@@ -615,11 +660,15 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  void handlePluginMessage(dynamic message, {void Function(String jsScript)? executeJs}) {
+  void handlePluginMessage(
+    dynamic message, {
+    void Function(String jsScript)? executeJs,
+    dynamic manifest,
+  }) {
     HostBridge.instance.handleMessage(
       rawMessage: message,
       studio: this,
-      manifest: activePlugin?.manifest,
+      manifest: manifest ?? activePlugin?.manifest ?? floatingPlugin?.manifest,
       executeJs: executeJs,
     );
   }

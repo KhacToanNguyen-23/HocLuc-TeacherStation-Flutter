@@ -12,6 +12,11 @@ void main() {
       final libDir = Directory('lib');
       expect(libDir.existsSync(), isTrue, reason: 'Thư mục lib/ phải tồn tại');
 
+      const forbiddenTokens = [
+        'english_assistant',
+        'com.hocluc.plugin.',
+        'casio_calculator',
+      ];
       final violations = <String>[];
       final files = libDir.listSync(recursive: true).whereType<File>();
 
@@ -19,8 +24,10 @@ void main() {
         if (!file.path.endsWith('.dart')) continue;
         final content = file.readAsStringSync();
 
-        if (content.contains('english_assistant')) {
-          violations.add('${file.path}: chứa chuỗi hardcode "english_assistant"');
+        for (final token in forbiddenTokens) {
+          if (content.contains(token)) {
+            violations.add('${file.path}: chứa chuỗi hardcode "$token"');
+          }
         }
       }
 

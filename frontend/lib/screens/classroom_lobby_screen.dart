@@ -114,6 +114,7 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     });
   }
 
+  // ignore: unused_element
   Future<void> _syncClassroomToBackend(String meetingUrl) async {
     try {
       final local = LocalService();

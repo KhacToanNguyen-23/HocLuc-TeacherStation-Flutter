@@ -22,7 +22,11 @@ public class SecurityTokenInterceptor implements HandlerInterceptor {
         }
         String path = request.getRequestURI();
         if (path.equals("/api/integrations/google/callback") && "GET".equals(request.getMethod())) return true;
-        if (path.equals("/api/bootstrap") || path.startsWith("/api/auth/") || !path.startsWith("/api/")) {
+        if (path.equals("/api/bootstrap")
+                || path.startsWith("/api/auth/")
+                || path.startsWith("/api/marketplace/")
+                || path.startsWith("/api/v1/plugins")
+                || !path.startsWith("/api/")) {
             return true;
         }
 

@@ -41,7 +41,7 @@ class DgnlAnalysisResult {
 class DgnlService {
   /// Base URL resolved dynamically from ProcessSupervisor if plugin sidecar is active
   static String? get baseUrl {
-    final port = ProcessSupervisor.instance.getPort('com.hocluc.plugin.english');
+    final port = ProcessSupervisor.instance.getActiveSidecarPort();
     return port != null ? 'http://127.0.0.1:$port' : null;
   }
 

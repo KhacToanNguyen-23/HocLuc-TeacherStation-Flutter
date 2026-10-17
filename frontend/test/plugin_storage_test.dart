@@ -106,5 +106,26 @@ void main() {
       await PluginManager.instance.uninstallPlugin('com.hocluc.test.reader');
       expect(PluginManager.instance.isInstalled('com.hocluc.test.reader'), isFalse);
     });
+
+    test('installFromZip rejects archives with Zip Slip path traversal (..)', () async {
+      final archive = Archive();
+      final manifestJson = jsonEncode({
+        'id': 'com.hocluc.test.evil',
+        'name': 'Evil Zip',
+        'version': '1.0.0',
+      });
+      archive.addFile(
+        ArchiveFile('manifest.json', manifestJson.length, utf8.encode(manifestJson)),
+      );
+      archive.addFile(
+        ArchiveFile('../escaped.txt', 4, utf8.encode('evil')),
+      );
+      final zipBytes = ZipEncoder().encode(archive);
+
+      expect(
+        () => PluginStorageManager.instance.installFromZip(zipBytes),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 }

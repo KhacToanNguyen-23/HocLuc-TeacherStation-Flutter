@@ -73,17 +73,27 @@ class PluginStorageManager {
       }
     }
 
-    // Fallback: Check local development workspace folder (e.g. plugins/<plugin_id>)
-    final devCandidates = [
-      Directory('plugins/$pluginId'),
-      Directory('../plugins/$pluginId'),
-      Directory('../../plugins/$pluginId'),
+    // Fallback: Check local development workspace folder (e.g. plugins/<plugin_id> or plugins/<folder> with matching manifest.id)
+    final devRoots = [
+      Directory('plugins'),
+      Directory('../plugins'),
+      Directory('../../plugins'),
     ];
 
-    for (final d in devCandidates) {
-      if (d.existsSync() && File('${d.path}/manifest.json').existsSync()) {
-        return d;
+    for (final rootDir in devRoots) {
+      if (!rootDir.existsSync()) continue;
+      final direct = Directory('${rootDir.path}/$pluginId');
+      if (direct.existsSync() && File('${direct.path}/manifest.json').existsSync()) {
+        return direct;
       }
+      try {
+        for (final subDir in rootDir.listSync().whereType<Directory>()) {
+          final m = loadManifestFromDir(subDir);
+          if (m != null && m.id == pluginId) {
+            return subDir;
+          }
+        }
+      } catch (_) {}
     }
 
     return null;
@@ -94,13 +104,17 @@ class PluginStorageManager {
     final archive = ZipDecoder().decodeBytes(bytes);
     ArchiveFile? manifestFile;
 
-    // Scan for manifest.json in archive
+    // Scan for manifest.json in archive and guard against Zip Slip
     for (final file in archive) {
+      final normPath = file.name.replaceAll('\\', '/');
+      if (normPath.contains('..') || normPath.startsWith('/')) {
+        throw const FormatException(
+          'Gói plugin chứa đường dẫn không an toàn (Zip Slip).',
+        );
+      }
       if (file.isFile) {
-        final normPath = file.name.replaceAll('\\', '/');
         if (normPath == 'manifest.json' || normPath.endsWith('/manifest.json')) {
           manifestFile = file;
-          break;
         }
       }
     }
@@ -112,6 +126,9 @@ class PluginStorageManager {
     final manifestStr = utf8.decode(manifestFile.content as List<int>);
     final manifestJson = jsonDecode(manifestStr) as Map<String, dynamic>;
     final manifest = PluginManifest.fromJson(manifestJson);
+    if (manifest.id.contains('..') || manifest.id.contains('/') || manifest.id.contains('\\')) {
+      throw const FormatException('ID của plugin trong manifest.json không hợp lệ.');
+    }
 
     final root = getPluginsRootDirectory();
     final targetDir = Directory('${root.path}/${manifest.id}/v${manifest.version}');
@@ -127,6 +144,9 @@ class PluginStorageManager {
         // Strip top-level directory if archive has wrapper root
         if (relPath.startsWith('${manifest.id}/')) {
           relPath = relPath.substring('${manifest.id}/'.length);
+        }
+        if (relPath.contains('..') || relPath.startsWith('/')) {
+          throw const FormatException('Đường dẫn tệp giải nén không hợp lệ.');
         }
 
         final outPath = '${targetDir.path}/$relPath';
@@ -164,5 +184,25 @@ class PluginStorageManager {
       debugPrint('[PluginStorageManager] Error reading manifest from ${dir.path}: $e');
       return null;
     }
+  }
+
+  /// Read and parse manifest.json from an in-memory zip archive / .hlep package.
+  PluginManifest? loadManifestFromZip(List<int> bytes) {
+    try {
+      final archive = ZipDecoder().decodeBytes(bytes);
+      for (final file in archive) {
+        if (file.isFile) {
+          final normPath = file.name.replaceAll('\\', '/');
+          if (normPath == 'manifest.json' || normPath.endsWith('/manifest.json')) {
+            final manifestStr = utf8.decode(file.content as List<int>);
+            final manifestJson = jsonDecode(manifestStr) as Map<String, dynamic>;
+            return PluginManifest.fromJson(manifestJson);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[PluginStorageManager] Error reading manifest from zip: $e');
+    }
+    return null;
   }
 }

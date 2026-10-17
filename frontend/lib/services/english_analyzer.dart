@@ -188,7 +188,7 @@ class EnglishSentenceAnalyzer {
 
   static BoardSticker analyze({
     required String text,
-    String pluginId = 'com.hocluc.plugin.english',
+    String pluginId = 'grammar_annotation',
     Rect? targetRect,
   }) {
     final cleanSentence = text.trim();
@@ -311,7 +311,7 @@ class EnglishSentenceAnalyzer {
   static Future<List<Map<String, dynamic>>> analyzeTokensWithBackend(
     String text,
   ) async {
-    final port = ProcessSupervisor.instance.getPort('com.hocluc.plugin.english');
+    final port = ProcessSupervisor.instance.getActiveSidecarPort();
     if (port == null) return analyze(text: text).tokens;
 
     try {
@@ -360,7 +360,7 @@ class EnglishSentenceAnalyzer {
   static Future<Map<String, dynamic>?> analyzeWithOcr(
     Uint8List pngBytes,
   ) async {
-    final port = ProcessSupervisor.instance.getPort('com.hocluc.plugin.english');
+    final port = ProcessSupervisor.instance.getActiveSidecarPort();
     if (port == null) return null;
 
     try {
