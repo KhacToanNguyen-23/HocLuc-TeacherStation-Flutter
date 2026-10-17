@@ -81,17 +81,27 @@ public class ExportService {
                     for(String paragraph:value.split("\\n",-1)) for(String line:wrap(paragraph,font,10,499)) {
                         if(y<55) { page=new PDPage(PDRectangle.A4); doc.addPage(page); y=790; number++; }
                         try(PDPageContentStream stream=new PDPageContentStream(doc,page,PDPageContentStream.AppendMode.APPEND,true)) {
-                            stream.beginText(); stream.setFont(font,10); stream.newLineAtOffset(48,y); stream.showText(line); stream.endText();
+                            stream.beginText(); stream.setFont(font,10); stream.newLineAtOffset(48,y); show(stream,line); stream.endText();
                         } y-=15;
                     } y-=6;
                 }
             }
             int index=1;
             for(PDPage p:doc.getPages()) try(PDPageContentStream stream=new PDPageContentStream(doc,p,PDPageContentStream.AppendMode.APPEND,true)) {
-                stream.beginText(); stream.setFont(font,9); stream.newLineAtOffset(48,25); stream.showText("Trang "+index++ +" / "+doc.getNumberOfPages()); stream.endText();
+                stream.beginText(); stream.setFont(font,9); stream.newLineAtOffset(48,25); show(stream,"Trang "+index++ +" / "+doc.getNumberOfPages()); stream.endText();
             }
             doc.save(out); return out.toByteArray();
         }
+    }
+    private static void show(PDPageContentStream stream,String text) throws IOException {
+        int start=0;
+        for(int i=0;i<text.length()-1;i++) {
+            if(text.charAt(i)=='f'&&text.charAt(i+1)=='f') {
+                stream.showText(text.substring(start,i+1));
+                start=i+1;
+            }
+        }
+        if(start<text.length()) stream.showText(text.substring(start));
     }
     private List<String> wrap(String text,PDFont font,float size,float width) throws IOException {
         List<String> lines=new ArrayList<>(); StringBuilder line=new StringBuilder();

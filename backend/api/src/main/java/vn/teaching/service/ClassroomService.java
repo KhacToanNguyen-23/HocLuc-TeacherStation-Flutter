@@ -242,11 +242,16 @@ public class ClassroomService {
                 List<Classroom> list = loadAllClassrooms();
                 boolean removed = list.removeIf(c -> classroomId.equals(c.getId()));
                 if (removed) {
-                    saveAllClassrooms(list);
+                    if (!saveAllClassrooms(list)) {
+                        return false;
+                    }
                     Path contentFile = classroomsDir.resolve(classroomId + ".json");
                     try {
                         Files.deleteIfExists(contentFile);
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        log.warn("[classroom] History entry removed but content cleanup failed | id={} cause={}",
+                                classroomId, e.getClass().getSimpleName());
+                    }
                     log.info("[classroom] History deleted | id={}", classroomId);
                     return true;
                 }
@@ -262,18 +267,26 @@ public class ClassroomService {
             try {
                 List<Classroom> list = loadAllClassrooms();
                 List<Classroom> remaining = new ArrayList<>();
+                List<String> deletedContentIds = new ArrayList<>();
                 for (Classroom c : list) {
                     boolean matchesTeacher = teacherId == null || teacherId.isBlank() || teacherId.equals(c.getTeacherId());
                     if ("COMPLETED".equalsIgnoreCase(c.getStatus()) && matchesTeacher) {
-                        Path contentFile = classroomsDir.resolve(c.getId() + ".json");
-                        try {
-                            Files.deleteIfExists(contentFile);
-                        } catch (Exception ignored) {}
+                        deletedContentIds.add(c.getId());
                     } else {
                         remaining.add(c);
                     }
                 }
-                saveAllClassrooms(remaining);
+                if (!saveAllClassrooms(remaining)) {
+                    return false;
+                }
+                for (String id : deletedContentIds) {
+                    try {
+                        Files.deleteIfExists(classroomsDir.resolve(id + ".json"));
+                    } catch (Exception e) {
+                        log.warn("[classroom] History cleared but content cleanup failed | id={} cause={}",
+                                id, e.getClass().getSimpleName());
+                    }
+                }
                 log.info("[classroom] All history cleared | remaining={}", remaining.size());
                 return true;
             } catch (Exception e) {

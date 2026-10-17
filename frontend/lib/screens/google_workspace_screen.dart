@@ -70,7 +70,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool manageBusy = true}) async {
     try {
       final connection = await _api.call('status');
       if (!mounted) return;
@@ -101,7 +101,10 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
     } catch (e) {
       _handleError(e);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (manageBusy && mounted) {
+        setState(() => _busy = false);
+        _retryQueuedResume();
+      }
     }
   }
 
@@ -171,29 +174,32 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
+    if (_busy) {
+      _resumeRetryQueued = true;
+      return;
+    }
     final courseId = _pendingClassroomCourseId;
     if (courseId == null || courseId != _selected) return;
     final course = _courseById(courseId);
     if (course == null || !_needsClassroomSync(course)) return;
     if (_syncingClassrooms.contains(courseId)) return;
-    if (_busy) {
-      _resumeRetryQueued = true;
-      return;
-    }
     unawaited(_syncClassroomCourse(courseId));
   }
 
   void _retryQueuedResume() {
     if (!mounted || !_resumeRetryQueued || _busy) return;
-    _resumeRetryQueued = false;
     final courseId = _pendingClassroomCourseId;
-    if (courseId == null || courseId != _selected) return;
-    final course = _courseById(courseId);
-    if (course == null ||
-        !_needsClassroomSync(course) ||
-        _syncingClassrooms.contains(courseId)) {
+    if (courseId == null || courseId != _selected) {
+      _resumeRetryQueued = false;
       return;
     }
+    final course = _courseById(courseId);
+    if (course == null || !_needsClassroomSync(course)) {
+      _resumeRetryQueued = false;
+      return;
+    }
+    if (_syncingClassrooms.contains(courseId)) return;
+    _resumeRetryQueued = false;
     unawaited(_syncClassroomCourse(courseId));
   }
 
@@ -218,7 +224,14 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
         }
       });
     } finally {
-      _syncingClassrooms.remove(courseId);
+      if (mounted) {
+        setState(() {
+          _syncingClassrooms.remove(courseId);
+        });
+        _retryQueuedResume();
+      } else {
+        _syncingClassrooms.remove(courseId);
+      }
     }
   }
 
@@ -277,7 +290,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
         } finally {
           if (mounted) _auth.addListener(_accountChanged);
         }
-        await _load();
+        await _load(manageBusy: false);
       } finally {
         if (mounted) setState(() => _polling = false);
       }
@@ -308,7 +321,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
     await _run(() async {
       await TeachingLauncher.requireIdleForAccountChange();
       await _api.call('disconnect', post: true);
-      await _load();
+      await _load(manageBusy: false);
     });
   }
 

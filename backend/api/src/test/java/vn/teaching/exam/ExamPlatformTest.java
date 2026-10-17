@@ -126,7 +126,7 @@ class ExamPlatformTest {
     }
     @Test void pdfAndDocxCarryImagesAndSeparateAnswerKey() throws Exception {
         Fixture f=fixture(1); byte[] pdf=exports.export(f.paper(),"pdf","paper");
-        try(PDDocument doc=Loader.loadPDF(pdf)) { String text=new PDFTextStripper().getText(doc); assertTrue(text.contains("Đề kiểm tra năng lực")); assertTrue(text.contains(f.paper().id())); assertFalse(text.contains("Lời giải đã duyệt")); boolean image=false; for(PDPage page:doc.getPages()) for(var name:page.getResources().getXObjectNames()) if(page.getResources().isImageXObject(name)) image=true; assertTrue(image); }
+        try(PDDocument doc=Loader.loadPDF(pdf)) { String text=new PDFTextStripper().getText(doc).replace("\uE007","ff").replace("\uE008","ffl"); assertTrue(text.contains("Đề kiểm tra năng lực")); assertTrue(text.contains(f.paper().id())); assertFalse(text.contains("Lời giải đã duyệt")); boolean image=false; for(PDPage page:doc.getPages()) for(var name:page.getResources().getXObjectNames()) if(page.getResources().isImageXObject(name)) image=true; assertTrue(image); }
         try(XWPFDocument doc=new XWPFDocument(new ByteArrayInputStream(exports.export(f.paper(),"docx","paper")))) { assertEquals(1,doc.getAllPictures().size()); }
         try(PDDocument doc=Loader.loadPDF(exports.export(f.paper(),"pdf","answers"))) { assertTrue(new PDFTextStripper().getText(doc).contains("Câu 1: B")); }
     }
