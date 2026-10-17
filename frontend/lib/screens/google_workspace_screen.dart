@@ -27,7 +27,8 @@ class GoogleWorkspaceScreen extends StatefulWidget {
   State<GoogleWorkspaceScreen> createState() => _GoogleWorkspaceScreenState();
 }
 
-class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
+class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
+    with WidgetsBindingObserver {
   late GoogleWorkspaceApi _api;
   final _auth = GoogleMeetAuthService();
   Map<String, dynamic> _connection = {};
@@ -35,6 +36,10 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   String? _selected, _error;
   bool _busy = true, _polling = false;
   final Map<String, String> _startRequests = {};
+  final Set<String> _syncingClassrooms = {};
+  final Map<String, String> _classroomSyncErrors = {};
+  String? _pendingClassroomCourseId;
+  bool _resumeRetryQueued = false;
   String? _startingCourse;
   int _connectGeneration = 0;
 
@@ -43,6 +48,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     super.initState();
     _api = widget.api ?? GoogleWorkspaceApi(email: _auth.teacherEmail ?? '');
     _auth.addListener(_accountChanged);
+    WidgetsBinding.instance.addObserver(this);
     unawaited(_load());
   }
 
@@ -58,6 +64,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   void dispose() {
     _connectGeneration++;
     _auth.removeListener(_accountChanged);
+    WidgetsBinding.instance.removeObserver(this);
     if (widget.api == null) _api.close();
     super.dispose();
   }
@@ -81,6 +88,14 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
           _selected = courses.isEmpty ? null : courses.first['id'] as String;
         }
       });
+      final trackedPendingCourse = _courseById(_pendingClassroomCourseId);
+      if (trackedPendingCourse?['classroomState'] != 'PROVISIONED') {
+        _pendingClassroomCourseId = null;
+      }
+      final selectedCourse = _courseById(_selected);
+      if (selectedCourse?['classroomState'] == 'PROVISIONED') {
+        _rememberPendingCourse(selectedCourse!);
+      }
     } catch (e) {
       _handleError(e);
     } finally {
@@ -110,6 +125,9 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
   }
 
   void _replace(Map<String, dynamic> course) {
+    _rememberPendingCourse(course);
+    final id = course['id'];
+    if (id is String) _classroomSyncErrors.remove(id);
     setState(() {
       _courses = [
         for (final c in _courses)
@@ -118,6 +136,79 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
       _selected = course['id'] as String;
       _error = null;
     });
+  }
+
+  Map<String, dynamic>? _courseById(String? id) {
+    if (id == null) return null;
+    for (final course in _courses) {
+      if (course['id'] == id) return course;
+    }
+    return null;
+  }
+
+  void _rememberPendingCourse(Map<String, dynamic> course) {
+    final id = course['id'];
+    if (id is! String) return;
+    if (course['classroomState'] == 'PROVISIONED' &&
+        course['courseId'] is String &&
+        (course['courseId'] as String).isNotEmpty) {
+      _pendingClassroomCourseId = id;
+    } else if (_pendingClassroomCourseId == id) {
+      _pendingClassroomCourseId = null;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    final courseId = _pendingClassroomCourseId;
+    if (courseId == null || courseId != _selected) return;
+    final course = _courseById(courseId);
+    if (course?['classroomState'] != 'PROVISIONED') return;
+    if (_syncingClassrooms.contains(courseId)) return;
+    if (_busy) {
+      _resumeRetryQueued = true;
+      return;
+    }
+    unawaited(_syncClassroomCourse(courseId));
+  }
+
+  void _retryQueuedResume() {
+    if (!mounted || !_resumeRetryQueued || _busy) return;
+    _resumeRetryQueued = false;
+    final courseId = _pendingClassroomCourseId;
+    if (courseId == null || courseId != _selected) return;
+    final course = _courseById(courseId);
+    if (course?['classroomState'] != 'PROVISIONED' ||
+        _syncingClassrooms.contains(courseId)) {
+      return;
+    }
+    unawaited(_syncClassroomCourse(courseId));
+  }
+
+  Future<void> _syncClassroomCourse(String courseId) async {
+    if (!_syncingClassrooms.add(courseId)) return;
+    if (mounted) {
+      setState(() => _classroomSyncErrors.remove(courseId));
+    }
+    try {
+      await _run(() async {
+        try {
+          final course = await _api.call('courses/$courseId/sync', post: true);
+          if (!mounted) return;
+          _replace(course);
+        } catch (e) {
+          if (!mounted) return;
+          if (e is GoogleWorkspaceFailure && e.needsConsent) {
+            _handleError(e);
+          } else {
+            setState(() => _classroomSyncErrors[courseId] = _message(e));
+          }
+        }
+      });
+    } finally {
+      _syncingClassrooms.remove(courseId);
+    }
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -130,7 +221,10 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
     } catch (e) {
       _handleError(e);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+        _retryQueuedResume();
+      }
     }
   }
 
@@ -464,12 +558,15 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                       disabled: disabled,
                       polling: _polling,
                       onConnect: () {
-                        final retry = _connection['state'] == 'TEMPORARY_ERROR' ||
+                        final retry =
+                            _connection['state'] == 'TEMPORARY_ERROR' ||
                             _connection['state'] == 'CONFIG_ERROR';
                         if (connected || retry) {
                           _run(_load);
                         } else {
-                          _connect(repair: _connection['state'] == 'REAUTH_REQUIRED');
+                          _connect(
+                            repair: _connection['state'] == 'REAUTH_REQUIRED',
+                          );
                         }
                       },
                       onChangeAccount: () => _connect(changeAccount: true),
@@ -519,9 +616,17 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                                 ),
                                 onSelected: disabled
                                     ? null
-                                    : (_) => setState(
-                                        () => _selected = course['id'] as String,
-                                      ),
+                                    : (_) {
+                                        final id = course['id'] as String;
+                                        setState(() => _selected = id);
+                                        final selectedCourse = _courseById(id);
+                                        if (selectedCourse?['classroomState'] ==
+                                            'PROVISIONED') {
+                                          _rememberPendingCourse(
+                                            selectedCourse!,
+                                          );
+                                        }
+                                      },
                               ),
                             )
                             .toList(),
@@ -530,9 +635,16 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                         const SizedBox(height: 20),
                         WorkspaceCourseDetail(
                           course: selected,
+                          classroomSyncing: _syncingClassrooms.contains(
+                            selected['id'],
+                          ),
+                          classroomSyncError:
+                              _classroomSyncErrors[selected['id']],
                           disabled: disabled,
                           startingCourseId: _startingCourse,
-                          hasStartRequest: _startRequests.containsKey(selected['id']),
+                          hasStartRequest: _startRequests.containsKey(
+                            selected['id'],
+                          ),
                           onCompleteClass: () => _run(() async {
                             _replace(
                               await _api.call(
@@ -542,21 +654,16 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen> {
                                   'requestId': selected['id'],
                                   'title': selected['title'],
                                   'description': selected['description'] ?? '',
-                                  'emails': selected['intendedEmails'] ?? <String>[],
+                                  'emails':
+                                      selected['intendedEmails'] ?? <String>[],
                                 },
                               ),
                             );
                           }),
                           onStartClass: () => _start(selected),
                           onAddStudents: () => _editClass(course: selected),
-                          onSync: () => _run(
-                            () async => _replace(
-                              await _api.call(
-                                'courses/${selected['id']}/sync',
-                                post: true,
-                              ),
-                            ),
-                          ),
+                          onSync: () =>
+                              _syncClassroomCourse(selected['id'] as String),
                           onSchedule: () => _schedule(selected),
                           onSetMeetAccess: _setMeetAccess,
                         ),

@@ -20,6 +20,8 @@ class WorkspaceCourseDetail extends StatelessWidget {
     required this.onSync,
     required this.onSchedule,
     required this.onSetMeetAccess,
+    this.classroomSyncing = false,
+    this.classroomSyncError,
   });
 
   final Map<String, dynamic> course;
@@ -31,7 +33,10 @@ class WorkspaceCourseDetail extends StatelessWidget {
   final VoidCallback onAddStudents;
   final VoidCallback onSync;
   final VoidCallback onSchedule;
-  final void Function(Map<String, dynamic> course, Map<String, dynamic> student) onSetMeetAccess;
+  final void Function(Map<String, dynamic> course, Map<String, dynamic> student)
+  onSetMeetAccess;
+  final bool classroomSyncing;
+  final String? classroomSyncError;
 
   static String _date(String iso) {
     final date = DateTime.tryParse(iso)?.toLocal();
@@ -61,18 +66,83 @@ class WorkspaceCourseDetail extends StatelessWidget {
     ),
   );
 
+  static ({String message, bool error})? _classroomStatus(
+    Map<String, dynamic> course, {
+    required bool syncing,
+    required String? syncError,
+  }) {
+    final state = course['classroomState'];
+    if (syncing) {
+      final pendingGuidance = state == 'PROVISIONED'
+          ? ' Nếu lớp chưa được kích hoạt. Mở Classroom để chấp nhận.'
+          : '';
+      return (message: 'Đang đồng bộ Classroom…$pendingGuidance', error: false);
+    }
+    if (syncError != null) {
+      final retryGuidance = state == 'PROVISIONED'
+          ? ' Lớp vẫn chờ được kích hoạt. Mở Classroom để chấp nhận. Thử lại bằng nút Đồng bộ hoặc khi bạn quay lại ứng dụng.'
+          : ' Bấm nút Đồng bộ để thử lại.';
+      return (
+        message: 'Không thể đồng bộ Classroom: $syncError.$retryGuidance',
+        error: true,
+      );
+    }
+    if (state is! String || state.isEmpty) return null;
+
+    final warnings = (course['classroomWarnings'] as List? ?? [])
+        .cast<String>();
+    if (state == 'PROVISIONED') {
+      return (
+        message:
+            'Lớp đã tạo nhưng chưa được Google kích hoạt. Mở Classroom để chấp nhận; HocLucStation sẽ tự kiểm tra khi bạn quay lại.',
+        error: false,
+      );
+    }
+    if (state == 'ACTIVE') {
+      if (warnings.isNotEmpty) {
+        return (
+          message: 'Lớp đã kích hoạt nhưng còn cảnh báo đồng bộ Classroom.',
+          error: true,
+        );
+      }
+      if (course['syncedAt'] is String &&
+          (course['syncedAt'] as String).isNotEmpty) {
+        return (message: 'Đã đồng bộ thành viên từ Classroom.', error: false);
+      }
+      return (
+        message:
+            'Lớp đã kích hoạt nhưng chưa xác nhận đồng bộ thành viên. Bấm Đồng bộ để thử lại.',
+        error: true,
+      );
+    }
+    return (
+      message: 'Trạng thái Classroom là $state. Kiểm tra lớp trong Classroom.',
+      error: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final students = (course['students'] as List? ?? []).cast<Map<String, dynamic>>();
-    final joined = students.where((s) => s['classroomStatus'] == 'JOINED').length;
+    final students = (course['students'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
+    final joined = students
+        .where((s) => s['classroomStatus'] == 'JOINED')
+        .length;
     final warnings = [
       ...(course['warnings'] as List? ?? []),
       ...(course['classroomWarnings'] as List? ?? []),
     ].cast<String>();
-    final events = (course['events'] as List? ?? []).cast<Map<String, dynamic>>();
+    final classroomStatus = _classroomStatus(
+      course,
+      syncing: classroomSyncing,
+      syncError: classroomSyncError,
+    );
+    final events = (course['events'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
 
     final isStarting = startingCourseId == course['id'];
-    final isResuming = TeachingLauncher.hasStudio &&
+    final isResuming =
+        TeachingLauncher.hasStudio &&
         MeetAutomationService().meetingUrl == course['meetingUrl'];
 
     return Column(
@@ -90,7 +160,10 @@ class WorkspaceCourseDetail extends StatelessWidget {
             children: [
               Text(
                 course['title'] as String,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -142,18 +215,22 @@ class WorkspaceCourseDetail extends StatelessWidget {
                     icon: const Icon(Icons.event_outlined),
                     label: const Text('Lên lịch học'),
                   ),
-                  if (course['classroomUrl'] case final String url when url.isNotEmpty)
+                  if (course['classroomUrl'] case final String url
+                      when url.isNotEmpty)
                     TextButton(
                       onPressed: () => openExternalUrl(url),
                       child: const Text('Mở Classroom'),
                     ),
-                  if (course['meetingUrl'] case final String url when url.isNotEmpty)
+                  if (course['meetingUrl'] case final String url
+                      when url.isNotEmpty)
                     TextButton(
                       onPressed: () async {
                         await Clipboard.setData(ClipboardData(text: url));
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Đã sao chép link Meet.')),
+                            const SnackBar(
+                              content: Text('Đã sao chép link Meet.'),
+                            ),
                           );
                         }
                       },
@@ -168,6 +245,10 @@ class WorkspaceCourseDetail extends StatelessWidget {
                     : 'Đồng bộ gần nhất: ${_date(course['syncedAt'] as String)}',
                 style: const TextStyle(color: AppColors.textMuted),
               ),
+              if (classroomStatus != null) ...[
+                const SizedBox(height: 8),
+                _notice(classroomStatus.message, error: classroomStatus.error),
+              ],
               const SizedBox(height: 6),
               const Text(
                 'Nhập email học sinh một lần, sau đó bấm Bắt đầu dạy. HocLucStation tự chuẩn bị phòng và gửi lời mời cho buổi học. Học sinh dùng link của buổi này và đúng email được mời.',
@@ -177,7 +258,8 @@ class WorkspaceCourseDetail extends StatelessWidget {
           ),
         ),
         for (final warning in warnings) _notice(warning, error: true),
-        if (course['accessNotice'] != null) _notice(course['accessNotice'] as String),
+        if (course['accessNotice'] != null)
+          _notice(course['accessNotice'] as String),
         const SizedBox(height: 16),
         WorkspaceRosterTable(
           course: course,
