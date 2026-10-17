@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../services/plugin_manager.dart';
+import '../services/plugin_web_server.dart';
 import '../services/process_supervisor.dart';
 import 'flat_host.dart';
 
@@ -18,8 +19,12 @@ class PluginHostDrawer extends StatelessWidget {
       listenable: studio,
       builder: (context, _) {
         final plugin = studio.activePlugin;
+        final isSameAsFloating =
+            studio.pluginFloating &&
+            (studio.floatingPlugin == null ||
+                studio.floatingPlugin?.id == plugin?.id);
         final isOpen =
-            plugin != null && studio.showPluginDrawer && !studio.pluginFloating;
+            plugin != null && studio.showPluginDrawer && !isSameAsFloating;
         final drawerWidth = plugin?.manifest.uiDefaultWidth ?? 420.0;
 
         return AnimatedPositioned(
@@ -61,10 +66,10 @@ class PluginHostDrawer extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.extension,
+                      Icon(
+                        plugin?.icon ?? Icons.extension,
                         size: 16,
-                        color: AppColors.overlayAccent,
+                        color: plugin?.color ?? AppColors.overlayAccent,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -78,48 +83,6 @@ class PluginHostDrawer extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Quick Scan Paragraph on PDF
-                      Tooltip(
-                        message:
-                            'Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng (PrtSc)',
-                        child: InkWell(
-                          onTap: () => studio.startSnipping(target: 'dgnl'),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.overlaySelected,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AppColors.overlaySelected,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(
-                                  Icons.crop_free,
-                                  size: 13,
-                                  color: AppColors.overlayAccent,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Quét đoạn văn',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.overlayText,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
                       IconButton(
                         icon: const Icon(Icons.open_in_new, size: 16),
                         tooltip: 'Tách thành cửa sổ nổi',
@@ -158,9 +121,12 @@ class PluginHostDrawer extends StatelessWidget {
   Widget _buildPluginContent(dynamic plugin) {
     if (plugin == null) return const SizedBox.shrink();
     final entry = plugin.manifest.uiEntry as String;
-    String targetUrl = entry;
+    String targetUrl =
+        PluginWebServer.instance.getUrl(plugin.manifest.id, entry) ?? entry;
 
-    if (plugin is InstalledPlugin && plugin.installDirectory != null) {
+    if (targetUrl == entry &&
+        plugin is InstalledPlugin &&
+        plugin.installDirectory != null) {
       final f = File('${plugin.installDirectory!.path}/$entry');
       if (f.existsSync()) {
         targetUrl = f.absolute.uri.toString();

@@ -838,6 +838,19 @@ class _StudioScreenState extends State<StudioScreen> {
                                     onClose: () => setState(
                                       () => showPluginsMarketplace = false,
                                     ),
+                                    onOpenPlugin: (plugin) {
+                                      if (plugin is InstalledPlugin) {
+                                        studio.openPlugin(
+                                          plugin,
+                                          openModal:
+                                              plugin.manifest.uiPlacement !=
+                                              'floating_window',
+                                        );
+                                        setState(
+                                          () => showPluginsMarketplace = false,
+                                        );
+                                      }
+                                    },
                                   )
                                 : showStudentsDrawer
                                 ? StudioStudentsDrawer(
@@ -992,85 +1005,6 @@ class _StudioScreenState extends State<StudioScreen> {
                                     ),
                                 child: rightPanel,
                               ),
-                            ),
-                            // Floating active plugin window
-                            ListenableBuilder(
-                              listenable: PluginManager(),
-                              builder: (context, _) {
-                                final active = PluginManager().activePlugin;
-                                if (active == null) {
-                                  return const SizedBox.shrink();
-                                }
-
-                                return Positioned(
-                                  top: 50,
-                                  right: 40,
-                                  child: Material(
-                                    elevation: 4,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadii.panel,
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: Container(
-                                      width: 340,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(
-                                          AppRadii.panel,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 10,
-                                            ),
-                                            color: AppColors.background,
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  active.icon,
-                                                  size: 16,
-                                                  color: active.color,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    active.name,
-                                                    style: const TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.close_rounded,
-                                                    size: 18,
-                                                  ),
-                                                  padding: EdgeInsets.zero,
-                                                  constraints:
-                                                      const BoxConstraints(),
-                                                  onPressed: () =>
-                                                      PluginManager()
-                                                          .closeActivePlugin(),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(16),
-                                            child: active.buildWidget(context),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
                             ),
                           ],
                         ),

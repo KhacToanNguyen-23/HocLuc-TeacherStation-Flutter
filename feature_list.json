@@ -1,3 +1,4 @@
+
 [
   {
     "id": "phase-01-drawing-engine",
@@ -738,6 +739,126 @@
     "verification_command": "mvn test -Dtest=GoogleIntegrationTest",
     "notes": "Covers stories: P1",
     "priority": "P1"
+  },
+  {
+    "id": "casio-plugin-scaffolding-and-build",
+    "title": "Casio Calculator Scaffolding & Web Bundle Build",
+    "status": "passing",
+    "evidence": "Built HocLucCalculator bundle; created plugins/casio_calculator with schema v2 manifest; 5/5 architecture tests passed",
+    "user_visible_behavior": "Compiles HocLucCalculator React app to static bundle and prepares plugins/casio_calculator with schema v2 manifest.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "notes": "Covers Phase 01 of casio-calculator-plugin plan",
+    "priority": "P1"
+  },
+  {
+    "id": "casio-plugin-packaging-and-catalog",
+    "title": "Casio Calculator Packaging .hlep & Storage Test",
+    "status": "passing",
+    "evidence": "Created plugins/casio_calculator.hlep (695KB, 19 files); 7/7 manifest and storage tests passed",
+    "user_visible_behavior": "Packages casio_calculator.hlep archive and verifies extraction into local AppData cache.",
+    "verification_command": "node scripts/package_plugin.mjs casio_calculator",
+    "notes": "Covers Phase 02 of casio-calculator-plugin plan",
+    "priority": "P1"
+  },
+  {
+    "id": "casio-plugin-board-integration-and-verification",
+    "title": "Casio Calculator Floating Window & Invariant Test",
+    "status": "passing",
+    "evidence": "Floating window and board host bridge verified; 11/11 plugin tests and 5/5 architecture tests passed",
+    "user_visible_behavior": "Opens calculator as draggable floating window on classroom chalkboard and passes 5/5 architecture invariants.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "notes": "Covers Phase 03 of casio-calculator-plugin plan",
+    "priority": "P1"
+  },
+  {
+    "id": "casio-plugin-host-gateway-and-window-cleanup",
+    "title": "Host Static Gateway Server & Neutral Floating Window",
+    "status": "passing",
+    "evidence": "Tests: 26 passed, 0 failed across architecture, storage, web server, and UI tests",
+    "user_visible_behavior": "Serves all plugin UIs over an internal loopback HTTP server (eliminating file:// CORS issues for ES modules) and removes subject-specific buttons from floating window header.",
+    "verification_command": "flutter test test/architecture_test.dart test/plugin_ui_test.dart",
+    "notes": "Covers Phase 04 of casio-calculator-plugin plan",
+    "priority": "P1"
+  },
+  {
+    "id": "rearch-phase-01-backend-marketplace-api",
+    "title": "Backend Spring Boot Marketplace API & File Stream",
+    "status": "passing",
+    "evidence": "Backend: 4/4 passed in PluginMarketplaceControllerTest",
+    "user_visible_behavior": "Spring Boot backend serves GET /api/v1/plugins catalog and GET /api/v1/plugins/{id}/download file stream.",
+    "verification_command": "mvn test -Dtest=PluginMarketplaceControllerTest",
+    "notes": "Covers Phase 01 of plugin-system-rearchitecture plan",
+    "priority": "P1"
+  },
+  {
+    "id": "rearch-phase-02-frontend-cloud-downloader",
+    "title": "Frontend Cloud Downloader & Cache Manager",
+    "status": "passing",
+    "evidence": "Tests: 5/5 passed in test/plugin_storage_test.dart, 2/2 passed in test/plugin_marketplace_test.dart",
+    "user_visible_behavior": "Teacher Station fetches marketplace plugins over the internet, downloads .hlep packages, and caches them for offline use.",
+    "verification_command": "flutter test test/plugin_storage_test.dart",
+    "notes": "Covers Phase 02 of plugin-system-rearchitecture plan",
+    "priority": "P1"
+  },
+  {
+    "id": "rearch-phase-03-core-flutter-cleanup-pure-microkernel",
+    "title": "Core Flutter Cleanup & Pure Microkernel Boundary",
+    "status": "passing",
+    "evidence": "Tests: 5 passed in test/architecture_test.dart, 3 passed in test/subject_plugins_test.dart; 0 hardcoded plugin IDs in frontend/lib/",
+    "user_visible_behavior": "Removes hardcoded SubjectToolPalette from chalkboard canvas and decouples studio drawers into dynamic marketplace links.",
+    "verification_command": "flutter test test/architecture_test.dart test/subject_plugins_test.dart",
+    "notes": "Covers Phase 03 of plugin-system-rearchitecture plan",
+    "priority": "P1"
+  },
+  {
+    "id": "rearch-phase-04-verification-and-architecture-test",
+    "title": "End-to-End Verification & Architecture Gate",
+    "status": "passing",
+    "evidence": "Tests: 5/5 passed in test/architecture_test.dart, 2/2 passed in test/plugin_marketplace_test.dart; flutter analyze 0 issues",
+    "user_visible_behavior": "Passes 5/5 architecture invariants and verifies end-to-end cloud plugin download and execution.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "notes": "Covers Phase 04 of plugin-system-rearchitecture plan",
+    "priority": "P1"
+  },
+  {
+    "id": "marketplace-backend-catalog-and-download",
+    "title": "Kho Tiện Ích Backend Marketplace & Tải Gói .hlep 1-Click",
+    "status": "passing",
+    "evidence": "Backend: 4/4 passed in PluginMarketplaceControllerTest; Frontend: 2/2 passed in test/plugin_marketplace_test.dart, 3/3 passed in test/subject_plugins_test.dart",
+    "user_visible_behavior": "Giáo viên mở bảng Hoạt động & Tiện ích, xem danh mục từ Backend GET /api/marketplace/plugins kèm icon & dung lượng, bấm tải .hlep về %LOCALAPPDATA%/HocLuc/plugins/<id>/v<version>/ và mở dùng ngay.",
+    "verification_command": "mvn test -Dtest=PluginMarketplaceControllerTest && flutter test test/plugin_marketplace_test.dart",
+    "notes": "Covers P1 story (Backend Marketplace & 1-click download)",
+    "priority": "P1"
+  },
+  {
+    "id": "multi-instance-floating-and-lesson-plugins",
+    "title": "Mở Đồng Thời Cửa Sổ Nổi (Casio) & Tiện Ích Gắn Bài Giảng",
+    "status": "passing",
+    "evidence": "Tests: 2/2 passed in test/plugin_marketplace_test.dart, 3/3 passed in test/plugin_ui_test.dart; removed duplicate floating window overlay in studio_screen.dart",
+    "user_visible_behavior": "Giáo viên mở cùng lúc ít nhất 1 plugin cửa sổ nổi (Máy tính Casio) và 1 plugin gắn bài giảng/ngăn kéo mà không bị đóng lẫn nhau hay hiện cửa sổ trắng dư thừa.",
+    "verification_command": "flutter test test/plugin_marketplace_test.dart test/plugin_ui_test.dart",
+    "notes": "Covers P1 story (Multi-instance floating & lesson integration)",
+    "priority": "P1"
+  },
+  {
+    "id": "vscode-manifest-contributes-and-zero-hardcode",
+    "title": "Chuẩn Manifest v2.1 (contributes + inject_sdk) & Xóa Sạch Hardcode trong Core",
+    "status": "passing",
+    "evidence": "Tests: 5/5 passed in test/architecture_test.dart, 4/4 passed in test/plugin_manifest_test.dart, 5/5 passed in test/subject_tool_palette_test.dart",
+    "user_visible_behavior": "Dev thêm plugin mới hoặc bọc dự án Open-Source chỉ bằng manifest.json (contributes.tools, inject_sdk: true), SubjectToolPalette tự động vẽ theo manifest và 0 dòng hardcode tên plugin trong frontend/lib/.",
+    "verification_command": "flutter test test/architecture_test.dart test/subject_tool_palette_test.dart",
+    "notes": "Covers P1 story (Developer experience & Zero-hardcode microkernel)",
+    "priority": "P1"
+  },
+  {
+    "id": "plugin-packager-and-publish-endpoint",
+    "title": "Công Cụ Đóng Gói .hlep Schema v2.1 & API Publish/Sideload",
+    "status": "passing",
+    "evidence": "Packaged casio_calculator.hlep & english_assistant.hlep with SHA-256; 5/5 passed in test/plugin_storage_test.dart, 4/4 passed in PluginMarketplaceControllerTest",
+    "user_visible_behavior": "Dev đóng gói thư mục plugin thành .hlep kèm kiểm tra Schema v2.1, nạp thử qua nút Dev Sideload trên UI hoặc đẩy lên Backend qua POST /api/marketplace/plugins/publish.",
+    "verification_command": "node scripts/package_plugin.mjs casio_calculator && flutter test test/plugin_storage_test.dart",
+    "notes": "Covers P2 story (CLI packager & publish API)",
+    "priority": "P2"
   },
   {
     "id": "google-classroom-create-sync-result",

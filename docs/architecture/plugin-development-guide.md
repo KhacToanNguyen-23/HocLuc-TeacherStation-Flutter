@@ -54,20 +54,37 @@ plugins/
 
 ---
 
-## 4. Đặc Tả Tệp `manifest.json`
+## 4. Đặc Tả Tệp `manifest.json` (Schema v2.1 — Chuẩn VS Code / Chrome Extension)
 
 ```json
 {
-  "$schema": "https://hocluc.com/schemas/plugin.v2.json",
-  "id": "com.hocluc.plugin.casio",
-  "name": "Máy Tính Khoa Học Casio",
+  "$schema": "https://hocluc.com/schemas/plugin.v2.1.json",
+  "id": "org.open.scientific_calc",
+  "name": "Máy Tính Khoa Học",
   "version": "1.0.0",
   "author": "Học Lực Math Team",
-  "description": "Mô phỏng máy tính khoa học Casio FX-880BTG phục vụ giải toán trên bảng.",
-  "main": "ui/index.html",
+  "category": "math",
+  "description": "Mô phỏng máy tính khoa học phục vụ giải toán trên bảng.",
   "icon": "icon.png",
-  "placement": "floating_window",
-  "default_width": 380,
+  "ui": {
+    "entry": "ui/index.html",
+    "placement": "floating_window",
+    "default_width": 350,
+    "default_height": 620,
+    "resizable": false,
+    "inject_sdk": true
+  },
+  "contributes": {
+    "tools": [
+      {
+        "id": "snip_formula",
+        "label": "Quét công thức",
+        "icon": "crop_free",
+        "action": "snip_region",
+        "tooltip": "Khoanh vùng công thức trên bảng để đưa vào plugin"
+      }
+    ]
+  },
   "backend": null,
   "permissions": [
     "board:insert_annotation"
@@ -76,45 +93,58 @@ plugins/
 ```
 
 ### Các trường quan trọng:
-- `placement`: 
-  - `"drawer_panel"`: Cột trượt cố định từ cạnh phải màn hình.
-  - `"floating_window"`: Cửa sổ nổi kéo thả tự do trên nền bảng phấn.
-- `permissions`:
-  - `"board:insert_annotation"`: Quyền ghim kết quả/nhãn dán lên bảng.
-  - `"board:read_text"`: Quyền đọc đoạn văn bản/vùng đề thi đang được giáo viên quét chọn.
+- `ui.placement` (hoặc `placement`):
+  - `"drawer_panel"`: Ngăn kéo gắn sâu vào bài giảng ở cạnh phải màn hình, đi kèm thanh công cụ nổi (`SubjectToolPalette`) hiển thị các nút khai báo trong `contributes.tools`.
+  - `"floating_window"`: Cửa sổ nổi độc lập kéo thả tự do trên nền bảng phấn (có thể mở song song cùng lúc với một plugin `drawer_panel`).
+- `ui.inject_sdk`:
+  - Đặt `true` khi bạn nhúng một dự án Open-Source có sẵn (HTML/JS/WASM như GeoGebra, Desmos, JSMol, Casio Simulator). `PluginWebServer` sẽ tự động tiêm `<script src="/__hocluc_sdk__/hocluc-plugin-sdk.js"></script>` vào trang HTML mà không cần sửa mã nguồn gốc của dự án Open-Source.
+- `contributes.tools`:
+  - Khai báo các công cụ gắn vào thanh `SubjectToolPalette` trên bảng phấn theo chuẩn `Contribution Points` của VS Code (`action`: `"snip_region"`, `"board_annotation_mode"`, `"quick_text_input"`).
 - `backend`:
-  - Đặt là `null` nếu plugin chỉ là HTML/JS thuần (ví dụ: máy tính, hình học phẳng Geogebra...).
-  - Nếu có Python sidecar: Khai báo `{"type": "python", "entry": "engine/service.py", "health_endpoint": "/health"}`.
+  - Đặt là `null` nếu plugin chỉ là HTML/JS/WASM thuần.
+  - Nếu có Python sidecar: Khai báo `{"type": "python", "entry": "engine/service.py", "health_check": "/health"}`.
 
 ---
 
 ## 5. Hướng Dẫn Dùng Host Bridge SDK (`hocluc-plugin-sdk.js`)
 
-Trong file `ui/app.js`, dev **chỉ được phép** giao tiếp với bảng phấn qua `HocLuc` SDK:
+Trong file `ui/app.js` (hoặc bất kỳ script nào khi bật `inject_sdk: true`), dev giao tiếp với bảng phấn qua `window.HocLuc`:
 
 ```javascript
-import { HocLuc } from './sdk.js';
+// 1. Lấy thông tin ngữ cảnh hiện tại (kèm sidecarUrl nếu có Python Engine)
+const context = await window.HocLuc.getContext();
 
-// 1. Lấy thông tin ngữ cảnh hiện tại
-const context = await HocLuc.getContext();
-console.log('Phiên bản app:', context.appVersion);
-
-// 2. Đọc văn bản hoặc công thức đang được chọn trên đề thi
-const selectedText = await HocLuc.board.getSelectedText();
-
-// 3. Ghim nội dung/kết quả lên bảng phấn cho học sinh xem
-await HocLuc.board.insertAnnotation({
-  type: 'latex', // hoặc 'sticker', 'text'
+// 2. Ghim nội dung/thẻ kiến thức lên bảng phấn cho học sinh xem
+await window.HocLuc.pinSticker({
+  type: 'grammar_analysis',
   data: {
-    latex: '\\int_{0}^{\\pi} \\sin(x) dx = 2',
-    color: '#FACC15'
+    sentence: 'The student reads a book.',
+    tokens: [
+      { text: 'The student', role: 'S' },
+      { text: 'reads', role: 'V' },
+      { text: 'a book', role: 'O' }
+    ]
   }
 });
 ```
 
 ---
 
-## 6. Quy Trình Kiểm Thử Kiến Trúc (Bắt Buộc Trước Khi Push Code)
+## 6. Đóng Gói `.hlep` & Phát Hành Lên Backend Marketplace
+
+1. **Đóng gói và kiểm tra Schema v2.1:**
+   ```powershell
+   node scripts/package_plugin.mjs <ten_thu_muc_plugin>
+   ```
+   Lệnh này kiểm tra tính hợp lệ của `manifest.json`, nén toàn bộ thư mục thành `plugins/<ten_thu_muc_plugin>.hlep` và in mã băm `SHA-256`.
+2. **Thử nghiệm nhanh (Dev Sideload):**
+   Mở bảng **Hoạt động & Tiện ích** trong Teacher Station $\rightarrow$ bấm biểu tượng **Nạp gói `.hlep` từ máy** trên thanh tiêu đề để cài trực tiếp.
+3. **Phát hành lên Backend Marketplace:**
+   Đặt file `.hlep` vào thư mục `plugins/` của Backend hoặc gọi `POST /api/marketplace/plugins/publish` (multipart `file`). Giáo viên bấm nút **Đồng bộ từ Marketplace** sẽ thấy plugin kèm icon, phiên bản và tải về trong 1 chạm.
+
+---
+
+## 7. Quy Trình Kiểm Thử Kiến Trúc (Bắt Buộc Trước Khi Push Code)
 
 Trước khi commit code hoặc tạo Pull Request, chạy lệnh:
 ```powershell
@@ -122,3 +152,4 @@ flutter test test/architecture_test.dart
 ```
 
 Nếu bài test báo **PASSED**, plugin của bạn đã đạt chuẩn kiến trúc và sẵn sàng đóng gói lên Marketplace!
+

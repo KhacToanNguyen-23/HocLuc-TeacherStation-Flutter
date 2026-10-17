@@ -213,7 +213,7 @@ class StudioDocumentDrawer extends StatelessWidget {
                                             color: AppColors.overlayAccent,
                                           ),
                                           title: const Text(
-                                            'Cài đặt Plugin Mẫu (Trợ giảng Tiếng Anh)',
+                                            'Cài đặt Plugin Mẫu',
                                             style: TextStyle(
                                               color: AppColors.overlayText,
                                               fontSize: 12,
@@ -222,13 +222,56 @@ class StudioDocumentDrawer extends StatelessWidget {
                                           onTap: () =>
                                               Navigator.pop(ctx, 'sample'),
                                         ),
+                                        ...PluginManager
+                                            .instance
+                                            .availablePlugins
+                                            .map(
+                                              (p) => ListTile(
+                                                leading: Icon(
+                                                  p.icon,
+                                                  color: p.color,
+                                                  size: 18,
+                                                ),
+                                                title: Text(
+                                                  '${PluginManager.instance.isInstalled(p.id) ? "Mở" : "Cài đặt"} ${p.name}',
+                                                  style: const TextStyle(
+                                                    color:
+                                                        AppColors.overlayText,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                onTap: () =>
+                                                    Navigator.pop(ctx, p.id),
+                                              ),
+                                            ),
                                       ],
                                     ),
                                   ),
                                 );
                                 if (choice == 'sample') {
                                   await PluginManager.instance
-                                      .installSampleEnglishPlugin();
+                                      .installSamplePlugin(
+                                        targetCategory: 'languages',
+                                      );
+                                  studio.change(() {});
+                                } else if (choice != null) {
+                                  if (!PluginManager.instance.isInstalled(
+                                    choice,
+                                  )) {
+                                    await PluginManager.instance.install(
+                                      choice,
+                                    );
+                                  }
+                                  final plugin = PluginManager.instance
+                                      .getPlugin(choice);
+                                  if (plugin != null) {
+                                    studio.openPlugin(
+                                      plugin,
+                                      openModal:
+                                          plugin.manifest.uiPlacement !=
+                                          'floating_window',
+                                    );
+                                  }
                                   studio.change(() {});
                                 }
                               },

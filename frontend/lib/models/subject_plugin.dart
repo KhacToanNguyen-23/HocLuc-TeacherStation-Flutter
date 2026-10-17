@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 /// Follows OOP open-closed principle: new plugins extend this class
 /// without modifying core Studio code.
 abstract class SubjectPlugin {
-  /// Unique identifier (e.g. 'desmos_graph', 'casio_calculator', 'dgnl_timer')
+  /// Unique identifier (e.g. 'org.open.graph_tool', 'org.open.exam_timer')
   String get id;
 
   /// Display name of the plugin

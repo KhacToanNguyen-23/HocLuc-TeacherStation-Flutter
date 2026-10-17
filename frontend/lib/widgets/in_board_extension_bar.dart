@@ -43,7 +43,7 @@ class _InBoardExtensionBarState extends State<InBoardExtensionBar> {
       text: query,
       pluginId:
           widget.studio.activePlugin?.manifest.id ??
-          'com.hocluc.plugin.english',
+          'subject_assistant_plugin',
     );
 
     widget.studio.addSticker(sticker);

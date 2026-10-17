@@ -1,12 +1,31 @@
 import 'package:flutter/material.dart';
 import '../constants/theme.dart';
+import '../models/plugin_manifest.dart';
 import '../models/studio_state.dart';
 import '../services/pdf_annotation_exporter.dart';
 
+/// Dynamic In-Board Plugin Tool Palette Dock driven by `manifest.contributesTools`
+/// (modeled after VS Code Extension Contribution Points).
 class SubjectToolPalette extends StatelessWidget {
   const SubjectToolPalette({super.key, required this.studio});
 
   final StudioState studio;
+
+  IconData _resolveIcon(String iconName) {
+    switch (iconName) {
+      case 'crop_free':
+        return Icons.crop_free;
+      case 'edit_note':
+        return Icons.edit_note;
+      case 'calculate':
+        return Icons.calculate_rounded;
+      case 'science':
+        return Icons.science_rounded;
+      case 'auto_awesome':
+      default:
+        return Icons.auto_awesome;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,10 +33,15 @@ class SubjectToolPalette extends StatelessWidget {
       listenable: studio,
       builder: (context, _) {
         final plugin = studio.activePlugin;
-        if (plugin == null) return const SizedBox.shrink();
+        if (plugin == null ||
+            plugin.manifest.uiPlacement == 'floating_window' ||
+            plugin.manifest.contributesTools.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-        final isSvoActive = studio.activeSubjectTool == 'svo';
+        final tools = plugin.manifest.contributesTools;
         final isEyeVisible = studio.chalkAnnotationsVisible;
+        final hasActiveTool = studio.activeSubjectTool != null;
 
         return Positioned(
           left: studio.subjectPaletteOffset.dx,
@@ -40,11 +64,10 @@ class SubjectToolPalette extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors
-                      .overlaySurface, // Deep slate green chalkboard tone
+                  color: AppColors.overlaySurface,
                   borderRadius: BorderRadius.circular(AppRadii.panel),
                   border: Border.all(
-                    color: isSvoActive
+                    color: hasActiveTool
                         ? AppColors.overlayAccent
                         : AppColors.overlaySelected,
                     width: 1.4,
@@ -60,7 +83,7 @@ class SubjectToolPalette extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Drag Handle & Subject Badge
+                    // Drag Handle & Plugin Badge
                     Container(
                       key: const Key('subject_badge_button'),
                       padding: const EdgeInsets.symmetric(
@@ -94,229 +117,24 @@ class SubjectToolPalette extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
 
-                    // Quick Scan Paragraph on PDF/Chalkboard (Kéo chụp & Highlight trực tiếp)
-                    Tooltip(
-                      message:
-                          'Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng trực tiếp trên file (PrtSc)',
-                      child: InkWell(
-                        key: const Key('quick_snip_dgnl_button'),
-                        onTap: () => studio.startSnipping(target: 'dgnl'),
-                        borderRadius: BorderRadius.circular(AppRadii.panel),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.overlaySelected,
-                            borderRadius: BorderRadius.circular(AppRadii.panel),
-                            border: Border.all(
-                              color: AppColors.overlayAccent,
-                              width: 1.3,
-                            ),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: AppColors.overlaySelected,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(
-                                Icons.crop_free,
-                                size: 14,
-                                color: AppColors.overlayAccent,
-                              ),
-                              SizedBox(width: 5),
-                              Text(
-                                'Quét đoạn văn',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.overlayText,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (studio.pdfDgnlPassages.isNotEmpty) ...[
-                      const SizedBox(width: 6),
-                      Tooltip(
-                        message:
-                            'Áp lớp Highlight chuẩn trực tiếp vào file PDF đang mở (không cần lưu tệp mới)',
-                        child: InkWell(
-                          key: const Key('btn_palette_save_pdf_highlight'),
-                          onTap: () =>
-                              PdfAnnotationExporter.applyHighlightDirectlyToPdf(
-                                context,
-                                studio,
-                              ),
-                          borderRadius: BorderRadius.circular(AppRadii.panel),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.overlaySelected,
-                              borderRadius: BorderRadius.circular(
-                                AppRadii.panel,
-                              ),
-                              border: Border.all(
-                                color: AppColors.border,
-                                width: 1.2,
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: AppColors.overlaySelected,
-                                  blurRadius: 6,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(
-                                  Icons.draw_rounded,
-                                  size: 14,
-                                  color: AppColors.border,
-                                ),
-                                SizedBox(width: 5),
-                                Text(
-                                  'Highlight lên file',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.border,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                    // Dynamically render tools contributed by manifest.json
+                    for (int i = 0; i < tools.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 6),
+                      _buildContributedToolButton(context, tools[i]),
+                      if (tools[i].action == 'snip_region' &&
+                          studio.pdfDgnlPassages.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        _buildApplyPdfHighlightButton(context),
+                      ],
                     ],
+
                     const SizedBox(width: 6),
 
-                    // S-V-O Tool Toggle Button
-                    Tooltip(
-                      message: isSvoActive
-                          ? 'Đang bật S-V-O (Chạm vào câu để gạch chân)'
-                          : 'Bật công cụ bóc tách S-V-O',
-                      child: InkWell(
-                        key: const Key('svo_tool_button'),
-                        onTap: () {
-                          studio.setActiveSubjectTool(
-                            isSvoActive ? null : 'svo',
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(AppRadii.panel),
-                        child: AnimatedContainer(
-                          duration: AppMotion.duration(
-                            context,
-                            milliseconds: 150,
-                          ),
-                          curve: AppMotion.stateCurve,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSvoActive
-                                ? AppColors.overlaySelected
-                                : AppColors.overlayRaised,
-                            borderRadius: BorderRadius.circular(AppRadii.panel),
-                            border: Border.all(
-                              color: isSvoActive
-                                  ? AppColors.overlayAccent
-                                  : AppColors.overlayBorder,
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.auto_awesome,
-                                size: 14,
-                                color: isSvoActive
-                                    ? AppColors.overlayAccent
-                                    : AppColors.overlayAccent,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Công cụ S-V-O',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: isSvoActive
-                                      ? AppColors.overlayAccent
-                                      : Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-
-                    // Quick Type / Select Sentence Button (Cách 2: Gõ/chọn câu trên Dock)
-                    Tooltip(
-                      message:
-                          'Nhập hoặc chọn câu tiếng Anh để gạch chân S-V-O-A',
-                      child: InkWell(
-                        key: const Key('quick_sentence_button'),
-                        onTap: () => _showQuickSentenceDialog(context, studio),
-                        borderRadius: BorderRadius.circular(AppRadii.panel),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.overlayRaised,
-                            borderRadius: BorderRadius.circular(AppRadii.panel),
-                            border: Border.all(
-                              color: AppColors.overlayBorder,
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(
-                                Icons.edit_note,
-                                size: 15,
-                                color: AppColors.overlayAccent,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Nhập câu',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-
-                    // Eye Toggle Button (Ẩn / Hiện đáp án)
+                    // Eye Toggle Button (Ẩn / Hiện lớp chú thích của tiện ích)
                     Tooltip(
                       message: isEyeVisible
-                          ? 'Bấm để ẩn đáp án S-V-O cho học sinh đoán'
-                          : 'Bấm để hiện đáp án S-V-O',
+                          ? 'Bấm để ẩn lớp chú thích trên bảng'
+                          : 'Bấm để hiện lớp chú thích trên bảng',
                       child: InkWell(
                         key: const Key('eye_toggle_button'),
                         onTap: () => studio.toggleChalkAnnotationsVisibility(),
@@ -379,7 +197,121 @@ class SubjectToolPalette extends StatelessWidget {
     );
   }
 
-  void _showQuickSentenceDialog(BuildContext context, StudioState studio) {
+  Widget _buildContributedToolButton(
+    BuildContext context,
+    PluginToolContribution tool,
+  ) {
+    final targetId = tool.target ?? tool.id;
+    final isToggle = tool.action == 'toggle_tool';
+    final isActive = isToggle && studio.activeSubjectTool == targetId;
+    final isPrimarySnip = tool.action == 'snip_region';
+    final buttonKey = Key(tool.widgetKey ?? '${tool.id}_tool_button');
+
+    return Tooltip(
+      message: tool.tooltip.isNotEmpty ? tool.tooltip : tool.label,
+      child: InkWell(
+        key: buttonKey,
+        onTap: () {
+          switch (tool.action) {
+            case 'snip_region':
+              studio.startSnipping(target: targetId);
+              break;
+            case 'toggle_tool':
+              studio.setActiveSubjectTool(isActive ? null : targetId);
+              break;
+            case 'quick_input':
+              _showQuickInputDialog(context, studio, tool);
+              break;
+            default:
+              studio.setActiveSubjectTool(isActive ? null : targetId);
+          }
+        },
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        child: AnimatedContainer(
+          duration: AppMotion.duration(context, milliseconds: 150),
+          curve: AppMotion.stateCurve,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: (isActive || isPrimarySnip)
+                ? AppColors.overlaySelected
+                : AppColors.overlayRaised,
+            borderRadius: BorderRadius.circular(AppRadii.panel),
+            border: Border.all(
+              color: (isActive || isPrimarySnip)
+                  ? AppColors.overlayAccent
+                  : AppColors.overlayBorder,
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _resolveIcon(tool.icon),
+                size: 14,
+                color: AppColors.overlayAccent,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                tool.label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: isActive
+                      ? AppColors.overlayAccent
+                      : (isPrimarySnip ? AppColors.overlayText : Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildApplyPdfHighlightButton(BuildContext context) {
+    return Tooltip(
+      message:
+          'Áp lớp Highlight chuẩn trực tiếp vào file PDF đang mở (không cần lưu tệp mới)',
+      child: InkWell(
+        key: const Key('btn_palette_save_pdf_highlight'),
+        onTap: () => PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+          context,
+          studio,
+        ),
+        borderRadius: BorderRadius.circular(AppRadii.panel),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: AppColors.overlaySelected,
+            borderRadius: BorderRadius.circular(AppRadii.panel),
+            border: Border.all(color: AppColors.border, width: 1.2),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.draw_rounded, size: 14, color: AppColors.border),
+              SizedBox(width: 5),
+              Text(
+                'Highlight lên file',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.border,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showQuickInputDialog(
+    BuildContext context,
+    StudioState studio,
+    PluginToolContribution tool,
+  ) {
     final textController = TextEditingController();
 
     showDialog(
@@ -391,15 +323,17 @@ class SubjectToolPalette extends StatelessWidget {
           side: const BorderSide(color: AppColors.overlaySelected, width: 1.2),
         ),
         title: Row(
-          children: const [
-            Icon(Icons.edit_note, color: AppColors.overlayAccent, size: 20),
-            SizedBox(width: 8),
-            Text(
-              'Nhập / Chọn câu bóc tách S-V-O-A',
-              style: TextStyle(
-                color: AppColors.overlayAccent,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+          children: [
+            const Icon(Icons.edit_note, color: AppColors.overlayAccent, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                tool.tooltip.isNotEmpty ? tool.tooltip : tool.label,
+                style: const TextStyle(
+                  color: AppColors.overlayAccent,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -411,7 +345,7 @@ class SubjectToolPalette extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Nhập câu tiếng Anh bất kỳ (thì đơn, thì hoàn thành, bị động, câu ghép...) để spaCy phân tích cú pháp chuẩn xác:',
+                'Nhập nội dung để ghim và phân tích trực tiếp lên bảng phấn:',
                 style: TextStyle(color: AppColors.overlayMuted, fontSize: 11),
               ),
               const SizedBox(height: 10),
@@ -420,7 +354,7 @@ class SubjectToolPalette extends StatelessWidget {
                 autofocus: true,
                 style: const TextStyle(color: Colors.white, fontSize: 13),
                 decoration: InputDecoration(
-                  hintText: 'Ví dụ: I has been learning Math.',
+                  hintText: 'Nhập văn bản hoặc biểu thức...',
                   hintStyle: const TextStyle(
                     color: AppColors.overlayMuted,
                     fontSize: 12,

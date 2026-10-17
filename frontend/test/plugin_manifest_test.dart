@@ -113,5 +113,38 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+
+    test('PluginManifest parses Schema v2.1 contributes.tools and inject_sdk', () {
+      final jsonMap = {
+        'id': 'com.hocluc.plugin.opensource_calc',
+        'name': 'OpenSource Calc',
+        'version': '2.1.0',
+        'placement': 'floating_window',
+        'default_width': 380,
+        'default_height': 640,
+        'resizable': true,
+        'inject_sdk': true,
+        'contributes': {
+          'tools': [
+            {
+              'id': 'plot_graph',
+              'label': 'Vẽ đồ thị',
+              'icon': 'auto_awesome',
+              'action': 'rpc_event',
+              'target': 'plot',
+            },
+          ],
+        },
+      };
+
+      final manifest = PluginManifest.fromJson(jsonMap);
+      expect(manifest.id, 'com.hocluc.plugin.opensource_calc');
+      expect(manifest.uiDefaultHeight, 640.0);
+      expect(manifest.resizable, isTrue);
+      expect(manifest.injectSdk, isTrue);
+      expect(manifest.contributesTools.length, 1);
+      expect(manifest.contributesTools.first.id, 'plot_graph');
+      expect(manifest.contributesTools.first.label, 'Vẽ đồ thị');
+    });
   });
 }
