@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../constants/theme.dart';
 import '../models/studio_state.dart';
-import '../services/plugin_manager.dart';
 import '../services/process_supervisor.dart';
 import 'flat_host.dart';
 
@@ -156,10 +155,10 @@ class FloatingPluginWindow extends StatelessWidget {
                       ),
                       child: Builder(
                         builder: (context) {
-                          final entry = plugin.manifest.uiEntry as String;
+                          final entry = plugin.manifest.uiEntry;
                           String targetUrl = entry;
 
-                          if (plugin is InstalledPlugin && plugin.installDirectory != null) {
+                          if (plugin.installDirectory != null) {
                             final f = File('${plugin.installDirectory!.path}/$entry');
                             if (f.existsSync()) {
                               targetUrl = f.absolute.uri.toString();
