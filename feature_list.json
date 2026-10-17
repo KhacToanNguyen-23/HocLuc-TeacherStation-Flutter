@@ -778,5 +778,45 @@
     "evidence": "google_workspace_test.dart: progress, pending, success, partial, and error banners verified; all 33 tests passed.",
     "notes": "",
     "priority": "P1"
+  },
+  {
+    "id": "smart-pen-toggle",
+    "title": "Toggle answer snapping in the PDF pen",
+    "user_visible_behavior": "Teacher can enable or disable Smart Snap independently of pen color and width; disabled mode preserves current pen tap and drag behavior.",
+    "verification_command": "Flutter tests verify the toggle state and that disabling Smart Snap preserves existing pen interactions.",
+    "status": "passing",
+    "evidence": "smart_pen_gesture_test.dart: toggle independence and both toolbar layouts pass; PDF/studio regression tests pass.",
+    "notes": "",
+    "priority": "P1"
+  },
+  {
+    "id": "smart-pen-answer-hit-testing",
+    "title": "Snap only verified multiple-choice labels",
+    "user_visible_behavior": "Quick taps circle verified A–D option labels and ignore ordinary letters in prose, headings, or ambiguous layouts.",
+    "verification_command": "Synthetic PDF fixtures verify spatial and semantic filtering for valid option groups and A/A. distractors.",
+    "status": "passing",
+    "evidence": "smart_pen_index_test.dart verifies conservative fixture classification; smart_pen_annotation_test.dart verifies tap-created oval rendering, same-group replacement/toggle, serialization, export, and undo/redo.",
+    "notes": "",
+    "priority": "P1"
+  },
+  {
+    "id": "smart-pen-freehand-drawing",
+    "title": "Preserve freehand pen drawing",
+    "user_visible_behavior": "Pen gestures that move beyond the tap threshold remain natural freehand strokes and do not create answer ovals.",
+    "verification_command": "Gesture tests verify tap-versus-drag thresholds, freehand stroke geometry, and suppression of answer snapping during drags.",
+    "status": "passing",
+    "evidence": "smart_pen_gesture_test.dart: tap routes without a dot, freehand drag remains one stroke, and disabled mode keeps the existing dot behavior.",
+    "notes": "",
+    "priority": "P1"
+  },
+  {
+    "id": "smart-pen-progressive-indexing",
+    "title": "Index the visible PDF page first",
+    "user_visible_behavior": "Smart Snap becomes available after asynchronous indexing of the visible text page while nearby pages are indexed progressively.",
+    "verification_command": "Index scheduler tests verify visible-page priority, nearby-page progression, and no whole-document prerequisite.",
+    "status": "passing",
+    "evidence": "smart_pen_gesture_test.dart: one active build, visible-page/neighbor reprioritization, ordered nearby work, and page bounds pass.",
+    "notes": "",
+    "priority": "P1"
   }
 ]

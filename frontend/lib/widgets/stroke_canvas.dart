@@ -15,11 +15,15 @@ class StrokeCanvas extends StatefulWidget {
     required this.studio,
     this.targetStrokes,
     this.interactive = true,
+    this.smartSnapEnabled = false,
+    this.onSmartTap,
   });
 
   final StudioState studio;
   final List<BoardStroke>? targetStrokes;
   final bool interactive;
+  final bool smartSnapEnabled;
+  final ValueChanged<Offset>? onSmartTap;
 
   @override
   State<StrokeCanvas> createState() => _StrokeCanvasState();
@@ -162,6 +166,11 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                 : null,
             onTapDown: widget.interactive
                 ? (e) {
+                    // Smart mode waits for Flutter's tap recognizer to win so
+                    // a tap dot is never committed before answer classification.
+                    if (widget.smartSnapEnabled && widget.onSmartTap != null) {
+                      return;
+                    }
                     final norm = normalized(e.localPosition);
                     if (isSvoMode) {
                       widget.studio.analyzeHandwritingAt(norm);
@@ -188,6 +197,12 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                     }
                   }
                 : null,
+            onTapUp:
+                widget.interactive &&
+                    widget.smartSnapEnabled &&
+                    widget.onSmartTap != null
+                ? (e) => widget.onSmartTap!(normalized(e.localPosition))
+                : null,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -201,6 +216,21 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                     ),
                   ),
                 ),
+                for (final stroke in strokes.where((s) => s.isSmartPenOval))
+                  TweenAnimationBuilder<double>(
+                    key: ValueKey(
+                      '${stroke.smartPenGroupId}:${stroke.smartPenLabel}',
+                    ),
+                    tween: Tween<double>(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 260),
+                    builder: (context, progress, _) => CustomPaint(
+                      size: size,
+                      painter: SmartPenOvalPainter(
+                        stroke: stroke,
+                        progress: progress,
+                      ),
+                    ),
+                  ),
                 // Layer 2: Active Stroke (RepaintBoundary - isolated ValueNotifier)
                 RepaintBoundary(
                   child: ValueListenableBuilder<List<Offset>?>(
@@ -262,6 +292,7 @@ class CommittedStrokesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final stroke in strokes) {
+      if (stroke.isSmartPenOval) continue;
       if (stroke.points.isEmpty && stroke.rect == null) continue;
 
       final isHighlight = stroke.width > 6 || stroke.rect != null;
@@ -289,6 +320,45 @@ class CommittedStrokesPainter extends CustomPainter {
         oldDelegate.strokes.length != strokes.length ||
         !identical(oldDelegate.strokes, strokes);
   }
+}
+
+class SmartPenOvalPainter extends CustomPainter {
+  const SmartPenOvalPainter({required this.stroke, required this.progress});
+
+  final BoardStroke stroke;
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (stroke.points.length < 2 || progress <= 0) return;
+    final path = Path()
+      ..moveTo(
+        stroke.points.first.dx * size.width,
+        stroke.points.first.dy * size.height,
+      );
+    for (final point in stroke.points.skip(1)) {
+      path.lineTo(point.dx * size.width, point.dy * size.height);
+    }
+    path.close();
+    final metrics = path.computeMetrics().toList();
+    if (metrics.isEmpty) return;
+    final metric = metrics.first;
+    final revealed = metric.extractPath(0, metric.length * progress);
+    canvas.drawPath(
+      revealed,
+      Paint()
+        ..color = stroke.color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke.width
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant SmartPenOvalPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      !identical(oldDelegate.stroke, stroke);
 }
 
 /// Layer 2 Painter: Only renders the single active inking stroke on drag

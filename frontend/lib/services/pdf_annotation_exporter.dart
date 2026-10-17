@@ -7,6 +7,21 @@ import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import '../models/studio_state.dart';
 
 class PdfAnnotationExporter {
+  /// Converts top-left normalized coordinates in the page's displayed
+  /// orientation to the unrotated coordinates expected by Syncfusion's page
+  /// graphics. Loaded pages keep their MediaBox dimensions in [PdfPage.size],
+  /// while `page.graphics` applies the page `/Rotate` transform when saving.
+  @visibleForTesting
+  static Offset displayedNormalizedToPdfNormalized(
+    Offset point,
+    sf.PdfPageRotateAngle rotation,
+  ) => switch (rotation) {
+    sf.PdfPageRotateAngle.rotateAngle0 => point,
+    sf.PdfPageRotateAngle.rotateAngle90 => Offset(point.dy, 1 - point.dx),
+    sf.PdfPageRotateAngle.rotateAngle180 => Offset(1 - point.dx, 1 - point.dy),
+    sf.PdfPageRotateAngle.rotateAngle270 => Offset(1 - point.dy, point.dx),
+  };
+
   /// Xuất mảng byte PDF đã được ghi đè lớp TextMarkup Highlight Annotation chuẩn ISO-32000
   static Future<Uint8List?> exportHighlightedPdfBytes(
     StudioState studio,
@@ -102,6 +117,47 @@ class PdfAnnotationExporter {
       }
     }
 
+    // PDF ink, including Smart Pen answer ovals, is stored in normalized page
+    // coordinates. Export it as vector lines so it remains crisp when printed.
+    for (final entry in studio.pdfAnnotations.entries) {
+      if (entry.key < 1 || entry.key > doc.pages.count) continue;
+      final page = doc.pages[entry.key - 1];
+      final pageSize = page.size;
+      for (final stroke in entry.value) {
+        if (stroke.rect != null || stroke.points.isEmpty) continue;
+        final color = stroke.color;
+        final argb = color.toARGB32();
+        final pen = sf.PdfPen(
+          sf.PdfColor((argb >> 16) & 0xff, (argb >> 8) & 0xff, argb & 0xff),
+          width: stroke.width,
+        )..lineCap = sf.PdfLineCap.round;
+        final points = stroke.points.map((point) {
+          final pdfNormalized = displayedNormalizedToPdfNormalized(
+            point,
+            page.rotation,
+          );
+          return Offset(
+            pdfNormalized.dx * pageSize.width,
+            pdfNormalized.dy * pageSize.height,
+          );
+        }).toList();
+        if (points.length == 1) {
+          final radius = stroke.width / 2;
+          page.graphics.drawEllipse(
+            Rect.fromCircle(center: points.single, radius: radius),
+            pen: pen,
+          );
+          continue;
+        }
+        for (var i = 1; i < points.length; i++) {
+          page.graphics.drawLine(pen, points[i - 1], points[i]);
+        }
+        if (stroke.isSmartPenOval) {
+          page.graphics.drawLine(pen, points.last, points.first);
+        }
+      }
+    }
+
     final outputBytes = doc.saveSync();
     doc.dispose();
     return Uint8List.fromList(outputBytes);
@@ -141,7 +197,10 @@ class PdfAnnotationExporter {
   }) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
 
-    if (studio.pdfDgnlPassages.isEmpty) {
+    final hasInkAnnotations = studio.pdfAnnotations.values.any(
+      (annotations) => annotations.isNotEmpty,
+    );
+    if (studio.pdfDgnlPassages.isEmpty && !hasInkAnnotations) {
       if (showFeedback) {
         messenger?.showSnackBar(
           const SnackBar(
@@ -284,7 +343,10 @@ class PdfAnnotationExporter {
   ) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
 
-    if (studio.pdfDgnlPassages.isEmpty) {
+    final hasInkAnnotations = studio.pdfAnnotations.values.any(
+      (annotations) => annotations.isNotEmpty,
+    );
+    if (studio.pdfDgnlPassages.isEmpty && !hasInkAnnotations) {
       messenger?.showSnackBar(
         const SnackBar(
           content: Text(
@@ -887,7 +949,10 @@ class PdfAnnotationExporter {
   ) async {
     // 1. Nếu có tài liệu PDF đang mở trong phòng học
     if (studio.pdfBytes != null || studio.pdfFilePath != null) {
-      if (studio.pdfDgnlPassages.isNotEmpty) {
+      final hasPdfAnnotations = studio.pdfAnnotations.values.any(
+        (annotations) => annotations.isNotEmpty,
+      );
+      if (studio.pdfDgnlPassages.isNotEmpty || hasPdfAnnotations) {
         return saveHighlightedPdf(context, studio);
       }
 

@@ -11,13 +11,33 @@ import '../services/desktop_lifecycle.dart';
 import '../services/plugin_manager.dart';
 import '../services/host_bridge.dart';
 import 'board_sticker.dart';
+import 'board_stroke.dart';
+import 'smart_pen_answer_selection.dart';
+import 'smart_pen_oval_annotation.dart';
+export 'board_stroke.dart';
+export 'smart_pen_answer_selection.dart';
 import 'smart_chalk_annotation.dart';
 import '../services/stroke_clusterer.dart';
 import '../services/english_analyzer.dart';
 
-import 'package:perfect_freehand/perfect_freehand.dart';
-
 enum StudioViewportMode { fullBoard, fullPdf, split }
+
+class _SmartPenHistoryEntry {
+  _SmartPenHistoryEntry({
+    required this.pageNumber,
+    required this.groupId,
+    required this.before,
+    required this.after,
+    required this.sequence,
+  });
+
+  final int pageNumber;
+  final String groupId;
+  final List<BoardStroke> before;
+  final List<BoardStroke> after;
+  int sequence;
+  int redoSequence = 0;
+}
 
 class PdfDgnlHighlightSpan {
   final String text;
@@ -57,164 +77,6 @@ class PdfDgnlPassage {
     required this.clozeQuestions,
     this.isVisible = true,
   });
-}
-
-class BoardStroke {
-  BoardStroke(
-    this.color,
-    this.width,
-    this.points, {
-    this.isEraser = false,
-    this.rect,
-    this.isHollow = false,
-  });
-  final Color color;
-  final double width;
-  final List<Offset> points;
-  final bool isEraser;
-  final Rect? rect;
-  final bool isHollow;
-  Path? _cachedPath;
-  Size? _cachedSize;
-
-  Path getPath([Size? size]) {
-    if (rect != null) {
-      if (size != null) {
-        if (_cachedSize == size && _cachedPath != null) return _cachedPath!;
-        _cachedSize = size;
-        _cachedPath = Path()
-          ..addRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTWH(
-                rect!.left * size.width,
-                rect!.top * size.height,
-                rect!.width * size.width,
-                rect!.height * size.height,
-              ),
-              const Radius.circular(3),
-            ),
-          );
-        return _cachedPath!;
-      } else {
-        return Path()
-          ..addRRect(RRect.fromRectAndRadius(rect!, const Radius.circular(3)));
-      }
-    }
-
-    if (size == null) {
-      if (_cachedPath != null && _cachedSize == null) return _cachedPath!;
-      if (points.isEmpty) return Path();
-      if (points.length == 1) {
-        _cachedSize = null;
-        _cachedPath = Path()
-          ..addOval(Rect.fromCircle(center: points.first, radius: width / 2));
-        return _cachedPath!;
-      }
-      final pointVectors = points.map((p) => PointVector(p.dx, p.dy)).toList();
-      final outline = getStroke(
-        pointVectors,
-        options: StrokeOptions(
-          size: width,
-          thinning: 0.35,
-          smoothing: 0.65,
-          streamline: 0.5,
-          isComplete: true,
-        ),
-      );
-      final path = Path();
-      if (outline.isNotEmpty) {
-        path.moveTo(outline.first.dx, outline.first.dy);
-        for (int i = 1; i < outline.length; i++) {
-          path.lineTo(outline[i].dx, outline[i].dy);
-        }
-        path.close();
-      }
-      _cachedSize = null;
-      _cachedPath = path;
-      return path;
-    }
-
-    if (_cachedSize == size && _cachedPath != null) return _cachedPath!;
-    if (points.isEmpty) return Path();
-    if (points.length == 1) {
-      final p = Offset(
-        points.first.dx * size.width,
-        points.first.dy * size.height,
-      );
-      _cachedSize = size;
-      _cachedPath = Path()
-        ..addOval(Rect.fromCircle(center: p, radius: width / 2));
-      return _cachedPath!;
-    }
-
-    final pointVectors = points
-        .map((p) => PointVector(p.dx * size.width, p.dy * size.height))
-        .toList();
-    final isHighlight = width > 6;
-    final outline = getStroke(
-      pointVectors,
-      options: StrokeOptions(
-        size: width,
-        thinning: isHighlight ? 0.0 : 0.35,
-        smoothing: 0.65,
-        streamline: 0.5,
-        isComplete: true,
-      ),
-    );
-    final path = Path();
-    if (outline.isNotEmpty) {
-      path.moveTo(outline.first.dx, outline.first.dy);
-      for (int i = 1; i < outline.length; i++) {
-        path.lineTo(outline[i].dx, outline[i].dy);
-      }
-      path.close();
-    }
-    _cachedSize = size;
-    _cachedPath = path;
-    return path;
-  }
-
-  void invalidatePath() {
-    _cachedPath = null;
-    _cachedSize = null;
-  }
-
-  Map<String, dynamic> toJson() => {
-    'color': color.toARGB32(),
-    'width': width,
-    'isEraser': isEraser,
-    'points': points.map((p) => [p.dx, p.dy]).toList(),
-    if (rect != null)
-      'rect': [rect!.left, rect!.top, rect!.width, rect!.height],
-    if (isHollow) 'isHollow': true,
-  };
-
-  static BoardStroke fromJson(Map<String, dynamic> json) {
-    Rect? r;
-    if (json.containsKey('rect') && json['rect'] is List) {
-      final rl = json['rect'] as List;
-      if (rl.length == 4) {
-        r = Rect.fromLTWH(
-          (rl[0] as num).toDouble(),
-          (rl[1] as num).toDouble(),
-          (rl[2] as num).toDouble(),
-          (rl[3] as num).toDouble(),
-        );
-      }
-    }
-    return BoardStroke(
-      Color((json['color'] as num).toInt()),
-      (json['width'] as num).toDouble(),
-      (json['points'] as List)
-          .map(
-            (p) => Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()),
-          )
-          .toList(),
-      isEraser: json['isEraser'] as bool? ?? false,
-      rect: r,
-      isHollow: json['isHollow'] == true,
-    );
-  }
 }
 
 class ImportedDocument {
@@ -279,6 +141,91 @@ class StudioState extends ChangeNotifier {
       activeSubjectTool = null;
       notifyListeners();
     }
+  }
+
+  bool _smartSnapEnabled = false;
+  bool get smartSnapEnabled => _smartSnapEnabled;
+  SmartPenAnswerSelection? smartPenAnswerSelection;
+  final Map<String, List<_SmartPenHistoryEntry>> _smartPenUndo = {};
+  final Map<String, List<_SmartPenHistoryEntry>> _smartPenRedo = {};
+  final Map<BoardStroke, int> _boardUndoSequence = {};
+  final Map<BoardStroke, int> _boardRedoSequence = {};
+  int _historySequence = 0;
+
+  String get _smartPenHistoryKey => activeDocId ?? pdfFilePath ?? 'current-pdf';
+
+  void setSmartSnapEnabled(bool enabled) {
+    if (_smartSnapEnabled == enabled) return;
+    _smartSnapEnabled = enabled;
+    notifyListeners();
+  }
+
+  void dispatchSmartPenAnswer(SmartPenAnswerSelection selection) {
+    smartPenAnswerSelection = selection;
+    notifyListeners();
+  }
+
+  void toggleSmartPenAnswer(SmartPenAnswerSelection selection, Size pageSize) {
+    final pageStrokes = pdfAnnotations.putIfAbsent(
+      selection.pageNumber,
+      () => <BoardStroke>[],
+    );
+    final before = pageStrokes
+        .where(
+          (stroke) =>
+              stroke.isSmartPenOval &&
+              stroke.smartPenGroupId == selection.groupId,
+        )
+        .map((stroke) => stroke.copy())
+        .toList();
+    final isSameAnswer = before.any(
+      (stroke) => stroke.smartPenLabel == selection.label,
+    );
+    if (isSameAnswer) {
+      pageStrokes.removeWhere(
+        (stroke) =>
+            stroke.isSmartPenOval &&
+            stroke.smartPenGroupId == selection.groupId,
+      );
+    } else {
+      pageStrokes.removeWhere(
+        (stroke) =>
+            stroke.isSmartPenOval &&
+            stroke.smartPenGroupId == selection.groupId,
+      );
+      final oval = SmartPenOvalAnnotation.fromSelection(
+        selection: selection,
+        pageSize: pageSize,
+        color: ink,
+        width: strokeWidth,
+      );
+      pageStrokes.add(oval.toBoardStroke());
+    }
+    final after = pageStrokes
+        .where(
+          (stroke) =>
+              stroke.isSmartPenOval &&
+              stroke.smartPenGroupId == selection.groupId,
+        )
+        .map((stroke) => stroke.copy())
+        .toList();
+    _smartPenUndo
+        .putIfAbsent(_smartPenHistoryKey, () => [])
+        .add(
+          _SmartPenHistoryEntry(
+            pageNumber: selection.pageNumber,
+            groupId: selection.groupId,
+            before: before,
+            after: after,
+            sequence: ++_historySequence,
+          ),
+        );
+    _smartPenRedo[_smartPenHistoryKey]?.clear();
+    _currentRedoStack.clear();
+    smartPenAnswerSelection = selection;
+    _revision++;
+    dirty = true;
+    notifyListeners();
   }
 
   bool reveal = false, denoise = false;
@@ -1413,6 +1360,8 @@ class StudioState extends ChangeNotifier {
     pdfPage = 1;
     pdfTotalPages = 1;
     pdfAnnotations.clear();
+    _clearSmartPenHistory();
+    smartPenAnswerSelection = null;
     if (path != null || bytes != null) {
       final name = path != null
           ? path.split(RegExp(r'[\\/]')).last
@@ -1439,6 +1388,7 @@ class StudioState extends ChangeNotifier {
 
   void updatePdfBytesInPlace(Uint8List newBytes) {
     pdfBytes = newBytes;
+    _clearSmartPenHistory();
     dirty = true;
     _revision++;
     notifyListeners();
@@ -1512,6 +1462,12 @@ class StudioState extends ChangeNotifier {
   void clearPdfPage() {
     pdfAnnotations[pdfPage]?.clear();
     pdfChalkAnnotations[pdfPage]?.clear();
+    _smartPenUndo[_smartPenHistoryKey]?.removeWhere(
+      (entry) => entry.pageNumber == pdfPage,
+    );
+    _smartPenRedo[_smartPenHistoryKey]?.removeWhere(
+      (entry) => entry.pageNumber == pdfPage,
+    );
     dirty = true;
     _revision++;
     notifyListeners();
@@ -1619,7 +1575,11 @@ class StudioState extends ChangeNotifier {
   void addStroke(BoardStroke stroke, {List<BoardStroke>? target}) {
     final list = target ?? strokes;
     list.add(stroke);
-    _currentRedoStack.clear();
+    if (target == null) {
+      _recordBoardAction(stroke);
+    } else {
+      _recordPdfAction(list);
+    }
     _revision++;
     dirty = true;
     notifyListeners();
@@ -1635,9 +1595,12 @@ class StudioState extends ChangeNotifier {
       erase(point, target: list);
       return;
     }
-    _currentRedoStack.clear();
     final w = tool == 'highlight' ? highlighterWidth : strokeWidth;
-    list.add(BoardStroke(ink, w, [point]));
+    final stroke = BoardStroke(ink, w, [point]);
+    list.add(stroke);
+    if (target == null) {
+      _recordBoardAction(stroke);
+    }
     _revision++;
     dirty = true;
     notifyListeners();
@@ -1721,13 +1684,37 @@ class StudioState extends ChangeNotifier {
       _redoPages ??= <int, List<BoardStroke>>{};
   List<BoardStroke> get _currentRedoStack =>
       redoPages.putIfAbsent(page, () => []);
-  bool get canUndo => strokes.isNotEmpty;
-  bool get canRedo => _currentRedoStack.isNotEmpty;
+  bool get canUndo =>
+      (_smartPenUndo[_smartPenHistoryKey]?.isNotEmpty ?? false) ||
+      strokes.isNotEmpty;
+  bool get canRedo =>
+      (_smartPenRedo[_smartPenHistoryKey]?.isNotEmpty ?? false) ||
+      _currentRedoStack.isNotEmpty;
 
   void undo() {
+    final pdfHistory = _smartPenUndo[_smartPenHistoryKey];
+    final boardSequence = strokes.isEmpty
+        ? -1
+        : (_boardUndoSequence[strokes.last] ?? 0);
+    final pdfSequence = pdfHistory == null || pdfHistory.isEmpty
+        ? -1
+        : pdfHistory.last.sequence;
+    if (pdfHistory != null &&
+        pdfHistory.isNotEmpty &&
+        pdfSequence > boardSequence) {
+      final entry = pdfHistory.removeLast();
+      _applySmartPenHistory(entry, entry.before);
+      entry.redoSequence = ++_historySequence;
+      _smartPenRedo.putIfAbsent(_smartPenHistoryKey, () => []).add(entry);
+      _revision++;
+      dirty = true;
+      notifyListeners();
+      return;
+    }
     if (strokes.isNotEmpty) {
       final stroke = strokes.removeLast();
       _currentRedoStack.add(stroke);
+      _boardRedoSequence[stroke] = ++_historySequence;
       _revision++;
       dirty = true;
       notifyListeners();
@@ -1735,13 +1722,68 @@ class StudioState extends ChangeNotifier {
   }
 
   void redo() {
+    final pdfHistory = _smartPenRedo[_smartPenHistoryKey];
+    final boardSequence = _currentRedoStack.isEmpty
+        ? -1
+        : (_boardRedoSequence[_currentRedoStack.last] ?? 0);
+    final pdfSequence = pdfHistory == null || pdfHistory.isEmpty
+        ? -1
+        : pdfHistory.last.redoSequence;
+    if (pdfHistory != null &&
+        pdfHistory.isNotEmpty &&
+        pdfSequence > boardSequence) {
+      final entry = pdfHistory.removeLast();
+      _applySmartPenHistory(entry, entry.after);
+      entry.sequence = ++_historySequence;
+      _smartPenUndo.putIfAbsent(_smartPenHistoryKey, () => []).add(entry);
+      _revision++;
+      dirty = true;
+      notifyListeners();
+      return;
+    }
     if (_currentRedoStack.isNotEmpty) {
       final stroke = _currentRedoStack.removeLast();
       strokes.add(stroke);
+      _boardUndoSequence[stroke] = ++_historySequence;
       _revision++;
       dirty = true;
       notifyListeners();
     }
+  }
+
+  void _recordBoardAction(BoardStroke stroke) {
+    _boardUndoSequence[stroke] = ++_historySequence;
+    _currentRedoStack.clear();
+    _smartPenRedo[_smartPenHistoryKey]?.clear();
+  }
+
+  void _recordPdfAction(List<BoardStroke> target) {
+    final isPdfTarget = pdfAnnotations.values.any(
+      (annotations) => identical(annotations, target),
+    );
+    if (!isPdfTarget) return;
+    _currentRedoStack.clear();
+    _smartPenRedo[_smartPenHistoryKey]?.clear();
+  }
+
+  void _clearSmartPenHistory() {
+    _smartPenUndo.clear();
+    _smartPenRedo.clear();
+  }
+
+  void _applySmartPenHistory(
+    _SmartPenHistoryEntry entry,
+    List<BoardStroke> snapshot,
+  ) {
+    final pageStrokes = pdfAnnotations.putIfAbsent(
+      entry.pageNumber,
+      () => <BoardStroke>[],
+    );
+    pageStrokes.removeWhere(
+      (stroke) =>
+          stroke.isSmartPenOval && stroke.smartPenGroupId == entry.groupId,
+    );
+    pageStrokes.addAll(snapshot.map((stroke) => stroke.copy()));
   }
 
   void nextPage() {
@@ -1896,6 +1938,10 @@ class StudioState extends ChangeNotifier {
       'pdfChalkAnnotations': pdfChalkAnnotations.map(
         (k, v) => MapEntry(k.toString(), v.map((s) => s.toJson()).toList()),
       ),
+      'pdfAnnotations': pdfAnnotations.map(
+        (k, v) =>
+            MapEntry(k.toString(), v.map((stroke) => stroke.toJson()).toList()),
+      ),
       'pdfFilePath': pdfFilePath,
       'pdfPage': pdfPage,
       'pdfWindowMaximized': _pdfWindowMaximized,
@@ -2013,6 +2059,22 @@ class StudioState extends ChangeNotifier {
               .map(
                 (s) => SmartChalkAnnotation.fromJson(
                   Map<String, dynamic>.from(s as Map),
+                ),
+              )
+              .toList();
+        }
+      });
+    }
+    if (json.containsKey('pdfAnnotations') && json['pdfAnnotations'] is Map) {
+      pdfAnnotations.clear();
+      final map = json['pdfAnnotations'] as Map;
+      map.forEach((key, value) {
+        final pageNumber = int.tryParse(key.toString()) ?? 1;
+        if (value is List) {
+          pdfAnnotations[pageNumber] = value
+              .map(
+                (stroke) => BoardStroke.fromJson(
+                  Map<String, dynamic>.from(stroke as Map),
                 ),
               )
               .toList();

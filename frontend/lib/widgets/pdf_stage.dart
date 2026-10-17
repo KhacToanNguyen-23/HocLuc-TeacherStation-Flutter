@@ -9,12 +9,19 @@ import 'grid_painter.dart';
 import 'stroke_canvas.dart';
 import 'smart_chalk_overlay.dart';
 import 'pdf_dgnl_passage_overlay.dart';
+import '../services/smart_pen_answer_index.dart';
 
 class PdfStage extends StatefulWidget {
-  const PdfStage({super.key, required this.studio, this.interactive = true});
+  const PdfStage({
+    super.key,
+    required this.studio,
+    this.interactive = true,
+    this.onSmartAnswerTap,
+  });
 
   final StudioState studio;
   final bool interactive;
+  final ValueChanged<SmartPenAnswerCandidate>? onSmartAnswerTap;
 
   @override
   State<PdfStage> createState() => _PdfStageState();
@@ -28,6 +35,15 @@ class _PdfStageState extends State<PdfStage> {
   int _lastPage = 1;
   int _lastZoomAction = 0;
   Size? _lastContainerSize;
+  final SmartPenPageIndexStore _smartIndexStore = SmartPenPageIndexStore();
+  final SmartPenTapQueue _smartTapQueue = SmartPenTapQueue(maxLength: 32);
+  final Map<int, Rect> _smartPageRects = {};
+  final SmartPenPdfTextExtractor _smartTextExtractor =
+      SmartPenPdfTextExtractor();
+  SmartPenPageIndexScheduler? _smartIndexScheduler;
+  PdfDocument? _smartIndexDocument;
+  int _smartDocumentGeneration = 0;
+  bool _lastSmartSnapEnabled = false;
 
   @override
   void initState() {
@@ -37,6 +53,7 @@ class _PdfStageState extends State<PdfStage> {
     _lastFitWidth = widget.studio.pdfFitWidth;
     _lastPage = widget.studio.pdfPage;
     _lastZoomAction = widget.studio.pdfZoomAction;
+    _lastSmartSnapEnabled = widget.studio.smartSnapEnabled;
     widget.studio.addListener(_onStudioChanged);
   }
 
@@ -46,6 +63,12 @@ class _PdfStageState extends State<PdfStage> {
     if (oldWidget.studio != widget.studio) {
       oldWidget.studio.removeListener(_onStudioChanged);
       widget.studio.addListener(_onStudioChanged);
+      _smartTapQueue.clear();
+      _smartDocumentGeneration++;
+      _smartIndexDocument = null;
+      _smartIndexScheduler = null;
+      _smartPageRects.clear();
+      _lastSmartSnapEnabled = widget.studio.smartSnapEnabled;
       widget.studio.pdfViewerController = _pdfController;
       widget.studio.pdfViewerKey = _pdfViewerKey;
     }
@@ -53,6 +76,11 @@ class _PdfStageState extends State<PdfStage> {
 
   @override
   void dispose() {
+    _smartDocumentGeneration++;
+    _smartTapQueue.clear();
+    _smartIndexScheduler = null;
+    _smartIndexDocument = null;
+    _smartPageRects.clear();
     if (widget.studio.pdfViewerController == _pdfController) {
       widget.studio.pdfViewerController = null;
       widget.studio.pdfViewerKey = null;
@@ -62,6 +90,10 @@ class _PdfStageState extends State<PdfStage> {
   }
 
   void _onStudioChanged() {
+    if (_lastSmartSnapEnabled != widget.studio.smartSnapEnabled) {
+      _lastSmartSnapEnabled = widget.studio.smartSnapEnabled;
+      if (!_lastSmartSnapEnabled) _smartTapQueue.clear();
+    }
     if (!_pdfController.isReady) return;
 
     final pageChanged =
@@ -73,6 +105,7 @@ class _PdfStageState extends State<PdfStage> {
 
     if (pageChanged) {
       _lastPage = widget.studio.pdfPage;
+      _smartIndexScheduler?.setVisiblePage(widget.studio.pdfPage);
       _pdfController.goToPage(pageNumber: widget.studio.pdfPage);
       Future.microtask(() => _applyFit());
     } else if (fitChanged) {
@@ -90,6 +123,201 @@ class _PdfStageState extends State<PdfStage> {
         _pdfController.zoomDown();
       }
     }
+  }
+
+  void _beginSmartIndexing(PdfDocument document) {
+    if (identical(_smartIndexDocument, document)) return;
+    _smartIndexDocument = document;
+    final generation = ++_smartDocumentGeneration;
+    _smartTapQueue.clear();
+    _smartIndexStore.beginGeneration(generation);
+    _smartIndexScheduler = SmartPenPageIndexScheduler(
+      documentGeneration: generation,
+      pageCount: document.pages.length,
+      nearbyPageRadius: 2,
+      buildPageIndex: (pageNumber, requestedGeneration) =>
+          _buildSmartPageIndex(document, pageNumber, requestedGeneration),
+    )..setVisiblePage(widget.studio.pdfPage);
+  }
+
+  Future<void> _buildSmartPageIndex(
+    PdfDocument document,
+    int pageNumber,
+    int generation,
+  ) async {
+    if (generation != _smartDocumentGeneration ||
+        pageNumber < 1 ||
+        pageNumber > document.pages.length ||
+        !_smartIndexStore.beginPage(pageNumber)) {
+      return;
+    }
+
+    try {
+      final page = await document.pages[pageNumber - 1].ensureLoaded();
+      final fragments = await _smartTextExtractor.extract(page);
+      if (generation != _smartDocumentGeneration) return;
+      if (fragments.isEmpty) {
+        _smartIndexStore.markTextless(pageNumber);
+      } else {
+        final index = SmartPenPageIndex.build(
+          documentGeneration: generation,
+          pageNumber: pageNumber,
+          pageSize: SmartPenPdfTextExtractor.canonicalPageSize(page),
+          fragments: fragments,
+        );
+        _smartIndexStore.completePage(index);
+      }
+      _resolveQueuedSmartTaps(pageNumber, generation);
+    } catch (_) {
+      if (generation != _smartDocumentGeneration) return;
+      _smartIndexStore.failPage(pageNumber);
+      _resolveQueuedSmartTaps(pageNumber, generation);
+    }
+  }
+
+  void _queueOrResolveSmartTap({
+    required PdfPage page,
+    required Rect pageRect,
+    required List<BoardStroke> targetStrokes,
+    required Offset normalizedPoint,
+  }) {
+    final generation = _smartDocumentGeneration;
+    final pageNumber = page.pageNumber;
+    final status = _smartIndexStore.statusFor(pageNumber);
+    if (status == SmartPenPageIndexStatus.notStarted ||
+        status == SmartPenPageIndexStatus.building) {
+      final scheduler = _smartIndexScheduler;
+      if (scheduler == null) {
+        _addOrdinaryPdfTap(normalizedPoint, targetStrokes);
+        return;
+      }
+      final pageSize = SmartPenPdfTextExtractor.canonicalPageSize(page);
+      final tap = SmartPenPendingTap(
+        pageNumber: pageNumber,
+        documentGeneration: generation,
+        pagePoint: Offset(
+          normalizedPoint.dx * pageSize.width,
+          normalizedPoint.dy * pageSize.height,
+        ),
+      );
+      if (_smartTapQueue.enqueue(tap)) {
+        scheduler.requestPage(pageNumber);
+      } else {
+        _addOrdinaryPdfTap(normalizedPoint, targetStrokes);
+      }
+      return;
+    }
+
+    _resolveSmartTap(
+      pageNumber: pageNumber,
+      generation: generation,
+      pageRect: pageRect,
+      targetStrokes: targetStrokes,
+      normalizedPoint: normalizedPoint,
+    );
+  }
+
+  void _resolveQueuedSmartTaps(int pageNumber, int generation) {
+    if (!mounted ||
+        !widget.studio.smartSnapEnabled ||
+        generation != _smartDocumentGeneration) {
+      return;
+    }
+    final index = _smartIndexStore.indexFor(pageNumber);
+    final pageSize = index?.pageSize;
+    if (pageSize == null) {
+      // Textless and failed pages have no index geometry. Taps still use the
+      // ordinary pen fallback in their original page coordinates.
+      final page = _smartIndexDocument?.pages[pageNumber - 1];
+      if (page == null) return;
+      final size = SmartPenPdfTextExtractor.canonicalPageSize(page);
+      for (final tap in _smartTapQueue.takeForPage(pageNumber, generation)) {
+        final target = widget.studio.pdfAnnotations.putIfAbsent(
+          pageNumber,
+          () => <BoardStroke>[],
+        );
+        _addOrdinaryPdfTap(
+          Offset(tap.pagePoint.dx / size.width, tap.pagePoint.dy / size.height),
+          target,
+        );
+      }
+      return;
+    }
+    final pageRect =
+        _smartPageRects[pageNumber] ??
+        (_pdfController.isReady
+            ? Rect.fromLTWH(
+                0,
+                0,
+                pageSize.width * _pdfController.currentZoom,
+                pageSize.height * _pdfController.currentZoom,
+              )
+            : null);
+    if (pageRect == null) return;
+    for (final tap in _smartTapQueue.takeForPage(pageNumber, generation)) {
+      final target = widget.studio.pdfAnnotations.putIfAbsent(
+        pageNumber,
+        () => <BoardStroke>[],
+      );
+      _resolveSmartTap(
+        pageNumber: pageNumber,
+        generation: generation,
+        pageRect: pageRect,
+        targetStrokes: target,
+        normalizedPoint: Offset(
+          tap.pagePoint.dx / pageSize.width,
+          tap.pagePoint.dy / pageSize.height,
+        ),
+      );
+    }
+  }
+
+  void _resolveSmartTap({
+    required int pageNumber,
+    required int generation,
+    required Rect pageRect,
+    required List<BoardStroke> targetStrokes,
+    required Offset normalizedPoint,
+  }) {
+    final index = _smartIndexStore.indexFor(pageNumber);
+    if (!widget.studio.smartSnapEnabled ||
+        generation != _smartDocumentGeneration ||
+        index == null) {
+      _addOrdinaryPdfTap(normalizedPoint, targetStrokes);
+      return;
+    }
+
+    final pagePoint = Offset(
+      normalizedPoint.dx * index.pageSize.width,
+      normalizedPoint.dy * index.pageSize.height,
+    );
+    final zoomScale = pageRect.width / index.pageSize.width;
+    final candidate = index.hitTest(
+      pagePoint,
+      logicalPixelTolerance: 10,
+      zoomScale: zoomScale,
+    );
+    final onSmartAnswerTap = widget.onSmartAnswerTap;
+    if (candidate != null) {
+      final selection = SmartPenAnswerSelection(
+        pageNumber: pageNumber,
+        label: candidate.label,
+        bounds: candidate.bounds,
+        groupId: candidate.groupId,
+      );
+      widget.studio.toggleSmartPenAnswer(selection, index.pageSize);
+      onSmartAnswerTap?.call(candidate);
+      return;
+    }
+    _addOrdinaryPdfTap(normalizedPoint, targetStrokes);
+  }
+
+  void _addOrdinaryPdfTap(Offset normalizedPoint, List<BoardStroke> target) {
+    final studio = widget.studio;
+    final highlighter = studio.tool == 'highlight';
+    final width = highlighter ? studio.highlighterWidth : studio.strokeWidth;
+    final stroke = BoardStroke(studio.ink, width, [normalizedPoint]);
+    studio.addStroke(stroke, target: target);
   }
 
   void _applyFit() {
@@ -264,13 +492,16 @@ class _PdfStageState extends State<PdfStage> {
           _lastPage = page;
           studio.setPdfPage(page);
         }
+        if (page != null) _smartIndexScheduler?.setVisiblePage(page);
       },
       onDocumentChanged: (doc) {
         if (doc != null && doc.pages.length != studio.pdfTotalPages) {
           studio.setPdfTotalPages(doc.pages.length);
         }
+        if (doc != null) _beginSmartIndexing(doc);
       },
       onViewerReady: (doc, controller) {
+        _beginSmartIndexing(doc);
         if (studio.pdfPage > 1 && studio.pdfPage <= doc.pages.length) {
           controller.goToPage(pageNumber: studio.pdfPage);
         }
@@ -310,129 +541,146 @@ class _PdfStageState extends State<PdfStage> {
           },
         ),
       ],
-      pageOverlaysBuilder: (context, pageRect, page) => [
-        Positioned.fill(
-          child: RepaintBoundary(
-            child: ListenableBuilder(
-              listenable: studio,
-              builder: (context, _) {
-                final isPanMode = studio.tool == 'pan' || studio.isSpacePressed;
-                return Listener(
-                  onPointerSignal: (event) {
-                    if (event is PointerScrollEvent) {
-                      if (HardwareKeyboard.instance.isControlPressed) {
-                        if (event.scrollDelta.dy < 0) {
-                          _pdfController.zoomUp();
-                        } else if (event.scrollDelta.dy > 0) {
-                          _pdfController.zoomDown();
+      pageOverlaysBuilder: (context, pageRect, page) {
+        _smartPageRects[page.pageNumber] = pageRect;
+        return [
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: ListenableBuilder(
+                listenable: studio,
+                builder: (context, _) {
+                  final isPanMode =
+                      studio.tool == 'pan' || studio.isSpacePressed;
+                  return Listener(
+                    onPointerSignal: (event) {
+                      if (event is PointerScrollEvent) {
+                        if (HardwareKeyboard.instance.isControlPressed) {
+                          if (event.scrollDelta.dy < 0) {
+                            _pdfController.zoomUp();
+                          } else if (event.scrollDelta.dy > 0) {
+                            _pdfController.zoomDown();
+                          }
+                        } else {
+                          _pdfController.handlePointerSignalEvent(event);
                         }
-                      } else {
-                        _pdfController.handlePointerSignalEvent(event);
                       }
-                    }
-                  },
-                  child: IgnorePointer(
-                    ignoring: isPanMode || !widget.interactive,
-                    child: Stack(
-                      children: [
-                        StrokeCanvas(
-                          studio: studio,
-                          targetStrokes: studio.pdfAnnotations.putIfAbsent(
-                            page.pageNumber,
-                            () => [],
+                    },
+                    child: IgnorePointer(
+                      ignoring: isPanMode || !widget.interactive,
+                      child: Stack(
+                        children: [
+                          StrokeCanvas(
+                            studio: studio,
+                            targetStrokes: studio.pdfAnnotations.putIfAbsent(
+                              page.pageNumber,
+                              () => [],
+                            ),
+                            interactive:
+                                widget.interactive &&
+                                !isPanMode &&
+                                studio.activeSubjectTool != 'svo',
+                            smartSnapEnabled:
+                                studio.smartSnapEnabled && studio.tool == 'pen',
+                            onSmartTap: (normalizedPoint) =>
+                                _queueOrResolveSmartTap(
+                                  page: page,
+                                  pageRect: pageRect,
+                                  targetStrokes: studio.pdfAnnotations
+                                      .putIfAbsent(
+                                        page.pageNumber,
+                                        () => <BoardStroke>[],
+                                      ),
+                                  normalizedPoint: normalizedPoint,
+                                ),
                           ),
-                          interactive:
-                              widget.interactive &&
-                              !isPanMode &&
-                              studio.activeSubjectTool != 'svo',
-                        ),
-                        if (studio.activeSubjectTool == 'svo')
-                          Positioned.fill(
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTapDown: (details) async {
-                                  final normX =
-                                      (details.localPosition.dx /
-                                              pageRect.width)
-                                          .clamp(0.0, 1.0);
-                                  final normY =
-                                      (details.localPosition.dy /
-                                              pageRect.height)
-                                          .clamp(0.0, 1.0);
+                          if (studio.activeSubjectTool == 'svo')
+                            Positioned.fill(
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTapDown: (details) async {
+                                    final normX =
+                                        (details.localPosition.dx /
+                                                pageRect.width)
+                                            .clamp(0.0, 1.0);
+                                    final normY =
+                                        (details.localPosition.dy /
+                                                pageRect.height)
+                                            .clamp(0.0, 1.0);
 
-                                  String? extractedText;
-                                  Rect? textNormalizedRect;
+                                    String? extractedText;
+                                    Rect? textNormalizedRect;
 
-                                  try {
-                                    final pageText = await page.loadText();
-                                    final full =
-                                        pageText?.fullText.trim() ?? '';
-                                    if (full.isNotEmpty) {
-                                      final rawLines = full
-                                          .split('\n')
-                                          .map((l) => l.trim())
-                                          .where((l) => l.isNotEmpty)
-                                          .toList();
-                                      if (rawLines.isNotEmpty) {
-                                        final idx = (normY * rawLines.length)
-                                            .clamp(0, rawLines.length - 1)
-                                            .toInt();
-                                        extractedText = rawLines[idx];
-                                        final approxW =
-                                            (extractedText.length * 0.018)
-                                                .clamp(0.12, 0.70);
-                                        textNormalizedRect = Rect.fromLTWH(
-                                          (normX - approxW / 2).clamp(
-                                            0.04,
-                                            0.96 - approxW,
-                                          ),
-                                          (normY - 0.012).clamp(0.005, 0.96),
-                                          approxW,
-                                          0.022,
-                                        );
+                                    try {
+                                      final pageText = await page.loadText();
+                                      final full =
+                                          pageText?.fullText.trim() ?? '';
+                                      if (full.isNotEmpty) {
+                                        final rawLines = full
+                                            .split('\n')
+                                            .map((l) => l.trim())
+                                            .where((l) => l.isNotEmpty)
+                                            .toList();
+                                        if (rawLines.isNotEmpty) {
+                                          final idx = (normY * rawLines.length)
+                                              .clamp(0, rawLines.length - 1)
+                                              .toInt();
+                                          extractedText = rawLines[idx];
+                                          final approxW =
+                                              (extractedText.length * 0.018)
+                                                  .clamp(0.12, 0.70);
+                                          textNormalizedRect = Rect.fromLTWH(
+                                            (normX - approxW / 2).clamp(
+                                              0.04,
+                                              0.96 - approxW,
+                                            ),
+                                            (normY - 0.012).clamp(0.005, 0.96),
+                                            approxW,
+                                            0.022,
+                                          );
+                                        }
                                       }
-                                    }
-                                  } catch (_) {}
+                                    } catch (_) {}
 
-                                  studio.analyzePdfSentenceAt(
-                                    page.pageNumber,
-                                    Offset(normX, normY),
-                                    sampleText: extractedText,
-                                    targetRect: textNormalizedRect,
-                                  );
-                                },
+                                    studio.analyzePdfSentenceAt(
+                                      page.pageNumber,
+                                      Offset(normX, normY),
+                                      sampleText: extractedText,
+                                      targetRect: textNormalizedRect,
+                                    );
+                                  },
+                                ),
                               ),
                             ),
-                          ),
-                        SmartChalkOverlay(
-                          studio: studio,
-                          targetAnnotations: studio.getPdfChalkAnnotations(
-                            page.pageNumber,
-                          ),
-                          onDelete: (id) => studio.removePdfChalkAnnotation(
-                            page.pageNumber,
-                            id,
-                          ),
-                        ),
-                        // In-Document DGNL Multi-layer Highlight Overlay
-                        Positioned.fill(
-                          child: PdfDgnlPassageOverlay(
+                          SmartChalkOverlay(
                             studio: studio,
-                            pageNumber: page.pageNumber,
-                            pageRect: pageRect,
+                            targetAnnotations: studio.getPdfChalkAnnotations(
+                              page.pageNumber,
+                            ),
+                            onDelete: (id) => studio.removePdfChalkAnnotation(
+                              page.pageNumber,
+                              id,
+                            ),
                           ),
-                        ),
-                      ],
+                          // In-Document DGNL Multi-layer Highlight Overlay
+                          Positioned.fill(
+                            child: PdfDgnlPassageOverlay(
+                              studio: studio,
+                              pageNumber: page.pageNumber,
+                              pageRect: pageRect,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
-        ),
-      ],
+        ];
+      },
     );
 
     _cachedPdfViewer = RepaintBoundary(
