@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -82,15 +83,17 @@ class BoardStroke {
         if (_cachedSize == size && _cachedPath != null) return _cachedPath!;
         _cachedSize = size;
         _cachedPath = Path()
-          ..addRRect(RRect.fromRectAndRadius(
-            Rect.fromLTWH(
-              rect!.left * size.width,
-              rect!.top * size.height,
-              rect!.width * size.width,
-              rect!.height * size.height,
+          ..addRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromLTWH(
+                rect!.left * size.width,
+                rect!.top * size.height,
+                rect!.width * size.width,
+                rect!.height * size.height,
+              ),
+              const Radius.circular(3),
             ),
-            const Radius.circular(3),
-          ));
+          );
         return _cachedPath!;
       } else {
         return Path()
@@ -183,8 +186,7 @@ class BoardStroke {
     'points': points.map((p) => [p.dx, p.dy]).toList(),
     if (rect != null)
       'rect': [rect!.left, rect!.top, rect!.width, rect!.height],
-    if (isHollow)
-      'isHollow': true,
+    if (isHollow) 'isHollow': true,
   };
 
   static BoardStroke fromJson(Map<String, dynamic> json) {
@@ -204,7 +206,9 @@ class BoardStroke {
       Color((json['color'] as num).toInt()),
       (json['width'] as num).toDouble(),
       (json['points'] as List)
-          .map((p) => Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()))
+          .map(
+            (p) => Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()),
+          )
           .toList(),
       isEraser: json['isEraser'] as bool? ?? false,
       rect: r,
@@ -253,6 +257,7 @@ class StudioState extends ChangeNotifier {
     final muted = !TeacherMediaService().isMicActive;
     if (audio.muted != muted) unawaited(audio.setMuted(muted));
   }
+
   final LocalService service;
   bool online = false, loading = true, saving = false, dirty = false;
   String? error;
@@ -403,12 +408,16 @@ class StudioState extends ChangeNotifier {
   List<PdfDgnlPassage> get pdfDgnlPassages => _pdfDgnlPassages;
 
   List<PdfDgnlPassage> getPdfDgnlPassagesForPage(int pageNumber) =>
-      _pdfDgnlPassages.where((p) => p.pageNumber == pageNumber && p.isVisible).toList();
+      _pdfDgnlPassages
+          .where((p) => p.pageNumber == pageNumber && p.isVisible)
+          .toList();
 
   void addPdfDgnlPassage(PdfDgnlPassage passage) {
-    _pdfDgnlPassages.removeWhere((p) =>
-        p.pageNumber == passage.pageNumber &&
-        p.normalizedBounds.overlaps(passage.normalizedBounds));
+    _pdfDgnlPassages.removeWhere(
+      (p) =>
+          p.pageNumber == passage.pageNumber &&
+          p.normalizedBounds.overlaps(passage.normalizedBounds),
+    );
     _pdfDgnlPassages.add(passage);
     notifyListeners();
   }
@@ -462,17 +471,26 @@ class StudioState extends ChangeNotifier {
       }
       passStartIdx = passStartIdx.clamp(0, math.max(0, full.length - 1));
 
-      final passEndIdx = math.min(full.length - 1, passStartIdx + snippetClean.length);
+      final passEndIdx = math.min(
+        full.length - 1,
+        passStartIdx + snippetClean.length,
+      );
       final passCharBoxes = <Rect>[];
-      for (int i = passStartIdx; i <= passEndIdx && i < pageText.charRects.length; i++) {
+      for (
+        int i = passStartIdx;
+        i <= passEndIdx && i < pageText.charRects.length;
+        i++
+      ) {
         final r = pageText.charRects[i];
         final rFlutter = r.toRect(page: page);
-        passCharBoxes.add(Rect.fromLTRB(
-          (rFlutter.left / page.width).clamp(0.0, 1.0),
-          (rFlutter.top / page.height).clamp(0.0, 1.0),
-          (rFlutter.right / page.width).clamp(0.0, 1.0),
-          (rFlutter.bottom / page.height).clamp(0.0, 1.0),
-        ));
+        passCharBoxes.add(
+          Rect.fromLTRB(
+            (rFlutter.left / page.width).clamp(0.0, 1.0),
+            (rFlutter.top / page.height).clamp(0.0, 1.0),
+            (rFlutter.right / page.width).clamp(0.0, 1.0),
+            (rFlutter.bottom / page.height).clamp(0.0, 1.0),
+          ),
+        );
       }
 
       Rect passBounds = const Rect.fromLTWH(0.05, 0.2, 0.9, 0.5);
@@ -506,18 +524,25 @@ class StudioState extends ChangeNotifier {
 
         final hlLower = hlText.toLowerCase();
         int sIdx = passStartIdx;
-        while ((sIdx = fullLower.indexOf(hlLower, sIdx)) != -1 && sIdx <= passEndIdx + 300) {
+        while ((sIdx = fullLower.indexOf(hlLower, sIdx)) != -1 &&
+            sIdx <= passEndIdx + 300) {
           final eIdx = sIdx + hlLower.length;
           final matchedBoxes = <Rect>[];
-          for (int ci = sIdx; ci < eIdx && ci < pageText.charRects.length; ci++) {
+          for (
+            int ci = sIdx;
+            ci < eIdx && ci < pageText.charRects.length;
+            ci++
+          ) {
             final r = pageText.charRects[ci];
             final rFlutter = r.toRect(page: page);
-            matchedBoxes.add(Rect.fromLTRB(
-              (rFlutter.left / page.width).clamp(0.0, 1.0),
-              (rFlutter.top / page.height).clamp(0.0, 1.0),
-              (rFlutter.right / page.width).clamp(0.0, 1.0),
-              (rFlutter.bottom / page.height).clamp(0.0, 1.0),
-            ));
+            matchedBoxes.add(
+              Rect.fromLTRB(
+                (rFlutter.left / page.width).clamp(0.0, 1.0),
+                (rFlutter.top / page.height).clamp(0.0, 1.0),
+                (rFlutter.right / page.width).clamp(0.0, 1.0),
+                (rFlutter.bottom / page.height).clamp(0.0, 1.0),
+              ),
+            );
           }
 
           if (matchedBoxes.isNotEmpty) {
@@ -526,7 +551,8 @@ class StudioState extends ChangeNotifier {
               bool added = false;
               for (final line in lines) {
                 final ref = line.first;
-                if ((ref.top - b.top).abs() < 0.015 || (b.top <= ref.bottom && b.bottom >= ref.top)) {
+                if ((ref.top - b.top).abs() < 0.015 ||
+                    (b.top <= ref.bottom && b.bottom >= ref.top)) {
                   line.add(b);
                   added = true;
                   break;
@@ -544,17 +570,26 @@ class StudioState extends ChangeNotifier {
                 ly1 = math.min(ly1, r.top);
                 ly2 = math.max(ly2, r.bottom);
               }
-              lineRects.add(Rect.fromLTRB(lx1, (ly1 - 0.001).clamp(0.0, 1.0), lx2, (ly2 + 0.001).clamp(0.0, 1.0)));
+              lineRects.add(
+                Rect.fromLTRB(
+                  lx1,
+                  (ly1 - 0.001).clamp(0.0, 1.0),
+                  lx2,
+                  (ly2 + 0.001).clamp(0.0, 1.0),
+                ),
+              );
             }
 
-            spans.add(PdfDgnlHighlightSpan(
-              text: hlText,
-              category: category,
-              level: level,
-              type: type,
-              note: note,
-              normalizedRects: lineRects,
-            ));
+            spans.add(
+              PdfDgnlHighlightSpan(
+                text: hlText,
+                category: category,
+                level: level,
+                type: type,
+                note: note,
+                normalizedRects: lineRects,
+              ),
+            );
           }
           sIdx = eIdx;
         }
@@ -572,7 +607,9 @@ class StudioState extends ChangeNotifier {
 
       addPdfDgnlPassage(passage);
     } catch (e) {
-      debugPrint('[StudioState] highlightPdfPassageFromAnalysis error: $e');
+      FrontendLogger.write(
+        '[StudioState] highlightPdfPassageFromAnalysis error: $e',
+      );
     }
   }
 
@@ -615,7 +652,10 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  void handlePluginMessage(dynamic message, {void Function(String jsScript)? executeJs}) {
+  void handlePluginMessage(
+    dynamic message, {
+    void Function(String jsScript)? executeJs,
+  }) {
     HostBridge.instance.handleMessage(
       rawMessage: message,
       studio: this,
@@ -826,7 +866,23 @@ class StudioState extends ChangeNotifier {
 
   List<List<BoardStroke>> pages = [[]];
   List<String> pageTitles = ['Khám phá bài học'];
+  List<String> pageNotes = [''];
   final Map<int, List<BoardSticker>> pageStickers = {};
+
+  String get currentPageNote =>
+      (page >= 0 && page < pageNotes.length) ? pageNotes[page] : '';
+
+  void setPageNote(int index, String note) {
+    while (pageNotes.length <= index) {
+      pageNotes.add('');
+    }
+    if (pageNotes[index] != note) {
+      pageNotes[index] = note;
+      dirty = true;
+      _revision++;
+      notifyListeners();
+    }
+  }
 
   List<BoardSticker> get currentStickers =>
       pageStickers.putIfAbsent(page, () => []);
@@ -1328,6 +1384,7 @@ class StudioState extends ChangeNotifier {
     dirty = true;
     notifyListeners();
   }
+
   List<BoardStroke> get strokes {
     while (pages.length <= _page) {
       pages.add([]);
@@ -1508,6 +1565,16 @@ class StudioState extends ChangeNotifier {
               pages.length,
               (i) => i == 0 ? 'Khám phá bài học' : 'Trang ${i + 1}',
             );
+          }
+          if (lesson['pageNotes'] is List) {
+            pageNotes = (lesson['pageNotes'] as List)
+                .map((e) => e.toString())
+                .toList();
+          } else {
+            pageNotes = List.generate(pages.length, (i) => i == 0 ? notes : '');
+          }
+          while (pageNotes.length < pages.length) {
+            pageNotes.add('');
           }
           page = page.clamp(0, pages.length - 1);
         }
@@ -1696,6 +1763,7 @@ class StudioState extends ChangeNotifier {
   void addPage([String? title]) {
     pages.add([]);
     pageTitles.add(title ?? 'Trang ${pages.length}');
+    pageNotes.add('');
     page = pages.length - 1;
     dirty = true;
     _revision++;
@@ -1709,6 +1777,7 @@ class StudioState extends ChangeNotifier {
       pages[0].clear();
       _redoPages?[0]?.clear();
       pageTitles[0] = 'Khám phá bài học';
+      pageNotes[0] = '';
       dirty = true;
       _revision++;
       notifyListeners();
@@ -1717,6 +1786,12 @@ class StudioState extends ChangeNotifier {
     pages.removeAt(index);
     if (index < pageTitles.length) {
       pageTitles.removeAt(index);
+    }
+    if (index < pageNotes.length) {
+      pageNotes.removeAt(index);
+    }
+    if (pageNotes.isEmpty) {
+      pageNotes.add('');
     }
     final newRedo = <int, List<BoardStroke>>{};
     _redoPages?.forEach((k, v) {
@@ -1811,6 +1886,7 @@ class StudioState extends ChangeNotifier {
       'page': page,
       'pages': pages.map((p) => p.map((s) => s.toJson()).toList()).toList(),
       'pageTitles': pageTitles,
+      'pageNotes': pageNotes,
       'stickers': pageStickers.map(
         (k, v) => MapEntry(k.toString(), v.map((s) => s.toJson()).toList()),
       ),
@@ -1874,6 +1950,11 @@ class StudioState extends ChangeNotifier {
         ..clear()
         ..addAll((json['pageTitles'] as List).map((e) => e.toString()));
     }
+    if (json.containsKey('pageNotes') && json['pageNotes'] is List) {
+      pageNotes
+        ..clear()
+        ..addAll((json['pageNotes'] as List).map((e) => e.toString()));
+    }
     if (json.containsKey('pages') && json['pages'] is List) {
       pages.clear();
       for (final p in json['pages'] as List) {
@@ -1885,6 +1966,9 @@ class StudioState extends ChangeNotifier {
           );
         }
       }
+    }
+    while (pageNotes.length < pages.length) {
+      pageNotes.add('');
     }
     if (json.containsKey('stickers') && json['stickers'] is Map) {
       pageStickers.clear();

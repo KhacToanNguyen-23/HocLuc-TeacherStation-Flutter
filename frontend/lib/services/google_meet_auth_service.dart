@@ -1,8 +1,10 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GoogleMeetAuthService extends ChangeNotifier {
-  static final GoogleMeetAuthService _instance = GoogleMeetAuthService._internal();
+  static final GoogleMeetAuthService _instance =
+      GoogleMeetAuthService._internal();
   factory GoogleMeetAuthService() => _instance;
   GoogleMeetAuthService._internal();
 
@@ -45,7 +47,7 @@ class GoogleMeetAuthService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('[GoogleMeetAuthService] init error: $e');
+      FrontendLogger.write('[GoogleMeetAuthService] init error: $e');
     }
   }
 
@@ -57,10 +59,11 @@ class GoogleMeetAuthService extends ChangeNotifier {
       if (_teacherName != null) await prefs.setString(_kName, _teacherName!);
       if (_teacherEmail != null) await prefs.setString(_kEmail, _teacherEmail!);
       if (_teacherPhone != null) await prefs.setString(_kPhone, _teacherPhone!);
-      if (_teacherAvatar != null) await prefs.setString(_kAvatar, _teacherAvatar!);
+      if (_teacherAvatar != null)
+        await prefs.setString(_kAvatar, _teacherAvatar!);
       if (_authMethod != null) await prefs.setString(_kMethod, _authMethod!);
     } catch (e) {
-      debugPrint('[GoogleMeetAuthService] persist error: $e');
+      FrontendLogger.write('[GoogleMeetAuthService] persist error: $e');
     }
   }
 
@@ -75,7 +78,7 @@ class GoogleMeetAuthService extends ChangeNotifier {
       await prefs.remove(_kAvatar);
       await prefs.remove(_kMethod);
     } catch (e) {
-      debugPrint('[GoogleMeetAuthService] clear error: $e');
+      FrontendLogger.write('[GoogleMeetAuthService] clear error: $e');
     }
   }
 
@@ -138,7 +141,10 @@ class GoogleMeetAuthService extends ChangeNotifier {
   }
 
   bool get isGoogleAuthenticated =>
-      _isSignedIn && (_authMethod == 'google' || _authMethod == 'google_oauth' || _authMethod == 'demo');
+      _isSignedIn &&
+      (_authMethod == 'google' ||
+          _authMethod == 'google_oauth' ||
+          _authMethod == 'demo');
 
   /// Mô phỏng đăng nhập nhanh cho giáo viên (Quick Sign-in)
   void quickSignIn({String? email, String? name}) {

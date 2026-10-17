@@ -96,7 +96,9 @@ class PluginManifest {
       backendExecutable: backendExecutable,
       backendPort: backendPort,
       backend: backendObj,
-      permissions: (json['permissions'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      permissions:
+          (json['permissions'] as List?)?.map((e) => e.toString()).toList() ??
+          const [],
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +16,8 @@ class WebviewEnvironmentService {
   /// Resolves the default persistent directory in %APPDATA%/HocLucTeacherStation/EdgeProfile.
   static String get defaultUserDataPath {
     if (!kIsWeb && Platform.isWindows) {
-      final appData = Platform.environment['APPDATA'] ??
+      final appData =
+          Platform.environment['APPDATA'] ??
           Platform.environment['LOCALAPPDATA'] ??
           r'C:\Users\Public';
       return '$appData\\HocLucTeacherStation\\EdgeProfile';
@@ -50,14 +52,17 @@ class WebviewEnvironmentService {
         additionalArguments: chromiumAdditionalArguments,
       );
       _initialized = true;
-      debugPrint(
-          '[WebviewEnvironment] Successfully initialized with profile: $_resolvedUserDataPath');
+      FrontendLogger.write(
+        '[WebviewEnvironment] Successfully initialized with profile: $_resolvedUserDataPath',
+      );
     } on PlatformException catch (e) {
       // If already initialized by previous instance/runner, mark as initialized
-      debugPrint('[WebviewEnvironment] PlatformException during init (already initialized?): $e');
+      FrontendLogger.write(
+        '[WebviewEnvironment] PlatformException during init (already initialized?): $e',
+      );
       _initialized = true;
     } catch (e) {
-      debugPrint('[WebviewEnvironment] Init error: $e');
+      FrontendLogger.write('[WebviewEnvironment] Init error: $e');
       _initialized = true;
     }
   }

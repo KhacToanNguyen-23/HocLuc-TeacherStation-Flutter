@@ -6,6 +6,7 @@ import '../../models/studio_state.dart';
 import '../../services/meet_automation_service.dart';
 import '../../services/url_opener.dart';
 import '../create_classroom_dialog.dart';
+import '../google_brand_icon.dart';
 
 class StudioTopBar extends StatelessWidget {
   const StudioTopBar({
@@ -482,24 +483,79 @@ class StudioTopBar extends StatelessWidget {
                   ),
                 ],
               ],
-              // Nút Thiết bị và API AI (Giữ nguyên IconButton gốc, trong không gian cố định 36x36)
-              SizedBox(
-                width: 36,
-                height: 36,
-                child: IconButton(
-                  tooltip: 'Thiết bị và API AI',
-                  iconSize: 19,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
-                  ),
-                  onPressed: onToggleInspector,
-                  icon: Icon(
-                    hasInspector ? Icons.tune : Icons.tune_outlined,
-                    color: hasInspector ? pine : muted,
-                  ),
-                ),
+              // Google Meet panel toggle.
+              ListenableBuilder(
+                listenable: MeetAutomationService(),
+                builder: (context, _) {
+                  final isLive = MeetAutomationService().isHostJoined;
+                  return Tooltip(
+                    message: 'Thiết bị và API AI',
+                    child: TextButton.icon(
+                      onPressed: onToggleInspector,
+                      icon: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Positioned(
+                              left: 0,
+                              top: 0,
+                              child: GoogleBrandIcon(size: 17),
+                            ),
+                            if (isLive)
+                              Positioned(
+                                right: -2,
+                                bottom: -1,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      label: const Text(
+                        'GG Panel',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: hasInspector
+                            ? AppColors.onSelected
+                            : AppColors.textSecondary,
+                        backgroundColor: hasInspector
+                            ? AppColors.selected
+                            : Colors.transparent,
+                        side: BorderSide(
+                          color: hasInspector
+                              ? AppColors.selected
+                              : AppColors.surfaceBorder,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        minimumSize: const Size(0, 36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        textStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight: hasInspector
+                              ? FontWeight.w700
+                              : FontWeight.w600,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.control),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
 
               // Các nút hành động cho Chế độ Soạn bài giảng (Planning Mode)

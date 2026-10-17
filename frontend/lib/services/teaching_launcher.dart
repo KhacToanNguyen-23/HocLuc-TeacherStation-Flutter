@@ -12,19 +12,29 @@ class TeachingLauncher {
   static bool _opening = false;
 
   static bool get hasStudio => _studioRoute?.isActive == true;
-  static Future<void> requireIdleForAccountChange({LocalService? localService}) async {
+  static Future<void> requireIdleForAccountChange({
+    LocalService? localService,
+  }) async {
     final local = localService ?? LocalService();
     try {
-      if (_opening) throw StateError('Đang mở buổi dạy. Vui lòng chờ hoàn tất trước khi đổi tài khoản.');
+      if (_opening)
+        throw StateError(
+          'Đang mở buổi dạy. Vui lòng chờ hoàn tất trước khi đổi tài khoản.',
+        );
       await MeetAutomationService().pendingSessionRegistration;
       final active = await local.getActiveClassroom(strict: true);
-      if (hasStudio || MeetAutomationService().hasRoom || active['status'] == 'ONGOING') {
-        throw StateError('Buổi dạy vẫn đang mở. Trở về buổi dạy và lưu bài, kết thúc buổi trước khi đổi tài khoản hoặc ngắt kết nối Google.');
+      if (hasStudio ||
+          MeetAutomationService().hasRoom ||
+          active['status'] == 'ONGOING') {
+        throw StateError(
+          'Buổi dạy vẫn đang mở. Trở về buổi dạy và lưu bài, kết thúc buổi trước khi đổi tài khoản hoặc ngắt kết nối Google.',
+        );
       }
     } finally {
       if (localService == null) local.dispose();
     }
   }
+
   static void returnToStudio() {
     final route = _studioRoute;
     if (route != null && route.isActive) {

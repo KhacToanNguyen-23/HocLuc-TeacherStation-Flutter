@@ -738,5 +738,45 @@
     "verification_command": "mvn test -Dtest=GoogleIntegrationTest",
     "notes": "Covers stories: P1",
     "priority": "P1"
+  },
+  {
+    "id": "google-classroom-create-sync-result",
+    "title": "Show automatic member sync result after class creation",
+    "user_visible_behavior": "Teacher sees the member-sync result from class creation without manually pressing Sync.",
+    "verification_command": "After successful class creation, HocLucStation displays the sync result returned by the create request without issuing a duplicate sync request or requiring a Sync click.",
+    "status": "passing",
+    "evidence": "google_workspace_test.dart: create response is applied without duplicate sync; all 33 tests passed.",
+    "notes": "",
+    "priority": "P1"
+  },
+  {
+    "id": "google-classroom-resume-sync",
+    "title": "Automatically recheck a pending class when returning to the app",
+    "user_visible_behavior": "Teacher does not need to press Sync after accepting a pending class in Classroom.",
+    "verification_command": "When the create sync result is pending, the next app resume automatically retries member sync at most once for that course without a manual Sync action.",
+    "status": "passing",
+    "evidence": "google_workspace_test.dart: PROVISIONED resume retries, duplicate resumes coalesce, and later ACTIVE response is applied; all 33 tests passed.",
+    "notes": "",
+    "priority": "P1"
+  },
+  {
+    "id": "google-classroom-pending-activation-guidance",
+    "title": "Explain when a Classroom course still needs activation",
+    "user_visible_behavior": "Teacher knows to accept a pending course in Classroom before member sync can complete.",
+    "verification_command": "A PROVISIONED course displays an in-app instruction to accept it in Classroom and does not display member sync as complete.",
+    "status": "passing",
+    "evidence": "google_workspace_test.dart: PROVISIONED guidance and non-retryable state messaging verified; all 33 tests passed.",
+    "notes": "",
+    "priority": "P1"
+  },
+  {
+    "id": "google-classroom-sync-result-notice",
+    "title": "Show automatic sync outcome inside HocLucStation",
+    "user_visible_behavior": "Teacher can see whether the course is pending, synced, or needs attention without an operating-system notification.",
+    "verification_command": "After an automatic check, the in-app course UI reports the correct pending, successful, or failed status without sending an operating-system notification.",
+    "status": "passing",
+    "evidence": "google_workspace_test.dart: progress, pending, success, partial, and error banners verified; all 33 tests passed.",
+    "notes": "",
+    "priority": "P1"
   }
 ]

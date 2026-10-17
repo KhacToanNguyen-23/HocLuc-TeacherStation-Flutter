@@ -100,30 +100,35 @@ class ExamDashboardCard extends StatelessWidget {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      style: TextButton.styleFrom(
-                        backgroundColor: AppColors.surfaceMuted,
-                        foregroundColor: AppColors.textPrimary,
-                        alignment: Alignment.centerLeft,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.lg,
-                        ),
-                        minimumSize: const Size(0, 48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadii.control),
-                        ),
-                      ).copyWith(
-                        backgroundColor: WidgetStateProperty.resolveWith((states) {
-                          if (states.contains(WidgetState.pressed)) {
-                            return AppColors.selected;
-                          }
-                          if (states.contains(WidgetState.hovered) ||
-                              states.contains(WidgetState.focused)) {
-                            return AppColors.sky50;
-                          }
-                          return AppColors.surfaceMuted;
-                        }),
-                      ),
+                      style:
+                          TextButton.styleFrom(
+                            backgroundColor: AppColors.surfaceMuted,
+                            foregroundColor: AppColors.textPrimary,
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.lg,
+                            ),
+                            minimumSize: const Size(0, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.control,
+                              ),
+                            ),
+                          ).copyWith(
+                            backgroundColor: WidgetStateProperty.resolveWith((
+                              states,
+                            ) {
+                              if (states.contains(WidgetState.pressed)) {
+                                return AppColors.selected;
+                              }
+                              if (states.contains(WidgetState.hovered) ||
+                                  states.contains(WidgetState.focused)) {
+                                return AppColors.sky50;
+                              }
+                              return AppColors.surfaceMuted;
+                            }),
+                          ),
                     ),
                   ),
               ],

@@ -44,6 +44,7 @@ setup_flutter.ps1
 .agents/*
 !.agents/rules/
 !.agents/skills/
+.skills/
 .codex/
 
 # IDE and Editor configs

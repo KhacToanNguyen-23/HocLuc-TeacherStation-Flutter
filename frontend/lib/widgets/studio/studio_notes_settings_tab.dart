@@ -58,7 +58,7 @@ class StudioNotesSettingsTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         const Text(
-          'Chuẩn bị buổi dạy',
+          'Thiết bị & Đầu ra Meet',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 3),
@@ -105,25 +105,36 @@ class StudioNotesSettingsTab extends StatelessWidget {
         const SizedBox(height: 16),
         const Divider(color: line),
         const SizedBox(height: 12),
+        _sectionLabel('DỊCH GIỌNG NÓI & TRỢ NĂNG'),
+        const SizedBox(height: 8),
         AudioTranslationStudioButton(studio: studio),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         const Divider(color: line),
         const SizedBox(height: 12),
-        _sectionLabel('GHI CHÚ RIÊNG CỦA THẦY/CÔ'),
-        const SizedBox(height: 10),
-        TextField(
-          controller: notesController,
-          minLines: 3,
-          maxLines: 5,
-          onChanged: (v) => studio.change(() => studio.notes = v),
-          decoration: const InputDecoration(
-            hintText: 'Điểm cần nhấn mạnh, câu hỏi gợi mở cho học sinh…',
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceMuted,
+            borderRadius: BorderRadius.circular(AppRadii.control),
+            border: Border.all(color: AppColors.surfaceBorder),
           ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Ghi chú cá nhân, không hiển thị cho học sinh trên Meet.',
-          style: TextStyle(fontSize: 10, color: muted),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.security_rounded, size: 16, color: AppColors.success),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Bảo mật buổi dạy: Học sinh trên Meet chỉ nhìn thấy khung bảng vẽ. Toàn bộ thanh công cụ, ghi chú diễn giả và màn hình điều khiển này hoàn toàn riêng tư.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.4,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

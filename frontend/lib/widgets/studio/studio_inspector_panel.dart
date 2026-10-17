@@ -5,6 +5,7 @@ import '../../services/google_meet_auth_service.dart';
 import '../../services/meet_automation_service.dart';
 import 'studio_meet_cockpit_tab.dart';
 import 'studio_notes_settings_tab.dart';
+import '../google_brand_icon.dart';
 
 class StudioInspectorPanel extends StatefulWidget {
   const StudioInspectorPanel({
@@ -27,7 +28,7 @@ class StudioInspectorPanel extends StatefulWidget {
 }
 
 class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
-  int _selectedTab = 0; // 0: Live Meet Cockpit, 1: Thiết bị & Ghi chú
+  int _selectedTab = 0;
   final MeetAutomationService _meetService = MeetAutomationService();
   final GoogleMeetAuthService _authService = GoogleMeetAuthService();
 
@@ -35,9 +36,7 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
     return ListenableBuilder(
       listenable: _meetService,
       builder: (context, _) {
-        final handCount = _meetService.raisedHands.length;
-        final hasLiveRoom = _meetService.hasRoom;
-
+        final isLive = _meetService.isHostJoined;
         return Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           child: Container(
@@ -49,117 +48,18 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
             child: Row(
               children: [
                 Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _selectedTab = 0),
-                    borderRadius: BorderRadius.circular(AppRadii.control),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _selectedTab == 0
-                            ? Colors.white
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(AppRadii.control),
-                        boxShadow: _selectedTab == 0
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: hasLiveRoom
-                                  ? AppColors.success
-                                  : AppColors.textMuted,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          const Flexible(
-                            child: Text(
-                              'Trực tiếp',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.slate800,
-                              ),
-                            ),
-                          ),
-                          if (handCount > 0) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.warning,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadii.control,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.front_hand_outlined, size: 9, color: Colors.white),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    '$handCount',
-                                    style: const TextStyle(
-                                      fontSize: 8,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
+                  child: _buildTab(
+                    index: 0,
+                    label: 'Trực tiếp',
+                    icon: const GoogleBrandIcon(size: 14),
+                    live: isLive,
                   ),
                 ),
                 Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _selectedTab = 1),
-                    borderRadius: BorderRadius.circular(AppRadii.control),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _selectedTab == 1
-                            ? Colors.white
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(AppRadii.control),
-                        boxShadow: _selectedTab == 1
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'Cài đặt & Ghi chú',
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ),
+                  child: _buildTab(
+                    index: 1,
+                    label: 'Thiết bị & Cài đặt',
+                    icon: const Icon(Icons.settings_outlined, size: 14),
                   ),
                 ),
               ],
@@ -167,6 +67,75 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildTab({
+    required int index,
+    required String label,
+    required Widget icon,
+    bool live = false,
+  }) {
+    final selected = _selectedTab == index;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: () => setState(() => _selectedTab = index),
+        borderRadius: BorderRadius.circular(AppRadii.control),
+        child: AnimatedContainer(
+          duration: AppMotion.duration(context, milliseconds: 170),
+          curve: AppMotion.stateCurve,
+          decoration: BoxDecoration(
+            color: selected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadii.control),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (live)
+                Container(
+                  width: 7,
+                  height: 7,
+                  margin: const EdgeInsets.only(right: 5),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.success,
+                  ),
+                ),
+              IconTheme(
+                data: IconThemeData(
+                  color: selected ? AppColors.primary : AppColors.textSecondary,
+                ),
+                child: icon,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    color: selected
+                        ? AppColors.slate800
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -187,21 +156,41 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
 
           // Tab Content
           Expanded(
-            child: _selectedTab == 0
-                ? ListenableBuilder(
-                    listenable: Listenable.merge([_meetService, _authService]),
-                    builder: (context, _) => StudioMeetCockpitTab(
-                      meetService: _meetService,
-                      authService: _authService,
+            child: AnimatedSwitcher(
+              duration: AppMotion.duration(context, milliseconds: 190),
+              switchInCurve: AppMotion.enterCurve,
+              switchOutCurve: AppMotion.exitCurve,
+              transitionBuilder: (child, animation) {
+                final offset = Tween<Offset>(
+                  begin: const Offset(0.025, 0),
+                  end: Offset.zero,
+                ).animate(animation);
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(position: offset, child: child),
+                );
+              },
+              child: _selectedTab == 0
+                  ? ListenableBuilder(
+                      key: const ValueKey('inspector-meet-tab'),
+                      listenable: Listenable.merge([
+                        _meetService,
+                        _authService,
+                      ]),
+                      builder: (context, _) => StudioMeetCockpitTab(
+                        meetService: _meetService,
+                        authService: _authService,
+                      ),
+                    )
+                  : StudioNotesSettingsTab(
+                      key: const ValueKey('inspector-notes-tab'),
+                      studio: widget.studio,
+                      notesController: widget.notesController,
+                      questionController: widget.questionController,
+                      endpointController: widget.endpointController,
+                      onPreview: widget.onPreview,
                     ),
-                  )
-                : StudioNotesSettingsTab(
-                    studio: widget.studio,
-                    notesController: widget.notesController,
-                    questionController: widget.questionController,
-                    endpointController: widget.endpointController,
-                    onPreview: widget.onPreview,
-                  ),
+            ),
           ),
         ],
       ),

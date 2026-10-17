@@ -23,11 +23,8 @@ class WorkspaceInviteDialog extends StatefulWidget {
     final dialogRoute = DialogRoute<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => WorkspaceInviteDialog(
-        api: api,
-        course: course,
-        onSuccess: onSuccess,
-      ),
+      builder: (ctx) =>
+          WorkspaceInviteDialog(api: api, course: course, onSuccess: onSuccess),
     );
     await Navigator.of(context).push(dialogRoute);
     await dialogRoute.completed;
@@ -141,7 +138,9 @@ class _WorkspaceInviteDialogState extends State<WorkspaceInviteDialog> {
                     validator: (v) {
                       try {
                         final parsed = GoogleWorkspaceApi.parseEmails(v ?? '');
-                        return parsed.isEmpty ? 'Nhập ít nhất một email.' : null;
+                        return parsed.isEmpty
+                            ? 'Nhập ít nhất một email.'
+                            : null;
                       } catch (e) {
                         return _message(e);
                       }
@@ -150,7 +149,10 @@ class _WorkspaceInviteDialogState extends State<WorkspaceInviteDialog> {
                   const SizedBox(height: 16),
                   const Text(
                     'Thêm email vào danh sách lớp. Chuẩn bị phòng Calendar để gửi lời mời Meet; không cần học sinh chấp nhận Classroom.',
-                    style: TextStyle(color: AppColors.textSecondary, height: 1.5),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
                   ),
                   if (_error != null)
                     Padding(

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -347,6 +348,1087 @@ void main() {
       throwsFormatException,
     );
   });
+
+  testWidgets(
+    'completing a created course reflects its sync response without duplicate sync',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final requests = <String>[];
+      final createResponse = <String, dynamic>{
+        'id': 'draft-class',
+        'courseId': 'google-course-1',
+        'title': 'Toán 12A',
+        'classroomState': 'PROVISIONED',
+        'classroomWarnings': <String>[],
+        'students': <Map<String, dynamic>>[],
+        'classroomSyncedAt': null,
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          requests.add('${request.method} ${request.url.path}');
+          Object data;
+          if (request.url.path.endsWith('bootstrap')) {
+            data = {'token': 'local'};
+          } else if (request.url.path.endsWith('status')) {
+            data = {'configured': true, 'connected': true};
+          } else if (request.method == 'POST' &&
+              request.url.path.endsWith('/courses')) {
+            data = createResponse;
+          } else if (request.url.path.endsWith('/sync')) {
+            data = {
+              ...createResponse,
+              'classroomState': 'ACTIVE',
+              'classroomSyncedAt': '2026-10-17T10:00:00Z',
+            };
+          } else {
+            data = {
+              'courses': [
+                {
+                  'id': 'draft-class',
+                  'title': 'Toán 12A',
+                  'courseId': null,
+                  'classroomState': null,
+                  'students': <Map<String, dynamic>>[],
+                },
+              ],
+            };
+          }
+          return http.Response(
+            jsonEncode(data),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hoàn tất tạo lớp'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+      expect(requests.where((r) => r.contains('/sync')), isEmpty);
+      expect(
+        requests
+            .where((r) => r == 'POST /api/integrations/google/courses')
+            .length,
+        1,
+      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(requests.where((r) => r.endsWith('/sync')).length, 1);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  for (final state in [
+    'PROVISIONED',
+    'ACTIVE',
+    'DECLINED',
+    'ARCHIVED',
+    'SUSPENDED',
+  ]) {
+    testWidgets('$state course shows the matching Classroom sync status', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final course = <String, dynamic>{
+        'id': 'state-class',
+        'title': 'Toán 12A',
+        'courseId': 'google-course-1',
+        'classroomState': state,
+        'classroomWarnings': state == 'ACTIVE'
+            ? <String>[]
+            : <String>['Google Classroom state: $state'],
+        'students': <Map<String, dynamic>>[],
+        'classroomSyncedAt': state == 'ACTIVE' ? '2026-10-17T10:00:00Z' : null,
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          Object data;
+          if (request.url.path.endsWith('bootstrap')) {
+            data = {'token': 'local'};
+          } else if (request.url.path.endsWith('status')) {
+            data = {'configured': true, 'connected': true};
+          } else {
+            data = {
+              'courses': [course],
+            };
+          }
+          return http.Response(
+            jsonEncode(data),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+
+      if (state == 'PROVISIONED') {
+        expect(
+          find.textContaining('Mở Classroom để chấp nhận'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
+      } else if (state == 'ACTIVE') {
+        expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      } else {
+        expect(
+          find.textContaining('Kiểm tra lớp trong Classroom'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Mở Classroom để chấp nhận'), findsNothing);
+      }
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    });
+  }
+
+  testWidgets(
+    'ACTIVE with warnings reports partial sync rather than clean roster success',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final course = <String, dynamic>{
+        'id': 'partial-class',
+        'title': 'Toán 12A',
+        'courseId': 'google-course-1',
+        'classroomState': 'ACTIVE',
+        'classroomWarnings': ['One student could not be invited'],
+        'students': <Map<String, dynamic>>[],
+        'classroomSyncedAt': '2026-10-17T10:00:00Z',
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          Object data;
+          if (request.url.path.endsWith('bootstrap')) {
+            data = {'token': 'local'};
+          } else if (request.url.path.endsWith('status')) {
+            data = {'configured': true, 'connected': true};
+          } else {
+            data = {
+              'courses': [course],
+            };
+          }
+          return http.Response(
+            jsonEncode(data),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('còn cảnh báo đồng bộ'), findsOneWidget);
+      expect(
+        find.textContaining('One student could not be invited'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets(
+    'calendar syncedAt alone does not claim a clean ACTIVE roster sync',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final course = <String, dynamic>{
+        'id': 'no-state-class',
+        'title': 'Toán 12A',
+        'courseId': 'google-course-1',
+        'classroomWarnings': <String>[],
+        'students': <Map<String, dynamic>>[],
+        'syncedAt': '2026-10-17T10:00:00Z',
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          Object data;
+          if (request.url.path.endsWith('bootstrap')) {
+            data = {'token': 'local'};
+          } else if (request.url.path.endsWith('status')) {
+            data = {'configured': true, 'connected': true};
+          } else {
+            data = {
+              'courses': [course],
+            };
+          }
+          return http.Response(
+            jsonEncode(data),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets('ACTIVE without syncedAt does not claim a clean roster sync', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final course = <String, dynamic>{
+      'id': 'active-unsynced-class',
+      'title': 'Toán 12A',
+      'courseId': 'google-course-1',
+      'classroomState': 'ACTIVE',
+      'classroomWarnings': <String>[],
+      'students': <Map<String, dynamic>>[],
+      'classroomSyncedAt': null,
+    };
+    final api = GoogleWorkspaceApi(
+      email: 'teacher@example.com',
+      client: MockClient((request) async {
+        Object data;
+        if (request.url.path.endsWith('bootstrap')) {
+          data = {'token': 'local'};
+        } else if (request.url.path.endsWith('status')) {
+          data = {'configured': true, 'connected': true};
+        } else {
+          data = {
+            'courses': [course],
+          };
+        }
+        return http.Response(
+          jsonEncode(data),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
+    expect(
+      find.textContaining('chưa xác nhận đồng bộ thành viên'),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox());
+    api.close();
+  });
+
+  testWidgets('resume does not sync when no course is pending', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var syncRequests = 0;
+    final course = <String, dynamic>{
+      'id': 'already-active',
+      'title': 'Active class',
+      'courseId': 'google-course-1',
+      'classroomState': 'ACTIVE',
+      'classroomWarnings': <String>[],
+      'classroomSyncedAt': '2026-10-17T10:00:00Z',
+      'students': <Map<String, dynamic>>[],
+    };
+    final api = GoogleWorkspaceApi(
+      email: 'teacher@example.com',
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('bootstrap')) {
+          return http.Response('{"token":"local"}', 200);
+        }
+        if (request.url.path.endsWith('status')) {
+          return http.Response('{"configured":true,"connected":true}', 200);
+        }
+        if (request.url.path.endsWith('/sync')) syncRequests++;
+        return http.Response(
+          jsonEncode({
+            'courses': [course],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(syncRequests, 0);
+    await tester.pumpWidget(const SizedBox());
+    api.close();
+  });
+
+  testWidgets(
+    'resume retries an ACTIVE course without confirmed Classroom sync',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var syncRequests = 0;
+      final activeCourse = <String, dynamic>{
+        'id': 'active-unconfirmed',
+        'title': 'Active class',
+        'courseId': 'google-course-1',
+        'classroomState': 'ACTIVE',
+        'classroomWarnings': ['Temporary roster check failure'],
+        'students': <Map<String, dynamic>>[],
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"local"}', 200);
+          }
+          if (request.url.path.endsWith('status')) {
+            return http.Response('{"configured":true,"connected":true}', 200);
+          }
+          if (request.url.path.endsWith('/sync')) {
+            syncRequests++;
+            return http.Response(
+              jsonEncode({
+                ...activeCourse,
+                'classroomWarnings': <String>[],
+                'classroomSyncedAt': '2026-10-17T10:00:00Z',
+              }),
+              200,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'courses': [activeCourse],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(syncRequests, 1);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets(
+    'resume syncs a loaded PROVISIONED course and applies ACTIVE response',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var syncRequests = 0;
+      var syncCompleted = false;
+      final pendingCourse = <String, dynamic>{
+        'id': 'pending-class',
+        'title': 'Pending class',
+        'courseId': 'google-classroom-id',
+        'classroomState': 'PROVISIONED',
+        'classroomWarnings': <String>[],
+        'students': <Map<String, dynamic>>[],
+        'classroomSyncedAt': null,
+      };
+      final activeCourse = <String, dynamic>{
+        ...pendingCourse,
+        'classroomState': 'ACTIVE',
+        'classroomWarnings': <String>[],
+        'classroomSyncedAt': '2026-10-17T10:00:00Z',
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"local"}', 200);
+          }
+          if (request.url.path.endsWith('status')) {
+            return http.Response('{"configured":true,"connected":true}', 200);
+          }
+          if (request.url.path.endsWith('/sync')) {
+            syncRequests++;
+            syncCompleted = true;
+            return http.Response(
+              jsonEncode(activeCourse),
+              200,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'courses': [pendingCourse],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(syncRequests, 1);
+      expect(syncCompleted, isTrue);
+      expect(
+        find.textContaining('Đã đồng bộ thành viên từ Classroom'),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets('automatic Classroom sync shows progress in the course card', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final syncResponse = Completer<http.Response>();
+    final pendingCourse = <String, dynamic>{
+      'id': 'pending-progress-class',
+      'title': 'Pending progress class',
+      'courseId': 'google-classroom-id',
+      'classroomState': 'PROVISIONED',
+      'classroomWarnings': <String>[],
+      'students': <Map<String, dynamic>>[],
+      'classroomSyncedAt': null,
+    };
+    final api = GoogleWorkspaceApi(
+      email: 'teacher@example.com',
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('bootstrap')) {
+          return http.Response('{"token":"local"}', 200);
+        }
+        if (request.url.path.endsWith('status')) {
+          return http.Response('{"configured":true,"connected":true}', 200);
+        }
+        if (request.url.path.endsWith('/sync')) return syncResponse.future;
+        return http.Response(
+          jsonEncode({
+            'courses': [pendingCourse],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+
+    expect(find.textContaining('Đang đồng bộ Classroom'), findsOneWidget);
+    expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+
+    syncResponse.complete(
+      http.Response(
+        jsonEncode({
+          ...pendingCourse,
+          'classroomState': 'ACTIVE',
+          'classroomSyncedAt': '2026-10-17T10:00:00Z',
+        }),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Đang đồng bộ Classroom'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    api.close();
+  });
+
+  testWidgets(
+    'sync failure is shown in card and manual retry uses the same result handler',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var syncRequests = 0;
+      final pendingCourse = <String, dynamic>{
+        'id': 'pending-error-class',
+        'title': 'Pending error class',
+        'courseId': 'google-classroom-id',
+        'classroomState': 'PROVISIONED',
+        'classroomWarnings': <String>[],
+        'students': <Map<String, dynamic>>[],
+        'classroomSyncedAt': null,
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"local"}', 200);
+          }
+          if (request.url.path.endsWith('status')) {
+            return http.Response('{"configured":true,"connected":true}', 200);
+          }
+          if (request.url.path.endsWith('/sync')) {
+            syncRequests++;
+            if (syncRequests == 1) {
+              return http.Response(
+                '{"message":"Temporary Classroom error"}',
+                502,
+                headers: {'content-type': 'application/json; charset=utf-8'},
+              );
+            }
+            if (syncRequests == 3) {
+              return http.Response(
+                '{"message":"Temporary active Classroom error"}',
+                502,
+                headers: {'content-type': 'application/json; charset=utf-8'},
+              );
+            }
+            return http.Response(
+              jsonEncode({
+                ...pendingCourse,
+                'classroomState': 'ACTIVE',
+                'classroomSyncedAt': '2026-10-17T10:00:00Z',
+              }),
+              200,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'courses': [pendingCourse],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Không thể đồng bộ Classroom'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+      expect(find.textContaining('Đang đồng bộ Classroom'), findsNothing);
+      expect(
+        tester
+            .widget<PopupMenuButton<String>>(
+              find.byType(PopupMenuButton<String>),
+            )
+            .enabled,
+        isTrue,
+      );
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Đồng bộ'));
+      await tester.pumpAndSettle();
+      expect(syncRequests, 2);
+      expect(find.textContaining('Temporary Classroom error'), findsNothing);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Đồng bộ'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Temporary active Classroom error'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Bấm nút Đồng bộ để thử lại'), findsOneWidget);
+      expect(find.textContaining('khi bạn quay lại ứng dụng'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets(
+    'duplicate resumes coalesce and manual sync stays disabled while syncing',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var syncRequests = 0;
+      final syncResponse = Completer<http.Response>();
+      final pendingCourse = <String, dynamic>{
+        'id': 'pending-class',
+        'title': 'Pending class',
+        'courseId': 'google-classroom-id',
+        'classroomState': 'PROVISIONED',
+        'classroomWarnings': <String>[],
+        'students': <Map<String, dynamic>>[],
+        'classroomSyncedAt': null,
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"local"}', 200);
+          }
+          if (request.url.path.endsWith('status')) {
+            return http.Response('{"configured":true,"connected":true}', 200);
+          }
+          if (request.url.path.endsWith('/sync')) {
+            syncRequests++;
+            return syncResponse.future;
+          }
+          return http.Response(
+            jsonEncode({
+              'courses': [pendingCourse],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(
+        tester
+            .widget<PopupMenuButton<String>>(
+              find.byType(PopupMenuButton<String>),
+            )
+            .enabled,
+        isFalse,
+      );
+      expect(syncRequests, 1);
+
+      syncResponse.complete(
+        http.Response(
+          jsonEncode({
+            ...pendingCourse,
+            'classroomState': 'ACTIVE',
+            'classroomSyncedAt': '2026-10-17T10:00:00Z',
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets(
+    'selecting a PROVISIONED course makes it eligible for resume sync',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var syncRequests = 0;
+      final activeCourse = <String, dynamic>{
+        'id': 'active-class',
+        'title': 'Active class',
+        'classroomState': 'ACTIVE',
+        'classroomWarnings': <String>[],
+        'classroomSyncedAt': '2026-10-17T10:00:00Z',
+        'students': <Map<String, dynamic>>[],
+      };
+      final pendingCourse = <String, dynamic>{
+        'id': 'pending-class',
+        'title': 'Pending class',
+        'courseId': 'google-classroom-id',
+        'classroomState': 'PROVISIONED',
+        'classroomWarnings': <String>[],
+        'classroomSyncedAt': null,
+        'students': <Map<String, dynamic>>[],
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"local"}', 200);
+          }
+          if (request.url.path.endsWith('status')) {
+            return http.Response('{"configured":true,"connected":true}', 200);
+          }
+          if (request.url.path.endsWith('/sync')) {
+            syncRequests++;
+            return http.Response(
+              jsonEncode({
+                ...pendingCourse,
+                'classroomState': 'ACTIVE',
+                'classroomSyncedAt': '2026-10-17T10:00:00Z',
+              }),
+              200,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'courses': [activeCourse, pendingCourse],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pending class'));
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(syncRequests, 1);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets(
+    'a still PROVISIONED response remains eligible for the next resume',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var syncRequests = 0;
+      final pendingCourse = <String, dynamic>{
+        'id': 'pending-class',
+        'title': 'Pending class',
+        'courseId': 'google-classroom-id',
+        'classroomState': 'PROVISIONED',
+        'classroomWarnings': <String>[],
+        'students': <Map<String, dynamic>>[],
+        'classroomSyncedAt': null,
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"local"}', 200);
+          }
+          if (request.url.path.endsWith('status')) {
+            return http.Response('{"configured":true,"connected":true}', 200);
+          }
+          if (request.url.path.endsWith('/sync')) {
+            syncRequests++;
+            return http.Response(
+              jsonEncode(
+                syncRequests == 1
+                    ? pendingCourse
+                    : {
+                        ...pendingCourse,
+                        'classroomState': 'ACTIVE',
+                        'classroomSyncedAt': '2026-10-17T10:00:00Z',
+                      },
+              ),
+              200,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'courses': [pendingCourse],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(syncRequests, 1);
+      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(syncRequests, 2);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets('resume during a reload retries after the reload completes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var courseLoads = 0;
+    var syncRequests = 0;
+    final reloadResponse = Completer<http.Response>();
+    final pendingCourse = <String, dynamic>{
+      'id': 'pending-class',
+      'title': 'Pending class',
+      'courseId': 'google-classroom-id',
+      'classroomState': 'PROVISIONED',
+      'classroomWarnings': <String>[],
+      'students': <Map<String, dynamic>>[],
+      'classroomSyncedAt': null,
+    };
+    final api = GoogleWorkspaceApi(
+      email: 'teacher@example.com',
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('bootstrap')) {
+          return http.Response('{"token":"local"}', 200);
+        }
+        if (request.url.path.endsWith('status')) {
+          return http.Response('{"configured":true,"connected":true}', 200);
+        }
+        if (request.url.path.endsWith('/sync')) {
+          syncRequests++;
+          return http.Response(
+            jsonEncode({
+              ...pendingCourse,
+              'classroomState': 'ACTIVE',
+              'classroomSyncedAt': '2026-10-17T10:00:00Z',
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }
+        courseLoads++;
+        if (courseLoads > 1) return reloadResponse.future;
+        return http.Response(
+          jsonEncode({
+            'courses': [pendingCourse],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Tải lại'));
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(syncRequests, 0);
+
+    reloadResponse.complete(
+      http.Response(
+        jsonEncode({
+          'courses': [pendingCourse],
+        }),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(syncRequests, 1);
+    expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    api.close();
+  });
+
+  testWidgets(
+    'sync error stays distinct from pending and a later resume retries',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var syncRequests = 0;
+      final pendingCourse = <String, dynamic>{
+        'id': 'pending-class',
+        'title': 'Pending class',
+        'courseId': 'google-classroom-id',
+        'classroomState': 'PROVISIONED',
+        'classroomWarnings': <String>[],
+        'students': <Map<String, dynamic>>[],
+        'classroomSyncedAt': null,
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"local"}', 200);
+          }
+          if (request.url.path.endsWith('status')) {
+            return http.Response('{"configured":true,"connected":true}', 200);
+          }
+          if (request.url.path.endsWith('/sync')) {
+            syncRequests++;
+            if (syncRequests == 1) {
+              return http.Response(
+                '{"message":"Temporary Classroom error"}',
+                502,
+                headers: {'content-type': 'application/json; charset=utf-8'},
+              );
+            }
+            return http.Response(
+              jsonEncode({
+                ...pendingCourse,
+                'classroomState': 'ACTIVE',
+                'classroomSyncedAt': '2026-10-17T10:00:00Z',
+              }),
+              200,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'courses': [pendingCourse],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(syncRequests, 1);
+      expect(find.textContaining('Temporary Classroom error'), findsOneWidget);
+      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(syncRequests, 2);
+      expect(find.textContaining('Temporary Classroom error'), findsNothing);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      api.close();
+    },
+  );
+
+  testWidgets(
+    'dispose removes resume observer and ignores a late sync response',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var syncRequests = 0;
+      final syncResponse = Completer<http.Response>();
+      final pendingCourse = <String, dynamic>{
+        'id': 'pending-class',
+        'title': 'Pending class',
+        'courseId': 'google-classroom-id',
+        'classroomState': 'PROVISIONED',
+        'classroomWarnings': <String>[],
+        'students': <Map<String, dynamic>>[],
+        'classroomSyncedAt': null,
+      };
+      final api = GoogleWorkspaceApi(
+        email: 'teacher@example.com',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"local"}', 200);
+          }
+          if (request.url.path.endsWith('status')) {
+            return http.Response('{"configured":true,"connected":true}', 200);
+          }
+          if (request.url.path.endsWith('/sync')) {
+            syncRequests++;
+            return syncResponse.future;
+          }
+          return http.Response(
+            jsonEncode({
+              'courses': [pendingCourse],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(syncRequests, 1);
+
+      await tester.pumpWidget(const SizedBox());
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      expect(syncRequests, 1);
+      syncResponse.complete(
+        http.Response(
+          jsonEncode({...pendingCourse, 'classroomState': 'ACTIVE'}),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      api.close();
+    },
+  );
 
   test(
     'bridge sends local session and teacher email, never a Google token',

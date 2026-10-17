@@ -1,4 +1,4 @@
-HocLuc Teacher 0.1 - Windows x64
+HocLucStation 0.1 - Windows x64
 
 Double-click HocLuc-Teacher.exe để mở app.
 Giữ toàn bộ các file/thư mục cạnh exe khi sao chép app.

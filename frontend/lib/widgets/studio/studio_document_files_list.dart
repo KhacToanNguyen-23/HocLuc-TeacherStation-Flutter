@@ -150,7 +150,9 @@ class _StudioDocumentFilesListState extends State<StudioDocumentFilesList> {
               : AppColors.overlayRaised,
           borderRadius: BorderRadius.circular(7),
           border: Border.all(
-            color: isActiveOnBoard ? AppColors.overlayAccent : Colors.transparent,
+            color: isActiveOnBoard
+                ? AppColors.overlayAccent
+                : Colors.transparent,
             width: 1.3,
           ),
         ),

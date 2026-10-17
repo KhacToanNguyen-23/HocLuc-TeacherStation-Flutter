@@ -57,6 +57,7 @@ class LoginScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(AppRadii.panel),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: isCompact
                       ? AuthFormCard(

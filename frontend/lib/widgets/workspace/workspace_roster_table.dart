@@ -13,7 +13,8 @@ class WorkspaceRosterTable extends StatelessWidget {
   final Map<String, dynamic> course;
   final List<Map<String, dynamic>> students;
   final bool disabled;
-  final void Function(Map<String, dynamic> course, Map<String, dynamic> student) onSetMeetAccess;
+  final void Function(Map<String, dynamic> course, Map<String, dynamic> student)
+  onSetMeetAccess;
 
   static Widget statusBadge(String status) {
     const labels = {
@@ -135,7 +136,8 @@ class WorkspaceRosterTable extends StatelessWidget {
                       cells: [
                         DataCell(
                           Tooltip(
-                            message: s['error'] as String? ?? s['email'] as String,
+                            message:
+                                s['error'] as String? ?? s['email'] as String,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,

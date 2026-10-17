@@ -174,6 +174,8 @@ class GoogleIntegrationTest {
         when(google.call(eq("POST"),eq(M+"spaces"),anyString(),any())).thenReturn(Map.of("name","spaces/test","meetingUri","https://meet.google.com/abc-defg-hij","config",Map.of("accessType","TRUSTED")));
         var active=classes.sync(EMAIL,COURSE);
         assertEquals("ACTIVE",active.get("classroomState"));
+        assertNotNull(active.get("classroomSyncedAt"), "active Classroom sync should expose its completion time before a Calendar event exists");
+        assertEquals("INVITED", ((Map<?,?>)((List<?>)active.get("students")).get(0)).get("classroomStatus"));
         verify(google).call(eq("POST"),eq(C+"invitations"),anyString(),any());
     }
     @Test void expiredAccessRefreshesOnlyOnBackend() {

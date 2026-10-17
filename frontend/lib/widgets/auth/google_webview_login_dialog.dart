@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -69,7 +70,7 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
 
       _urlSub = controller.url.listen((url) {
         if (!mounted) return;
-        debugPrint('[GoogleWebview] URL: $url');
+        FrontendLogger.write('[GoogleWebview] Navigation state changed');
 
         // 1. Nếu mở Meet trực tiếp và máy chủ Google sinh mã phòng thật
         final meetMatch = RegExp(
@@ -86,7 +87,8 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
         }
 
         // 2. Nhận diện trạng thái đăng nhập Google thành công
-        final isOAuth = widget.initialUrl.contains('/oauth2/') ||
+        final isOAuth =
+            widget.initialUrl.contains('/oauth2/') ||
             widget.initialUrl.contains('/auth?') ||
             widget.initialUrl.contains('response_type=code');
 
@@ -118,7 +120,8 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
           _isLoading = (state == win.LoadingState.loading);
         });
 
-        final isOAuth = widget.initialUrl.contains('/oauth2/') ||
+        final isOAuth =
+            widget.initialUrl.contains('/oauth2/') ||
             widget.initialUrl.contains('/auth?') ||
             widget.initialUrl.contains('response_type=code');
 
@@ -189,7 +192,7 @@ class _GoogleWebviewLoginDialogState extends State<GoogleWebviewLoginDialog> {
         }
       }
     } catch (e) {
-      debugPrint('[GoogleWebview] Extract error: $e');
+      FrontendLogger.write('[GoogleWebview] Extract error: $e');
     }
   }
 

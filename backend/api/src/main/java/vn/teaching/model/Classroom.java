@@ -12,6 +12,8 @@ public class Classroom {
     private long createdAt;
     private boolean success;
     private String error;
+    private boolean hasContent;
+    private int pageCount;
 
     public Classroom() {
         this.createdAt = System.currentTimeMillis();
@@ -66,4 +68,10 @@ public class Classroom {
 
     public String getError() { return error; }
     public void setError(String error) { this.error = error; }
+
+    public boolean isHasContent() { return hasContent; }
+    public void setHasContent(boolean hasContent) { this.hasContent = hasContent; }
+
+    public int getPageCount() { return pageCount; }
+    public void setPageCount(int pageCount) { this.pageCount = pageCount; }
 }

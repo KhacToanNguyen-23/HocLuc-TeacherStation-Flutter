@@ -1,7 +1,9 @@
 package vn.teaching.controller;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.teaching.model.Classroom;
@@ -53,8 +55,25 @@ public class ClassroomController {
     @PostMapping("/end")
     public ResponseEntity<Map<String, Object>> handleEnd(@RequestBody(required = false) Map<String, Object> req) {
         String classroomId = req != null && req.get("classroomId") != null ? req.get("classroomId").toString() : null;
-        boolean ok = classroomService.endClassroom(classroomId);
+        JsonObject content = null;
+        if (req != null && req.get("content") != null) {
+            try {
+                content = JsonParser.parseString(new Gson().toJson(req.get("content"))).getAsJsonObject();
+            } catch (Exception ignored) {}
+        }
+        boolean ok = classroomService.endClassroom(classroomId, content);
         return ResponseEntity.ok(Map.of("success", ok));
+    }
+
+    @GetMapping("/{id}/content")
+    public ResponseEntity<String> handleGetContent(@PathVariable String id) {
+        JsonObject content = classroomService.getClassroomContent(id);
+        if (content == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/json; charset=utf-8")
+                .body(content.toString());
     }
 
     @GetMapping("/history")
@@ -63,6 +82,18 @@ public class ClassroomController {
         return ResponseEntity.ok()
                 .header("Content-Type", "application/json; charset=utf-8")
                 .body(history != null ? history.toString() : "[]");
+    }
+
+    @DeleteMapping("/history/{id}")
+    public ResponseEntity<Map<String, Object>> handleDeleteHistory(@PathVariable String id) {
+        boolean ok = classroomService.deleteClassroomHistory(id);
+        return ResponseEntity.ok(Map.of("success", ok));
+    }
+
+    @DeleteMapping("/history")
+    public ResponseEntity<Map<String, Object>> handleClearHistory(@RequestParam(required = false) String teacherId) {
+        boolean ok = classroomService.clearAllClassroomHistory(teacherId);
+        return ResponseEntity.ok(Map.of("success", ok));
     }
 
     @PostMapping("/leave")

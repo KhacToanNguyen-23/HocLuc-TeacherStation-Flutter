@@ -159,24 +159,34 @@ class FloatingPluginWindow extends StatelessWidget {
                           String targetUrl = entry;
 
                           if (plugin.installDirectory != null) {
-                            final f = File('${plugin.installDirectory!.path}/$entry');
+                            final f = File(
+                              '${plugin.installDirectory!.path}/$entry',
+                            );
                             if (f.existsSync()) {
                               targetUrl = f.absolute.uri.toString();
                             }
                           }
 
-                          final port = ProcessSupervisor.instance.getPort(plugin.manifest.id);
+                          final port = ProcessSupervisor.instance.getPort(
+                            plugin.manifest.id,
+                          );
                           if (port != null) {
-                            targetUrl = targetUrl.contains('?') ? '$targetUrl&port=$port' : '$targetUrl?port=$port';
+                            targetUrl = targetUrl.contains('?')
+                                ? '$targetUrl&port=$port'
+                                : '$targetUrl?port=$port';
                           }
 
                           void Function(String)? executeJs;
                           return FlatHost(
                             url: targetUrl,
-                            onMessage: (msg) => studio.handlePluginMessage(msg, executeJs: executeJs),
+                            onMessage: (msg) => studio.handlePluginMessage(
+                              msg,
+                              executeJs: executeJs,
+                            ),
                             onControllerReady: (sendJs) {
                               executeJs = sendJs;
-                              studio.onSnippetCapturedForPlugin = (text, target) {
+                              studio
+                                  .onSnippetCapturedForPlugin = (text, target) {
                                 sendJs(
                                   "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)});",
                                 );

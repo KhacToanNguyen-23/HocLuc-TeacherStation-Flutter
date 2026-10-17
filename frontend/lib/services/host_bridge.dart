@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +30,10 @@ class HostBridge {
       } else if (rawMessage is Map) {
         data = Map<String, dynamic>.from(rawMessage);
       } else {
-        return _errorResponse('invalid_format', 'Message must be JSON string or Map');
+        return _errorResponse(
+          'invalid_format',
+          'Message must be JSON string or Map',
+        );
       }
     } catch (e) {
       return _errorResponse('parse_error', 'Failed to parse message: $e');
@@ -44,7 +48,9 @@ class HostBridge {
     final pluginId = manifest?.id ?? 'unknown_plugin';
     final permissions = manifest?.permissions ?? const [];
 
-    debugPrint('[HostBridge] Plugin $pluginId -> action: $action (id: $requestId)');
+    FrontendLogger.write(
+      '[HostBridge] Plugin $pluginId -> action: $action (id: $requestId)',
+    );
 
     Map<String, dynamic> result;
     try {
@@ -90,13 +96,18 @@ class HostBridge {
 
         case 'HIGHLIGHT_PDF_PASSAGE':
           final rawText = (payload['text'] as String?)?.trim() ?? '';
-          final rawHighlights = (payload['highlights'] as List?)
+          final rawHighlights =
+              (payload['highlights'] as List?)
                   ?.whereType<Map<String, dynamic>>()
                   .toList() ??
               [];
           final metrics = (payload['metrics'] as Map<String, dynamic>?) ?? {};
           if (rawText.isNotEmpty) {
-            studio.highlightPdfPassageFromAnalysis(rawText, rawHighlights, metrics: metrics);
+            studio.highlightPdfPassageFromAnalysis(
+              rawText,
+              rawHighlights,
+              metrics: metrics,
+            );
           }
           result = _successResponse(requestId, {'status': 'pdf_highlighted'});
           break;
@@ -115,14 +126,15 @@ class HostBridge {
           result = _successResponse(requestId, {'status': 'ignored'});
       }
     } catch (e) {
-      debugPrint('[HostBridge] Error executing $action: $e');
+      FrontendLogger.write('[HostBridge] Error executing $action: $e');
       result = _errorResponse(requestId, e.toString());
     }
 
     // Return response to Webview via JS handler if requestId was provided
     if (requestId != null && executeJs != null) {
       final jsonResponse = jsonEncode(result);
-      final jsCall = 'window.__hocluc_handle_response && window.__hocluc_handle_response($jsonResponse);';
+      final jsCall =
+          'window.__hocluc_handle_response && window.__hocluc_handle_response($jsonResponse);';
       executeJs(jsCall);
     }
 
@@ -131,7 +143,9 @@ class HostBridge {
 
   void _enforcePermission(List<String> permissions, String requiredPermission) {
     if (permissions.isNotEmpty && !permissions.contains(requiredPermission)) {
-      throw StateError('Permission denied: Missing required permission "$requiredPermission"');
+      throw StateError(
+        'Permission denied: Missing required permission "$requiredPermission"',
+      );
     }
   }
 
@@ -144,12 +158,14 @@ class HostBridge {
         ? Map<String, dynamic>.from(payload['data'] as Map)
         : payload;
 
-    final rawText = (innerData['raw_text'] as String?) ??
+    final rawText =
+        (innerData['raw_text'] as String?) ??
         (innerData['rawText'] as String?) ??
         (innerData['text'] as String?) ??
         '';
 
-    final tokens = (innerData['tokens'] as List?)
+    final tokens =
+        (innerData['tokens'] as List?)
             ?.map((t) => Map<String, dynamic>.from(t as Map))
             .toList() ??
         const [];
@@ -179,14 +195,14 @@ class HostBridge {
   }
 
   Map<String, dynamic> _successResponse(String? id, dynamic data) => {
-        'id': id,
-        'success': true,
-        'data': data,
-      };
+    'id': id,
+    'success': true,
+    'data': data,
+  };
 
   Map<String, dynamic> _errorResponse(String? id, String error) => {
-        'id': id,
-        'success': false,
-        'error': error,
-      };
+    'id': id,
+    'success': false,
+    'error': error,
+  };
 }

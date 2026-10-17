@@ -1,3 +1,4 @@
+import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
@@ -6,7 +7,8 @@ import '../models/plugin_manifest.dart';
 
 /// Manages physical storage, extraction, on-disk caching and uninstallation of plugins.
 class PluginStorageManager {
-  static final PluginStorageManager _instance = PluginStorageManager._internal();
+  static final PluginStorageManager _instance =
+      PluginStorageManager._internal();
   factory PluginStorageManager() => _instance;
   PluginStorageManager._internal();
 
@@ -29,7 +31,8 @@ class PluginStorageManager {
 
     String basePath;
     if (Platform.isWindows) {
-      final localAppData = Platform.environment['LOCALAPPDATA'] ??
+      final localAppData =
+          Platform.environment['LOCALAPPDATA'] ??
           Platform.environment['APPDATA'] ??
           '${Platform.environment['USERPROFILE']}\\AppData\\Local';
       basePath = '$localAppData\\HocLuc\\plugins';
@@ -90,7 +93,10 @@ class PluginStorageManager {
   }
 
   /// Install or update a plugin by unpacking zip/hlep bytes into AppData.
-  Future<Directory> installFromZip(List<int> bytes, {String? customFilename}) async {
+  Future<Directory> installFromZip(
+    List<int> bytes, {
+    String? customFilename,
+  }) async {
     final archive = ZipDecoder().decodeBytes(bytes);
     ArchiveFile? manifestFile;
 
@@ -98,7 +104,8 @@ class PluginStorageManager {
     for (final file in archive) {
       if (file.isFile) {
         final normPath = file.name.replaceAll('\\', '/');
-        if (normPath == 'manifest.json' || normPath.endsWith('/manifest.json')) {
+        if (normPath == 'manifest.json' ||
+            normPath.endsWith('/manifest.json')) {
           manifestFile = file;
           break;
         }
@@ -114,7 +121,9 @@ class PluginStorageManager {
     final manifest = PluginManifest.fromJson(manifestJson);
 
     final root = getPluginsRootDirectory();
-    final targetDir = Directory('${root.path}/${manifest.id}/v${manifest.version}');
+    final targetDir = Directory(
+      '${root.path}/${manifest.id}/v${manifest.version}',
+    );
 
     if (!targetDir.existsSync()) {
       targetDir.createSync(recursive: true);
@@ -138,7 +147,9 @@ class PluginStorageManager {
       }
     }
 
-    debugPrint('[PluginStorageManager] Extracted ${manifest.id} v${manifest.version} to ${targetDir.path}');
+    FrontendLogger.write(
+      '[PluginStorageManager] Extracted plugin | plugin_id=${manifest.id} version=${manifest.version}',
+    );
     return targetDir;
   }
 
@@ -148,7 +159,7 @@ class PluginStorageManager {
     final pluginFolder = Directory('${root.path}/$pluginId');
     if (pluginFolder.existsSync()) {
       await pluginFolder.delete(recursive: true);
-      debugPrint('[PluginStorageManager] Deleted plugin directory: ${pluginFolder.path}');
+      FrontendLogger.write('[PluginStorageManager] Deleted plugin directory');
     }
   }
 
@@ -161,7 +172,9 @@ class PluginStorageManager {
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
       return PluginManifest.fromJson(map);
     } catch (e) {
-      debugPrint('[PluginStorageManager] Error reading manifest from ${dir.path}: $e');
+      FrontendLogger.write(
+        '[PluginStorageManager] Error reading manifest | cause=${e.runtimeType}',
+      );
       return null;
     }
   }

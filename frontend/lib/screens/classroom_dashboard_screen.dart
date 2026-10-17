@@ -15,12 +15,16 @@ import '../models/teaching_target.dart';
 import '../services/teacher_media_service.dart';
 import 'login_screen.dart';
 import 'studio_screen.dart';
+import '../models/studio_state.dart';
+import '../services/pdf_annotation_exporter.dart';
 import '../models/planning_meta.dart';
 import '../widgets/dashboard/planning_list_card.dart';
 import 'exams/exam_workspace_screen.dart';
 import '../services/exam_api.dart';
 import '../services/exam_session_service.dart';
 import 'google_workspace_screen.dart';
+import '../widgets/dashboard/select_classroom_dialog.dart';
+import '../widgets/google_brand_icon.dart';
 
 /// Classroom Dashboard Screen styled to match the layout in Image 2 with Educational Green theme.
 class ClassroomDashboardScreen extends StatefulWidget {
@@ -233,8 +237,11 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   }
 
   Future<void> _handleLaunchFromPlanning(PlanningMeta plan) async {
-    await Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => GoogleWorkspaceScreen(planningId: plan.id, lessonTitle: plan.title)));
-    if (mounted) { await _loadRoomsAndHistory(); await _loadPlannings(); }
+    await SelectClassroomDialog.show(context, plan: plan);
+    if (mounted) {
+      await _loadRoomsAndHistory();
+      await _loadPlannings();
+    }
   }
 
   Future<void> _handleDeletePlanning(PlanningMeta plan) async {
@@ -288,7 +295,11 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     return InkWell(
       onTap: () {
         setState(() => _selectedTabIndex = index);
-        if (index == 1) _loadPlannings();
+        if (index == 1) {
+          _loadPlannings();
+        } else {
+          _loadRoomsAndHistory();
+        }
       },
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
@@ -350,12 +361,15 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   }
 
   Future<void> _startClassroom() async {
-    await Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => const GoogleWorkspaceScreen()));
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const GoogleWorkspaceScreen()),
+    );
     if (mounted) await _loadRoomsAndHistory();
   }
 
   Future<void> _rejoinClassroom(String meetUrl) async {
-    if (TeachingLauncher.hasStudio && MeetAutomationService().meetingUrl == meetUrl) {
+    if (TeachingLauncher.hasStudio &&
+        MeetAutomationService().meetingUrl == meetUrl) {
       TeachingLauncher.returnToStudio();
       return;
     }
@@ -366,20 +380,35 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
       try {
         final result = await api.call('courses');
         for (final item in result['courses'] as List) {
-          if (item['meetingUrl'] == meetUrl) { courseId = item['id'] as String; break; }
+          if (item['meetingUrl'] == meetUrl) {
+            courseId = item['id'] as String;
+            break;
+          }
         }
-      } catch (_) { /* A one-off room doesn't require a Google API connection. */ }
-      finally { api.close(); }
+      } catch (_) {
+        /* A one-off room doesn't require a Google API connection. */
+      } finally {
+        api.close();
+      }
     }
     if (!mounted) return;
     try {
-      await TeachingLauncher.open(context, TeachingTarget(
-        title: _activeRoom?['title'] as String? ?? 'Buổi học đang mở',
-        meetingUrl: meetUrl, courseId: courseId, teacherEmail: courseId == null ? null : email,
-      ));
+      await TeachingLauncher.open(
+        context,
+        TeachingTarget(
+          title: _activeRoom?['title'] as String? ?? 'Buổi học đang mở',
+          meetingUrl: meetUrl,
+          courseId: courseId,
+          teacherEmail: courseId == null ? null : email,
+        ),
+      );
       if (mounted) await _loadRoomsAndHistory();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
     }
   }
 
@@ -402,10 +431,21 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
 
   Future<void> _handleLogout() async {
     if (TeachingLauncher.hasStudio || MeetAutomationService().hasRoom) {
-      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('Lưu bài và kết thúc buổi dạy trước khi đăng xuất HocLuc.'),
-        action: TeachingLauncher.hasStudio ? SnackBarAction(label: 'Về buổi dạy', onPressed: TeachingLauncher.returnToStudio) : null,
-      )); }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Lưu bài và kết thúc buổi dạy trước khi đăng xuất HocLuc.',
+            ),
+            action: TeachingLauncher.hasStudio
+                ? SnackBarAction(
+                    label: 'Về buổi dạy',
+                    onPressed: TeachingLauncher.returnToStudio,
+                  )
+                : null,
+          ),
+        );
+      }
       return;
     }
     await MeetAutomationService().leaveClassroom();
@@ -426,9 +466,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     final viewport = MediaQuery.sizeOf(context);
     final screenWidth = viewport.width;
     final isCompact = screenWidth < 800;
-    final tabContentHeight = isCompact
-        ? 340.0
-        : (viewport.height - 500).clamp(340.0, 420.0).toDouble();
+    final tabContentHeight = isCompact ? 340.0 : 380.0;
 
     return Scaffold(
       backgroundColor: paper,
@@ -439,9 +477,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
             Container(
               height: 60,
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-              ),
+              decoration: const BoxDecoration(color: Colors.white),
               child: Row(
                 children: [
                   Container(
@@ -477,9 +513,11 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                   const MeetAdmissionButton(),
                   IconButton(
                     tooltip: 'Lớp học & kết nối Google',
-                    icon: const Icon(Icons.hub_outlined, color: AppColors.primary),
+                    icon: const GoogleBrandIcon(size: 20),
                     onPressed: () => Navigator.of(context).push<void>(
-                      MaterialPageRoute(builder: (_) => const GoogleWorkspaceScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const GoogleWorkspaceScreen(),
+                      ),
                     ),
                   ),
                   if (isCompact)
@@ -634,7 +672,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1240),
+                    constraints: const BoxConstraints(maxWidth: 1100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -745,7 +783,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.lg),
+                        const SizedBox(height: 25.4),
 
                         // Tab Content View
                         SizedBox(
@@ -758,15 +796,16 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                             switchInCurve: AppMotion.enterCurve,
                             switchOutCurve: AppMotion.exitCurve,
                             transitionBuilder: (child, animation) {
-                              final slide = Tween<Offset>(
-                                begin: const Offset(0, 0.025),
-                                end: Offset.zero,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: animation,
-                                  curve: AppMotion.enterCurve,
-                                ),
-                              );
+                              final slide =
+                                  Tween<Offset>(
+                                    begin: const Offset(0, 0.025),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: animation,
+                                      curve: AppMotion.enterCurve,
+                                    ),
+                                  );
                               return FadeTransition(
                                 opacity: animation,
                                 child: SlideTransition(
@@ -1018,6 +1057,196 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     );
   }
 
+  Future<void> _handleDownloadHistoryHandout(Map<String, dynamic> item) async {
+    final id = item['id']?.toString();
+    final title = item['title']?.toString() ?? 'Tài liệu buổi học';
+    if (id == null) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final content = await _localService.getClassroomContent(id);
+    if (!mounted) return;
+
+    if (content == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Buổi học này chưa lưu slide hoặc ghi chú để xuất Handout.',
+          ),
+          backgroundColor: AppColors.textMuted,
+        ),
+      );
+      return;
+    }
+
+    final studio = StudioState();
+    studio.title = title;
+    studio.restoreFromJson(content);
+    await PdfAnnotationExporter.exportHandoutWithNotesToPdf(context, studio);
+  }
+
+  Future<void> _handleDownloadHistorySlides(Map<String, dynamic> item) async {
+    final id = item['id']?.toString();
+    final title = item['title']?.toString() ?? 'Slide buổi học';
+    if (id == null) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final content = await _localService.getClassroomContent(id);
+    if (!mounted) return;
+
+    if (content == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Buổi học này chưa có slide để xuất PDF.'),
+          backgroundColor: AppColors.textMuted,
+        ),
+      );
+      return;
+    }
+
+    final studio = StudioState();
+    studio.title = title;
+    studio.restoreFromJson(content);
+    await PdfAnnotationExporter.exportChalkboardSlidesToPdf(context, studio);
+  }
+
+  Future<void> _handleDeleteHistoryItem(Map<String, dynamic> item) async {
+    final id = item['id']?.toString();
+    final title = item['title']?.toString() ?? 'Buổi học';
+    if (id == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.panel),
+        ),
+        title: const Row(
+          children: [
+            Icon(
+              Icons.delete_outline_rounded,
+              color: AppColors.error,
+              size: 22,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Xóa lịch sử buổi học',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa "$title" khỏi lịch sử? Bản lưu bài giảng và ghi chú liên quan cũng sẽ bị xóa.',
+          style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final success = await _localService.deleteClassroomHistory(id);
+      if (!mounted) return;
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã xóa buổi học khỏi lịch sử.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        await _loadRoomsAndHistory();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể xóa buổi học. Vui lòng thử lại.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleClearAllHistory() async {
+    if (_historyList.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.panel),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_sweep_outlined, color: AppColors.error, size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Xóa tất cả lịch sử',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Bạn có chắc chắn muốn xóa toàn bộ danh sách lịch sử buổi học đã dạy? Toàn bộ slide và ghi chú đã lưu trước đây sẽ bị xóa hoàn toàn.',
+          style: TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            child: const Text('Xóa tất cả'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final success = await _localService.clearAllClassroomHistory();
+      if (!mounted) return;
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã xóa toàn bộ lịch sử buổi học.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        await _loadRoomsAndHistory();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể xóa lịch sử. Vui lòng thử lại.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildHistoryCard() {
     if (_historyList.isEmpty) {
       return const DashboardEmptyCard(
@@ -1037,51 +1266,154 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Lịch sử',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            children: [
+              const Text(
+                'Lịch sử buổi học đã dạy',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_historyList.length} buổi học',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textMuted,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Tooltip(
+                message: 'Xóa toàn bộ lịch sử buổi học',
+                child: TextButton.icon(
+                  onPressed: _handleClearAllHistory,
+                  icon: const Icon(
+                    Icons.delete_sweep_outlined,
+                    size: 15,
+                    color: AppColors.error,
+                  ),
+                  label: const Text(
+                    'Xóa tất cả',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Expanded(
             child: ListView.separated(
               itemCount: _historyList.length,
               separatorBuilder: (context, index) =>
-                  const Divider(height: 12, color: AppColors.surfaceMuted),
+                  const Divider(height: 14, color: AppColors.surfaceMuted),
               itemBuilder: (context, index) {
                 final item = _historyList[index] as Map<String, dynamic>;
                 final title =
                     item['title']?.toString() ?? 'Phòng học trực tuyến';
                 final duration = item['durationMinutes'] ?? 0;
-                return ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: const CircleAvatar(
-                    radius: 16,
-                    backgroundColor: AppColors.surfaceMuted,
-                    child: Icon(
-                      Icons.check_circle_outline_rounded,
-                      size: 18,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  title: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  trailing: Text(
-                    duration > 0 ? '$duration phút • Đã xong' : 'Đã xong',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMuted,
-                    ),
+                final hasContent = item['hasContent'] == true;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 17,
+                        backgroundColor: hasContent
+                            ? AppColors.sky50
+                            : AppColors.surfaceMuted,
+                        child: Icon(
+                          hasContent
+                              ? Icons.auto_stories_rounded
+                              : Icons.check_circle_outline_rounded,
+                          size: 17,
+                          color: hasContent
+                              ? AppColors.primary
+                              : AppColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              duration > 0
+                                  ? '$duration phút · Đã hoàn thành'
+                                  : 'Đã hoàn thành',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Action 1: Tải Handout PDF (Slide kèm Ghi chú)
+                      Tooltip(
+                        message: 'Tải tài liệu Handout (Slide kèm Ghi chú) PDF',
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.picture_as_pdf_outlined,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                          onPressed: () => _handleDownloadHistoryHandout(item),
+                        ),
+                      ),
+                      // Action 2: Tải Slide PDF
+                      Tooltip(
+                        message: 'Tải Slide bảng dạng PDF',
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.slideshow_rounded,
+                            size: 18,
+                            color: AppColors.slate600,
+                          ),
+                          onPressed: () => _handleDownloadHistorySlides(item),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      // Action 3: Xóa mục lịch sử
+                      Tooltip(
+                        message: 'Xóa buổi học này khỏi lịch sử',
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 18,
+                            color: AppColors.error,
+                          ),
+                          onPressed: () => _handleDeleteHistoryItem(item),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
