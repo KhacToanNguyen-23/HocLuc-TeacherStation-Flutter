@@ -112,7 +112,10 @@ class PluginWebServer {
     if (_server != null) return _server!.port;
 
     try {
-      _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      _server = await Zone.root.run(
+        () => HttpServer.bind(InternetAddress.loopbackIPv4, 0),
+      );
+      _server!.idleTimeout = null;
       debugPrint(
         '[PluginWebServer] Serving plugins at http://127.0.0.1:${_server!.port}/',
       );
