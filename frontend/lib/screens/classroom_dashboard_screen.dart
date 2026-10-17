@@ -404,10 +404,11 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
       );
       if (mounted) await _loadRoomsAndHistory();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
     }
   }
 
@@ -465,9 +466,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     final viewport = MediaQuery.sizeOf(context);
     final screenWidth = viewport.width;
     final isCompact = screenWidth < 800;
-    final tabContentHeight = isCompact
-        ? 340.0
-        : (viewport.height - 500).clamp(340.0, 420.0).toDouble();
+    final tabContentHeight = isCompact ? 340.0 : 380.0;
 
     return Scaffold(
       backgroundColor: paper,
@@ -673,7 +672,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1240),
+                    constraints: const BoxConstraints(maxWidth: 1100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -784,7 +783,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.lg),
+                        const SizedBox(height: 25.4),
 
                         // Tab Content View
                         SizedBox(
@@ -1253,7 +1252,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
       return const DashboardEmptyCard(
         title: 'Lịch sử',
         illustrationType: 'history',
-        emptyText: 'Chưa có lịch sử buổi học',
+        emptyText: 'Chưa có lịch sử',
       );
     }
 

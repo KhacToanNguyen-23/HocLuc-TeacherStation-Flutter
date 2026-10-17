@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
 import '../../services/google_meet_auth_service.dart';
@@ -34,8 +33,7 @@ class AuthFormCard extends StatefulWidget {
 }
 
 class _AuthFormCardState extends State<AuthFormCard> {
-  static const _devLoginEnabled =
-      kDebugMode || bool.fromEnvironment('HLS_DEV_LOGIN');
+  static const _devLoginEnabled = bool.fromEnvironment('HLS_DEV_LOGIN');
   late final LocalService _localService;
   late final GoogleMeetAuthService _authService;
   bool _ownsLocalService = false;
@@ -344,11 +342,12 @@ class _AuthFormCardState extends State<AuthFormCard> {
       if (mounted) setState(() => _errorMessage = errorMsg);
     } finally {
       api?.close();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isLoading = false;
           _infoMessage = null;
         });
+      }
     }
   }
 

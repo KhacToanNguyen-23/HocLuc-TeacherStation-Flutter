@@ -488,67 +488,70 @@ class StudioTopBar extends StatelessWidget {
                 listenable: MeetAutomationService(),
                 builder: (context, _) {
                   final isLive = MeetAutomationService().isHostJoined;
-                  return TextButton.icon(
-                    onPressed: onToggleInspector,
-                    icon: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Positioned(
-                            left: 0,
-                            top: 0,
-                            child: GoogleBrandIcon(size: 17),
-                          ),
-                          if (isLive)
-                            Positioned(
-                              right: -2,
-                              bottom: -1,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: AppColors.success,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 1.2,
+                  return Tooltip(
+                    message: 'Thiết bị và API AI',
+                    child: TextButton.icon(
+                      onPressed: onToggleInspector,
+                      icon: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Positioned(
+                              left: 0,
+                              top: 0,
+                              child: GoogleBrandIcon(size: 17),
+                            ),
+                            if (isLive)
+                              Positioned(
+                                right: -2,
+                                bottom: -1,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 1.2,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    label: const Text(
-                      'GG Panel',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: hasInspector
-                          ? AppColors.onSelected
-                          : AppColors.textSecondary,
-                      backgroundColor: hasInspector
-                          ? AppColors.selected
-                          : Colors.transparent,
-                      side: BorderSide(
-                        color: hasInspector
+                      label: const Text(
+                        'GG Panel',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: hasInspector
+                            ? AppColors.onSelected
+                            : AppColors.textSecondary,
+                        backgroundColor: hasInspector
                             ? AppColors.selected
-                            : AppColors.surfaceBorder,
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      minimumSize: const Size(0, 36),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: TextStyle(
-                        fontSize: 12,
-                        fontWeight: hasInspector
-                            ? FontWeight.w700
-                            : FontWeight.w600,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadii.control),
+                            : Colors.transparent,
+                        side: BorderSide(
+                          color: hasInspector
+                              ? AppColors.selected
+                              : AppColors.surfaceBorder,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        minimumSize: const Size(0, 36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        textStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight: hasInspector
+                              ? FontWeight.w700
+                              : FontWeight.w600,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.control),
+                        ),
                       ),
                     ),
                   );

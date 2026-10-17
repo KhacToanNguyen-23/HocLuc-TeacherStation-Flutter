@@ -933,11 +933,18 @@ class _StudioScreenState extends State<StudioScreen> {
                                       10,
                                       4,
                                     ),
-                                    child: Column(
+                                    child: Stack(
                                       children: [
-                                        Expanded(child: fittedStage()),
+                                        Positioned.fill(child: fittedStage()),
                                         if (studio.view == 'board')
-                                          StudioSpeakerNotesBar(studio: studio),
+                                          Positioned(
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            child: StudioSpeakerNotesBar(
+                                              studio: studio,
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
