@@ -54,7 +54,6 @@ void main() {
         });
         final plugin = InstalledPlugin(
           manifest: manifest,
-          files: {'ui/index.html': Uint8List(0)},
         );
         studio.openPlugin(plugin);
 

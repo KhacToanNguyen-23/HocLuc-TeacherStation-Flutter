@@ -1,153 +1,192 @@
-# Mộc · Teacher Station (Học Lực)
+# HocLuc Teacher Station
 
-> A high-performance, ergonomic teaching companion application for educators, built with **Flutter (Dart)** and **Java 17 (Spring Boot 3)**.
-
----
-
-## Overview
-
-**Mộc · Teacher Station** is designed to streamline modern online and hybrid classrooms. It combines an intuitive digital whiteboard workspace with an automated companion service, teacher dashboard, and live classroom tools.
-
-### Key Highlights
-- **Modern Monorepo Architecture**: Clean separation between Flutter frontend (`frontend/`) and Spring Boot companion backend (`backend/api/`).
-- **Ergonomic Studio Workspace**: 16:9 stage container, multi-page whiteboard, PDF/document shelf, sample quiz questions with countdown timers, and floating webcam PIP.
-- **Teacher Authentication & Dashboard**:
-  - **Password Auth**: Quick sign-in via Email or Phone + Password (zero OTP friction for returning teachers).
-  - **Secure Registration**: Phone/Email verification code (OTP countdown) + Password.
-  - **Social & Demo Login**: Google Sign-In and 1-click Demo quick access with symmetrical circular action buttons.
-  - **Nordic Sky & Slate Design**: Clean aesthetics, responsive 3D cards, and quick avatar profile menu.
-- **Low-Latency Windows Broadcasting**: Windows.Graphics.Capture (WGC) C++ plugin (`wgc_broadcaster`) designed for capturing whiteboard HWND directly to virtual camera feeds.
+> A desktop and web teaching station with a microkernel plugin architecture, built with **Flutter (Dart)** and **Java 17 (Spring Boot 3)**.
 
 ---
 
-## Project Structure
+## 1. Product Overview
+
+**HocLuc Teacher Station** is an integrated digital workspace designed for teachers conducting online and hybrid classes. Instead of switching between disconnected presentation tools, digital whiteboards, Google Meet browser tabs, PDF exam repositories, and subject-specific simulators (such as scientific calculators or grammar analyzers), **HocLuc Teacher Station** unifies **Lesson Planning, Classroom Management, Live 16:9 Instruction, and Exam Analytics** into a single cohesive platform.
+
+### Core Design Principles
+- **Teacher-First Ergonomics:** A calm, high-contrast workspace (Warm Paper and Chalkboard palette) designed to reduce cognitive load and keep teachers in full control during live instruction.
+- **Pure Microkernel Plugin Host:** The core application (`frontend/lib/`) is completely agnostic to subject-specific tools. Subject extensions (Mathematics, Physics, Chemistry, English, Casio fx-580VN X Calculator, etc.) are packaged as `.hlep` archives, distributed via the **On-Demand Cloud Marketplace**, cached locally on disk, and fully unloaded from memory when closed.
+- **Seamless Google Classroom and Google Meet Integration:** Automated roster synchronization, embedded meeting control, automatic student admission, system-level microphone synchronization, and low-latency window broadcasting via a native C++ virtual camera bridge (`wgc_broadcaster`).
+
+---
+
+## 2. Functional Requirements (FR)
+
+### FR-01: Authentication, Teacher Profile, and Classroom Workspace
+| ID | Feature | Description | Status |
+| :--- | :--- | :--- | :---: |
+| **FR-01.1** | Multi-Method Authentication | Sign-in via Email/Phone and Password, OTP verification for registration, Desktop Google OAuth2, and one-click Demo access. | Implemented |
+| **FR-01.2** | Google Classroom Synchronization | Connects the teacher's Google account, synchronizes courses and student rosters, and automatically re-checks pending (`PROVISIONED`) courses when returning to the application. | Implemented |
+| **FR-01.3** | Session Scheduling and History | Schedules live sessions, launches classroom lobbies, archives completed lectures, and exports post-session PDF handouts. | Implemented |
+
+### FR-02: Ergonomic 16:9 Studio and Lesson Planning
+| ID | Feature | Description | Status |
+| :--- | :--- | :--- | :---: |
+| **FR-02.1** | 16:9 Stage and Multi-Page Chalkboard | Pressure-sensitive freehand drawing (`perfect_freehand`), highlighter, eraser, geometric shapes, multi-page board management, and split-screen view. | Implemented |
+| **FR-02.2** | Document Drawer and PDF Annotation | Imports PDF documents and images into the lesson, supports side-by-side viewing, region snipping, and direct PDF highlight export. | Implemented |
+| **FR-02.3** | Pre-Class Lesson Planning | Dedicated preparation mode with speaker notes and one-click cloning of prepared board pages and documents into a live classroom session. | Implemented |
+| **FR-02.4** | Floating Classroom Accessories | Draggable countdown timer (`FloatingTimer`), webcam picture-in-picture (`FloatingPip`), and interactive board annotations (`SmartChalkOverlay`). | Implemented |
+
+### FR-03: Google Meet Automation and Audio Bridge
+| ID | Feature | Description | Status |
+| :--- | :--- | :--- | :---: |
+| **FR-03.1** | Automated Meeting Launch and Join | Launches Google Meet inside an embedded WebView2 instance, suppresses duplicate browser camera/microphone prompts, and joins automatically. | Implemented |
+| **FR-03.2** | Participant Admission and Cockpit | Displays a live student strip and Meet Cockpit inspector with pending admission counters, automatic admission toggle, speaking/hand-raise indicators, and end-call-for-all controls. | Implemented |
+| **FR-03.3** | System Microphone Sync and Translation | Synchronizes mute state and input gain directly with the Windows Audio Endpoint and feeds the live translation/captioning pipeline. | Implemented |
+| **FR-03.4** | Low-Latency Virtual Camera Broadcast | Captures the stage window directly via C++ `Windows.Graphics.Capture` (`wgc_broadcaster`) and streams frames to DirectShow (`UnityCapture`). | Implemented |
+
+### FR-04: Exam Workspace, Question Bank, and Competency Analytics
+| ID | Feature | Description | Status |
+| :--- | :--- | :--- | :---: |
+| **FR-04.1** | PDF Exam Extraction | Uploads PDF exam papers, normalizes Vietnamese typography and font ligatures, extracts structured questions, and supports teacher review workflows. | Implemented |
+| **FR-04.2** | Question Bank and Exam Matrix | Organizes questions by topic, skill, and difficulty; builds exam blueprints; generates papers; and exports print-ready PDFs. | Implemented |
+| **FR-04.3** | Grading and Competency Analytics | Records student exam results, computes score distributions, analyzes skill mastery across sections, and generates targeted study recommendations. | Implemented |
+
+### FR-05: Plugin Ecosystem and Cloud Marketplace (Schema v2.1)
+| ID | Feature | Description | Status |
+| :--- | :--- | :--- | :---: |
+| **FR-05.1** | Cloud Marketplace Registry | Spring Boot backend dynamically scans `plugins/*.hlep` packages, computes `SHA-256` checksums, and exposes catalog (`GET /api/marketplace/plugins`) and download (`GET /api/marketplace/plugins/{id}/download`) endpoints. | Implemented |
+| **FR-05.2** | One-Click Install and Offline Cache | Teachers browse, install, and auto-update `.hlep` plugins directly from the Studio drawer, with local extraction to `%LOCALAPPDATA%/HocLuc/plugins/<id>/v<version>/`. | Implemented |
+| **FR-05.3** | Multi-Instance Plugin Execution | Supports running a floating device plugin (`floating_window`) simultaneously alongside a lesson-bound drawer plugin (`bottom_drawer` / `drawer_panel`). | Implemented |
+| **FR-05.4** | Declarative Board Tool Contributions | Dynamically renders in-board tool palettes (`SubjectToolPalette`) from `contributes.tools` declarations in `manifest.json` (modeled after VS Code Extension Contribution Points). | Implemented |
+| **FR-05.5** | Automatic SDK Injection | Internal loopback gateway (`PluginWebServer`) automatically injects `hocluc-plugin-sdk.js` into third-party HTML/JS/WASM bundles when `"inject_sdk": true` is set. | Implemented |
+| **FR-05.6** | Frameless Bare-Device Mode | When `"frameless": true` is declared in `manifest.json` (such as the **Casio fx-580VN X Calculator**, `336x624`), the host removes all window chrome, headers, and footers, rendering only the physical device body with an integrated top-bezel drag strip and compact close button. | Implemented |
+
+---
+
+## 3. Non-Functional Requirements (NFR)
+
+| ID | Quality Attribute | Specification and Enforcement Mechanism |
+| :--- | :--- | :--- |
+| **NFR-01** | **Microkernel Isolation and Zero Hardcoding** | - Zero hardcoded plugin identifiers (`english_assistant`, `casio_calculator`, `com.hocluc.plugin.*`) inside `frontend/lib/`.<br>- Zero cross-imports between `frontend/lib/` and `plugins/`.<br>- Automatically enforced on every pull request by `flutter test test/architecture_test.dart`. |
+| **NFR-02** | **Performance and Memory Efficiency** | - **Lazy Disk Caching:** Plugin archives are never unpacked into in-memory byte maps (`filesMap`); assets are extracted to disk and served on demand over loopback HTTP (`PluginWebServer`).<br>- **60 FPS Canvas Rendering:** Stroke paths are cached (`_cachedPath`) to maintain smooth ink rendering at 1080p/2K resolutions.<br>- **Deterministic Process Cleanup:** Sidecar processes (Python/binary engines) are supervised and terminated immediately upon plugin closure via `ProcessSupervisor`. |
+| **NFR-03** | **Security and Sandboxing** | - **Zip Slip Prevention:** `PluginStorageManager` validates all archive entry paths (`..` traversal checks) prior to disk extraction.<br>- **Package Integrity:** `SHA-256` checksum verification for downloaded `.hlep` packages.<br>- **Dynamic Ephemeral Ports:** Hardcoded ports (such as `18888`) are prohibited; loopback servers and sidecar engines bind to OS-assigned ephemeral ports.<br>- **Local API Protection:** Loopback REST communication is authenticated via `SecurityTokenInterceptor` (`X-Companion-Token`). |
+| **NFR-04** | **Offline Resilience** | - Marketplace catalog metadata and installed plugin directories are cached locally (`SharedPreferences` and `%LOCALAPPDATA%/HocLuc/plugins/`), allowing previously installed plugins to run without internet or backend connectivity. |
+| **NFR-05** | **Developer Extensibility** | - New subject plugins or third-party open-source web applications (React/Vue/HTML/WASM) can be integrated in under 5 minutes using only a declarative `manifest.json` (Schema v2.1) and `node scripts/package_plugin.mjs <folder>`, requiring zero modifications to Flutter or Java source code. |
+| **NFR-06** | **Display Compatibility and Portability** | - Verified by automated visual geometry regression tests (`visual_restyle_test.dart`) across four standard viewports: `1366x768`, `1440x900`, `1920x1080 (100%)`, and `1920x1080 (125% DPI)`.<br>- Supports standalone Windows packaging (`Build-Windows.ps1`) with an embedded custom Java 17 runtime (`jlink`) and WebView2 host requiring no administrator privileges. |
+
+---
+
+## 4. Repository Structure
 
 ```text
 HocLuc-TeacherStation-Flutter/
+├── .github/workflows/             # Automated CI pipelines (Backend CI and Frontend Architecture Gate)
+├── .agents/rules/                 # Mandatory architectural rules for AI Coding Agents (Schema v2.1)
 ├── backend/
-│   ├── api/                   # Spring Boot 3 Companion REST Service (port 47831)
-│   ├── db/                    # Database schema and initialization scripts (init.sql)
-│   └── whiteboard-host/       # Standalone Fastboard / Netless whiteboard engine
-├── frontend/                  # Flutter application (Web & Windows Desktop)
+│   ├── api/                       # Spring Boot 3 Companion and Plugin Marketplace Service (port 47831)
+│   ├── db/                        # Database schema initialization (init.sql)
+│   └── whiteboard-host/           # Standalone Fastboard / Netless whiteboard host
+├── frontend/                      # Flutter application (Windows Desktop and Web)
 │   ├── lib/
-│   │   ├── constants/         # Design tokens, color system (Nordic Sky / Slate)
-│   │   ├── models/            # Studio state, lesson data, drawing strokes
-│   │   ├── screens/           # LoginScreen, ClassroomDashboardScreen, StudioScreen
-│   │   ├── services/          # REST client, Auth service, Meet automation
-│   │   ├── theme/             # Design typography, elevations, and themes
-│   │   └── widgets/           # Auth modals, toolbar, stage container, floating PIP
+│   │   ├── constants/             # Design tokens, color system, spacing, motion curves
+│   │   ├── models/                # StudioState, PluginManifest (Schema v2.1), lesson models
+│   │   ├── screens/               # Login, Dashboard, Lobby, Studio (16:9), ExamWorkspace
+│   │   ├── services/              # PluginManager, PluginWebServer, PluginMarketplaceService, HostBridge
+│   │   └── widgets/               # FloatingPluginWindow (Frameless/Standard), SubjectToolPalette, Stage
 │   ├── plugins/
-│   │   └── wgc_broadcaster/   # C++ Windows.Graphics.Capture native plugin
-│   └── test/                  # Unit and widget test suite (22 tests)
-├── plans/                     # Architecture specifications & design documentation
-├── Build-Windows.ps1          # Standalone Windows portable packaging script
-└── README.md                  # Project documentation
+│   │   ├── audio_bridge/          # Native system audio endpoint bridge
+│   │   └── wgc_broadcaster/       # C++ Windows.Graphics.Capture native plugin
+│   └── test/                      # 270+ unit, widget, visual geometry, E2E, and architecture tests
+├── plugins/                       # Isolated subject extension packages (.hlep)
+│   ├── casio_calculator/          # Casio fx-580VN X Calculator plugin (Frameless Bare-Device mode)
+│   ├── casio_calculator.hlep      # Packaged Casio archive served by Backend Marketplace
+│   ├── english_assistant/         # English Assistant plugin (S-V-O-A and DGNL + Python sidecar)
+│   └── english_assistant.hlep     # Packaged English Assistant archive
+├── scripts/
+│   └── package_plugin.mjs         # CLI tool to validate Schema v2.1 and package .hlep with SHA-256
+├── docs/architecture/             # Architecture documentation and Plugin Developer Guide
+├── AGENTS.md                      # Repository architecture invariants for developers and AI agents
+└── Build-Windows.ps1              # Standalone Windows portable packaging script
 ```
 
 ---
 
-## Prerequisites
+## 5. Prerequisites and Quick Start
 
-Before setting up the project, ensure you have the following installed and added to your `PATH`:
+### Prerequisites
+- **Java Development Kit (JDK):** JDK 17+ (`java` and `jlink` available in `PATH`)
+- **Apache Maven:** Version 3.9+
+- **Flutter SDK:** Version 3.27+ (Dart 3.5+)
+- **Node.js:** Version 20+ (used by `scripts/package_plugin.mjs`)
+- **Operating System:** Windows 10/11 x64 (enable **Developer Mode** in *Settings > System > For developers*)
 
-- **Java Development Kit (JDK)**: JDK 17 with `java` and `jlink`
-- **Apache Maven**: Version 3.9+
-- **Flutter SDK**: Version 3.27+ (Dart 3.5+)
-- **Node.js & npm**: Node.js 20+ (optional, only required if rebuilding `backend/whiteboard-host`)
-- **Operating System**: Windows 10/11 x64 (recommend enabling **Developer Mode** in *Settings > System > For developers* for Flutter symlink support)
-
----
-
-## Quick Start (Development Workflow)
-
-For Windows virtual-camera testing, first follow the one-time [UnityCapture setup instructions](third_party/UnityCapture/README.md). Run the included install script as administrator and keep its DLLs in place until unregistered.
-
-For active development with instant Hot Reload and live logging, use the recommended dual-terminal setup:
-
-### Terminal 1: Backend Companion Service (Spring Boot)
-```bash
+### Step 1: Start the Backend Companion and Marketplace Service (Terminal 1)
+```powershell
 cd backend/api
 mvn spring-boot:run
 ```
-*The companion service will start and listen at `http://127.0.0.1:47831`.*
+*The service listens at `http://127.0.0.1:47831` (Marketplace catalog endpoint: `http://127.0.0.1:47831/api/marketplace/plugins`).*
 
-### Terminal 2: Frontend Studio (Flutter)
-```bash
+### Step 2: Launch the Flutter Teacher Station (Terminal 2)
+```powershell
 cd frontend
 flutter pub get
 
-# Run on Chrome (Web Preview):
-flutter run -d chrome
-
-# Or run natively on Windows Desktop:
+# Run natively on Windows Desktop (recommended for full WebView2 and plugin support):
 flutter run -d windows
+
+# Or run in Chrome for web preview:
+flutter run -d chrome
 ```
-*Press `r` for Hot Reload, `R` for Hot Restart in the Flutter terminal.*
 
 ---
 
-## Testing & Quality Assurance
+## 6. Plugin Development Workflow (Schema v2.1)
 
-The codebase enforces strict static analysis and comprehensive test suites across both frontend and backend.
+Team members can create and publish new plugins inside `plugins/<plugin_name>/` **without modifying any files in `frontend/lib/`**:
 
-### Backend Verification
-```bash
+1. Create `plugins/<plugin_name>/` with `ui/index.html`, `icon.png`, and `manifest.json` (refer to the copy-paste templates in [`docs/architecture/plugin-development-guide.md`](docs/architecture/plugin-development-guide.md)).
+2. Package the plugin into a `.hlep` archive:
+   ```powershell
+   node scripts/package_plugin.mjs <plugin_name>
+   ```
+3. Run the architectural verification suite:
+   ```powershell
+   cd frontend
+   flutter test test/architecture_test.dart
+   ```
+
+Refer to [`docs/architecture/plugin-development-guide.md`](docs/architecture/plugin-development-guide.md) and [`AGENTS.md`](AGENTS.md) for complete Schema v2.1 specifications.
+
+---
+
+## 7. Testing and Continuous Integration Gates
+
+Every push and pull request targeting `develop` or `main` is validated by two GitHub Actions workflows:
+
+### Backend Verification (`.github/workflows/ci-backend.yml`)
+```powershell
 cd backend/api
-mvn test
+mvn -B clean test
 ```
 
-### Frontend Static Analysis & Tests
-```bash
+### Frontend Verification and Architecture Gate (`.github/workflows/ci-frontend.yml`)
+```powershell
 cd frontend
 
-# Verify 0 analyzer errors or warnings
-flutter analyze lib
+# 1. Static code analysis (zero errors or warnings)
+flutter analyze --no-fatal-infos
 
-# Run the full unit and widget test suite
+# 2. Dedicated Plugin Architecture Invariants Gate (enforces AGENTS.md)
+flutter test test/architecture_test.dart
+
+# 3. Full unit, widget, visual geometry, and E2E test suite (270+ tests)
 flutter test
 ```
 
-### Production Web Build
-```bash
-cd frontend
-flutter build web --release
-```
-
 ---
 
-## Standalone Windows Distribution (`.exe`)
+## 8. Standalone Windows Distribution (`.exe`)
 
-You can generate a self-contained portable Windows package without requiring end-users to install Java, Flutter, or Node.js:
+To build a self-contained portable Windows bundle that runs without requiring end-users to install Java, Flutter, or Node.js:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-Windows.ps1
 ```
-
-### How the Portable Package Works:
-1. **Embedded Java JRE**: Uses `jlink` to generate a stripped-down Java 17 runtime for the backend.
-2. **Self-Hosted WebView2**: Embeds the offline Flutter web bundle inside a lightweight WinForms/WebView2 shell (`HocLuc-Teacher.exe`).
-3. **No Admin Privileges Needed**: Runs completely in user space; teacher notes and preferences are saved under `%LOCALAPPDATA%\HocLuc-Teacher\data`.
-4. The output is placed in `dist/HocLuc-Teacher-Windows-x64/`.
-
----
-
-## Capabilities & Architecture Roadmap
-
-| Component | Status | Description |
-| :--- | :---: | :--- |
-| **Authentication Flow** | ✅ Ready | Password auth, OTP registration, Google sign-in & 1-click Demo |
-| **Classroom Dashboard** | ✅ Ready | Classroom management, active sessions, avatar dropdown |
-| **Lesson Planning** | ✅ Ready | Dedicated planning tab, whiteboard prep mode & 1-click clone to classroom |
-| **Ergonomic Studio Stage** | ✅ Ready | 16:9 stage switcher, drawing tools, quiz timer, split views |
-| **Spring Boot Companion API** | ✅ Ready | Session bootstrap (`/api/bootstrap`), auth endpoints, planning CRUD, storage |
-| **Local Data Persistence** | ✅ Ready | Lessons and teacher settings saved via loopback REST API |
-| **WGC Screen Capture Plugin** | 🔄 In Progress | C++ Windows.Graphics.Capture plugin for target window extraction |
-| **Virtual Camera Output** | 📋 Planned | DirectShow / UnityCapture virtual camera bridge to Google Meet |
-| **AI Lecture Assistant** | 📋 Planned | Speech recognition, noise cancellation, and automated summary |
-
----
-
-## License & Contributing
-
-This project is developed for educational technology research and teacher assistance.  
-For internal guidelines, architectural decisions, and feature specifications, refer to the documents in [`plans/`](plans/).
+The portable distribution is generated in `dist/HocLuc-Teacher-Windows-x64/`.

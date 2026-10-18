@@ -49,6 +49,17 @@ class ProcessSupervisor {
   /// Get the running port of an active plugin sidecar.
   int? getPort(String pluginId) => _activeProcesses[pluginId]?.port;
 
+  /// Get the running port of an active plugin sidecar, or the first active sidecar if pluginId is omitted.
+  int? getActiveSidecarPort([String? pluginId]) {
+    if (pluginId != null && _activeProcesses.containsKey(pluginId)) {
+      return _activeProcesses[pluginId]!.port;
+    }
+    if (_activeProcesses.isNotEmpty) {
+      return _activeProcesses.values.first.port;
+    }
+    return null;
+  }
+
   /// Check if a plugin sidecar is currently running.
   bool isRunning(String pluginId) => _activeProcesses.containsKey(pluginId);
 

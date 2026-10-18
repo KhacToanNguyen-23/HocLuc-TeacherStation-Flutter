@@ -31,54 +31,82 @@ plugins/<plugin_id>/
 
 ---
 
-## 3. QUY CHUẨN MANIFEST.JSON (Schema v2)
-Mọi tệp `manifest.json` phải chứa đầy đủ các trường sau:
+## 3. QUY CHUẨN MANIFEST.JSON (Schema v2.1)
+Mọi tệp `manifest.json` phải tuân theo 1 trong 2 mẫu chuẩn sau:
+
+### Mẫu A: Thiết bị vật lý nổi sát viền (`frameless: true` — Ví dụ: Máy tính Casio)
 ```json
 {
+  "$schema": "https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json",
   "id": "com.hocluc.plugin.<tên_plugin>",
   "name": "<Tên hiển thị tiếng Việt>",
   "version": "1.0.0",
-  "author": "Học Lực Studio",
   "description": "<Mô tả ngắn tính năng>",
-  "main": "ui/index.html",
+  "author": "Học Lực Education",
   "icon": "icon.png",
-  "placement": "drawer_panel",
-  "default_width": 420,
+  "ui": {
+    "entry": "ui/index.html",
+    "placement": "floating_window",
+    "default_width": 336,
+    "default_height": 624,
+    "resizable": false,
+    "frameless": true,
+    "inject_sdk": true
+  },
+  "backend": null,
+  "permissions": ["board:insert_annotation", "storage"]
+}
+```
+
+### Mẫu B: Trợ giảng môn học kèm khay công cụ (`contributes.tools` — Ví dụ: Tiếng Anh)
+```json
+{
+  "$schema": "https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json",
+  "id": "com.hocluc.plugin.<tên_plugin>",
+  "name": "<Tên hiển thị tiếng Việt>",
+  "version": "1.0.0",
+  "description": "<Mô tả ngắn tính năng>",
+  "author": "Học Lực Education",
+  "icon": "icon.png",
+  "ui": {
+    "entry": "ui/index.html",
+    "placement": "bottom_drawer",
+    "default_width": 440,
+    "default_height": 520,
+    "resizable": true,
+    "inject_sdk": true
+  },
+  "contributes": {
+    "tools": [
+      {
+        "id": "snip_tool",
+        "label": "Khoanh vùng",
+        "icon": "crop_free",
+        "action": "snip_region",
+        "target": "grammar",
+        "tooltip": "Khoanh vùng nội dung trên bảng để phân tích"
+      }
+    ]
+  },
   "backend": {
     "type": "python",
     "entry": "engine/service.py",
-    "health_endpoint": "/health"
+    "health_check": "/health"
   },
-  "permissions": [
-    "board:insert_annotation",
-    "board:read_text"
-  ]
+  "permissions": ["board:read_selection", "board:insert_annotation", "storage"]
 }
 ```
-*(Nếu plugin không có backend, đặt `"backend": null` hoặc bỏ qua khối này).*
 
 ---
 
-## 4. QUY CHUẨN GIAO TIẾP VỚI BẢNG PHẤN (Host Bridge SDK)
-Giao diện JavaScript của plugin chỉ được phép tương tác với ứng dụng thông qua SDK chuẩn:
-```javascript
-import { HocLuc } from './sdk.js';
-
-// Đọc văn bản đang chọn trên bảng/tài liệu:
-const text = await HocLuc.board.getSelectedText();
-
-// Chèn ghi chú / nhãn dán lên bảng vẽ:
-await HocLuc.board.insertAnnotation({
-  type: 'sticker',
-  data: { text: 'Nội dung phân tích', color: '#4ADE80' }
-});
-```
-
----
-
-## 5. THỰC HIỆN KIỂM THỬ TRƯỚC KHI BÁO HOÀN THÀNH
-Trước khi kết thúc task liên quan đến plugin, Agent bắt buộc phải chạy lệnh kiểm thử kiến trúc:
-```powershell
-flutter test test/architecture_test.dart
-```
+## 4. ĐÓNG GÓI `.hlep` & KIỂM THỬ KIẾN TRÚC BẮT BUỘC
+Trước khi kết thúc bất kỳ task nào liên quan đến plugin, Agent bắt buộc phải:
+1. Đóng gói lại file `.hlep`:
+   ```powershell
+   node scripts/package_plugin.mjs <tên_thư_mục_plugin>
+   ```
+2. Chạy lệnh kiểm thử kiến trúc (cũng là cổng chặn cứng trên GitHub Actions CI):
+   ```powershell
+   flutter test test/architecture_test.dart
+   ```
 Nếu test không pass hoặc phát hiện vi phạm phân tầng kiến trúc, Agent không được phép tuyên bố hoàn thành task.

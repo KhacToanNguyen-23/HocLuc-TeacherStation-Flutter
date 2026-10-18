@@ -26,7 +26,6 @@ void main() {
             author: 'Học Lực Dev Team',
             description: 'Hỗ trợ bóc tách cú pháp câu S-V-O phấn màu viết tay',
           ),
-          files: {},
         );
 
         studio.openPlugin(englishPlugin);

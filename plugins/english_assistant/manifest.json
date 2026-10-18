@@ -5,10 +5,42 @@
   "version": "2.0.0",
   "author": "Học Lực Studio",
   "description": "Bóc tách Cú pháp S-V-O, Phân tích Ngữ liệu chuẩn đề ĐGNL (CEFR B2-C1, Academic Collocations) và Tự động tạo bài tập trắc nghiệm đục lỗ (Cloze Test) bằng spaCy.",
+  "category": "languages",
   "main": "ui/index.html",
   "icon": "icon.png",
   "placement": "drawer_panel",
   "default_width": 420,
+  "inject_sdk": true,
+  "contributes": {
+    "tools": [
+      {
+        "id": "snip_passage",
+        "label": "Quét đoạn văn",
+        "icon": "crop_free",
+        "tooltip": "Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng trực tiếp trên file (PrtSc)",
+        "action": "snip_region",
+        "target": "dgnl",
+        "key": "quick_snip_dgnl_button"
+      },
+      {
+        "id": "svo",
+        "label": "Công cụ S-V-O",
+        "icon": "auto_awesome",
+        "tooltip": "Bật công cụ bóc tách S-V-O",
+        "action": "toggle_tool",
+        "target": "svo",
+        "key": "svo_tool_button"
+      },
+      {
+        "id": "quick_sentence",
+        "label": "Nhập câu",
+        "icon": "edit_note",
+        "tooltip": "Nhập hoặc chọn câu tiếng Anh để gạch chân S-V-O-A",
+        "action": "quick_input",
+        "key": "quick_sentence_button"
+      }
+    ]
+  },
   "backend": {
     "type": "python",
     "entry": "engine/service.py",

@@ -118,8 +118,17 @@ void main() {
           manifest: PluginManifest(
             id: 'com.hocluc.plugin.english',
             name: 'Trợ giảng Tiếng Anh',
+            contributesTools: const [
+              PluginToolContribution(
+                id: 'quick_sentence',
+                label: 'Nhập câu',
+                icon: 'edit_note',
+                action: 'quick_input',
+                widgetKey: 'quick_sentence_button',
+                tooltip: 'Nhập / Chọn câu bóc tách S-V-O-A',
+              ),
+            ],
           ),
-          files: {},
         ),
       );
 

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/models/plugin_manifest.dart';
@@ -22,7 +21,6 @@ void main() {
       );
       dummyPlugin = InstalledPlugin(
         manifest: manifest,
-        files: {'ui/index.html': utf8.encode('<h1>English Plugin UI</h1>')},
       );
     });
 

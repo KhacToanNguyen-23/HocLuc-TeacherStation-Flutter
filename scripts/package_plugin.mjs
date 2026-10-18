@@ -1,20 +1,39 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import zlib from 'node:zlib';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
-const pluginDir = path.join(rootDir, 'plugins', 'english_assistant');
-const outputHlep = path.join(rootDir, 'plugins', 'english_assistant.hlep');
+const targetArg = process.argv[2] || 'casio_calculator';
+const targetPluginName = path.basename(targetArg);
+const pluginDir = path.isAbsolute(targetArg) ? targetArg : path.join(rootDir, 'plugins', targetPluginName);
+const outputHlep = path.join(rootDir, 'plugins', `${targetPluginName}.hlep`);
 
 console.log(`Packaging plugin from: ${pluginDir}`);
 console.log(`Target archive: ${outputHlep}`);
 
+function validateManifest(sourceDir) {
+  const manifestPath = path.join(sourceDir, 'manifest.json');
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error(`Missing manifest.json in ${sourceDir}`);
+  }
+  const raw = fs.readFileSync(manifestPath, 'utf8');
+  const manifest = JSON.parse(raw);
+  for (const field of ['id', 'name', 'version']) {
+    if (!manifest[field] || typeof manifest[field] !== 'string') {
+      throw new Error(`Invalid manifest.json: missing required string field "${field}"`);
+    }
+  }
+  console.log(`Validated manifest.json: ${manifest.id} v${manifest.version} (${manifest.name})`);
+}
+
 // Minimal zip creator without external dependencies
 function createZip(sourceDir, outputFile) {
+  validateManifest(sourceDir);
+
   // Ensure icon.png exists if not present
   const iconPath = path.join(sourceDir, 'icon.png');
   if (!fs.existsSync(iconPath)) {
@@ -30,6 +49,9 @@ function createZip(sourceDir, outputFile) {
       const fullPath = path.join(dir, entry.name);
       const relPath = path.join(relative, entry.name).replace(/\\/g, '/');
       if (entry.isDirectory()) {
+        if (entry.name === '__pycache__' || entry.name === '.venv' || entry.name === 'node_modules') {
+          continue;
+        }
         collectFiles(fullPath, relPath);
       } else {
         files.push({ relPath, data: fs.readFileSync(fullPath) });
@@ -107,7 +129,8 @@ function createZip(sourceDir, outputFile) {
 
   const fullBuffer = Buffer.concat([...localHeaders, ...centralHeaders, eocd]);
   fs.writeFileSync(outputFile, fullBuffer);
-  console.log(`Successfully created ${outputFile} (${fullBuffer.length} bytes, ${files.length} files)`);
+  const sha256 = crypto.createHash('sha256').update(fullBuffer).digest('hex');
+  console.log(`Successfully created ${outputFile} (${fullBuffer.length} bytes, ${files.length} files, sha256: ${sha256})`);
 }
 
 // CRC32 table & function

@@ -12,6 +12,8 @@ import 'studio/studio_document_drawer.dart';
 import 'subject_tool_palette.dart';
 import 'presentation_surface.dart';
 import 'region_snipping_overlay.dart';
+import 'floating_plugin_window.dart';
+import 'plugin_host_drawer.dart';
 import '../services/pdf_annotation_exporter.dart';
 
 class StageContainer extends StatelessWidget {
@@ -147,6 +149,14 @@ class StageContainer extends StatelessWidget {
                                 // Floating In-Board Subject Tool Palette Dock
                                 if (interactive && studio.activePlugin != null)
                                   SubjectToolPalette(studio: studio),
+
+                                // Floating Plugin Window (e.g. Casio Calculator, floating tools)
+                                if (interactive)
+                                  FloatingPluginWindow(studio: studio),
+
+                                // Docked Plugin Host Drawer (e.g. side drawer plugins)
+                                if (interactive)
+                                  PluginHostDrawer(studio: studio),
 
                                 // PrtSc Drag Snipping Overlay
                                 if (interactive && studio.isSnippingActive)

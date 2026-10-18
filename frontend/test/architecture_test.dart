@@ -12,6 +12,11 @@ void main() {
       final libDir = Directory('lib');
       expect(libDir.existsSync(), isTrue, reason: 'Thư mục lib/ phải tồn tại');
 
+      const forbiddenTokens = [
+        'english_assistant',
+        'com.hocluc.plugin.',
+        'casio_calculator',
+      ];
       final violations = <String>[];
       final files = libDir.listSync(recursive: true).whereType<File>();
 
@@ -19,18 +24,17 @@ void main() {
         if (!file.path.endsWith('.dart')) continue;
         final content = file.readAsStringSync();
 
-        if (content.contains('english_assistant')) {
-          violations.add(
-            '${file.path}: chứa chuỗi hardcode "english_assistant"',
-          );
+        for (final token in forbiddenTokens) {
+          if (content.contains(token)) {
+            violations.add('${file.path}: chứa chuỗi hardcode "$token"');
+          }
         }
       }
 
       expect(
         violations,
         isEmpty,
-        reason:
-            'Phát hiện vi phạm kiến trúc hardcode tên plugin:\n${violations.join("\n")}',
+        reason: 'Phát hiện vi phạm kiến trúc hardcode tên plugin:\n${violations.join("\n")}',
       );
     });
 
@@ -51,8 +55,7 @@ void main() {
       expect(
         violations,
         isEmpty,
-        reason:
-            'Phát hiện vi phạm kiến trúc cổng mạng tĩnh:\n${violations.join("\n")}',
+        reason: 'Phát hiện vi phạm kiến trúc cổng mạng tĩnh:\n${violations.join("\n")}',
       );
     });
 
@@ -73,68 +76,179 @@ void main() {
       expect(
         violations,
         isEmpty,
-        reason:
-            'Phát hiện vi phạm nhập chéo gói plugin vào Core:\n${violations.join("\n")}',
+        reason: 'Phát hiện vi phạm nhập chéo gói plugin vào Core:\n${violations.join("\n")}',
       );
     });
 
-    test(
-      'Bất biến 4: Tất cả plugin trong plugins/ phải có manifest.json Schema v2 hợp lệ',
-      () {
-        final candidates = [Directory('plugins'), Directory('../plugins')];
+    test('Bất biến 4: Tất cả plugin trong plugins/ phải có manifest.json Schema v2.1 hợp lệ và gói .hlep đồng bộ', () {
+      final candidates = [
+        Directory('plugins'),
+        Directory('../plugins'),
+      ];
 
-        Directory? pluginsDir;
-        for (final c in candidates) {
-          if (c.existsSync()) {
-            pluginsDir = c;
-            break;
+      Directory? pluginsDir;
+      for (final c in candidates) {
+        if (c.existsSync()) {
+          pluginsDir = c;
+          break;
+        }
+      }
+
+      expect(pluginsDir, isNotNull, reason: 'Phải tìm thấy thư mục plugins/');
+      final pluginFolders = pluginsDir!.listSync().whereType<Directory>();
+
+      for (final folder in pluginFolders) {
+        final manifestFile = File('${folder.path}/manifest.json');
+        if (!manifestFile.existsSync()) continue;
+
+        final folderName = folder.uri.pathSegments
+            .where((s) => s.isNotEmpty)
+            .last;
+        final rawJson = manifestFile.readAsStringSync();
+        final map = jsonDecode(rawJson) as Map<String, dynamic>;
+        final manifest = PluginManifest.fromJson(map);
+
+        expect(manifest.id, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường id');
+        expect(manifest.name, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường name');
+        expect(manifest.version, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường version');
+        expect(manifest.uiEntry, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường ui.entry/main');
+        expect(
+          ['floating_window', 'bottom_drawer', 'drawer_panel', 'right_panel'],
+          contains(manifest.uiPlacement),
+          reason: 'Plugin ${folder.path} có ui.placement không hợp lệ: ${manifest.uiPlacement}',
+        );
+        expect(
+          manifest.uiDefaultWidth,
+          greaterThan(100),
+          reason: 'Plugin ${folder.path} phải khai báo default_width > 100',
+        );
+        expect(
+          manifest.uiDefaultHeight,
+          greaterThan(100),
+          reason: 'Plugin ${folder.path} phải khai báo default_height > 100',
+        );
+
+        final uiEntryFile = File('${folder.path}/${manifest.uiEntry}');
+        expect(
+          uiEntryFile.existsSync(),
+          isTrue,
+          reason: 'Plugin ${folder.path} thiếu file giao diện chính ${manifest.uiEntry}',
+        );
+
+        final hlepFile = File('${pluginsDir.path}/$folderName.hlep');
+        expect(
+          hlepFile.existsSync(),
+          isTrue,
+          reason:
+              'Plugin "$folderName" chưa được đóng gói thành plugins/$folderName.hlep. Hãy chạy: node scripts/package_plugin.mjs $folderName',
+        );
+      }
+    });
+
+    test('Bất biến 5: ProcessSupervisor phân bổ cổng động không bị trùng lặp', () async {
+      final portA = await ProcessSupervisor.findAvailablePort();
+      final portB = await ProcessSupervisor.findAvailablePort();
+
+      expect(portA, greaterThan(1024));
+      expect(portB, greaterThan(1024));
+    });
+
+    test('Bất biến 6: Không có God Class vượt quá giới hạn dòng (Frontend <= 900 dòng, Backend <= 600 dòng)', () {
+      const maxDartLines = 900;
+      const maxJavaLines = 600;
+      final violations = <String>[];
+
+      final libDir = Directory('lib');
+      if (libDir.existsSync()) {
+        final dartFiles = libDir.listSync(recursive: true).whereType<File>();
+        for (final file in dartFiles) {
+          if (!file.path.endsWith('.dart')) continue;
+          final lineCount = file.readAsLinesSync().length;
+          if (lineCount > maxDartLines) {
+            violations.add(
+              'Frontend God File: ${file.path} có $lineCount dòng (vượt giới hạn $maxDartLines dòng)',
+            );
           }
         }
+      }
 
-        expect(pluginsDir, isNotNull, reason: 'Phải tìm thấy thư mục plugins/');
-        final pluginFolders = pluginsDir!.listSync().whereType<Directory>();
-
-        for (final folder in pluginFolders) {
-          final manifestFile = File('${folder.path}/manifest.json');
-          if (!manifestFile.existsSync()) continue;
-
-          final rawJson = manifestFile.readAsStringSync();
-          final map = jsonDecode(rawJson) as Map<String, dynamic>;
-          final manifest = PluginManifest.fromJson(map);
-
-          expect(
-            manifest.id,
-            isNotEmpty,
-            reason: 'Plugin ${folder.path} thiếu trường id',
-          );
-          expect(
-            manifest.name,
-            isNotEmpty,
-            reason: 'Plugin ${folder.path} thiếu trường name',
-          );
-          expect(
-            manifest.version,
-            isNotEmpty,
-            reason: 'Plugin ${folder.path} thiếu trường version',
-          );
-          expect(
-            manifest.uiEntry,
-            isNotEmpty,
-            reason: 'Plugin ${folder.path} thiếu trường main/uiEntry',
-          );
+      final backendCandidates = [
+        Directory('backend/api/src/main/java'),
+        Directory('../backend/api/src/main/java'),
+      ];
+      for (final dir in backendCandidates) {
+        if (dir.existsSync()) {
+          final javaFiles = dir.listSync(recursive: true).whereType<File>();
+          for (final file in javaFiles) {
+            if (!file.path.endsWith('.java')) continue;
+            final lineCount = file.readAsLinesSync().length;
+            if (lineCount > maxJavaLines) {
+              violations.add(
+                'Backend God File: ${file.path} có $lineCount dòng (vượt giới hạn $maxJavaLines dòng)',
+              );
+            }
+          }
+          break;
         }
-      },
-    );
+      }
 
-    test(
-      'Bất biến 5: ProcessSupervisor phân bổ cổng động không bị trùng lặp',
-      () async {
-        final portA = await ProcessSupervisor.findAvailablePort();
-        final portB = await ProcessSupervisor.findAvailablePort();
+      expect(
+        violations,
+        isEmpty,
+        reason:
+            'Phát hiện file vượt ngưỡng dòng tối đa (Anti-God-Class Invariant):\n${violations.join("\n")}',
+      );
+    });
 
-        expect(portA, greaterThan(1024));
-        expect(portB, greaterThan(1024));
-      },
-    );
+    test('Bất biến 7: Không có file .dart mồ côi (Dead Code) và không giữ Map<String, Uint8List> trong RAM của InstalledPlugin', () {
+      final libDir = Directory('lib');
+      final testDir = Directory('test');
+      final allDartFiles = [
+        ...libDir.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart')),
+        if (testDir.existsSync())
+          ...testDir.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart')),
+      ];
+
+      final combinedSource = StringBuffer();
+      for (final f in allDartFiles) {
+        combinedSource.write(f.readAsStringSync());
+        combinedSource.write('\n');
+      }
+      final fullCorpus = combinedSource.toString();
+
+      final orphanFiles = <String>[];
+      final libDartFiles = libDir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'));
+
+      for (final file in libDartFiles) {
+        final fileName = file.uri.pathSegments.last;
+        if (fileName == 'main.dart' || fileName == 'services.dart') continue;
+        // Must appear in an import, export, or part directive in the codebase
+        if (!fullCorpus.contains("'$fileName'") &&
+            !fullCorpus.contains('/$fileName\'') &&
+            !fullCorpus.contains('"$fileName"') &&
+            !fullCorpus.contains('/$fileName"')) {
+          orphanFiles.add(file.path);
+        }
+      }
+
+      expect(
+        orphanFiles,
+        isEmpty,
+        reason: 'Phát hiện file .dart mồ côi (Dead Code) trong lib/:\n${orphanFiles.join("\n")}',
+      );
+
+      final pluginManagerFile = File('lib/services/plugin_manager.dart');
+      if (pluginManagerFile.existsSync()) {
+        final pmContent = pluginManagerFile.readAsStringSync();
+        expect(
+          pmContent.contains('Map<String, Uint8List> files'),
+          isFalse,
+          reason: 'InstalledPlugin không được giữ Map<String, Uint8List> files trong RAM (vi phạm AGENTS.md Rule 2.4)',
+        );
+      }
+    });
   });
 }
