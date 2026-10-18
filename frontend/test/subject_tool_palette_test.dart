@@ -16,7 +16,6 @@ void main() {
         id: 'com.hocluc.plugin.english',
         name: 'Tiếng Anh',
       ),
-      files: {},
     );
   });
 
