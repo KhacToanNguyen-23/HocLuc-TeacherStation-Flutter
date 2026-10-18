@@ -54,52 +54,95 @@ plugins/
 
 ---
 
-## 4. Đặc Tả Tệp `manifest.json` (Schema v2.1 — Chuẩn VS Code / Chrome Extension)
+## 4. Đặc Tả Tệp `manifest.json` (Schema v2.1 — 2 Mẫu Copy-Paste Chuẩn)
+
+### Mẫu 1: Thiết Bị Vật Lý Sát Viền (`frameless: true` — Ví dụ: Máy tính Casio, Thước đo độ)
+Hiển thị **chỉ đúng thân thiết bị vật lý** nổi trên bảng đen (không có khung viền trắng/header/footer thừa của Host, kéo thả trực tiếp trên viền trên của máy và nút `×` gọn nhẹ):
 
 ```json
 {
-  "$schema": "https://hocluc.com/schemas/plugin.v2.1.json",
-  "id": "org.open.scientific_calc",
-  "name": "Máy Tính Khoa Học",
-  "version": "1.0.0",
-  "author": "Học Lực Math Team",
+  "$schema": "https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json",
+  "id": "com.hocluc.plugin.casio",
+  "name": "Máy tính Casio fx-580VN X",
+  "version": "1.1.1",
+  "author": "Học Lực Education",
   "category": "math",
-  "description": "Mô phỏng máy tính khoa học phục vụ giải toán trên bảng.",
+  "description": "Máy tính khoa học Casio fx-580VN X sát viền thật trên bảng đen.",
   "icon": "icon.png",
   "ui": {
     "entry": "ui/index.html",
     "placement": "floating_window",
-    "default_width": 350,
-    "default_height": 620,
+    "default_width": 336,
+    "default_height": 624,
     "resizable": false,
+    "frameless": true,
+    "inject_sdk": true
+  },
+  "backend": null,
+  "permissions": ["board:insert_annotation", "storage"]
+}
+```
+
+### Mẫu 2: Trợ Giảng Môn Học Kèm Khay Công Cụ (`contributes.tools` — Ví dụ: Tiếng Anh)
+Hiển thị ngăn kéo gắn bài giảng kèm thanh công cụ nổi (`SubjectToolPalette`) tự động sinh từ `contributes.tools`:
+
+```json
+{
+  "$schema": "https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json",
+  "id": "com.hocluc.plugin.english",
+  "name": "Trợ giảng Tiếng Anh",
+  "version": "2.1.0",
+  "author": "Học Lực Education",
+  "category": "english",
+  "description": "Phân tích ngữ pháp S-V-O-A và đọc hiểu ĐGNL trên bảng phấn.",
+  "icon": "icon.png",
+  "ui": {
+    "entry": "ui/index.html",
+    "placement": "bottom_drawer",
+    "default_width": 440,
+    "default_height": 520,
+    "resizable": true,
     "inject_sdk": true
   },
   "contributes": {
     "tools": [
       {
-        "id": "snip_formula",
-        "label": "Quét công thức",
+        "id": "snip_grammar",
+        "label": "Khoanh vùng",
         "icon": "crop_free",
         "action": "snip_region",
-        "tooltip": "Khoanh vùng công thức trên bảng để đưa vào plugin"
+        "target": "grammar",
+        "tooltip": "Khoanh vùng câu tiếng Anh trên bảng để bóc tách S-V-O-A"
+      },
+      {
+        "id": "quick_sentence",
+        "label": "Nhập câu",
+        "icon": "edit_note",
+        "action": "quick_input",
+        "widgetKey": "quick_sentence_button",
+        "tooltip": "Nhập / Chọn câu bóc tách S-V-O-A"
       }
     ]
   },
-  "backend": null,
-  "permissions": [
-    "board:insert_annotation"
-  ]
+  "backend": {
+    "type": "python",
+    "entry": "engine/service.py",
+    "health_check": "/health"
+  },
+  "permissions": ["board:read_selection", "board:insert_annotation", "storage"]
 }
 ```
 
 ### Các trường quan trọng:
-- `ui.placement` (hoặc `placement`):
-  - `"drawer_panel"`: Ngăn kéo gắn sâu vào bài giảng ở cạnh phải màn hình, đi kèm thanh công cụ nổi (`SubjectToolPalette`) hiển thị các nút khai báo trong `contributes.tools`.
-  - `"floating_window"`: Cửa sổ nổi độc lập kéo thả tự do trên nền bảng phấn (có thể mở song song cùng lúc với một plugin `drawer_panel`).
+- `ui.placement`:
+  - `"bottom_drawer"` / `"drawer_panel"`: Ngăn kéo gắn vào bài giảng, đi kèm thanh công cụ nổi (`SubjectToolPalette`) hiển thị các nút khai báo trong `contributes.tools`.
+  - `"floating_window"`: Cửa sổ nổi độc lập kéo thả tự do trên nền bảng phấn (có thể mở song song cùng lúc với một plugin ngăn kéo).
+- `ui.frameless`:
+  - Đặt `true` cho thiết bị mô phỏng vật lý (như Casio fx-580VN X) để ẩn toàn bộ header/footer/khung nền của Host, chỉ hiển thị đúng thân thiết bị với dải kéo thả trong suốt ở viền trên (`top: 0..28px`).
 - `ui.inject_sdk`:
   - Đặt `true` khi bạn nhúng một dự án Open-Source có sẵn (HTML/JS/WASM như GeoGebra, Desmos, JSMol, Casio Simulator). `PluginWebServer` sẽ tự động tiêm `<script src="/__hocluc_sdk__/hocluc-plugin-sdk.js"></script>` vào trang HTML mà không cần sửa mã nguồn gốc của dự án Open-Source.
 - `contributes.tools`:
-  - Khai báo các công cụ gắn vào thanh `SubjectToolPalette` trên bảng phấn theo chuẩn `Contribution Points` của VS Code (`action`: `"snip_region"`, `"board_annotation_mode"`, `"quick_text_input"`).
+  - Khai báo các công cụ gắn vào thanh `SubjectToolPalette` trên bảng phấn theo chuẩn `Contribution Points` của VS Code (`action`: `"snip_region"`, `"toggle_tool"`, `"quick_input"`).
 - `backend`:
   - Đặt là `null` nếu plugin chỉ là HTML/JS/WASM thuần.
   - Nếu có Python sidecar: Khai báo `{"type": "python", "entry": "engine/service.py", "health_check": "/health"}`.

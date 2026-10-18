@@ -45,5 +45,10 @@ jobs:
       - name: Analyze Static Code Quality
         run: flutter analyze --no-fatal-infos
 
-      - name: Run Architecture & Unit Tests
+      - name: Enforce Plugin Architecture Invariants (AGENTS.md)
+        run: |
+          echo "🔍 Kiểm tra các bất biến kiến trúc Plugin (AGENTS.md & docs/architecture/plugin-development-guide.md)..."
+          flutter test test/architecture_test.dart
+
+      - name: Run Unit & Widget Tests
         run: flutter test
