@@ -1,12 +1,26 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pdfrx/pdfrx.dart' as pdfrx;
 import 'package:teaching_companion/services/smart_pen_answer_index.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  late Directory pdfrxCacheDirectory;
+  setUpAll(() {
+    pdfrxCacheDirectory = Directory.systemTemp.createTempSync(
+      'smart_pen_index_test_',
+    );
+    pdfrx.Pdfrx.cacheDirectoryPath = pdfrxCacheDirectory.path;
+  });
+  tearDownAll(() {
+    pdfrxCacheDirectory.deleteSync(recursive: true);
+    pdfrx.Pdfrx.cacheDirectoryPath = null;
+  });
+
   group('Smart Pen answer candidate classification', () {
     test(
       'debug diagnostics are opt-in and explain isolated label rejection',
@@ -1443,11 +1457,7 @@ void main() {
 }
 
 Future<void> _initializePdfrxForTest() async {
-  if (kIsWeb) {
-    await pdfrx.pdfrxFlutterInitialize();
-  } else {
-    await pdfrx.pdfrxInitialize();
-  }
+  await pdfrx.pdfrxFlutterInitialize();
 }
 
 List<SmartPenTextFragment> _verticalOptions() => [

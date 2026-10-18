@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,17 @@ import 'package:teaching_companion/widgets/subject_tool_palette.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  late Directory pdfrxCacheDirectory;
+  setUpAll(() {
+    pdfrxCacheDirectory = Directory.systemTemp.createTempSync(
+      'smart_pen_gesture_test_',
+    );
+    pdfrx.Pdfrx.cacheDirectoryPath = pdfrxCacheDirectory.path;
+  });
+  tearDownAll(() {
+    pdfrxCacheDirectory.deleteSync(recursive: true);
+    pdfrx.Pdfrx.cacheDirectoryPath = null;
+  });
 
   group('Smart Pen tap queue', () {
     test('takes matching page and generation taps in original order', () {
@@ -476,7 +488,7 @@ void main() {
   testWidgets('PdfStage routes an answer tap into a Smart Pen oval', (
     tester,
   ) async {
-    await tester.runAsync(pdfrx.pdfrxInitialize);
+    await tester.runAsync(pdfrx.pdfrxFlutterInitialize);
     tester.view.physicalSize = const Size(600, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
