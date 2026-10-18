@@ -1,9 +1,12 @@
 import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:perfect_freehand/perfect_freehand.dart';
 import '../services/local_service.dart';
 import '../services/audio_translation_service.dart';
 import '../services/teacher_media_service.dart';
@@ -14,12 +17,15 @@ import 'board_sticker.dart';
 import 'smart_chalk_annotation.dart';
 import '../services/stroke_clusterer.dart';
 import '../services/english_analyzer.dart';
-
-import 'package:perfect_freehand/perfect_freehand.dart';
+import 'smart_pen_answer_selection.dart';
+export 'smart_pen_answer_selection.dart';
 
 part 'studio_board_models.dart';
 part 'studio_state_plugins.dart';
 part 'studio_state_annotations.dart';
+part 'smart_pen_oval_annotation.dart';
+part 'studio_state_smart_pen.dart';
+part 'studio_state_pdf.dart';
 
 class StudioState extends ChangeNotifier {
   StudioState({LocalService? service}) : service = service ?? LocalService() {
@@ -58,6 +64,29 @@ class StudioState extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  bool _smartSnapEnabled = false;
+  bool get smartSnapEnabled {
+    if (_smartSnapEnabled) return true;
+    final plugin = activePlugin;
+    if (plugin == null || activeSubjectTool == null) return false;
+    return plugin.manifest.contributesTools.any(
+      (tool) => tool.pdfTapMode && tool.target == activeSubjectTool,
+    );
+  }
+
+  bool _saveAnswerCirclesEnabled = true;
+  bool get saveAnswerCirclesEnabled => _saveAnswerCirclesEnabled;
+  static const String saveAnswerCirclesSettingKey = 'pdf_answer_circles.save';
+  final Map<String, bool> _contributedToolSettings = {};
+  SmartPenAnswerSelection? smartPenAnswerSelection;
+  final Map<String, List<_SmartPenHistoryEntry>> _smartPenUndo = {};
+  final Map<String, List<_SmartPenHistoryEntry>> _smartPenRedo = {};
+  final Map<BoardStroke, int> _boardUndoSequence = {};
+  final Map<BoardStroke, int> _boardRedoSequence = {};
+  int _historySequence = 0;
+
+  String get _smartPenHistoryKey => activeDocId ?? pdfFilePath ?? 'current-pdf';
 
   bool reveal = false, denoise = false;
   int _page = 0, seconds = 300;
@@ -229,134 +258,20 @@ class StudioState extends ChangeNotifier {
   Uint8List? pdfBytes;
   int pdfPage = 1;
   int pdfTotalPages = 1;
+  bool? _pdfFitWidth = true;
+  int? _pdfZoomAction = 0;
+  bool _isSpacePressed = false;
   Map<int, List<BoardStroke>>? _pdfAnnotations;
   Map<int, List<BoardStroke>> get pdfAnnotations =>
       _pdfAnnotations ??= <int, List<BoardStroke>>{};
   set pdfAnnotations(Map<int, List<BoardStroke>> map) => _pdfAnnotations = map;
 
-  List<BoardStroke> get currentPdfStrokes =>
-      pdfAnnotations.putIfAbsent(pdfPage, () => []);
-
-  void setPdfFile(String? path, [Uint8List? bytes]) {
-    pdfFilePath = path;
-    pdfBytes = bytes;
-    pdfPage = 1;
-    pdfTotalPages = 1;
-    pdfAnnotations.clear();
-    if (path != null || bytes != null) {
-      final name = path != null
-          ? path.split(RegExp(r'[\\/]')).last
-          : 'Tài liệu.pdf';
-      final existing = importedDocs.where((d) => d.name == name).firstOrNull;
-      if (existing == null) {
-        final id = DateTime.now().millisecondsSinceEpoch.toString();
-        final doc = ImportedDocument(
-          id: id,
-          name: name,
-          path: path,
-          bytes: bytes,
-        );
-        importedDocs.add(doc);
-        activeDocId = id;
-      } else {
-        activeDocId = existing.id;
-      }
-    }
-    dirty = true;
-    _revision++;
-    notifyListeners();
-  }
-
-  void updatePdfBytesInPlace(Uint8List newBytes) {
-    pdfBytes = newBytes;
-    dirty = true;
-    _revision++;
-    notifyListeners();
-  }
-
-  void setPdfPage(int p) {
-    final next = p.clamp(1, pdfTotalPages > 0 ? pdfTotalPages : 1);
-    if (next != pdfPage) {
-      pdfPage = next;
-      notifyListeners();
-    }
-  }
-
-  void setPdfTotalPages(int total) {
-    if (total > 0 && total != pdfTotalPages) {
-      pdfTotalPages = total;
-      if (activeDoc != null) {
-        activeDoc!.totalPages = total;
-      }
-      notifyListeners();
-    }
-  }
-
-  bool? _pdfFitWidth = true;
-  bool get pdfFitWidth => _pdfFitWidth ?? true;
-  bool get pdfFitPage => !pdfFitWidth;
-
-  void togglePdfFit() {
-    _pdfFitWidth = !pdfFitWidth;
-    notifyListeners();
-  }
-
-  void setPdfFitWidth(bool fitWidth) {
-    if (_pdfFitWidth != fitWidth) {
-      _pdfFitWidth = fitWidth;
-      notifyListeners();
-    }
-  }
-
-  void setPdfFitPage(bool fit) {
-    setPdfFitWidth(!fit);
-  }
-
-  int? _pdfZoomAction = 0;
-  int get pdfZoomAction => _pdfZoomAction ?? 0;
-  void zoomInPdf() {
-    _pdfZoomAction = pdfZoomAction + 1;
-    notifyListeners();
-  }
-
-  void zoomOutPdf() {
-    _pdfZoomAction = pdfZoomAction - 1;
-    notifyListeners();
-  }
-
-  void resetPdfZoom() {
-    _pdfFitWidth = true;
-    _pdfZoomAction = 999;
-    notifyListeners();
-  }
-
-  bool _isSpacePressed = false;
-  bool get isSpacePressed => _isSpacePressed;
-  void setSpacePressed(bool pressed) {
-    if (_isSpacePressed != pressed) {
-      _isSpacePressed = pressed;
-      notifyListeners();
-    }
-  }
-
-  void clearPdfPage() {
-    pdfAnnotations[pdfPage]?.clear();
-    pdfChalkAnnotations[pdfPage]?.clear();
-    dirty = true;
-    _revision++;
-    notifyListeners();
-  }
-
-  void setLaserOffset(Offset? offset) {
-    laserOffset = offset;
-  }
-
-  void finishStroke({List<BoardStroke>? target}) {
-    final list = target ?? strokes;
-    if (list.isNotEmpty) {
-      list.last.invalidatePath();
-    }
-  }
+  // Temporary answer overrides are deliberately kept outside pdfAnnotations,
+  // which is consumed by lesson serialization, imported-document snapshots,
+  // and PDF export. A present key with a null value suppresses a saved answer
+  // in the live view only; a BoardStroke value temporarily replaces its group.
+  final Map<String, Map<int, Map<String, BoardStroke?>>>
+  _temporarySmartPenOverrides = {};
 
   Future<void> initialize() async {
     loading = true;
@@ -449,7 +364,11 @@ class StudioState extends ChangeNotifier {
   void addStroke(BoardStroke stroke, {List<BoardStroke>? target}) {
     final list = target ?? strokes;
     list.add(stroke);
-    _currentRedoStack.clear();
+    if (target == null) {
+      _recordBoardAction(stroke);
+    } else {
+      _recordPdfAction(list);
+    }
     _revision++;
     dirty = true;
     notifyListeners();
@@ -465,9 +384,12 @@ class StudioState extends ChangeNotifier {
       erase(point, target: list);
       return;
     }
-    _currentRedoStack.clear();
     final w = tool == 'highlight' ? highlighterWidth : strokeWidth;
-    list.add(BoardStroke(ink, w, [point]));
+    final stroke = BoardStroke(ink, w, [point]);
+    list.add(stroke);
+    if (target == null) {
+      _recordBoardAction(stroke);
+    }
     _revision++;
     dirty = true;
     notifyListeners();
@@ -547,33 +469,6 @@ class StudioState extends ChangeNotifier {
   }
 
   Map<int, List<BoardStroke>>? _redoPages;
-  Map<int, List<BoardStroke>> get redoPages =>
-      _redoPages ??= <int, List<BoardStroke>>{};
-  List<BoardStroke> get _currentRedoStack =>
-      redoPages.putIfAbsent(page, () => []);
-  bool get canUndo => strokes.isNotEmpty;
-  bool get canRedo => _currentRedoStack.isNotEmpty;
-
-  void undo() {
-    if (strokes.isNotEmpty) {
-      final stroke = strokes.removeLast();
-      _currentRedoStack.add(stroke);
-      _revision++;
-      dirty = true;
-      notifyListeners();
-    }
-  }
-
-  void redo() {
-    if (_currentRedoStack.isNotEmpty) {
-      final stroke = _currentRedoStack.removeLast();
-      strokes.add(stroke);
-      _revision++;
-      dirty = true;
-      notifyListeners();
-    }
-  }
-
   void nextPage() {
     if (page < pages.length - 1) {
       page++;
@@ -671,24 +566,6 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  void clearPage() {
-    bool changed = false;
-    if (strokes.isNotEmpty) {
-      _currentRedoStack.addAll(strokes);
-      strokes.clear();
-      changed = true;
-    }
-    if (currentChalkAnnotations.isNotEmpty) {
-      currentChalkAnnotations.clear();
-      changed = true;
-    }
-    if (changed) {
-      _revision++;
-      dirty = true;
-      notifyListeners();
-    }
-  }
-
   void toggleTimer() {
     if (_timer != null) {
       _timer?.cancel();
@@ -708,6 +585,15 @@ class StudioState extends ChangeNotifier {
   }
 
   Map<String, dynamic> exportLessonJson() {
+    Map<String, dynamic> serializePdfAnnotations(
+      Map<int, List<BoardStroke>> annotations,
+    ) => annotations.map(
+      (page, strokes) => MapEntry(
+        page.toString(),
+        strokes.map((stroke) => stroke.toJson()).toList(),
+      ),
+    );
+
     return {
       'title': title,
       'subject': subject,
@@ -726,6 +612,29 @@ class StudioState extends ChangeNotifier {
       'pdfChalkAnnotations': pdfChalkAnnotations.map(
         (k, v) => MapEntry(k.toString(), v.map((s) => s.toJson()).toList()),
       ),
+      'pdfAnnotations': pdfAnnotations.map(
+        (k, v) =>
+            MapEntry(k.toString(), v.map((stroke) => stroke.toJson()).toList()),
+      ),
+      'importedPdfDocuments': importedDocs.map((document) {
+        final annotations = document.id == activeDocId
+            ? pdfAnnotations
+            : document.annotations;
+        return {
+          'id': document.id,
+          'name': document.name,
+          'path': document.path,
+          'contentFingerprint':
+              document.contentFingerprint ??
+              (document.bytes == null
+                  ? null
+                  : _pdfContentFingerprint(document.bytes!)),
+          'totalPages': document.id == activeDocId
+              ? pdfTotalPages
+              : document.totalPages,
+          'annotations': serializePdfAnnotations(annotations),
+        };
+      }).toList(),
       'pdfFilePath': pdfFilePath,
       'pdfPage': pdfPage,
       'pdfWindowMaximized': _pdfWindowMaximized,
@@ -739,6 +648,55 @@ class StudioState extends ChangeNotifier {
   }
 
   void restoreFromJson(Map<String, dynamic> json) {
+    // This is a session preference, not lesson data. Loading any lesson starts
+    // with the safe default that new answer circles are saved.
+    _saveAnswerCirclesEnabled = true;
+    // Session-only answer overrides and their undo history belong to the
+    // previous lesson/PDF session, even when the incoming lesson has no PDF.
+    _temporarySmartPenOverrides.clear();
+    _clearSmartPenHistory();
+    // A restored lesson may have no active PDF even when this StudioState was
+    // previously showing one. Reset the old view before restoring document
+    // metadata so a closed-document lesson cannot keep displaying stale bytes.
+    pdfFilePath = null;
+    pdfBytes = null;
+    pdfPage = 1;
+    pdfTotalPages = 1;
+    pdfAnnotations.clear();
+    activeDocId = null;
+    importedDocs.clear();
+    if (json['importedPdfDocuments'] is List) {
+      for (final entry in json['importedPdfDocuments'] as List) {
+        if (entry is! Map) continue;
+        final documentJson = Map<String, dynamic>.from(entry);
+        final name = documentJson['name'] as String?;
+        if (name == null || name.isEmpty) continue;
+        final document = ImportedDocument(
+          id:
+              documentJson['id'] as String? ??
+              DateTime.now().microsecondsSinceEpoch.toString(),
+          name: name,
+          path: documentJson['path'] as String?,
+          contentFingerprint: documentJson['contentFingerprint'] as String?,
+          totalPages: (documentJson['totalPages'] as num?)?.toInt() ?? 1,
+        );
+        final annotations = documentJson['annotations'];
+        if (annotations is Map) {
+          annotations.forEach((key, value) {
+            final pageNumber = int.tryParse(key.toString());
+            if (pageNumber == null || value is! List) return;
+            document.annotations[pageNumber] = value
+                .map(
+                  (stroke) => BoardStroke.fromJson(
+                    Map<String, dynamic>.from(stroke as Map),
+                  ),
+                )
+                .toList();
+          });
+        }
+        importedDocs.add(document);
+      }
+    }
     if (json.containsKey('title')) title = json['title'] as String? ?? title;
     if (json.containsKey('subject')) {
       subject = json['subject'] as String? ?? subject;
@@ -849,6 +807,33 @@ class StudioState extends ChangeNotifier {
         }
       });
     }
+    if (json.containsKey('pdfAnnotations') && json['pdfAnnotations'] is Map) {
+      pdfAnnotations.clear();
+      final map = json['pdfAnnotations'] as Map;
+      map.forEach((key, value) {
+        final pageNumber = int.tryParse(key.toString()) ?? 1;
+        if (value is List) {
+          pdfAnnotations[pageNumber] = value
+              .map(
+                (stroke) => BoardStroke.fromJson(
+                  Map<String, dynamic>.from(stroke as Map),
+                ),
+              )
+              .toList();
+        }
+      });
+    }
+    final restoredActiveDocument = activeDoc;
+    if (restoredActiveDocument != null) {
+      restoredActiveDocument.annotations
+        ..clear()
+        ..addAll(
+          pdfAnnotations.map(
+            (page, strokes) => MapEntry(page, List.of(strokes)),
+          ),
+        );
+      restoredActiveDocument.totalPages = pdfTotalPages;
+    }
     dirty = false;
     _revision++;
     notifyListeners();
@@ -856,8 +841,8 @@ class StudioState extends ChangeNotifier {
 
   Future<bool> save() async {
     if (saving) return false;
-    final revision = _revision;
     final lessonSnapshot = exportLessonJson();
+    final lessonSnapshotJson = jsonEncode(lessonSnapshot);
     final configSnapshot = {
       'endpoint': endpoint,
       'language': language,
@@ -865,12 +850,22 @@ class StudioState extends ChangeNotifier {
       'denoise': denoise,
       'audio': audio.preferences,
     };
+    final configSnapshotJson = jsonEncode(configSnapshot);
     saving = true;
     notifyListeners();
     try {
       await service.request('lesson', data: lessonSnapshot);
       await service.request('config', data: configSnapshot);
-      dirty = _revision != revision;
+      final currentConfig = {
+        'endpoint': endpoint,
+        'language': language,
+        'microphone': microphone,
+        'denoise': denoise,
+        'audio': audio.preferences,
+      };
+      dirty =
+          jsonEncode(exportLessonJson()) != lessonSnapshotJson ||
+          jsonEncode(currentConfig) != configSnapshotJson;
       final now = DateTime.now();
       savedAt =
           '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';

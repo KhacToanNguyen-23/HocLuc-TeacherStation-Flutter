@@ -93,7 +93,7 @@ class StudioDrawingToolbar extends StatelessWidget {
               const SizedBox(height: 6),
               IconButton(
                 tooltip: 'Hoàn tác nét',
-                onPressed: studio.strokes.isEmpty ? null : studio.undo,
+                onPressed: studio.canUndo ? studio.undo : null,
                 style: IconButton.styleFrom(
                   minimumSize: const Size(36, 36),
                   padding: EdgeInsets.zero,
@@ -257,7 +257,7 @@ class StudioDrawingToolbar extends StatelessWidget {
               const SizedBox(width: 8),
               IconButton(
                 tooltip: 'Hoàn tác nét',
-                onPressed: studio.strokes.isEmpty ? null : studio.undo,
+                onPressed: studio.canUndo ? studio.undo : null,
                 icon: const Icon(Icons.undo, size: 19),
               ),
               IconButton(

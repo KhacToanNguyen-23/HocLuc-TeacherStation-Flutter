@@ -322,7 +322,10 @@ Future<String?> _saveLecturePdfImpl(
 ) async {
   // 1. Nếu có tài liệu PDF đang mở trong phòng học
   if (studio.pdfBytes != null || studio.pdfFilePath != null) {
-    if (studio.pdfDgnlPassages.isNotEmpty) {
+    final hasPdfAnnotations = studio.pdfAnnotations.values.any(
+      (annotations) => annotations.isNotEmpty,
+    );
+    if (studio.pdfDgnlPassages.isNotEmpty || hasPdfAnnotations) {
       return PdfAnnotationExporter.saveHighlightedPdf(context, studio);
     }
 

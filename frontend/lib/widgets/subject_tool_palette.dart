@@ -21,6 +21,8 @@ class SubjectToolPalette extends StatelessWidget {
         return Icons.calculate_rounded;
       case 'science':
         return Icons.science_rounded;
+      case 'bookmark':
+        return Icons.bookmark_outline;
       case 'auto_awesome':
       default:
         return Icons.auto_awesome;
@@ -203,7 +205,15 @@ class SubjectToolPalette extends StatelessWidget {
   ) {
     final targetId = tool.target ?? tool.id;
     final isToggle = tool.action == 'toggle_tool';
-    final isActive = isToggle && studio.activeSubjectTool == targetId;
+    final isSettingToggle = tool.action == 'toggle_setting';
+    final isActive = isToggle
+        ? studio.activeSubjectTool == targetId
+        : isSettingToggle && tool.settingKey != null
+        ? studio.contributedToolSetting(
+            tool.settingKey!,
+            defaultValue: tool.defaultValue,
+          )
+        : false;
     final isPrimarySnip = tool.action == 'snip_region';
     final buttonKey = Key(tool.widgetKey ?? '${tool.id}_tool_button');
 
@@ -218,6 +228,15 @@ class SubjectToolPalette extends StatelessWidget {
               break;
             case 'toggle_tool':
               studio.setActiveSubjectTool(isActive ? null : targetId);
+              break;
+            case 'toggle_setting':
+              final settingKey = tool.settingKey;
+              if (settingKey != null) {
+                studio.toggleContributedToolSetting(
+                  settingKey,
+                  defaultValue: tool.defaultValue,
+                );
+              }
               break;
             case 'quick_input':
               _showQuickInputDialog(context, studio, tool);

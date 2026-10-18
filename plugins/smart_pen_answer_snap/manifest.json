@@ -1,0 +1,39 @@
+{
+  "$schema": "https://hocluc.com/schemas/plugin.v2.json",
+  "id": "com.hocluc.plugin.smart-pen-answer-snap",
+  "name": "Bút thông minh",
+  "version": "1.0.1",
+  "author": "HocLuc Education",
+  "description": "Tự nhận diện nhãn đáp án trong PDF và khoanh bằng bút.",
+  "category": "teaching-tools",
+  "main": "ui/index.html",
+  "icon": "icon.png",
+  "placement": "drawer_panel",
+  "default_width": 380,
+  "default_height": 360,
+  "inject_sdk": true,
+  "contributes": {
+    "tools": [
+      {
+        "id": "smart_answer_snap",
+        "label": "Bắt đáp án",
+        "icon": "auto_awesome",
+        "tooltip": "Bật hoặc tắt tự động bắt nhãn đáp án trên PDF",
+        "action": "toggle_tool",
+        "target": "smart_answer_snap",
+        "pdf_tap_mode": true
+      },
+      {
+        "id": "save_answer_circles",
+        "label": "Lưu khoanh",
+        "icon": "bookmark",
+        "tooltip": "Bật hoặc tắt lưu khoanh mới vào bài soạn và PDF xuất ra",
+        "action": "toggle_setting",
+        "setting_key": "pdf_answer_circles.save",
+        "default_value": true
+      }
+    ]
+  },
+  "backend": null,
+  "permissions": []
+}

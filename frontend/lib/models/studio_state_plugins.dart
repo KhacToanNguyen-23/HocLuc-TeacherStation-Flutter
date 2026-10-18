@@ -396,15 +396,70 @@ extension StudioStatePluginsAndDocsExt on StudioState {
   }
 
   void addImportedDoc(String name, String? path, Uint8List? bytes) {
-    final existing = importedDocs
-        .where((d) => d.name == name || (path != null && d.path == path))
+    final incomingFingerprint =
+        bytes == null ? null : _pdfContentFingerprint(bytes);
+    final exactPathMatch = path == null
+        ? null
+        : importedDocs.where((doc) => doc.path == path).firstOrNull;
+    final nameMatch = importedDocs
+        .where(
+          (doc) => doc.name == name &&
+              incomingFingerprint != null &&
+              doc.contentFingerprint == incomingFingerprint,
+        )
         .firstOrNull;
+    final existing = exactPathMatch ?? nameMatch;
     if (existing != null) {
+      var contentChanged = false;
+      if (bytes != null &&
+          ((existing.contentFingerprint != null &&
+                  existing.contentFingerprint != incomingFingerprint) ||
+              (existing.bytes != null &&
+                  !_samePdfBytes(bytes, existing.bytes!)))) {
+        existing.annotations.clear();
+        existing.totalPages = 1;
+        contentChanged = true;
+      }
+      existing.path = path ?? existing.path;
+      existing.bytes = bytes ?? existing.bytes;
+      existing.contentFingerprint =
+          incomingFingerprint ?? existing.contentFingerprint;
+      if (existing.id == activeDocId) {
+        if (contentChanged) {
+          clearTemporarySmartPenAnswers(documentId: existing.id);
+          _clearSmartPenHistory(documentId: existing.id);
+          smartPenAnswerSelection = null;
+          pdfAnnotations.clear();
+          pdfPage = 1;
+          pdfTotalPages = 1;
+        } else {
+          existing.annotations
+            ..clear()
+            ..addAll(
+              pdfAnnotations.map(
+                (page, strokes) => MapEntry(page, List.of(strokes)),
+              ),
+            );
+          existing.totalPages = pdfTotalPages;
+        }
+        pdfFilePath = existing.path;
+        pdfBytes = existing.bytes;
+        dirty = true;
+        _revision++;
+        notifyListeners();
+        return;
+      }
       selectDoc(existing.id);
       return;
     }
     final id = DateTime.now().millisecondsSinceEpoch.toString();
-    final doc = ImportedDocument(id: id, name: name, path: path, bytes: bytes);
+    final doc = ImportedDocument(
+      id: id,
+      name: name,
+      path: path,
+      bytes: bytes,
+      contentFingerprint: incomingFingerprint,
+    );
     importedDocs.add(doc);
     selectDoc(id);
   }
@@ -440,6 +495,9 @@ extension StudioStatePluginsAndDocsExt on StudioState {
   void removeDoc(String id) {
     final index = importedDocs.indexWhere((d) => d.id == id);
     if (index == -1) return;
+    clearTemporarySmartPenAnswers(documentId: id);
+    _smartPenUndo.remove(id);
+    _smartPenRedo.remove(id);
     importedDocs.removeAt(index);
     if (activeDocId == id) {
       if (importedDocs.isNotEmpty) {
