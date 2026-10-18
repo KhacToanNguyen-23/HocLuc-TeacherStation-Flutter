@@ -80,7 +80,7 @@ void main() {
       );
     });
 
-    test('Bất biến 4: Tất cả plugin trong plugins/ phải có manifest.json Schema v2 hợp lệ', () {
+    test('Bất biến 4: Tất cả plugin trong plugins/ phải có manifest.json Schema v2.1 hợp lệ và gói .hlep đồng bộ', () {
       final candidates = [
         Directory('plugins'),
         Directory('../plugins'),
@@ -101,6 +101,9 @@ void main() {
         final manifestFile = File('${folder.path}/manifest.json');
         if (!manifestFile.existsSync()) continue;
 
+        final folderName = folder.uri.pathSegments
+            .where((s) => s.isNotEmpty)
+            .last;
         final rawJson = manifestFile.readAsStringSync();
         final map = jsonDecode(rawJson) as Map<String, dynamic>;
         final manifest = PluginManifest.fromJson(map);
@@ -108,7 +111,37 @@ void main() {
         expect(manifest.id, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường id');
         expect(manifest.name, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường name');
         expect(manifest.version, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường version');
-        expect(manifest.uiEntry, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường main/uiEntry');
+        expect(manifest.uiEntry, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường ui.entry/main');
+        expect(
+          ['floating_window', 'bottom_drawer', 'drawer_panel', 'right_panel'],
+          contains(manifest.uiPlacement),
+          reason: 'Plugin ${folder.path} có ui.placement không hợp lệ: ${manifest.uiPlacement}',
+        );
+        expect(
+          manifest.uiDefaultWidth,
+          greaterThan(100),
+          reason: 'Plugin ${folder.path} phải khai báo default_width > 100',
+        );
+        expect(
+          manifest.uiDefaultHeight,
+          greaterThan(100),
+          reason: 'Plugin ${folder.path} phải khai báo default_height > 100',
+        );
+
+        final uiEntryFile = File('${folder.path}/${manifest.uiEntry}');
+        expect(
+          uiEntryFile.existsSync(),
+          isTrue,
+          reason: 'Plugin ${folder.path} thiếu file giao diện chính ${manifest.uiEntry}',
+        );
+
+        final hlepFile = File('${pluginsDir.path}/$folderName.hlep');
+        expect(
+          hlepFile.existsSync(),
+          isTrue,
+          reason:
+              'Plugin "$folderName" chưa được đóng gói thành plugins/$folderName.hlep. Hãy chạy: node scripts/package_plugin.mjs $folderName',
+        );
       }
     });
 
