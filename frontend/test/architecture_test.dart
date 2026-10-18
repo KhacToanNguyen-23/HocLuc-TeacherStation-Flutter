@@ -152,5 +152,103 @@ void main() {
       expect(portA, greaterThan(1024));
       expect(portB, greaterThan(1024));
     });
+
+    test('Bất biến 6: Không có God Class vượt quá giới hạn dòng (Frontend <= 900 dòng, Backend <= 600 dòng)', () {
+      const maxDartLines = 900;
+      const maxJavaLines = 600;
+      final violations = <String>[];
+
+      final libDir = Directory('lib');
+      if (libDir.existsSync()) {
+        final dartFiles = libDir.listSync(recursive: true).whereType<File>();
+        for (final file in dartFiles) {
+          if (!file.path.endsWith('.dart')) continue;
+          final lineCount = file.readAsLinesSync().length;
+          if (lineCount > maxDartLines) {
+            violations.add(
+              'Frontend God File: ${file.path} có $lineCount dòng (vượt giới hạn $maxDartLines dòng)',
+            );
+          }
+        }
+      }
+
+      final backendCandidates = [
+        Directory('backend/api/src/main/java'),
+        Directory('../backend/api/src/main/java'),
+      ];
+      for (final dir in backendCandidates) {
+        if (dir.existsSync()) {
+          final javaFiles = dir.listSync(recursive: true).whereType<File>();
+          for (final file in javaFiles) {
+            if (!file.path.endsWith('.java')) continue;
+            final lineCount = file.readAsLinesSync().length;
+            if (lineCount > maxJavaLines) {
+              violations.add(
+                'Backend God File: ${file.path} có $lineCount dòng (vượt giới hạn $maxJavaLines dòng)',
+              );
+            }
+          }
+          break;
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason:
+            'Phát hiện file vượt ngưỡng dòng tối đa (Anti-God-Class Invariant):\n${violations.join("\n")}',
+      );
+    });
+
+    test('Bất biến 7: Không có file .dart mồ côi (Dead Code) và không giữ Map<String, Uint8List> trong RAM của InstalledPlugin', () {
+      final libDir = Directory('lib');
+      final testDir = Directory('test');
+      final allDartFiles = [
+        ...libDir.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart')),
+        if (testDir.existsSync())
+          ...testDir.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart')),
+      ];
+
+      final combinedSource = StringBuffer();
+      for (final f in allDartFiles) {
+        combinedSource.write(f.readAsStringSync());
+        combinedSource.write('\n');
+      }
+      final fullCorpus = combinedSource.toString();
+
+      final orphanFiles = <String>[];
+      final libDartFiles = libDir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'));
+
+      for (final file in libDartFiles) {
+        final fileName = file.uri.pathSegments.last;
+        if (fileName == 'main.dart' || fileName == 'services.dart') continue;
+        // Must appear in an import, export, or part directive in the codebase
+        if (!fullCorpus.contains("'$fileName'") &&
+            !fullCorpus.contains('/$fileName\'') &&
+            !fullCorpus.contains('"$fileName"') &&
+            !fullCorpus.contains('/$fileName"')) {
+          orphanFiles.add(file.path);
+        }
+      }
+
+      expect(
+        orphanFiles,
+        isEmpty,
+        reason: 'Phát hiện file .dart mồ côi (Dead Code) trong lib/:\n${orphanFiles.join("\n")}',
+      );
+
+      final pluginManagerFile = File('lib/services/plugin_manager.dart');
+      if (pluginManagerFile.existsSync()) {
+        final pmContent = pluginManagerFile.readAsStringSync();
+        expect(
+          pmContent.contains('Map<String, Uint8List> files'),
+          isFalse,
+          reason: 'InstalledPlugin không được giữ Map<String, Uint8List> files trong RAM (vi phạm AGENTS.md Rule 2.4)',
+        );
+      }
+    });
   });
 }

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,15 +16,13 @@ class InstalledPlugin extends SubjectPlugin {
     this.sourceFilename = '',
     this.sourceFile,
     this.catalogItem,
-    Map<String, Uint8List>? files,
-  }) : files = files ?? const {};
+  });
 
   final PluginManifest manifest;
   final Directory? installDirectory;
   final String sourceFilename;
   final File? sourceFile;
   final PluginCatalogItem? catalogItem;
-  final Map<String, Uint8List> files;
 
   /// Returns local icon file from extracted plugin folder if available.
   File? get iconFile {
@@ -85,9 +82,7 @@ class InstalledPlugin extends SubjectPlugin {
       final f = File('${installDirectory!.path}/$cleanPath');
       if (f.existsSync()) return f.readAsStringSync();
     }
-    final bytes = files[cleanPath] ?? files['/$cleanPath'];
-    if (bytes == null) return null;
-    return utf8.decode(bytes);
+    return null;
   }
 
   Uint8List? getFileBytes(String path) {
@@ -96,7 +91,7 @@ class InstalledPlugin extends SubjectPlugin {
       final f = File('${installDirectory!.path}/$cleanPath');
       if (f.existsSync()) return f.readAsBytesSync();
     }
-    return files[cleanPath] ?? files['/$cleanPath'];
+    return null;
   }
 }
 
@@ -205,7 +200,6 @@ class PluginManager extends ChangeNotifier {
             sourceFile: existing.sourceFile,
             sourceFilename: existing.sourceFilename,
             catalogItem: item,
-            files: existing.files,
           );
           if (_installedPackages.containsKey(item.id)) {
             _installedPackages[item.id] = _registry[item.id] as InstalledPlugin;
