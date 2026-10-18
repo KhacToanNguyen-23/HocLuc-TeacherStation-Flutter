@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart' as pdfrx;
+import 'package:teaching_companion/models/plugin_manifest.dart';
 import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/services/plugin_manager.dart';
 import 'package:teaching_companion/services/smart_pen_answer_index.dart';
 import 'package:teaching_companion/widgets/pdf_stage.dart';
 import 'package:teaching_companion/widgets/stroke_canvas.dart';
-import 'package:teaching_companion/widgets/studio/studio_drawing_toolbar.dart';
+import 'package:teaching_companion/widgets/subject_tool_palette.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -207,43 +209,65 @@ void main() {
       expect(studio.smartSnapEnabled, isTrue);
     });
 
-    for (final isVertical in [false, true]) {
-      testWidgets(
-        'shows and toggles Smart Snap in ${isVertical ? 'vertical' : 'horizontal'} toolbar',
-        (tester) async {
-          final studio = StudioState();
-          addTearDown(studio.dispose);
-
-          await tester.pumpWidget(
-            MaterialApp(
-              home: Scaffold(
-                body: StudioDrawingToolbar(
-                  studio: studio,
-                  isVertical: isVertical,
-                ),
-              ),
+    testWidgets('Smart Pen plugin palette toggles both contributed functions', (
+      tester,
+    ) async {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      final plugin = InstalledPlugin(
+        manifest: PluginManifest(
+          id: 'com.hocluc.plugin.smart-pen-answer-snap',
+          name: 'B\u00fat th\u00f4ng minh',
+          contributesTools: const [
+            PluginToolContribution(
+              id: 'smart_answer_snap',
+              label: 'B\u1eaft \u0111\u00e1p \u00e1n',
+              tooltip: 'Toggle Smart Snap',
+              action: 'toggle_tool',
+              target: 'smart_answer_snap',
+              pdfTapMode: true,
             ),
-          );
-
-          final toggle = find.byTooltip('Tự động bắt đáp án');
-          expect(toggle, findsOneWidget);
-          expect(studio.smartSnapEnabled, isFalse);
-
-          await tester.tap(toggle);
-          await tester.pump();
-
-          expect(studio.smartSnapEnabled, isTrue);
-
-          final saveToggle = find.byTooltip('Lưu khoanh đáp án');
-          expect(saveToggle, findsOneWidget);
-          expect(studio.saveAnswerCirclesEnabled, isTrue);
-          await tester.tap(saveToggle);
-          await tester.pump();
-          expect(studio.saveAnswerCirclesEnabled, isFalse);
-          expect(studio.smartSnapEnabled, isTrue);
-        },
+            PluginToolContribution(
+              id: 'save_answer_circles',
+              label: 'L\u01b0u khoanh',
+              tooltip: 'Toggle answer circle saving',
+              icon: 'bookmark',
+              action: 'toggle_setting',
+              settingKey: StudioState.saveAnswerCirclesSettingKey,
+              defaultValue: true,
+            ),
+          ],
+        ),
       );
-    }
+      studio.openPlugin(plugin);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(children: [SubjectToolPalette(studio: studio)]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final snapToggle = find.byKey(const Key('smart_answer_snap_tool_button'));
+      final saveToggle = find.byKey(
+        const Key('save_answer_circles_tool_button'),
+      );
+      expect(snapToggle, findsOneWidget);
+      expect(saveToggle, findsOneWidget);
+      expect(studio.smartSnapEnabled, isFalse);
+      expect(studio.saveAnswerCirclesEnabled, isTrue);
+
+      await tester.tap(snapToggle);
+      await tester.pumpAndSettle();
+      expect(studio.smartSnapEnabled, isTrue);
+
+      await tester.tap(saveToggle);
+      await tester.pumpAndSettle();
+      expect(studio.saveAnswerCirclesEnabled, isFalse);
+      expect(studio.smartSnapEnabled, isTrue);
+    });
   });
 
   group('StrokeCanvas Smart Pen routing', () {
