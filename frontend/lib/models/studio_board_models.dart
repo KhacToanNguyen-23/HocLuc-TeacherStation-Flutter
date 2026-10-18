@@ -227,13 +227,15 @@ class ImportedDocument {
     required this.name,
     this.path,
     this.bytes,
+    this.contentFingerprint,
     this.totalPages = 1,
   });
 
   final String id;
   final String name;
-  final String? path;
-  final Uint8List? bytes;
+  String? path;
+  Uint8List? bytes;
+  String? contentFingerprint;
   int totalPages;
   final Map<int, List<BoardStroke>> annotations = {};
 

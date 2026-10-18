@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 import '../models/studio_state.dart';
@@ -14,16 +15,20 @@ class StrokeCanvas extends StatefulWidget {
     super.key,
     required this.studio,
     this.targetStrokes,
+    this.displayStrokes,
     this.interactive = true,
     this.smartSnapEnabled = false,
     this.onSmartTap,
+    this.deferTapToOverlay = false,
   });
 
   final StudioState studio;
   final List<BoardStroke>? targetStrokes;
+  final List<BoardStroke>? displayStrokes;
   final bool interactive;
   final bool smartSnapEnabled;
   final ValueChanged<Offset>? onSmartTap;
+  final bool deferTapToOverlay;
 
   @override
   State<StrokeCanvas> createState() => _StrokeCanvasState();
@@ -36,9 +41,31 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
   );
 
   final List<LaserPoint> _laserPoints = [];
+  final Map<int, Offset> _smartPointerDowns = {};
   final ValueNotifier<List<LaserPoint>> _laserTrailNotifier = ValueNotifier([]);
   Timer? _laserTimer;
   Offset? _laserHoverOffset;
+  bool _smartPointerMovedBeyondTapSlop = false;
+
+  void _trackSmartPointerDown(PointerDownEvent event) {
+    if (!widget.deferTapToOverlay) return;
+    _smartPointerDowns[event.pointer] = event.localPosition;
+    _smartPointerMovedBeyondTapSlop = false;
+  }
+
+  void _trackSmartPointerMove(PointerMoveEvent event) {
+    final down = _smartPointerDowns[event.pointer];
+    if (down != null && (event.localPosition - down).distance > kTouchSlop) {
+      _smartPointerMovedBeyondTapSlop = true;
+    }
+  }
+
+  void _trackSmartPointerUp(PointerEvent event) {
+    final down = _smartPointerDowns.remove(event.pointer);
+    if (down != null && (event.localPosition - down).distance > kTouchSlop) {
+      _smartPointerMovedBeyondTapSlop = true;
+    }
+  }
 
   void _addLaserPoint(Offset norm) {
     final now = DateTime.now();
@@ -80,7 +107,10 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
           (p.dy / size.height).clamp(0.0, 1.0),
         );
 
-        final strokes = widget.targetStrokes ?? widget.studio.strokes;
+        final strokes =
+            widget.displayStrokes ??
+            widget.targetStrokes ??
+            widget.studio.strokes;
 
         final isSvoMode = widget.studio.activeSubjectTool == 'svo';
 
@@ -105,175 +135,200 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
               widget.studio.setLaserOffset(null);
             }
           },
-          child: GestureDetector(
-            onPanStart: widget.interactive
-                ? (e) {
-                    if (isSvoMode) return;
-                    final norm = normalized(e.localPosition);
-                    if (widget.studio.tool == 'laser') {
-                      _addLaserPoint(norm);
-                      widget.studio.setLaserOffset(norm);
-                    } else if (widget.studio.tool == 'erase') {
-                      widget.studio.erase(norm, target: widget.targetStrokes);
-                    } else {
-                      _activePoints.clear();
-                      _activePoints.add(norm);
-                      _activeStrokeNotifier.value = List.of(_activePoints);
+          child: Listener(
+            onPointerDown: _trackSmartPointerDown,
+            onPointerMove: _trackSmartPointerMove,
+            onPointerUp: _trackSmartPointerUp,
+            onPointerCancel: (event) {
+              _smartPointerDowns.remove(event.pointer);
+              _smartPointerMovedBeyondTapSlop = false;
+            },
+            child: GestureDetector(
+              onPanStart: widget.interactive
+                  ? (e) {
+                      if (isSvoMode) return;
+                      final norm = normalized(e.localPosition);
+                      if (widget.studio.tool == 'laser') {
+                        _addLaserPoint(norm);
+                        widget.studio.setLaserOffset(norm);
+                      } else if (widget.studio.tool == 'erase') {
+                        widget.studio.erase(norm, target: widget.targetStrokes);
+                      } else {
+                        _activePoints.clear();
+                        _activePoints.add(norm);
+                        _activeStrokeNotifier.value = List.of(_activePoints);
+                      }
                     }
-                  }
-                : null,
-            onPanUpdate: widget.interactive
-                ? (e) {
-                    if (isSvoMode) return;
-                    final norm = normalized(e.localPosition);
-                    if (widget.studio.tool == 'laser') {
-                      _addLaserPoint(norm);
-                      widget.studio.setLaserOffset(norm);
-                    } else if (widget.studio.tool == 'erase') {
-                      widget.studio.erase(norm, target: widget.targetStrokes);
-                    } else {
-                      _activePoints.add(norm);
-                      _activeStrokeNotifier.value = List.of(_activePoints);
+                  : null,
+              onPanUpdate: widget.interactive
+                  ? (e) {
+                      if (isSvoMode) return;
+                      final norm = normalized(e.localPosition);
+                      if (widget.studio.tool == 'laser') {
+                        _addLaserPoint(norm);
+                        widget.studio.setLaserOffset(norm);
+                      } else if (widget.studio.tool == 'erase') {
+                        widget.studio.erase(norm, target: widget.targetStrokes);
+                      } else {
+                        _activePoints.add(norm);
+                        _activeStrokeNotifier.value = List.of(_activePoints);
+                      }
                     }
-                  }
-                : null,
-            onPanEnd: widget.interactive
-                ? (_) {
-                    if (isSvoMode) return;
-                    if (widget.studio.tool == 'laser' ||
-                        widget.studio.tool == 'erase') {
-                      return;
+                  : null,
+              onPanEnd: widget.interactive
+                  ? (_) {
+                      if (isSvoMode) return;
+                      if (widget.studio.tool == 'laser' ||
+                          widget.studio.tool == 'erase') {
+                        return;
+                      }
+                      if (widget.deferTapToOverlay &&
+                          _activePoints.length <= 1 &&
+                          !_smartPointerMovedBeyondTapSlop) {
+                        // A tap is classified by PdfStage's overlay. Pan can
+                        // also win for a stationary tap, so do not persist that
+                        // recognizer's one-point dot. A deliberate drag beyond
+                        // tap slop continues through the normal stroke path.
+                        _activePoints.clear();
+                        _activeStrokeNotifier.value = null;
+                        _smartPointerMovedBeyondTapSlop = false;
+                        return;
+                      }
+                      if (_activePoints.isNotEmpty) {
+                        final isHighlighter = widget.studio.tool == 'highlight';
+                        final width = isHighlighter
+                            ? widget.studio.highlighterWidth
+                            : widget.studio.strokeWidth;
+                        final stroke = BoardStroke(
+                          widget.studio.ink,
+                          width,
+                          List.of(_activePoints),
+                        );
+                        stroke.getPath(size); // Precompute and cache path
+                        widget.studio.addStroke(
+                          stroke,
+                          target: widget.targetStrokes,
+                        );
+                        _activePoints.clear();
+                        _activeStrokeNotifier.value = null;
+                      }
+                      _smartPointerMovedBeyondTapSlop = false;
                     }
-                    if (_activePoints.isNotEmpty) {
-                      final isHighlighter = widget.studio.tool == 'highlight';
-                      final width = isHighlighter
-                          ? widget.studio.highlighterWidth
-                          : widget.studio.strokeWidth;
-                      final stroke = BoardStroke(
-                        widget.studio.ink,
-                        width,
-                        List.of(_activePoints),
-                      );
-                      stroke.getPath(size); // Precompute and cache path
-                      widget.studio.addStroke(
-                        stroke,
-                        target: widget.targetStrokes,
-                      );
-                      _activePoints.clear();
-                      _activeStrokeNotifier.value = null;
+                  : null,
+              onTapDown: widget.interactive && !widget.deferTapToOverlay
+                  ? (e) {
+                      // Smart mode waits for Flutter's tap recognizer to win so
+                      // a tap dot is never committed before answer classification.
+                      if (widget.deferTapToOverlay ||
+                          (widget.smartSnapEnabled &&
+                              widget.onSmartTap != null)) {
+                        return;
+                      }
+                      final norm = normalized(e.localPosition);
+                      if (isSvoMode) {
+                        widget.studio.analyzeHandwritingAt(norm);
+                        return;
+                      }
+                      if (widget.studio.tool == 'laser') {
+                        _addLaserPoint(norm);
+                        widget.studio.setLaserOffset(norm);
+                      } else if (widget.studio.tool == 'erase') {
+                        widget.studio.erase(norm, target: widget.targetStrokes);
+                      } else {
+                        final isHighlighter = widget.studio.tool == 'highlight';
+                        final width = isHighlighter
+                            ? widget.studio.highlighterWidth
+                            : widget.studio.strokeWidth;
+                        final stroke = BoardStroke(widget.studio.ink, width, [
+                          norm,
+                        ]);
+                        stroke.getPath(size);
+                        widget.studio.addStroke(
+                          stroke,
+                          target: widget.targetStrokes,
+                        );
+                      }
                     }
-                  }
-                : null,
-            onTapDown: widget.interactive
-                ? (e) {
-                    // Smart mode waits for Flutter's tap recognizer to win so
-                    // a tap dot is never committed before answer classification.
-                    if (widget.smartSnapEnabled && widget.onSmartTap != null) {
-                      return;
-                    }
-                    final norm = normalized(e.localPosition);
-                    if (isSvoMode) {
-                      widget.studio.analyzeHandwritingAt(norm);
-                      return;
-                    }
-                    if (widget.studio.tool == 'laser') {
-                      _addLaserPoint(norm);
-                      widget.studio.setLaserOffset(norm);
-                    } else if (widget.studio.tool == 'erase') {
-                      widget.studio.erase(norm, target: widget.targetStrokes);
-                    } else {
-                      final isHighlighter = widget.studio.tool == 'highlight';
-                      final width = isHighlighter
-                          ? widget.studio.highlighterWidth
-                          : widget.studio.strokeWidth;
-                      final stroke = BoardStroke(widget.studio.ink, width, [
-                        norm,
-                      ]);
-                      stroke.getPath(size);
-                      widget.studio.addStroke(
-                        stroke,
-                        target: widget.targetStrokes,
-                      );
-                    }
-                  }
-                : null,
-            onTapUp:
-                widget.interactive &&
-                    widget.smartSnapEnabled &&
-                    widget.onSmartTap != null
-                ? (e) => widget.onSmartTap!(normalized(e.localPosition))
-                : null,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Layer 1: Committed Strokes (RepaintBoundary - static cached paths)
-                RepaintBoundary(
-                  child: CustomPaint(
-                    size: size,
-                    painter: CommittedStrokesPainter(
-                      strokes: strokes,
-                      revision: widget.studio.revision,
-                    ),
-                  ),
-                ),
-                for (final stroke in strokes.where((s) => s.isSmartPenOval))
-                  TweenAnimationBuilder<double>(
-                    key: ValueKey(
-                      '${stroke.smartPenGroupId}:${stroke.smartPenLabel}',
-                    ),
-                    tween: Tween<double>(begin: 0, end: 1),
-                    duration: const Duration(milliseconds: 260),
-                    builder: (context, progress, _) => CustomPaint(
+                  : null,
+              onTapUp:
+                  widget.interactive &&
+                      widget.smartSnapEnabled &&
+                      widget.onSmartTap != null
+                  ? (e) => widget.onSmartTap!(normalized(e.localPosition))
+                  : null,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Layer 1: Committed Strokes (RepaintBoundary - static cached paths)
+                  RepaintBoundary(
+                    child: CustomPaint(
                       size: size,
-                      painter: SmartPenOvalPainter(
-                        stroke: stroke,
-                        progress: progress,
+                      painter: CommittedStrokesPainter(
+                        strokes: strokes,
+                        revision: widget.studio.revision,
                       ),
                     ),
                   ),
-                // Layer 2: Active Stroke (RepaintBoundary - isolated ValueNotifier)
-                RepaintBoundary(
-                  child: ValueListenableBuilder<List<Offset>?>(
-                    valueListenable: _activeStrokeNotifier,
-                    builder: (context, activePoints, _) {
-                      if (activePoints == null || activePoints.isEmpty) {
-                        return const SizedBox.expand();
-                      }
-                      final isHighlighter = widget.studio.tool == 'highlight';
-                      return CustomPaint(
+                  for (final stroke in strokes.where((s) => s.isSmartPenOval))
+                    TweenAnimationBuilder<double>(
+                      key: ValueKey(
+                        '${stroke.smartPenGroupId}:${stroke.smartPenLabel}',
+                      ),
+                      tween: Tween<double>(begin: 0, end: 1),
+                      duration: const Duration(milliseconds: 260),
+                      builder: (context, progress, _) => CustomPaint(
                         size: size,
-                        painter: ActiveStrokePainter(
-                          activePoints: activePoints,
-                          color: isHighlighter
-                              ? widget.studio.ink.withValues(alpha: 0.35)
-                              : widget.studio.ink,
-                          width: isHighlighter
-                              ? widget.studio.highlighterWidth
-                              : widget.studio.strokeWidth,
-                          isHighlight: isHighlighter,
+                        painter: SmartPenOvalPainter(
+                          stroke: stroke,
+                          progress: progress,
                         ),
-                      );
-                    },
-                  ),
-                ),
-                // Layer 3: Laser Trail Overlay (Auto-fade after 1.5s)
-                if (widget.studio.tool == 'laser')
+                      ),
+                    ),
+                  // Layer 2: Active Stroke (RepaintBoundary - isolated ValueNotifier)
                   RepaintBoundary(
-                    child: ValueListenableBuilder<List<LaserPoint>>(
-                      valueListenable: _laserTrailNotifier,
-                      builder: (context, laserPoints, _) {
+                    child: ValueListenableBuilder<List<Offset>?>(
+                      valueListenable: _activeStrokeNotifier,
+                      builder: (context, activePoints, _) {
+                        if (activePoints == null || activePoints.isEmpty) {
+                          return const SizedBox.expand();
+                        }
+                        final isHighlighter = widget.studio.tool == 'highlight';
                         return CustomPaint(
                           size: size,
-                          painter: LaserTrailPainter(
-                            laserPoints: laserPoints,
-                            laserOffset:
-                                widget.studio.laserOffset ?? _laserHoverOffset,
+                          painter: ActiveStrokePainter(
+                            activePoints: activePoints,
+                            color: isHighlighter
+                                ? widget.studio.ink.withValues(alpha: 0.35)
+                                : widget.studio.ink,
+                            width: isHighlighter
+                                ? widget.studio.highlighterWidth
+                                : widget.studio.strokeWidth,
+                            isHighlight: isHighlighter,
                           ),
                         );
                       },
                     ),
                   ),
-              ],
+                  // Layer 3: Laser Trail Overlay (Auto-fade after 1.5s)
+                  if (widget.studio.tool == 'laser')
+                    RepaintBoundary(
+                      child: ValueListenableBuilder<List<LaserPoint>>(
+                        valueListenable: _laserTrailNotifier,
+                        builder: (context, laserPoints, _) {
+                          return CustomPaint(
+                            size: size,
+                            painter: LaserTrailPainter(
+                              laserPoints: laserPoints,
+                              laserOffset:
+                                  widget.studio.laserOffset ??
+                                  _laserHoverOffset,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         );

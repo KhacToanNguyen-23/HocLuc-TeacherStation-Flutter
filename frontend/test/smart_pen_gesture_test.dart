@@ -1,14 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdfrx/pdfrx.dart' as pdfrx;
 import 'package:teaching_companion/models/studio_state.dart';
 import 'package:teaching_companion/services/smart_pen_answer_index.dart';
+import 'package:teaching_companion/widgets/pdf_stage.dart';
 import 'package:teaching_companion/widgets/stroke_canvas.dart';
 import 'package:teaching_companion/widgets/studio/studio_drawing_toolbar.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Smart Pen tap queue', () {
     test('takes matching page and generation taps in original order', () {
       final queue = SmartPenTapQueue(maxLength: 32);
@@ -180,6 +186,27 @@ void main() {
       expect(studio.tool, 'highlight');
     });
 
+    test('save toggle is independent from Smart Snap and drawing settings', () {
+      final studio = StudioState()
+        ..tool = 'highlight'
+        ..ink = const Color(0xff123456)
+        ..strokeWidth = 7.25;
+      addTearDown(studio.dispose);
+
+      expect(studio.saveAnswerCirclesEnabled, isTrue);
+      studio.setSaveAnswerCirclesEnabled(false);
+      expect(studio.saveAnswerCirclesEnabled, isFalse);
+      expect(studio.smartSnapEnabled, isFalse);
+      expect(studio.tool, 'highlight');
+      expect(studio.ink, const Color(0xff123456));
+      expect(studio.strokeWidth, 7.25);
+
+      studio.setSmartSnapEnabled(true);
+      expect(studio.saveAnswerCirclesEnabled, isFalse);
+      studio.setSaveAnswerCirclesEnabled(true);
+      expect(studio.smartSnapEnabled, isTrue);
+    });
+
     for (final isVertical in [false, true]) {
       testWidgets(
         'shows and toggles Smart Snap in ${isVertical ? 'vertical' : 'horizontal'} toolbar',
@@ -206,6 +233,14 @@ void main() {
           await tester.pump();
 
           expect(studio.smartSnapEnabled, isTrue);
+
+          final saveToggle = find.byTooltip('Lưu khoanh đáp án');
+          expect(saveToggle, findsOneWidget);
+          expect(studio.saveAnswerCirclesEnabled, isTrue);
+          await tester.tap(saveToggle);
+          await tester.pump();
+          expect(studio.saveAnswerCirclesEnabled, isFalse);
+          expect(studio.smartSnapEnabled, isTrue);
         },
       );
     }
@@ -229,6 +264,7 @@ void main() {
                 studio: studio,
                 smartSnapEnabled: true,
                 onSmartTap: routedTaps.add,
+                deferTapToOverlay: true,
               ),
             ),
           ),
@@ -265,6 +301,7 @@ void main() {
                 studio: studio,
                 smartSnapEnabled: true,
                 onSmartTap: routedTaps.add,
+                deferTapToOverlay: true,
               ),
             ),
           ),
@@ -284,40 +321,41 @@ void main() {
       expect(studio.strokes.single.points, hasLength(1));
     });
 
-    testWidgets('does not impose a tap duration limit beyond Flutter defaults', (
-      tester,
-    ) async {
-      final studio = StudioState()..setSmartSnapEnabled(true);
-      addTearDown(studio.dispose);
-      final routedTaps = <Offset>[];
+    testWidgets(
+      'does not impose a tap duration limit beyond Flutter defaults',
+      (tester) async {
+        final studio = StudioState()..setSmartSnapEnabled(true);
+        addTearDown(studio.dispose);
+        final routedTaps = <Offset>[];
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 200,
-              height: 100,
-              child: StrokeCanvas(
-                studio: studio,
-                smartSnapEnabled: true,
-                onSmartTap: routedTaps.add,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 200,
+                height: 100,
+                child: StrokeCanvas(
+                  studio: studio,
+                  smartSnapEnabled: true,
+                  onSmartTap: routedTaps.add,
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final heldPointer = await tester.startGesture(
-        const Offset(40, 20),
-        kind: PointerDeviceKind.touch,
-      );
-      await tester.pump(const Duration(milliseconds: 600));
-      await heldPointer.up();
-      await tester.pump();
+        final heldPointer = await tester.startGesture(
+          const Offset(40, 20),
+          kind: PointerDeviceKind.touch,
+        );
+        await tester.pump(const Duration(milliseconds: 600));
+        await heldPointer.up();
+        await tester.pump();
 
-      expect(routedTaps, [const Offset(0.2, 0.2)]);
-      expect(studio.strokes, isEmpty);
-    });
+        expect(routedTaps, [const Offset(0.2, 0.2)]);
+        expect(studio.strokes, isEmpty);
+      },
+    );
 
     testWidgets('routes a smart tap without committing the normal tap dot', (
       tester,
@@ -336,6 +374,7 @@ void main() {
                 studio: studio,
                 smartSnapEnabled: true,
                 onSmartTap: routedTaps.add,
+                deferTapToOverlay: true,
               ),
             ),
           ),
@@ -365,6 +404,7 @@ void main() {
                 studio: studio,
                 smartSnapEnabled: true,
                 onSmartTap: routedTaps.add,
+                deferTapToOverlay: true,
               ),
             ),
           ),
@@ -408,6 +448,91 @@ void main() {
       expect(studio.strokes.single.points, [const Offset(0.2, 0.2)]);
     });
   });
+
+  testWidgets('PdfStage routes an answer tap into a Smart Pen oval', (
+    tester,
+  ) async {
+    await tester.runAsync(pdfrx.pdfrxInitialize);
+    tester.view.physicalSize = const Size(600, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final studio = StudioState()
+      ..setPdfFile('smart-pen-e2e.pdf', _answerFixturePdf())
+      ..setSmartSnapEnabled(true);
+    addTearDown(studio.dispose);
+    final routedAnswers = <SmartPenAnswerCandidate>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox.expand(
+            child: PdfStage(
+              studio: studio,
+              onSmartAnswerTap: routedAnswers.add,
+            ),
+          ),
+        ),
+      ),
+    );
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      if (find.byType(StrokeCanvas).evaluate().isNotEmpty) break;
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+    }
+    expect(find.byType(StrokeCanvas), findsOneWidget);
+
+    final canvasRect = tester.getRect(find.byType(StrokeCanvas).first);
+    await tester.tapAt(canvasRect.topLeft + const Offset(45, 55));
+    await tester.pump();
+    for (var i = 0; i < 30 && routedAnswers.isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+    }
+    expect(routedAnswers, hasLength(1));
+    expect(
+      studio.pdfAnnotations[1]?.where((s) => s.isSmartPenOval),
+      hasLength(1),
+    );
+    expect(studio.pdfAnnotations[1], hasLength(1));
+    expect(
+      studio.pdfAnnotations[1]!.every((stroke) => stroke.isSmartPenOval),
+      isTrue,
+    );
+    if (const bool.fromEnvironment('SMART_PEN_DEBUG')) {
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint &&
+              widget.painter?.runtimeType.toString().contains(
+                    'SmartPenDebugBoundsPainter',
+                  ) ==
+                  true,
+        ),
+        findsOneWidget,
+        reason: 'Debug mode should mount the PDF extraction overlay painter',
+      );
+    } else {
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint &&
+              widget.painter?.runtimeType.toString().contains(
+                    'SmartPenDebugBoundsPainter',
+                  ) ==
+                  true,
+        ),
+        findsNothing,
+        reason:
+            'Normal mode should not mount the PDF extraction overlay painter',
+      );
+    }
+  });
 }
 
 SmartPenPendingTap _tap(int page, int generation, Offset point) =>
@@ -416,3 +541,36 @@ SmartPenPendingTap _tap(int page, int generation, Offset point) =>
       documentGeneration: generation,
       pagePoint: point,
     );
+
+Uint8List _answerFixturePdf() {
+  const stream =
+      'BT /F1 12 Tf 18 TL 40 740 Td '
+      '(A. First option) Tj T* '
+      '(B. Second option) Tj T* '
+      '(C. Third option) Tj T* '
+      '(D. Fourth option) Tj ET';
+  final objects = <String>[
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [4 0 R] /Count 1 >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] '
+        '/Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>',
+    '<< /Length ${stream.length} >>\nstream\n$stream\nendstream',
+  ];
+  final pdf = StringBuffer('%PDF-1.4\n');
+  final offsets = <int>[0];
+  for (var i = 0; i < objects.length; i++) {
+    offsets.add(pdf.length);
+    pdf.write('${i + 1} 0 obj\n${objects[i]}\nendobj\n');
+  }
+  final xref = pdf.length;
+  pdf.write('xref\n0 ${offsets.length}\n0000000000 65535 f \n');
+  for (final offset in offsets.skip(1)) {
+    pdf.write('${offset.toString().padLeft(10, '0')} 00000 n \n');
+  }
+  pdf.write(
+    'trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\n'
+    'startxref\n$xref\n%%EOF',
+  );
+  return Uint8List.fromList(ascii.encode(pdf.toString()));
+}

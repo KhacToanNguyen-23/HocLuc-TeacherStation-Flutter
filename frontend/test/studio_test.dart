@@ -97,6 +97,48 @@ void main() {
     state.dispose();
   });
 
+  test(
+    'temporary Smart Pen edits during save do not dirty lesson data',
+    () async {
+      final gate = Completer<void>();
+      final started = Completer<void>();
+      final service = LocalService(
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('bootstrap')) {
+            return http.Response('{"token":"test"}', 200);
+          }
+          if (request.url.path.endsWith('lesson')) {
+            started.complete();
+            await gate.future;
+          }
+          return http.Response('{}', 200);
+        }),
+      );
+      await service.connect();
+      final state = StudioState(service: service);
+      final saving = state.save();
+      await started.future;
+
+      state.setSaveAnswerCirclesEnabled(false);
+      state.toggleSmartPenAnswer(
+        SmartPenAnswerSelection(
+          pageNumber: 1,
+          label: 'B',
+          bounds: const Rect.fromLTWH(.1, .1, .05, .05),
+          groupId: 'q-save-race',
+        ),
+        const Size(100, 100),
+      );
+      gate.complete();
+
+      expect(await saving, isTrue);
+      expect(state.dirty, isFalse);
+      expect(state.pdfAnnotations, isEmpty);
+      expect(state.pdfAnnotationsForPage(1), hasLength(1));
+      state.dispose();
+    },
+  );
+
   for (final size in [
     const Size(1440, 900),
     const Size(1024, 768),

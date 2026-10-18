@@ -142,12 +142,352 @@ void main() {
       expect(restored.pdfAnnotations[3]!.first.smartPenGroupId, 'q-save');
       expect(restored.pdfAnnotations[3]!.last.points, freehand.points);
     });
+
+    test('legacy lesson restore defaults answer-circle saving to enabled', () {
+      final restored = StudioState()..setSaveAnswerCirclesEnabled(false);
+      addTearDown(restored.dispose);
+      final legacyOval = SmartPenOvalAnnotation.fromSelection(
+        selection: _selection(page: 1, label: 'B', group: 'legacy-q'),
+        pageSize: _pageSize,
+        color: Colors.red,
+        width: 3,
+      ).toBoardStroke();
+
+      restored.restoreFromJson({
+        'pdfAnnotations': {
+          '1': [legacyOval.toJson()],
+        },
+      });
+
+      expect(restored.saveAnswerCirclesEnabled, isTrue);
+      expect(_ovals(restored, 1).single.toJson(), legacyOval.toJson());
+    });
   });
 
   group('Smart Pen PDF answer selection history', () {
+    test(
+      'save-answer setting defaults on and is independent from Smart Snap',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+
+        expect(studio.saveAnswerCirclesEnabled, isTrue);
+        expect(studio.smartSnapEnabled, isFalse);
+
+        studio.setSmartSnapEnabled(true);
+        studio.setSaveAnswerCirclesEnabled(false);
+        expect(studio.smartSnapEnabled, isTrue);
+        expect(studio.saveAnswerCirclesEnabled, isFalse);
+
+        studio.setSmartSnapEnabled(false);
+        studio.setSaveAnswerCirclesEnabled(true);
+        expect(studio.smartSnapEnabled, isFalse);
+        expect(studio.saveAnswerCirclesEnabled, isTrue);
+      },
+    );
+
+    test('changing save setting alone leaves saved circles unchanged', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      final saved = SmartPenOvalAnnotation.fromSelection(
+        selection: _selection(page: 1, label: 'A', group: 'q-toggle-only'),
+        pageSize: _pageSize,
+        color: Colors.red,
+        width: 3,
+      ).toBoardStroke();
+      studio.pdfAnnotations[1] = [saved];
+      final before = studio.exportLessonJson();
+
+      studio.setSaveAnswerCirclesEnabled(false);
+      studio.setSaveAnswerCirclesEnabled(true);
+
+      expect(studio.pdfAnnotations[1]!.single.toJson(), saved.toJson());
+      expect(studio.exportLessonJson(), before);
+      expect(studio.dirty, isFalse);
+    });
+
+    test('save-on selection persists and marks a clean lesson dirty', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'A', group: 'q-save-on'),
+        _pageSize,
+      );
+
+      expect(_ovals(studio, 1), hasLength(1));
+      expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+      expect(studio.dirty, isTrue);
+    });
+
+    test(
+      'save-off selection is session-only, undoable, and keeps clean state clean',
+      () {
+        final studio = StudioState()..setSaveAnswerCirclesEnabled(false);
+        addTearDown(studio.dispose);
+        final selection = _selection(page: 1, label: 'B', group: 'q-save-off');
+
+        studio.toggleSmartPenAnswer(selection, _pageSize);
+
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+        expect(studio.dirty, isFalse);
+        expect(studio.canUndo, isTrue);
+        final savedJson = studio.exportLessonJson();
+
+        studio.undo();
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+        expect(studio.dirty, isFalse);
+        studio.redo();
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+        expect(studio.exportLessonJson(), savedJson);
+        expect(studio.dirty, isFalse);
+      },
+    );
+
+    test('save-off edits preserve an already dirty lesson', () {
+      final studio = StudioState()..setSaveAnswerCirclesEnabled(false);
+      addTearDown(studio.dispose);
+      studio.dirty = true;
+
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'C', group: 'q-already-dirty'),
+        _pageSize,
+      );
+
+      expect(studio.dirty, isTrue);
+      studio.undo();
+      expect(studio.dirty, isTrue);
+      studio.redo();
+      expect(studio.dirty, isTrue);
+    });
+
+    test('save-off then save-on keeps prior temporary circles temporary', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      studio.setSaveAnswerCirclesEnabled(false);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'A', group: 'q-before-toggle'),
+        _pageSize,
+      );
+
+      studio.setSaveAnswerCirclesEnabled(true);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'B', group: 'q-after-toggle'),
+        _pageSize,
+      );
+
+      expect(_ovals(studio, 1).map((stroke) => stroke.smartPenLabel), ['B']);
+      expect(
+        _ovalsIn(
+          studio.pdfAnnotationsForPage(1),
+        ).map((stroke) => stroke.smartPenLabel).toSet(),
+        {'A', 'B'},
+      );
+      expect(studio.dirty, isTrue);
+    });
+
+    test(
+      'save-on tap toggles off the same answer created while saving was off',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        final selection = _selection(
+          page: 1,
+          label: 'A',
+          group: 'q-mode-switch-same',
+        );
+        studio.setSaveAnswerCirclesEnabled(false);
+        studio.toggleSmartPenAnswer(selection, _pageSize);
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+        expect(_ovals(studio, 1), isEmpty);
+
+        studio.setSaveAnswerCirclesEnabled(true);
+        studio.toggleSmartPenAnswer(selection, _pageSize);
+
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+        expect(_ovals(studio, 1), isEmpty);
+        expect(studio.pdfAnnotations, isEmpty);
+        expect(studio.dirty, isFalse);
+        studio.undo();
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+        expect(_ovals(studio, 1), isEmpty);
+        studio.redo();
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+      },
+    );
+
+    test(
+      'save-on replacement of a temporary answer persists only the new label',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        final answerA = _selection(
+          page: 1,
+          label: 'A',
+          group: 'q-mode-switch-replace',
+        );
+        final answerB = _selection(
+          page: 1,
+          label: 'B',
+          group: 'q-mode-switch-replace',
+        );
+        studio.setSaveAnswerCirclesEnabled(false);
+        studio.toggleSmartPenAnswer(answerA, _pageSize);
+        studio.setSaveAnswerCirclesEnabled(true);
+
+        studio.toggleSmartPenAnswer(answerB, _pageSize);
+
+        expect(_ovals(studio, 1).map((stroke) => stroke.smartPenLabel), ['B']);
+        expect(
+          _ovalsIn(
+            studio.pdfAnnotationsForPage(1),
+          ).map((stroke) => stroke.smartPenLabel),
+          ['B'],
+        );
+        expect(
+          studio.pdfAnnotations[1]?.map((stroke) => stroke.smartPenLabel),
+          ['B'],
+        );
+        studio.undo();
+        expect(_ovals(studio, 1), isEmpty);
+        expect(
+          _ovalsIn(
+            studio.pdfAnnotationsForPage(1),
+          ).map((stroke) => stroke.smartPenLabel),
+          ['A'],
+        );
+        studio.redo();
+        expect(_ovals(studio, 1).map((stroke) => stroke.smartPenLabel), ['B']);
+        expect(_ovals(studio, 1), hasLength(1));
+      },
+    );
+
+    test('save-on can reselect a saved label hidden by a temporary answer', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      const groupId = 'q-mode-switch-reselect-saved';
+      studio.pdfAnnotations[1] = [
+        SmartPenOvalAnnotation.fromSelection(
+          selection: _selection(page: 1, label: 'A', group: groupId),
+          pageSize: _pageSize,
+          color: Colors.red,
+          width: 3,
+        ).toBoardStroke(),
+      ];
+
+      studio.setSaveAnswerCirclesEnabled(false);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'D', group: groupId),
+        _pageSize,
+      );
+      expect(
+        _ovalsIn(
+          studio.pdfAnnotationsForPage(1),
+        ).map((stroke) => stroke.smartPenLabel),
+        ['D'],
+      );
+
+      studio.setSaveAnswerCirclesEnabled(true);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'A', group: groupId),
+        _pageSize,
+      );
+
+      expect(
+        _ovalsIn(
+          studio.pdfAnnotationsForPage(1),
+        ).map((stroke) => stroke.smartPenLabel),
+        ['A'],
+      );
+      expect(_ovals(studio, 1).map((stroke) => stroke.smartPenLabel), ['A']);
+      studio.undo();
+      expect(
+        _ovalsIn(
+          studio.pdfAnnotationsForPage(1),
+        ).map((stroke) => stroke.smartPenLabel),
+        ['D'],
+      );
+      expect(_ovals(studio, 1).map((stroke) => stroke.smartPenLabel), ['A']);
+    });
+
+    test(
+      'undo and redo atomically restore saved and temporary group state',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        final a = _selection(page: 1, label: 'A', group: 'q-cross-lane');
+        final b = _selection(page: 1, label: 'B', group: 'q-cross-lane');
+        final c = _selection(page: 1, label: 'C', group: 'q-cross-lane');
+
+        studio.toggleSmartPenAnswer(a, _pageSize);
+        studio.setSaveAnswerCirclesEnabled(false);
+        studio.toggleSmartPenAnswer(b, _pageSize);
+        studio.setSaveAnswerCirclesEnabled(true);
+        studio.toggleSmartPenAnswer(c, _pageSize);
+
+        expect(_ovals(studio, 1).map((stroke) => stroke.smartPenLabel), ['C']);
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).map((s) => s.smartPenLabel),
+          ['C'],
+        );
+
+        studio.undo();
+        expect(_ovals(studio, 1).map((stroke) => stroke.smartPenLabel), ['A']);
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).map((s) => s.smartPenLabel),
+          ['B'],
+        );
+
+        studio.redo();
+        expect(_ovals(studio, 1).map((stroke) => stroke.smartPenLabel), ['C']);
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).map((s) => s.smartPenLabel),
+          ['C'],
+        );
+      },
+    );
+
+    test(
+      'save-off tap suppresses and restores saved answer without persistence changes',
+      () {
+        final studio = StudioState()..setSaveAnswerCirclesEnabled(false);
+        addTearDown(studio.dispose);
+        final saved = SmartPenOvalAnnotation.fromSelection(
+          selection: _selection(
+            page: 1,
+            label: 'A',
+            group: 'q-suppress-toggle',
+          ),
+          pageSize: _pageSize,
+          color: Colors.red,
+          width: 3,
+        ).toBoardStroke();
+        studio.pdfAnnotations[1] = [saved];
+        final savedJson = studio.exportLessonJson();
+        final selection = _selection(
+          page: 1,
+          label: 'A',
+          group: 'q-suppress-toggle',
+        );
+
+        studio.toggleSmartPenAnswer(selection, _pageSize);
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+        expect(studio.pdfAnnotations[1]!.single.toJson(), saved.toJson());
+        studio.undo();
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+        studio.redo();
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+        studio.toggleSmartPenAnswer(selection, _pageSize);
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+        expect(studio.exportLessonJson(), savedJson);
+        expect(studio.pdfAnnotations[1]!.single.toJson(), saved.toJson());
+      },
+    );
+
     test('adds an oval and undo/redo each apply as a single action', () {
       final studio = StudioState()
-        ..ink = const Color(0xffed6a5a)
+        ..ink = Colors.blue
         ..strokeWidth = 3.5;
       addTearDown(studio.dispose);
       final selection = _selection(page: 1, label: 'C', group: 'q-7');
@@ -155,6 +495,7 @@ void main() {
       studio.toggleSmartPenAnswer(selection, _pageSize);
       expect(_ovals(studio, 1), hasLength(1));
       expect(_ovals(studio, 1).single.smartPenLabel, 'C');
+      expect(_ovals(studio, 1).single.color, Colors.red);
 
       studio.undo();
       expect(_ovals(studio, 1), isEmpty);
@@ -198,6 +539,219 @@ void main() {
         studio.redo();
         expect(_ovals(studio, 2), hasLength(1));
         expect(_ovals(studio, 2).single.smartPenLabel, 'B');
+      },
+    );
+
+    test(
+      'replaces and toggles an answer across pages as single undoable actions',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        final pageOneA = _selection(page: 1, label: 'A', group: 'q-linked');
+        final pageOneD = _selection(page: 1, label: 'D', group: 'q-linked');
+        final pageTwoD = _selection(page: 2, label: 'D', group: 'q-linked');
+
+        studio.toggleSmartPenAnswer(pageOneA, _pageSize, affectedPages: [1, 2]);
+        studio.toggleSmartPenAnswer(pageTwoD, _pageSize, affectedPages: [1, 2]);
+
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovals(studio, 2).map((stroke) => stroke.smartPenLabel), ['D']);
+
+        studio.undo();
+        expect(_ovals(studio, 1).map((stroke) => stroke.smartPenLabel), ['A']);
+        expect(_ovals(studio, 2), isEmpty);
+
+        studio.redo();
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovals(studio, 2).map((stroke) => stroke.smartPenLabel), ['D']);
+
+        studio.toggleSmartPenAnswer(pageOneD, _pageSize, affectedPages: [1, 2]);
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovals(studio, 2), isEmpty);
+        studio.undo();
+        expect(_ovals(studio, 2).map((stroke) => stroke.smartPenLabel), ['D']);
+        studio.redo();
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovals(studio, 2), isEmpty);
+      },
+    );
+
+    test(
+      'cross-page replacement restores temporary answer lanes atomically',
+      () {
+        final studio = StudioState()..setSaveAnswerCirclesEnabled(false);
+        addTearDown(studio.dispose);
+        final pageOneA = _selection(
+          page: 1,
+          label: 'A',
+          group: 'q-temp-linked',
+        );
+        final pageTwoD = _selection(
+          page: 2,
+          label: 'D',
+          group: 'q-temp-linked',
+        );
+
+        studio.toggleSmartPenAnswer(pageOneA, _pageSize, affectedPages: [1, 2]);
+        studio.toggleSmartPenAnswer(pageTwoD, _pageSize, affectedPages: [1, 2]);
+
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovals(studio, 2), isEmpty);
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+        expect(
+          _ovalsIn(
+            studio.pdfAnnotationsForPage(2),
+          ).map((stroke) => stroke.smartPenLabel),
+          ['D'],
+        );
+
+        studio.undo();
+        expect(
+          _ovalsIn(
+            studio.pdfAnnotationsForPage(1),
+          ).map((stroke) => stroke.smartPenLabel),
+          ['A'],
+        );
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(2)), isEmpty);
+
+        studio.redo();
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+        expect(
+          _ovalsIn(
+            studio.pdfAnnotationsForPage(2),
+          ).map((stroke) => stroke.smartPenLabel),
+          ['D'],
+        );
+      },
+    );
+
+    test(
+      'migrates a pre-index answer to the canonical group without duplicating it',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        const provisionalId = 'partial-g7-p1-0';
+        const canonicalId = 'answer-g7-p1-1-p2-2';
+        final original = _selection(page: 1, label: 'A', group: provisionalId);
+        studio.toggleSmartPenAnswer(original, _pageSize);
+
+        studio.migrateSmartPenAnswerGroup(
+          provisionalId,
+          canonicalId,
+          affectedPages: [1, 2],
+        );
+        final migrated = _ovals(studio, 1).single;
+        expect(migrated.smartPenGroupId, canonicalId);
+        expect(studio.smartPenAnswerSelection?.groupId, canonicalId);
+        expect(_ovals(studio, 2), isEmpty);
+
+        studio.toggleSmartPenAnswer(
+          _selection(page: 2, label: 'D', group: canonicalId),
+          _pageSize,
+          affectedPages: [1, 2],
+        );
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovals(studio, 2).map((stroke) => stroke.smartPenLabel), ['D']);
+
+        studio.undo();
+        expect(_ovals(studio, 1), hasLength(1));
+        expect(_ovals(studio, 1).single.smartPenLabel, 'A');
+        expect(_ovals(studio, 2), isEmpty);
+        studio.redo();
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovals(studio, 2).map((stroke) => stroke.smartPenLabel), ['D']);
+      },
+    );
+
+    test(
+      'keeps the latest pre-index answer when separate page groups link',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        const firstProvisional = 'partial-g7-p1-0';
+        const secondProvisional = 'partial-g7-p2-0';
+        const canonicalId = 'answer-g7-p1-1-p2-2';
+        studio.toggleSmartPenAnswer(
+          _selection(page: 1, label: 'A', group: firstProvisional),
+          _pageSize,
+        );
+        studio.toggleSmartPenAnswer(
+          _selection(page: 2, label: 'D', group: secondProvisional),
+          _pageSize,
+        );
+
+        studio.migrateSmartPenAnswerGroup(
+          firstProvisional,
+          canonicalId,
+          affectedPages: [1, 2],
+        );
+        studio.migrateSmartPenAnswerGroup(
+          secondProvisional,
+          canonicalId,
+          affectedPages: [1, 2],
+        );
+
+        final visible = [
+          ...studio.pdfAnnotationsForPage(1),
+          ...studio.pdfAnnotationsForPage(2),
+        ].where((stroke) => stroke.isSmartPenOval).toList();
+        expect(visible, hasLength(1));
+        expect(visible.single.smartPenGroupId, canonicalId);
+        expect(visible.single.smartPenLabel, 'D');
+        expect(studio.smartPenAnswerSelection?.groupId, canonicalId);
+        expect(studio.smartPenAnswerSelection?.label, 'D');
+      },
+    );
+
+    test(
+      'latest saved pre-index answer replaces an earlier temporary circle',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        const firstProvisional = 'partial-g8-p1-0';
+        const secondProvisional = 'partial-g8-p2-0';
+        const canonicalId = 'answer-g8-p1-1-p2-2';
+        studio.toggleTemporarySmartPenAnswer(
+          _selection(page: 1, label: 'A', group: firstProvisional),
+          _pageSize,
+        );
+        studio.toggleSmartPenAnswer(
+          _selection(page: 2, label: 'D', group: secondProvisional),
+          _pageSize,
+        );
+
+        studio.migrateSmartPenAnswerGroup(
+          firstProvisional,
+          canonicalId,
+          affectedPages: [1, 2],
+        );
+        studio.migrateSmartPenAnswerGroup(
+          secondProvisional,
+          canonicalId,
+          affectedPages: [1, 2],
+        );
+
+        final visible = [
+          ...studio.pdfAnnotationsForPage(1),
+          ...studio.pdfAnnotationsForPage(2),
+        ].where((stroke) => stroke.isSmartPenOval).toList();
+        expect(visible, hasLength(1));
+        expect(visible.single.smartPenGroupId, canonicalId);
+        expect(visible.single.smartPenLabel, 'D');
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovals(studio, 2).map((stroke) => stroke.smartPenLabel), ['D']);
+
+        studio.undo();
+        expect(
+          _ovalsIn(
+            studio.pdfAnnotationsForPage(1),
+          ).map((stroke) => stroke.smartPenLabel),
+          ['A'],
+        );
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(2)), isEmpty);
+        studio.redo();
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+        expect(_ovals(studio, 2).map((stroke) => stroke.smartPenLabel), ['D']);
       },
     );
 
@@ -290,26 +844,30 @@ void main() {
       expect(studio.canRedo, isFalse);
     });
 
-    test('new PDF ink invalidates answer redo from any page in the document', () {
-      final studio = StudioState();
-      addTearDown(studio.dispose);
-      studio.toggleSmartPenAnswer(
-        _selection(page: 1, label: 'A', group: 'q-redo-branch'),
-        _pageSize,
-      );
-      studio.undo();
-      expect(studio.canRedo, isTrue);
+    test(
+      'new PDF ink invalidates answer redo from any page in the document',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        studio.setSaveAnswerCirclesEnabled(false);
+        studio.toggleSmartPenAnswer(
+          _selection(page: 1, label: 'A', group: 'q-redo-branch'),
+          _pageSize,
+        );
+        studio.undo();
+        expect(studio.canRedo, isTrue);
 
-      studio.setPdfPage(2);
-      studio.addStroke(
-        BoardStroke(const Color(0xff123456), 2, const [Offset(0.1, 0.2)]),
-        target: studio.pdfAnnotations.putIfAbsent(2, () => <BoardStroke>[]),
-      );
-      studio.redo();
+        studio.setPdfPage(2);
+        studio.addStroke(
+          BoardStroke(const Color(0xff123456), 2, const [Offset(0.1, 0.2)]),
+          target: studio.pdfAnnotations.putIfAbsent(2, () => <BoardStroke>[]),
+        );
+        studio.redo();
 
-      expect(_ovals(studio, 1), isEmpty);
-      expect(studio.canRedo, isFalse);
-    });
+        expect(_ovals(studio, 1), isEmpty);
+        expect(studio.canRedo, isFalse);
+      },
+    );
 
     test('new PDF ink invalidates the current board redo branch', () {
       final studio = StudioState();
@@ -330,25 +888,488 @@ void main() {
       expect(studio.canRedo, isFalse);
     });
 
-    test('replacing the PDF invalidates undo and redo from its previous bytes', () {
+    test(
+      'replacing the PDF invalidates undo and redo from its previous bytes',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        studio.setPdfFile('quiz.pdf', Uint8List.fromList([1, 2, 3]));
+        studio.toggleSmartPenAnswer(
+          _selection(page: 1, label: 'C', group: 'q-old-pdf'),
+          _pageSize,
+        );
+        studio.undo();
+        expect(studio.canRedo, isTrue);
+
+        // Reuse the same path/name to exercise ImportedDocument ID reuse.
+        studio.setPdfFile('quiz.pdf', Uint8List.fromList([4, 5, 6]));
+        studio.undo();
+        studio.redo();
+
+        expect(_ovals(studio, 1), isEmpty);
+        expect(studio.canUndo, isFalse);
+        expect(studio.canRedo, isFalse);
+      },
+    );
+  });
+
+  group('Smart Pen session-only answer annotations', () {
+    test('saved circles survive closing and reopening the same PDF', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      final sourceBytes = Uint8List.fromList([1, 2, 3]);
+      studio.setPdfFile(r'C:\old\quiz.pdf', sourceBytes);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'A', group: 'q-close-reopen'),
+        _pageSize,
+      );
+
+      studio.setPdfFile(null, null);
+      expect(studio.pdfAnnotations, isEmpty);
+      studio.setPdfFile('quiz.pdf', Uint8List.fromList([1, 2, 3]));
+
+      expect(
+        _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+        'A',
+      );
+    });
+
+    test('reimporting the active PDF keeps unsnapshotted saved circles', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      final sourceBytes = Uint8List.fromList([1, 2, 3]);
+      studio.setPdfFile('quiz.pdf', sourceBytes);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'B', group: 'q-active-reimport'),
+        _pageSize,
+      );
+
+      studio.addImportedDoc(
+        'quiz.pdf',
+        r'D:\new\quiz.pdf',
+        Uint8List.fromList([1, 2, 3]),
+      );
+
+      expect(
+        _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+        'B',
+      );
+    });
+
+    test('replacing active PDF content clears temporary circles and history', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      studio.setPdfFile('quiz.pdf', Uint8List.fromList([1, 2, 3]));
+      studio.setSaveAnswerCirclesEnabled(false);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'C', group: 'q-active-replacement'),
+        _pageSize,
+      );
+      expect(studio.canUndo, isTrue);
+
+      studio.addImportedDoc(
+        'quiz.pdf',
+        'quiz.pdf',
+        Uint8List.fromList([4, 5, 6]),
+      );
+
+      expect(studio.pdfAnnotationsForPage(1), isEmpty);
+      expect(studio.canUndo, isFalse);
+    });
+
+    test('saved circles survive close after an in-place PDF export', () {
       final studio = StudioState();
       addTearDown(studio.dispose);
       studio.setPdfFile('quiz.pdf', Uint8List.fromList([1, 2, 3]));
       studio.toggleSmartPenAnswer(
-        _selection(page: 1, label: 'C', group: 'q-old-pdf'),
+        _selection(page: 1, label: 'C', group: 'q-in-place-export'),
         _pageSize,
       );
-      studio.undo();
-      expect(studio.canRedo, isTrue);
+      final exportedBytes = Uint8List.fromList([4, 5, 6]);
+      studio.updatePdfBytesInPlace(exportedBytes);
 
-      // Reuse the same path/name to exercise ImportedDocument ID reuse.
+      studio.setPdfFile(null, null);
       studio.setPdfFile('quiz.pdf', Uint8List.fromList([4, 5, 6]));
-      studio.undo();
-      studio.redo();
 
-      expect(_ovals(studio, 1), isEmpty);
+      expect(
+        _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+        'C',
+      );
+    });
+
+    test(
+      'lesson save while PDF is closed restores saved circles on reimport',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        final sourceBytes = Uint8List.fromList([1, 2, 3]);
+        studio.setPdfFile('quiz.pdf', sourceBytes);
+        studio.toggleSmartPenAnswer(
+          _selection(page: 1, label: 'D', group: 'q-closed-lesson-save'),
+          _pageSize,
+        );
+        studio.setPdfFile(null, null);
+
+        final savedLesson = studio.exportLessonJson();
+        final restored = StudioState()..restoreFromJson(savedLesson);
+        addTearDown(restored.dispose);
+        expect(restored.pdfAnnotations, isEmpty);
+        restored.setPdfFile('stale.pdf', Uint8List.fromList([9, 9, 9]));
+        restored.restoreFromJson(savedLesson);
+        expect(restored.pdfFilePath, isNull);
+        expect(restored.pdfBytes, isNull);
+
+        restored.addImportedDoc(
+          'quiz.pdf',
+          r'D:\new\quiz.pdf',
+          Uint8List.fromList([1, 2, 3]),
+        );
+
+        expect(
+          _ovalsIn(restored.pdfAnnotationsForPage(1)).single.smartPenLabel,
+          'D',
+        );
+
+        final replacement = StudioState()..restoreFromJson(savedLesson);
+        addTearDown(replacement.dispose);
+        replacement.addImportedDoc(
+          'quiz.pdf',
+          r'D:\different\quiz.pdf',
+          Uint8List.fromList([9, 8, 7]),
+        );
+        expect(replacement.pdfAnnotationsForPage(1), isEmpty);
+      },
+    );
+
+    test('closing PDF discards temporary circle but keeps saved answer', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      final sourceBytes = Uint8List.fromList([1, 2, 3]);
+      studio.setPdfFile('quiz.pdf', sourceBytes);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'A', group: 'q-save-mode-close'),
+        _pageSize,
+      );
+      studio.setSaveAnswerCirclesEnabled(false);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'B', group: 'q-save-mode-close'),
+        _pageSize,
+      );
+      expect(
+        _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+        'B',
+      );
+
+      studio.setPdfFile(null, null);
+      studio.setPdfFile('quiz.pdf', Uint8List.fromList([1, 2, 3]));
+
+      expect(
+        _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+        'A',
+      );
+    });
+
+    test(
+      'temporary circles are visible but excluded from persisted annotations',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        final selection = _selection(page: 1, label: 'C', group: 'q-temporary');
+
+        studio.toggleTemporarySmartPenAnswer(selection, _pageSize);
+
+        expect(_ovals(studio, 1), isEmpty);
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+          'C',
+        );
+      },
+    );
+
+    test(
+      'temporary-only circles do not enter saved lesson JSON or restore',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        studio.setSaveAnswerCirclesEnabled(false);
+        studio.toggleSmartPenAnswer(
+          _selection(page: 1, label: 'C', group: 'q-json-temporary'),
+          _pageSize,
+        );
+
+        final lesson = studio.exportLessonJson();
+        expect(lesson['pdfAnnotations'], isEmpty);
+
+        final restored = StudioState()..restoreFromJson(lesson);
+        addTearDown(restored.dispose);
+        expect(restored.pdfAnnotations, isEmpty);
+        expect(restored.pdfAnnotationsForPage(1), isEmpty);
+      },
+    );
+
+    test('restoring a lesson without a PDF clears prior session overrides', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      studio.toggleTemporarySmartPenAnswer(
+        _selection(page: 1, label: 'C', group: 'q-prior-session'),
+        _pageSize,
+      );
+
+      studio.restoreFromJson({'title': 'Another lesson'});
+
+      expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+      expect(studio.canUndo, isFalse);
+    });
+
+    test(
+      'temporary answer shadows saved group without mutating its circle',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        final saved = SmartPenOvalAnnotation.fromSelection(
+          selection: _selection(page: 1, label: 'A', group: 'q-shadow'),
+          pageSize: _pageSize,
+          color: const Color(0xffaabbcc),
+          width: 2.5,
+          seed: 41,
+        ).toBoardStroke();
+        studio.pdfAnnotations[1] = [saved];
+        final savedJson = saved.toJson();
+
+        studio.toggleTemporarySmartPenAnswer(
+          _selection(page: 1, label: 'D', group: 'q-shadow'),
+          _pageSize,
+        );
+
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+          'D',
+        );
+        expect(studio.pdfAnnotations[1]!.single.toJson(), savedJson);
+
+        studio.clearTemporarySmartPenAnswer(1, 'q-shadow');
+
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).single.toJson(),
+          savedJson,
+        );
+        expect(studio.pdfAnnotations[1]!.single.toJson(), savedJson);
+      },
+    );
+
+    test('temporary suppression hides saved circle only in the live view', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      final saved = SmartPenOvalAnnotation.fromSelection(
+        selection: _selection(page: 2, label: 'B', group: 'q-suppress'),
+        pageSize: _pageSize,
+        color: const Color(0xff123456),
+        width: 3,
+        seed: 51,
+      ).toBoardStroke();
+      studio.pdfAnnotations[2] = [saved];
+      final savedJson = saved.toJson();
+
+      studio.toggleTemporarySmartPenAnswer(
+        _selection(page: 2, label: 'B', group: 'q-suppress'),
+        _pageSize,
+      );
+
+      expect(_ovalsIn(studio.pdfAnnotationsForPage(2)), isEmpty);
+      expect(studio.pdfAnnotations[2]!.single.toJson(), savedJson);
+
+      studio.clearTemporarySmartPenAnswer(2, 'q-suppress');
+
+      expect(_ovalsIn(studio.pdfAnnotationsForPage(2)), hasLength(1));
+      expect(studio.pdfAnnotations[2]!.single.toJson(), savedJson);
+    });
+
+    test(
+      'temporary overrides are isolated by page and imported document',
+      () async {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        final firstBytes = Uint8List.fromList([1, 2, 3]);
+        final secondBytes = Uint8List.fromList([4, 5, 6]);
+        studio.addImportedDoc('first.pdf', null, firstBytes);
+        final firstId = studio.activeDoc!.id;
+        studio.toggleTemporarySmartPenAnswer(
+          _selection(page: 1, label: 'A', group: 'q-shared'),
+          _pageSize,
+        );
+
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(2)), isEmpty);
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+        studio.addImportedDoc('second.pdf', null, secondBytes);
+        final secondId = studio.activeDoc!.id;
+        expect(secondId, isNot(firstId));
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+
+        studio.toggleTemporarySmartPenAnswer(
+          _selection(page: 1, label: 'D', group: 'q-shared'),
+          _pageSize,
+        );
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+          'D',
+        );
+
+        studio.selectDoc(firstId);
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+          'A',
+        );
+        studio.selectDoc(secondId);
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+          'D',
+        );
+      },
+    );
+
+    test('temporary annotations clear when their document is removed', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      studio.addImportedDoc('first.pdf', null, Uint8List.fromList([1]));
+      final firstId = studio.activeDoc!.id;
+      studio.toggleTemporarySmartPenAnswer(
+        _selection(page: 1, label: 'C', group: 'q-removed'),
+        _pageSize,
+      );
+      studio.addImportedDoc('second.pdf', null, Uint8List.fromList([2]));
+
+      studio.removeDoc(firstId);
       expect(studio.canUndo, isFalse);
       expect(studio.canRedo, isFalse);
+      studio.addImportedDoc('first.pdf', null, Uint8List.fromList([3]));
+
+      expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+    });
+
+    test(
+      'document snapshots copy saved ink, never temporary overrides',
+      () async {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        studio.addImportedDoc('first.pdf', null, Uint8List.fromList([1]));
+        final firstId = studio.activeDoc!.id;
+        final saved = SmartPenOvalAnnotation.fromSelection(
+          selection: _selection(page: 1, label: 'A', group: 'q-doc-snapshot'),
+          pageSize: _pageSize,
+          color: Colors.red,
+          width: 3,
+        ).toBoardStroke();
+        studio.pdfAnnotations[1] = [
+          saved,
+          BoardStroke(Colors.blue, 2, const [
+            Offset(0.1, 0.2),
+            Offset(0.2, 0.3),
+          ]),
+        ];
+        studio.setSaveAnswerCirclesEnabled(false);
+        studio.toggleSmartPenAnswer(
+          _selection(page: 1, label: 'D', group: 'q-doc-snapshot'),
+          _pageSize,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+        studio.addImportedDoc('second.pdf', null, Uint8List.fromList([2]));
+
+        expect(
+          studio.importedDocs
+              .firstWhere((doc) => doc.id == firstId)
+              .annotations[1],
+          hasLength(2),
+        );
+        expect(
+          studio.importedDocs
+              .firstWhere((doc) => doc.id == firstId)
+              .annotations[1]!
+              .where((stroke) => stroke.isSmartPenOval)
+              .single
+              .smartPenLabel,
+          'A',
+        );
+        studio.selectDoc(firstId);
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+          'D',
+        );
+      },
+    );
+
+    test('temporary annotations clear when the source PDF is replaced', () {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      studio.setPdfFile('quiz.pdf', Uint8List.fromList([1, 2, 3]));
+      studio.toggleTemporarySmartPenAnswer(
+        _selection(page: 1, label: 'B', group: 'q-replaced'),
+        _pageSize,
+      );
+      expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), hasLength(1));
+
+      studio.setPdfFile('quiz.pdf', Uint8List.fromList([4, 5, 6]));
+
+      expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+    });
+
+    test(
+      'replacing one PDF preserves other loaded documents temporary state',
+      () async {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        studio.addImportedDoc('first.pdf', null, Uint8List.fromList([1]));
+        final firstId = studio.activeDoc!.id;
+        studio.toggleTemporarySmartPenAnswer(
+          _selection(page: 1, label: 'A', group: 'q-first'),
+          _pageSize,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+        studio.addImportedDoc('second.pdf', null, Uint8List.fromList([2]));
+        final secondId = studio.activeDoc!.id;
+        expect(secondId, isNot(firstId));
+        studio.toggleTemporarySmartPenAnswer(
+          _selection(page: 1, label: 'B', group: 'q-second'),
+          _pageSize,
+        );
+
+        studio.setPdfFile('replacement.pdf', Uint8List.fromList([3]));
+
+        studio.selectDoc(firstId);
+        expect(
+          _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+          'A',
+        );
+        studio.selectDoc(secondId);
+        expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
+      },
+    );
+
+    test('replacing the active PDF clears only its undo history', () async {
+      final studio = StudioState();
+      addTearDown(studio.dispose);
+      studio.addImportedDoc('first.pdf', null, Uint8List.fromList([1]));
+      final firstId = studio.activeDoc!.id;
+      studio.toggleTemporarySmartPenAnswer(
+        _selection(page: 1, label: 'A', group: 'q-first-history'),
+        _pageSize,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 2));
+      studio.addImportedDoc('second.pdf', null, Uint8List.fromList([2]));
+      studio.toggleTemporarySmartPenAnswer(
+        _selection(page: 1, label: 'B', group: 'q-second-history'),
+        _pageSize,
+      );
+
+      studio.setPdfFile('replacement.pdf', Uint8List.fromList([3]));
+      studio.selectDoc(firstId);
+
+      expect(studio.canUndo, isTrue);
+      studio.undo();
+      expect(_ovalsIn(studio.pdfAnnotationsForPage(1)), isEmpty);
     });
   });
 
@@ -420,6 +1441,125 @@ void main() {
     final exportedDocument = sf.PdfDocument(inputBytes: exported);
     expect(exportedDocument.pages.count, 1);
     exportedDocument.dispose();
+  });
+
+  test('PDF export ignores temporary-only answer circles', () async {
+    final source = sf.PdfDocument();
+    source.pages.add();
+    final sourceBytes = source.saveSync();
+    source.dispose();
+
+    final studio = StudioState()..pdfBytes = Uint8List.fromList(sourceBytes);
+    addTearDown(studio.dispose);
+    final baseline = await PdfAnnotationExporter.exportHighlightedPdfBytes(
+      studio,
+    );
+    studio.setSaveAnswerCirclesEnabled(false);
+    studio.toggleSmartPenAnswer(
+      _selection(page: 1, label: 'B', group: 'q-export-temporary'),
+      _pageSize,
+    );
+
+    final exported = await PdfAnnotationExporter.exportHighlightedPdfBytes(
+      studio,
+    );
+
+    expect(exported, isNotNull);
+    expect(exported!.length, baseline!.length);
+    expect(studio.pdfAnnotations, isEmpty);
+  });
+
+  test(
+    'mixed PDF export includes saved answer circle and freehand ink only',
+    () async {
+      final source = sf.PdfDocument();
+      source.pages.add();
+      final sourceBytes = source.saveSync();
+      source.dispose();
+
+      final studio = StudioState()..pdfBytes = Uint8List.fromList(sourceBytes);
+      addTearDown(studio.dispose);
+      final savedOval = SmartPenOvalAnnotation.fromSelection(
+        selection: _selection(page: 1, label: 'A', group: 'q-mixed-export'),
+        pageSize: _pageSize,
+        color: Colors.red,
+        width: 3,
+      ).toBoardStroke();
+      final freehand = BoardStroke(Colors.blue, 2, const [
+        Offset(0.1, 0.2),
+        Offset(0.3, 0.4),
+      ]);
+      studio.pdfAnnotations[1] = [savedOval, freehand];
+      final persistedExport =
+          await PdfAnnotationExporter.exportHighlightedPdfBytes(studio);
+      studio.setSaveAnswerCirclesEnabled(false);
+      studio.toggleSmartPenAnswer(
+        _selection(page: 1, label: 'D', group: 'q-mixed-export'),
+        _pageSize,
+      );
+      expect(
+        _ovalsIn(studio.pdfAnnotationsForPage(1)).single.smartPenLabel,
+        'D',
+      );
+
+      final exported = await PdfAnnotationExporter.exportHighlightedPdfBytes(
+        studio,
+      );
+
+      expect(exported!.length, persistedExport!.length);
+      expect(studio.pdfAnnotations[1], hasLength(2));
+      expect(studio.pdfAnnotations[1]!.first.toJson(), savedOval.toJson());
+      expect(studio.pdfAnnotations[1]!.last.toJson(), freehand.toJson());
+    },
+  );
+
+  testWidgets('temporary-only ink does not enable PDF export action', (
+    tester,
+  ) async {
+    final source = sf.PdfDocument();
+    source.pages.add();
+    final sourceBytes = source.saveSync();
+    source.dispose();
+
+    final studio = StudioState()..pdfBytes = Uint8List.fromList(sourceBytes);
+    addTearDown(studio.dispose);
+    studio.setSaveAnswerCirclesEnabled(false);
+    studio.toggleSmartPenAnswer(
+      _selection(page: 1, label: 'A', group: 'q-export-availability'),
+      _pageSize,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => const SizedBox(key: Key('export-context')),
+          ),
+        ),
+      ),
+    );
+    final context = tester.element(find.byKey(const Key('export-context')));
+
+    final temporaryOnlyResult =
+        await PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+          context,
+          studio,
+          showFeedback: false,
+        );
+    expect(temporaryOnlyResult, isFalse);
+    expect(studio.pdfAnnotations, isEmpty);
+
+    studio.setSaveAnswerCirclesEnabled(true);
+    studio.toggleSmartPenAnswer(
+      _selection(page: 1, label: 'B', group: 'q-export-availability'),
+      _pageSize,
+    );
+    final persistedResult =
+        await PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+          context,
+          studio,
+          showFeedback: false,
+        );
+    expect(persistedResult, isTrue);
   });
 
   test('maps displayed normalized points back for PDF page rotation', () {
@@ -501,3 +1641,6 @@ List<BoardStroke> _ovals(StudioState studio, int page) =>
     (studio.pdfAnnotations[page] ?? const <BoardStroke>[])
         .where((stroke) => stroke.isSmartPenOval)
         .toList();
+
+List<BoardStroke> _ovalsIn(Iterable<BoardStroke> strokes) =>
+    strokes.where((stroke) => stroke.isSmartPenOval).toList();

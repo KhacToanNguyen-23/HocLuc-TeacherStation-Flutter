@@ -88,23 +88,6 @@ class StudioDrawingToolbar extends StatelessWidget {
                     ),
                   ),
                 ),
-              IconButton(
-                tooltip: 'Tự động bắt đáp án',
-                onPressed: () =>
-                    studio.setSmartSnapEnabled(!studio.smartSnapEnabled),
-                style: IconButton.styleFrom(
-                  backgroundColor: studio.smartSnapEnabled
-                      ? AppColors.selected
-                      : Colors.transparent,
-                  minimumSize: const Size(36, 36),
-                  padding: EdgeInsets.zero,
-                ),
-                icon: Icon(
-                  Icons.bolt,
-                  size: 18,
-                  color: studio.smartSnapEnabled ? AppColors.primary : pine,
-                ),
-              ),
               const SizedBox(height: 6),
               Container(width: 24, height: 1, color: line),
               const SizedBox(height: 6),
@@ -271,21 +254,6 @@ class StudioDrawingToolbar extends StatelessWidget {
                     ),
                   ),
                 ),
-              IconButton(
-                tooltip: 'Tự động bắt đáp án',
-                onPressed: () =>
-                    studio.setSmartSnapEnabled(!studio.smartSnapEnabled),
-                style: IconButton.styleFrom(
-                  backgroundColor: studio.smartSnapEnabled
-                      ? AppColors.selected
-                      : Colors.transparent,
-                ),
-                icon: Icon(
-                  Icons.bolt,
-                  size: 19,
-                  color: studio.smartSnapEnabled ? AppColors.primary : pine,
-                ),
-              ),
               const SizedBox(width: 8),
               IconButton(
                 tooltip: 'Hoàn tác nét',

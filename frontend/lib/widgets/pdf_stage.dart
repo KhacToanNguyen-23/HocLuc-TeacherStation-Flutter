@@ -11,6 +11,20 @@ import 'smart_chalk_overlay.dart';
 import 'pdf_dgnl_passage_overlay.dart';
 import '../services/smart_pen_answer_index.dart';
 
+const _showSmartPenDebugBounds = bool.fromEnvironment('SMART_PEN_DEBUG');
+
+class _SmartPenPointerDown {
+  const _SmartPenPointerDown({
+    required this.pageNumber,
+    required this.localPosition,
+    required this.timestamp,
+  });
+
+  final int pageNumber;
+  final Offset localPosition;
+  final Duration timestamp;
+}
+
 class PdfStage extends StatefulWidget {
   const PdfStage({
     super.key,
@@ -38,8 +52,11 @@ class _PdfStageState extends State<PdfStage> {
   final SmartPenPageIndexStore _smartIndexStore = SmartPenPageIndexStore();
   final SmartPenTapQueue _smartTapQueue = SmartPenTapQueue(maxLength: 32);
   final Map<int, Rect> _smartPageRects = {};
+  final Map<int, _SmartPenPointerDown> _smartPointerDowns = {};
+  final ValueNotifier<int> _smartIndexRevision = ValueNotifier(0);
   final SmartPenPdfTextExtractor _smartTextExtractor =
       SmartPenPdfTextExtractor();
+  SmartPenAnswerGroupMap? _smartAnswerGroups;
   SmartPenPageIndexScheduler? _smartIndexScheduler;
   PdfDocument? _smartIndexDocument;
   int _smartDocumentGeneration = 0;
@@ -67,7 +84,9 @@ class _PdfStageState extends State<PdfStage> {
       _smartDocumentGeneration++;
       _smartIndexDocument = null;
       _smartIndexScheduler = null;
+      _smartAnswerGroups = null;
       _smartPageRects.clear();
+      _smartPointerDowns.clear();
       _lastSmartSnapEnabled = widget.studio.smartSnapEnabled;
       widget.studio.pdfViewerController = _pdfController;
       widget.studio.pdfViewerKey = _pdfViewerKey;
@@ -81,6 +100,8 @@ class _PdfStageState extends State<PdfStage> {
     _smartIndexScheduler = null;
     _smartIndexDocument = null;
     _smartPageRects.clear();
+    _smartPointerDowns.clear();
+    _smartIndexRevision.dispose();
     if (widget.studio.pdfViewerController == _pdfController) {
       widget.studio.pdfViewerController = null;
       widget.studio.pdfViewerKey = null;
@@ -92,7 +113,10 @@ class _PdfStageState extends State<PdfStage> {
   void _onStudioChanged() {
     if (_lastSmartSnapEnabled != widget.studio.smartSnapEnabled) {
       _lastSmartSnapEnabled = widget.studio.smartSnapEnabled;
-      if (!_lastSmartSnapEnabled) _smartTapQueue.clear();
+      if (!_lastSmartSnapEnabled) {
+        _smartTapQueue.clear();
+        _smartPointerDowns.clear();
+      }
     }
     if (!_pdfController.isReady) return;
 
@@ -128,9 +152,12 @@ class _PdfStageState extends State<PdfStage> {
   void _beginSmartIndexing(PdfDocument document) {
     if (identical(_smartIndexDocument, document)) return;
     _smartIndexDocument = document;
+    _smartAnswerGroups = null;
+    _smartPointerDowns.clear();
     final generation = ++_smartDocumentGeneration;
     _smartTapQueue.clear();
     _smartIndexStore.beginGeneration(generation);
+    if (_showSmartPenDebugBounds) _smartIndexRevision.value++;
     _smartIndexScheduler = SmartPenPageIndexScheduler(
       documentGeneration: generation,
       pageCount: document.pages.length,
@@ -164,15 +191,76 @@ class _PdfStageState extends State<PdfStage> {
           pageNumber: pageNumber,
           pageSize: SmartPenPdfTextExtractor.canonicalPageSize(page),
           fragments: fragments,
+          includeDebugData: _showSmartPenDebugBounds,
         );
         _smartIndexStore.completePage(index);
+        _refreshSmartAnswerGroups(generation, pageNumber);
+      }
+      if (_showSmartPenDebugBounds && mounted) {
+        _smartIndexRevision.value++;
       }
       _resolveQueuedSmartTaps(pageNumber, generation);
     } catch (_) {
       if (generation != _smartDocumentGeneration) return;
       _smartIndexStore.failPage(pageNumber);
+      if (_showSmartPenDebugBounds && mounted) {
+        _smartIndexRevision.value++;
+      }
       _resolveQueuedSmartTaps(pageNumber, generation);
     }
+  }
+
+  void _refreshSmartAnswerGroups(int generation, int changedPage) {
+    final indexes = <int, SmartPenPageIndex>{};
+    for (
+      var page = 1;
+      page <= (_smartIndexDocument?.pages.length ?? 0);
+      page++
+    ) {
+      final index = _smartIndexStore.indexFor(page);
+      if (index != null) indexes[page] = index;
+    }
+    if (generation != _smartDocumentGeneration) return;
+    final next = SmartPenDocumentAnswerLinker.resolve(
+      generation: generation,
+      indexes: indexes,
+      previous: _smartAnswerGroups,
+      changedPage: changedPage,
+    );
+    final previous = _smartAnswerGroups;
+    if (previous != null) {
+      for (final entry in indexes.entries) {
+        final oldCandidates = previous.candidatesForPage(entry.key);
+        final newCandidates = next.candidatesForPage(entry.key);
+        for (final old in oldCandidates) {
+          final replacement = newCandidates
+              .where(
+                (candidate) =>
+                    candidate.label == old.label &&
+                    candidate.bounds == old.bounds,
+              )
+              .firstOrNull;
+          if (replacement != null && replacement.groupId != old.groupId) {
+            final affected = <int>{entry.key - 1, entry.key, entry.key + 1}
+                .where(
+                  (page) => next
+                      .candidatesForPage(page)
+                      .any(
+                        (candidate) => candidate.groupId == replacement.groupId,
+                      ),
+                )
+                .toSet();
+            widget.studio.migrateSmartPenAnswerGroup(
+              old.groupId,
+              replacement.groupId,
+              affectedPages: affected.toList(),
+            );
+          }
+        }
+      }
+    }
+    _smartAnswerGroups = next;
+    if (_showSmartPenDebugBounds && mounted) _smartIndexRevision.value++;
   }
 
   void _queueOrResolveSmartTap({
@@ -296,6 +384,7 @@ class _PdfStageState extends State<PdfStage> {
       pagePoint,
       logicalPixelTolerance: 10,
       zoomScale: zoomScale,
+      candidates: _smartAnswerGroups?.candidatesForPage(pageNumber),
     );
     final onSmartAnswerTap = widget.onSmartAnswerTap;
     if (candidate != null) {
@@ -305,7 +394,24 @@ class _PdfStageState extends State<PdfStage> {
         bounds: candidate.bounds,
         groupId: candidate.groupId,
       );
-      widget.studio.toggleSmartPenAnswer(selection, index.pageSize);
+      final affectedPages = <int>[];
+      for (
+        var page = 1;
+        page <= (_smartIndexDocument?.pages.length ?? 0);
+        page++
+      ) {
+        if (_smartAnswerGroups
+                ?.candidatesForPage(page)
+                .any((item) => item.groupId == candidate.groupId) ??
+            false) {
+          affectedPages.add(page);
+        }
+      }
+      widget.studio.toggleSmartPenAnswer(
+        selection,
+        index.pageSize,
+        affectedPages: affectedPages.isEmpty ? [pageNumber] : affectedPages,
+      );
       onSmartAnswerTap?.call(candidate);
       return;
     }
@@ -552,6 +658,58 @@ class _PdfStageState extends State<PdfStage> {
                   final isPanMode =
                       studio.tool == 'pan' || studio.isSpacePressed;
                   return Listener(
+                    onPointerDown: (event) {
+                      if (!studio.smartSnapEnabled ||
+                          studio.tool != 'pen' ||
+                          isPanMode ||
+                          !widget.interactive ||
+                          studio.activeSubjectTool == 'svo' ||
+                          event.buttons & kPrimaryButton == 0) {
+                        return;
+                      }
+                      _smartPointerDowns[event.pointer] = _SmartPenPointerDown(
+                        pageNumber: page.pageNumber,
+                        localPosition: event.localPosition,
+                        timestamp: event.timeStamp,
+                      );
+                    },
+                    onPointerUp: (event) {
+                      final down = _smartPointerDowns.remove(event.pointer);
+                      if (down == null ||
+                          down.pageNumber != page.pageNumber ||
+                          !studio.smartSnapEnabled ||
+                          studio.tool != 'pen' ||
+                          isPanMode ||
+                          !widget.interactive ||
+                          studio.activeSubjectTool == 'svo' ||
+                          event.timeStamp - down.timestamp >=
+                              kLongPressTimeout ||
+                          (event.localPosition - down.localPosition).distance >
+                              kTouchSlop) {
+                        return;
+                      }
+                      _queueOrResolveSmartTap(
+                        page: page,
+                        pageRect: pageRect,
+                        targetStrokes: studio.pdfAnnotations.putIfAbsent(
+                          page.pageNumber,
+                          () => <BoardStroke>[],
+                        ),
+                        normalizedPoint: Offset(
+                          (down.localPosition.dx / pageRect.width).clamp(
+                            0.0,
+                            1.0,
+                          ),
+                          (down.localPosition.dy / pageRect.height).clamp(
+                            0.0,
+                            1.0,
+                          ),
+                        ),
+                      );
+                    },
+                    onPointerCancel: (event) {
+                      _smartPointerDowns.remove(event.pointer);
+                    },
                     onPointerSignal: (event) {
                       if (event is PointerScrollEvent) {
                         if (HardwareKeyboard.instance.isControlPressed) {
@@ -575,24 +733,101 @@ class _PdfStageState extends State<PdfStage> {
                               page.pageNumber,
                               () => [],
                             ),
+                            displayStrokes: studio.pdfAnnotationsForPage(
+                              page.pageNumber,
+                            ),
                             interactive:
                                 widget.interactive &&
                                 !isPanMode &&
                                 studio.activeSubjectTool != 'svo',
-                            smartSnapEnabled:
-                                studio.smartSnapEnabled && studio.tool == 'pen',
-                            onSmartTap: (normalizedPoint) =>
-                                _queueOrResolveSmartTap(
-                                  page: page,
-                                  pageRect: pageRect,
-                                  targetStrokes: studio.pdfAnnotations
-                                      .putIfAbsent(
-                                        page.pageNumber,
-                                        () => <BoardStroke>[],
-                                      ),
-                                  normalizedPoint: normalizedPoint,
-                                ),
+                            deferTapToOverlay:
+                                studio.smartSnapEnabled &&
+                                studio.tool == 'pen' &&
+                                widget.interactive &&
+                                !isPanMode &&
+                                studio.activeSubjectTool != 'svo',
                           ),
+                          if (_showSmartPenDebugBounds)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: ValueListenableBuilder<int>(
+                                  valueListenable: _smartIndexRevision,
+                                  builder: (context, _, _) {
+                                    final index = _smartIndexStore.indexFor(
+                                      page.pageNumber,
+                                    );
+                                    final currentIds =
+                                        _smartAnswerGroups
+                                            ?.candidatesForPage(page.pageNumber)
+                                            .map(
+                                              (candidate) => candidate.groupId,
+                                            )
+                                            .toSet() ??
+                                        const <String>{};
+                                    final linkedIds = <String>{};
+                                    for (
+                                      var otherPage = 1;
+                                      otherPage <=
+                                          (_smartIndexDocument?.pages.length ??
+                                              0);
+                                      otherPage++
+                                    ) {
+                                      if (otherPage == page.pageNumber) {
+                                        continue;
+                                      }
+                                      for (final candidate
+                                          in _smartAnswerGroups
+                                                  ?.candidatesForPage(
+                                                    otherPage,
+                                                  ) ??
+                                              const <
+                                                SmartPenAnswerCandidate
+                                              >[]) {
+                                        if (currentIds.contains(
+                                          candidate.groupId,
+                                        )) {
+                                          linkedIds.add(candidate.groupId);
+                                        }
+                                      }
+                                    }
+                                    return CustomPaint(
+                                      painter: _SmartPenDebugBoundsPainter(
+                                        candidates:
+                                            _smartAnswerGroups
+                                                ?.candidatesForPage(
+                                                  page.pageNumber,
+                                                ) ??
+                                            index?.candidates ??
+                                            const [],
+                                        partialGroups:
+                                            index?.partialGroups ?? const [],
+                                        partialGroupIds: {
+                                          for (final group
+                                              in index?.partialGroups ??
+                                                  const [])
+                                            for (final partial
+                                                in group.candidates)
+                                              _smartAnswerGroups
+                                                      ?.canonicalGroupIdFor(
+                                                        page.pageNumber,
+                                                        partial,
+                                                      ) ??
+                                                  partial.groupId,
+                                        },
+                                        debugFragments:
+                                            index?.debugFragments ?? const [],
+                                        linkedGroupIds: linkedIds,
+                                        pageSize:
+                                            index?.pageSize ??
+                                            SmartPenPdfTextExtractor.canonicalPageSize(
+                                              page,
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
                           if (studio.activeSubjectTool == 'svo')
                             Positioned.fill(
                               child: MouseRegion(
@@ -704,4 +939,124 @@ class _PdfStageState extends State<PdfStage> {
   Widget _buildPdfView() {
     return _getPdfViewerWidget();
   }
+}
+
+class _SmartPenDebugBoundsPainter extends CustomPainter {
+  const _SmartPenDebugBoundsPainter({
+    required this.candidates,
+    required this.partialGroups,
+    required this.partialGroupIds,
+    required this.debugFragments,
+    required this.linkedGroupIds,
+    required this.pageSize,
+  });
+
+  final List<SmartPenAnswerCandidate> candidates;
+  final List<SmartPenPartialAnswerGroup> partialGroups;
+  final Set<String> partialGroupIds;
+  final List<SmartPenDebugFragment> debugFragments;
+  final Set<String> linkedGroupIds;
+  final Size pageSize;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (pageSize.width <= 0 || pageSize.height <= 0) return;
+    final fill = Paint()
+      ..color = Colors.red.withValues(alpha: 0.18)
+      ..style = PaintingStyle.fill;
+    final outline = Paint()
+      ..color = Colors.red
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    Rect scaleRect(Rect rect) => Rect.fromLTRB(
+      rect.left / pageSize.width * size.width,
+      rect.top / pageSize.height * size.height,
+      rect.right / pageSize.width * size.width,
+      rect.bottom / pageSize.height * size.height,
+    );
+    for (final diagnostic in debugFragments) {
+      final bounds = scaleRect(diagnostic.fragment.bounds);
+      final color = switch (diagnostic.decision) {
+        SmartPenDebugDecision.raw => Colors.grey,
+        SmartPenDebugDecision.accepted => Colors.green,
+        SmartPenDebugDecision.partial => Colors.orange,
+        SmartPenDebugDecision.rejected => Colors.red,
+      };
+      canvas.drawRect(
+        bounds,
+        Paint()
+          ..color = color.withValues(alpha: 0.12)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawRect(
+        bounds,
+        Paint()
+          ..color = color.withValues(alpha: 0.75)
+          ..strokeWidth = 0.7
+          ..style = PaintingStyle.stroke,
+      );
+      final rawText = diagnostic.fragment.text.trim();
+      final shortText = rawText.length > 48
+          ? '${rawText.substring(0, 45)}…'
+          : rawText;
+      final tag = TextPainter(
+        text: TextSpan(
+          text: diagnostic.decision == SmartPenDebugDecision.raw
+              ? shortText
+              : '${diagnostic.decision.name} · ${diagnostic.reasonCode} · $shortText',
+          style: TextStyle(
+            color: color,
+            fontSize: 8,
+            backgroundColor: Colors.white.withValues(alpha: 0.8),
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: size.width * 0.45);
+      tag.paint(canvas, bounds.bottomLeft);
+    }
+    for (final candidate in candidates) {
+      final bounds = scaleRect(candidate.bounds);
+      canvas.drawRect(bounds, fill);
+      canvas.drawRect(bounds, outline);
+      final isPartial = partialGroupIds.contains(candidate.groupId);
+      final questionHeading = partialGroups.any(
+        (group) =>
+            group.hasQuestionHeadingEvidence &&
+            group.candidates.any(
+              (item) =>
+                  item.label == candidate.label &&
+                  item.bounds == candidate.bounds,
+            ),
+      );
+      final linkStatus = !isPartial
+          ? 'local'
+          : linkedGroupIds.contains(candidate.groupId)
+          ? 'linked'
+          : questionHeading
+          ? 'unlinked: question_heading'
+          : 'unlinked: no_unique_continuation';
+      final label = TextPainter(
+        text: TextSpan(
+          text: '${candidate.label} · ${candidate.groupId} · $linkStatus',
+          style: const TextStyle(
+            color: Colors.red,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            backgroundColor: Colors.white,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      label.paint(canvas, bounds.topLeft - const Offset(0, 11));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SmartPenDebugBoundsPainter oldDelegate) =>
+      oldDelegate.candidates != candidates ||
+      oldDelegate.partialGroups != partialGroups ||
+      oldDelegate.partialGroupIds != partialGroupIds ||
+      oldDelegate.debugFragments != debugFragments ||
+      oldDelegate.linkedGroupIds != linkedGroupIds ||
+      oldDelegate.pageSize != pageSize;
 }

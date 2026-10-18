@@ -1,7 +1,9 @@
 import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
@@ -23,19 +25,39 @@ part 'studio_state_plugins.dart';
 part 'studio_state_annotations.dart';
 part 'smart_pen_oval_annotation.dart';
 
+class _SmartPenGroupSnapshot {
+  _SmartPenGroupSnapshot({
+    required this.persisted,
+    required this.hasTemporaryOverride,
+    required this.temporaryOverride,
+  });
+
+  final List<BoardStroke> persisted;
+  final bool hasTemporaryOverride;
+  BoardStroke? temporaryOverride;
+
+  _SmartPenGroupSnapshot copy() => _SmartPenGroupSnapshot(
+    persisted: persisted.map((stroke) => stroke.copy()).toList(),
+    hasTemporaryOverride: hasTemporaryOverride,
+    temporaryOverride: temporaryOverride?.copy(),
+  );
+}
+
 class _SmartPenHistoryEntry {
   _SmartPenHistoryEntry({
-    required this.pageNumber,
+    required this.affectedPages,
     required this.groupId,
     required this.before,
     required this.after,
+    required this.persistedChanged,
     required this.sequence,
   });
 
-  final int pageNumber;
-  final String groupId;
-  final List<BoardStroke> before;
-  final List<BoardStroke> after;
+  List<int> affectedPages;
+  String groupId;
+  final Map<int, _SmartPenGroupSnapshot> before;
+  final Map<int, _SmartPenGroupSnapshot> after;
+  final bool persistedChanged;
   int sequence;
   int redoSequence = 0;
 }
@@ -79,7 +101,18 @@ class StudioState extends ChangeNotifier {
   }
 
   bool _smartSnapEnabled = false;
-  bool get smartSnapEnabled => _smartSnapEnabled;
+  bool get smartSnapEnabled {
+    if (_smartSnapEnabled) return true;
+    final plugin = activePlugin;
+    if (plugin == null || activeSubjectTool == null) return false;
+    return plugin.manifest.contributesTools.any(
+      (tool) => tool.pdfTapMode && tool.target == activeSubjectTool,
+    );
+  }
+  bool _saveAnswerCirclesEnabled = true;
+  bool get saveAnswerCirclesEnabled => _saveAnswerCirclesEnabled;
+  static const String saveAnswerCirclesSettingKey = 'pdf_answer_circles.save';
+  final Map<String, bool> _contributedToolSettings = {};
   SmartPenAnswerSelection? smartPenAnswerSelection;
   final Map<String, List<_SmartPenHistoryEntry>> _smartPenUndo = {};
   final Map<String, List<_SmartPenHistoryEntry>> _smartPenRedo = {};
@@ -95,72 +128,94 @@ class StudioState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSaveAnswerCirclesEnabled(bool enabled) {
+    if (_saveAnswerCirclesEnabled == enabled) return;
+    _saveAnswerCirclesEnabled = enabled;
+    notifyListeners();
+  }
+
+  bool contributedToolSetting(String key, {bool defaultValue = false}) {
+    if (key == saveAnswerCirclesSettingKey) return saveAnswerCirclesEnabled;
+    return _contributedToolSettings[key] ?? defaultValue;
+  }
+
+  void toggleContributedToolSetting(
+    String key, {
+    bool defaultValue = false,
+  }) {
+    final next = !contributedToolSetting(key, defaultValue: defaultValue);
+    if (key == saveAnswerCirclesSettingKey) {
+      setSaveAnswerCirclesEnabled(next);
+      return;
+    }
+    _contributedToolSettings[key] = next;
+    notifyListeners();
+  }
+
   void dispatchSmartPenAnswer(SmartPenAnswerSelection selection) {
     smartPenAnswerSelection = selection;
     notifyListeners();
   }
 
-  void toggleSmartPenAnswer(SmartPenAnswerSelection selection, Size pageSize) {
-    final pageStrokes = pdfAnnotations.putIfAbsent(
-      selection.pageNumber,
-      () => <BoardStroke>[],
+  void toggleSmartPenAnswer(
+    SmartPenAnswerSelection selection,
+    Size pageSize, {
+    List<int>? affectedPages,
+  }) {
+    final pages = _normalizeAffectedPages(selection.pageNumber, affectedPages);
+    if (!_saveAnswerCirclesEnabled) {
+      toggleTemporarySmartPenAnswer(selection, pageSize, affectedPages: pages);
+      return;
+    }
+    final before = _captureSmartPenGroups(pages, selection.groupId);
+    final isSameAnswer = pages.any(
+      (pageNumber) => pdfAnnotationsForPage(pageNumber).any(
+        (stroke) =>
+            stroke.isSmartPenOval &&
+            stroke.smartPenGroupId == selection.groupId &&
+            stroke.smartPenLabel == selection.label,
+      ),
     );
-    final before = pageStrokes
-        .where(
-          (stroke) =>
-              stroke.isSmartPenOval &&
-              stroke.smartPenGroupId == selection.groupId,
-        )
-        .map((stroke) => stroke.copy())
-        .toList();
-    final isSameAnswer = before.any(
-      (stroke) => stroke.smartPenLabel == selection.label,
-    );
-    if (isSameAnswer) {
-      pageStrokes.removeWhere(
+    for (final pageNumber in pages) {
+      pdfAnnotations[pageNumber]?.removeWhere(
         (stroke) =>
             stroke.isSmartPenOval &&
             stroke.smartPenGroupId == selection.groupId,
       );
-    } else {
-      pageStrokes.removeWhere(
-        (stroke) =>
-            stroke.isSmartPenOval &&
-            stroke.smartPenGroupId == selection.groupId,
-      );
+      _removeTemporarySmartPenOverride(pageNumber, selection.groupId);
+    }
+    if (!isSameAnswer) {
       final oval = SmartPenOvalAnnotation.fromSelection(
         selection: selection,
         pageSize: pageSize,
-        color: ink,
+        color: Colors.red,
         width: strokeWidth,
       );
-      pageStrokes.add(oval.toBoardStroke());
+      pdfAnnotations
+          .putIfAbsent(selection.pageNumber, () => <BoardStroke>[])
+          .add(oval.toBoardStroke());
     }
-    final after = pageStrokes
-        .where(
-          (stroke) =>
-              stroke.isSmartPenOval &&
-              stroke.smartPenGroupId == selection.groupId,
-        )
-        .map((stroke) => stroke.copy())
-        .toList();
-    _smartPenUndo
-        .putIfAbsent(_smartPenHistoryKey, () => [])
-        .add(
-          _SmartPenHistoryEntry(
-            pageNumber: selection.pageNumber,
-            groupId: selection.groupId,
-            before: before,
-            after: after,
-            sequence: ++_historySequence,
-          ),
-        );
-    _smartPenRedo[_smartPenHistoryKey]?.clear();
-    _currentRedoStack.clear();
     smartPenAnswerSelection = selection;
-    _revision++;
-    dirty = true;
-    notifyListeners();
+    final persistedChanged = pages.any((pageNumber) {
+      final beforeStrokes = before[pageNumber]!.persisted;
+      final afterStrokes = (pdfAnnotations[pageNumber] ?? const <BoardStroke>[])
+          .where(
+            (stroke) =>
+                stroke.isSmartPenOval &&
+                stroke.smartPenGroupId == selection.groupId,
+          )
+          .toList();
+      return jsonEncode(
+            beforeStrokes.map((stroke) => stroke.toJson()).toList(),
+          ) !=
+          jsonEncode(afterStrokes.map((stroke) => stroke.toJson()).toList());
+    });
+    _finishSmartPenGroupEdit(
+      selection,
+      pages,
+      before,
+      persistedChanged: persistedChanged,
+    );
   }
 
   bool reveal = false, denoise = false;
@@ -338,22 +393,417 @@ class StudioState extends ChangeNotifier {
       _pdfAnnotations ??= <int, List<BoardStroke>>{};
   set pdfAnnotations(Map<int, List<BoardStroke>> map) => _pdfAnnotations = map;
 
+  // Temporary answer overrides are deliberately kept outside pdfAnnotations,
+  // which is consumed by lesson serialization, imported-document snapshots,
+  // and PDF export. A present key with a null value suppresses a saved answer
+  // in the live view only; a BoardStroke value temporarily replaces its group.
+  final Map<String, Map<int, Map<String, BoardStroke?>>>
+  _temporarySmartPenOverrides = {};
+
+  List<BoardStroke> pdfAnnotationsForPage(int pageNumber) {
+    final persisted = pdfAnnotations[pageNumber] ?? const <BoardStroke>[];
+    final overrides =
+        _temporarySmartPenOverrides[_smartPenHistoryKey]?[pageNumber];
+    if (overrides == null || overrides.isEmpty) return List.of(persisted);
+
+    final visible = persisted.where((stroke) {
+      final groupId = stroke.smartPenGroupId;
+      return !stroke.isSmartPenOval ||
+          groupId == null ||
+          !overrides.containsKey(groupId);
+    }).toList();
+    visible.addAll(overrides.values.whereType<BoardStroke>());
+    return visible;
+  }
+
+  void toggleTemporarySmartPenAnswer(
+    SmartPenAnswerSelection selection,
+    Size pageSize, {
+    List<int>? affectedPages,
+  }) {
+    final pages = _normalizeAffectedPages(selection.pageNumber, affectedPages);
+    final before = _captureSmartPenGroups(pages, selection.groupId);
+    final currentLabel =
+        <BoardStroke>[
+              for (final page in pages) ...?pdfAnnotations[page],
+              for (final page in pages)
+                ...?_temporarySmartPenOverrides[_smartPenHistoryKey]?[page]
+                    ?.values
+                    .whereType<BoardStroke>(),
+            ]
+            .where(
+              (stroke) =>
+                  stroke.isSmartPenOval &&
+                  stroke.smartPenGroupId == selection.groupId,
+            )
+            .lastOrNull
+            ?.smartPenLabel;
+    final isSameAnswer = currentLabel == selection.label;
+    final hadTemporaryOverride = pages.any(
+      (page) =>
+          _temporarySmartPenOverrides[_smartPenHistoryKey]?[page]?.containsKey(
+            selection.groupId,
+          ) ??
+          false,
+    );
+    final documentOverrides = _temporarySmartPenOverrides.putIfAbsent(
+      _smartPenHistoryKey,
+      () => <int, Map<String, BoardStroke?>>{},
+    );
+    for (final page in pages) {
+      documentOverrides[page]?.remove(selection.groupId);
+      if (!hadTemporaryOverride && isSameAnswer) {
+        final hasSavedAnswer =
+            pdfAnnotations[page]?.any(
+              (stroke) =>
+                  stroke.isSmartPenOval &&
+                  stroke.smartPenGroupId == selection.groupId,
+            ) ??
+            false;
+        if (hasSavedAnswer) {
+          documentOverrides.putIfAbsent(
+            page,
+            () => <String, BoardStroke?>{},
+          )[selection.groupId] = null;
+        }
+      } else if (!isSameAnswer) {
+        // Suppress persisted circles on all linked pages in this live session.
+        documentOverrides.putIfAbsent(
+          page,
+          () => <String, BoardStroke?>{},
+        )[selection.groupId] = null;
+      }
+    }
+    if (!isSameAnswer) {
+      documentOverrides[selection.pageNumber]![selection.groupId] =
+          SmartPenOvalAnnotation.fromSelection(
+            selection: selection,
+            pageSize: pageSize,
+            color: Colors.red,
+            width: strokeWidth,
+          ).toBoardStroke();
+    }
+    _pruneTemporaryOverrides(documentOverrides);
+    smartPenAnswerSelection = selection;
+    _finishSmartPenGroupEdit(selection, pages, before, persistedChanged: false);
+  }
+
+  void clearTemporarySmartPenAnswer(int pageNumber, String groupId) {
+    if (!_removeTemporarySmartPenOverride(pageNumber, groupId)) return;
+    _revision++;
+    notifyListeners();
+  }
+
+  /// Rekeys an answer group after progressive indexing links a page-edge
+  /// fragment to its neighbor. This is metadata migration and does not create
+  /// a new undo step or mark the lesson dirty.
+  void migrateSmartPenAnswerGroup(
+    String provisionalId,
+    String canonicalId, {
+    required List<int> affectedPages,
+  }) {
+    if (provisionalId == canonicalId) return;
+    final pageSet = affectedPages.toSet();
+    final isCurrentSelection =
+        smartPenAnswerSelection?.groupId == provisionalId;
+    final canonicalAlreadyHasAnswer = pageSet.any((page) {
+      final saved =
+          pdfAnnotations[page]?.any(
+            (stroke) =>
+                stroke.isSmartPenOval && stroke.smartPenGroupId == canonicalId,
+          ) ??
+          false;
+      final temporary =
+          _temporarySmartPenOverrides[_smartPenHistoryKey]?[page]?[canonicalId]
+              ?.isSmartPenOval ??
+          false;
+      return saved || temporary;
+    });
+    final overrides = _temporarySmartPenOverrides[_smartPenHistoryKey];
+    final provisionalHasSavedAnswer = pageSet.any(
+      (page) =>
+          pdfAnnotations[page]?.any(
+            (stroke) =>
+                stroke.isSmartPenOval &&
+                stroke.smartPenGroupId == provisionalId,
+          ) ??
+          false,
+    );
+    final provisionalHasTemporaryOverride = pageSet.any(
+      (page) => overrides?[page]?.containsKey(provisionalId) ?? false,
+    );
+    // If separate pages were selected before their edge fragments linked,
+    // keep the latest selection and collapse the earlier provisional circle.
+    final replaceCanonical =
+        isCurrentSelection &&
+        canonicalAlreadyHasAnswer &&
+        (provisionalHasSavedAnswer || provisionalHasTemporaryOverride);
+    final history = _smartPenUndo[_smartPenHistoryKey] ?? const [];
+    final selectionHistoryEntry = replaceCanonical
+        ? history
+              .where((entry) => entry.groupId == provisionalId)
+              .fold<_SmartPenHistoryEntry?>(
+                null,
+                (latest, entry) =>
+                    latest == null || entry.sequence > latest.sequence
+                    ? entry
+                    : latest,
+              )
+        : null;
+    final canonicalBefore = replaceCanonical
+        ? _captureSmartPenGroups(pageSet.toList(), canonicalId)
+        : const <int, _SmartPenGroupSnapshot>{};
+    final preserveCanonical = canonicalAlreadyHasAnswer && !isCurrentSelection;
+    for (final page in pageSet) {
+      final strokes = pdfAnnotations[page];
+      if (strokes == null) continue;
+      if (replaceCanonical && provisionalHasSavedAnswer) {
+        strokes.removeWhere(
+          (stroke) =>
+              stroke.isSmartPenOval && stroke.smartPenGroupId == canonicalId,
+        );
+      }
+      if (preserveCanonical) {
+        strokes.removeWhere(
+          (stroke) =>
+              stroke.isSmartPenOval && stroke.smartPenGroupId == provisionalId,
+        );
+      } else {
+        for (var i = 0; i < strokes.length; i++) {
+          final stroke = strokes[i];
+          if (stroke.isSmartPenOval &&
+              stroke.smartPenGroupId == provisionalId) {
+            strokes[i] = _copySmartPenStroke(stroke, canonicalId);
+          }
+        }
+      }
+    }
+    if (overrides != null) {
+      for (final page in pageSet) {
+        final values = overrides[page];
+        if (values == null) continue;
+        if (replaceCanonical && provisionalHasSavedAnswer) {
+          // A saved latest choice supersedes any earlier session-only circle.
+          values.remove(canonicalId);
+        } else if (replaceCanonical && provisionalHasTemporaryOverride) {
+          // Keep persisted data intact; the temporary choice shadows it in the
+          // visible session while removing any older temporary canonical oval.
+          final hasSavedCanonical =
+              pdfAnnotations[page]?.any(
+                (stroke) =>
+                    stroke.isSmartPenOval &&
+                    stroke.smartPenGroupId == canonicalId,
+              ) ??
+              false;
+          if (hasSavedCanonical) {
+            values[canonicalId] = null;
+          } else {
+            values.remove(canonicalId);
+          }
+        }
+        if (!values.containsKey(provisionalId)) continue;
+        final value = values.remove(provisionalId);
+        if (!preserveCanonical || !values.containsKey(canonicalId)) {
+          values[canonicalId] = value == null
+              ? null
+              : _copySmartPenStroke(value, canonicalId);
+        }
+      }
+    }
+    for (final stacks in [_smartPenUndo, _smartPenRedo]) {
+      for (final entry in stacks[_smartPenHistoryKey] ?? const []) {
+        if (entry.groupId != provisionalId) continue;
+        entry.groupId = canonicalId;
+        for (final snapshots in [entry.before, entry.after]) {
+          for (final snapshot in snapshots.values) {
+            for (var i = 0; i < snapshot.persisted.length; i++) {
+              snapshot.persisted[i] = _copySmartPenStroke(
+                snapshot.persisted[i],
+                canonicalId,
+              );
+            }
+            final temporary = snapshot.temporaryOverride;
+            if (temporary != null) {
+              snapshot.temporaryOverride = _copySmartPenStroke(
+                temporary,
+                canonicalId,
+              );
+            }
+          }
+        }
+      }
+    }
+    if (selectionHistoryEntry != null) {
+      for (final page in pageSet) {
+        selectionHistoryEntry.before.putIfAbsent(
+          page,
+          () => canonicalBefore[page]!.copy(),
+        );
+        selectionHistoryEntry.after[page] = _captureSmartPenGroup(
+          page,
+          canonicalId,
+        );
+      }
+      selectionHistoryEntry.affectedPages = {
+        ...selectionHistoryEntry.affectedPages,
+        ...pageSet,
+      }.toList()..sort();
+    }
+    final selection = smartPenAnswerSelection;
+    if (selection?.groupId == provisionalId) {
+      smartPenAnswerSelection = SmartPenAnswerSelection(
+        pageNumber: selection!.pageNumber,
+        label: selection.label,
+        bounds: selection.bounds,
+        groupId: canonicalId,
+      );
+    }
+  }
+
+  BoardStroke _copySmartPenStroke(BoardStroke stroke, String groupId) =>
+      BoardStroke(
+        stroke.color,
+        stroke.width,
+        List.of(stroke.points),
+        isEraser: stroke.isEraser,
+        rect: stroke.rect,
+        isHollow: stroke.isHollow,
+        smartPenGroupId: groupId,
+        smartPenLabel: stroke.smartPenLabel,
+      );
+
+  bool _removeTemporarySmartPenOverride(int pageNumber, String groupId) {
+    final documentOverrides = _temporarySmartPenOverrides[_smartPenHistoryKey];
+    final pageOverrides = documentOverrides?[pageNumber];
+    if (pageOverrides == null || !pageOverrides.containsKey(groupId)) {
+      return false;
+    }
+    pageOverrides.remove(groupId);
+    if (pageOverrides.isEmpty) documentOverrides!.remove(pageNumber);
+    if (documentOverrides!.isEmpty) {
+      _temporarySmartPenOverrides.remove(_smartPenHistoryKey);
+    }
+    return true;
+  }
+
+  List<int> _normalizeAffectedPages(int selectedPage, List<int>? pages) =>
+      (pages ?? [selectedPage]).where((page) => page > 0).toSet().toList()
+        ..sort();
+
+  Map<int, _SmartPenGroupSnapshot> _captureSmartPenGroups(
+    List<int> pages,
+    String groupId,
+  ) => {for (final page in pages) page: _captureSmartPenGroup(page, groupId)};
+
+  _SmartPenGroupSnapshot _captureSmartPenGroup(int pageNumber, String groupId) {
+    final persisted = (pdfAnnotations[pageNumber] ?? const <BoardStroke>[])
+        .where(
+          (stroke) =>
+              stroke.isSmartPenOval && stroke.smartPenGroupId == groupId,
+        )
+        .map((stroke) => stroke.copy())
+        .toList();
+    final overrides =
+        _temporarySmartPenOverrides[_smartPenHistoryKey]?[pageNumber];
+    final hasOverride = overrides?.containsKey(groupId) ?? false;
+    return _SmartPenGroupSnapshot(
+      persisted: persisted,
+      hasTemporaryOverride: hasOverride,
+      temporaryOverride: hasOverride ? overrides![groupId]?.copy() : null,
+    );
+  }
+
+  void _finishSmartPenGroupEdit(
+    SmartPenAnswerSelection selection,
+    List<int> pages,
+    Map<int, _SmartPenGroupSnapshot> before, {
+    required bool persistedChanged,
+  }) {
+    final after = _captureSmartPenGroups(pages, selection.groupId);
+    _smartPenUndo
+        .putIfAbsent(_smartPenHistoryKey, () => [])
+        .add(
+          _SmartPenHistoryEntry(
+            affectedPages: List.of(pages),
+            groupId: selection.groupId,
+            before: before,
+            after: after,
+            persistedChanged: persistedChanged,
+            sequence: ++_historySequence,
+          ),
+        );
+    _smartPenRedo[_smartPenHistoryKey]?.clear();
+    _currentRedoStack.clear();
+    _revision++;
+    if (persistedChanged) dirty = true;
+    notifyListeners();
+  }
+
+  void _pruneTemporaryOverrides(Map<int, Map<String, BoardStroke?>> overrides) {
+    overrides.removeWhere((_, groups) => groups.isEmpty);
+    if (overrides.isEmpty) {
+      _temporarySmartPenOverrides.remove(_smartPenHistoryKey);
+    }
+  }
+
+  void clearTemporarySmartPenAnswers({String? documentId}) {
+    if (documentId == null) {
+      if (_temporarySmartPenOverrides.isEmpty) return;
+      _temporarySmartPenOverrides.clear();
+      _revision++;
+      notifyListeners();
+      return;
+    }
+    if (_temporarySmartPenOverrides.remove(documentId) != null) {
+      _revision++;
+      notifyListeners();
+    }
+  }
+
   List<BoardStroke> get currentPdfStrokes =>
       pdfAnnotations.putIfAbsent(pdfPage, () => []);
 
   void setPdfFile(String? path, [Uint8List? bytes]) {
+    final replacedDocumentId = _smartPenHistoryKey;
+    clearTemporarySmartPenAnswers(documentId: replacedDocumentId);
+
+    // Keep the persisted annotations with their document before clearing the
+    // active view. Session-only Smart Pen overrides are stored separately and
+    // intentionally disappear when a PDF is closed or replaced.
+    final currentDocument = activeDoc;
+    if (currentDocument != null) {
+      currentDocument.annotations
+        ..clear()
+        ..addAll(
+          pdfAnnotations.map(
+            (page, strokes) => MapEntry(page, List.of(strokes)),
+          ),
+        );
+      currentDocument.totalPages = pdfTotalPages;
+    }
+
     pdfFilePath = path;
     pdfBytes = bytes;
     pdfPage = 1;
     pdfTotalPages = 1;
     pdfAnnotations.clear();
-    _clearSmartPenHistory();
+    _clearSmartPenHistory(documentId: replacedDocumentId);
     smartPenAnswerSelection = null;
     if (path != null || bytes != null) {
       final name = path != null
           ? path.split(RegExp(r'[\\/]')).last
           : 'Tài liệu.pdf';
-      final existing = importedDocs.where((d) => d.name == name).firstOrNull;
+      final exactPathMatch = path == null
+          ? null
+          : importedDocs.where((doc) => doc.path == path).firstOrNull;
+      final nameMatch = importedDocs
+          .where(
+            (doc) => doc.name == name &&
+                bytes != null &&
+                doc.contentFingerprint == _pdfContentFingerprint(bytes),
+          )
+          .firstOrNull;
+      final existing = exactPathMatch ?? nameMatch;
       if (existing == null) {
         final id = DateTime.now().millisecondsSinceEpoch.toString();
         final doc = ImportedDocument(
@@ -361,21 +811,64 @@ class StudioState extends ChangeNotifier {
           name: name,
           path: path,
           bytes: bytes,
+          contentFingerprint:
+              bytes == null ? null : _pdfContentFingerprint(bytes),
         );
         importedDocs.add(doc);
         activeDocId = id;
       } else {
         activeDocId = existing.id;
+        final incomingFingerprint =
+            bytes == null ? null : _pdfContentFingerprint(bytes);
+        if (bytes != null &&
+            ((existing.contentFingerprint != null &&
+                    existing.contentFingerprint != incomingFingerprint) ||
+                (existing.bytes != null &&
+                    !_samePdfBytes(bytes, existing.bytes!)))) {
+          // The same path can point to a replaced PDF. Do not carry its saved
+          // annotations into the new file contents.
+          existing.annotations.clear();
+          existing.totalPages = 1;
+        }
+        existing.path = path ?? existing.path;
+        existing.bytes = bytes ?? existing.bytes;
+        existing.contentFingerprint = bytes == null
+            ? existing.contentFingerprint
+            : incomingFingerprint;
+        pdfTotalPages = existing.totalPages > 0 ? existing.totalPages : 1;
+        pdfAnnotations.addAll(
+          existing.annotations.map(
+            (page, strokes) => MapEntry(page, List.of(strokes)),
+          ),
+        );
       }
+    } else {
+      activeDocId = null;
     }
     dirty = true;
     _revision++;
     notifyListeners();
   }
 
+  bool _samePdfBytes(Uint8List left, Uint8List right) {
+    if (identical(left, right)) return true;
+    if (left.length != right.length) return false;
+    for (var i = 0; i < left.length; i++) {
+      if (left[i] != right[i]) return false;
+    }
+    return true;
+  }
+
+  String _pdfContentFingerprint(Uint8List bytes) =>
+      sha256.convert(bytes).toString();
+
   void updatePdfBytesInPlace(Uint8List newBytes) {
+    final replacedDocumentId = _smartPenHistoryKey;
+    clearTemporarySmartPenAnswers(documentId: replacedDocumentId);
     pdfBytes = newBytes;
-    _clearSmartPenHistory();
+    activeDoc?.bytes = newBytes;
+    activeDoc?.contentFingerprint = _pdfContentFingerprint(newBytes);
+    _clearSmartPenHistory(documentId: replacedDocumentId);
     dirty = true;
     _revision++;
     notifyListeners();
@@ -448,12 +941,20 @@ class StudioState extends ChangeNotifier {
 
   void clearPdfPage() {
     pdfAnnotations[pdfPage]?.clear();
+    final pageOverrides =
+        _temporarySmartPenOverrides[_smartPenHistoryKey]?[pdfPage];
+    pageOverrides?.clear();
+    final documentOverrides = _temporarySmartPenOverrides[_smartPenHistoryKey];
+    documentOverrides?.remove(pdfPage);
+    if (documentOverrides?.isEmpty == true) {
+      _temporarySmartPenOverrides.remove(_smartPenHistoryKey);
+    }
     pdfChalkAnnotations[pdfPage]?.clear();
     _smartPenUndo[_smartPenHistoryKey]?.removeWhere(
-      (entry) => entry.pageNumber == pdfPage,
+      (entry) => entry.affectedPages.contains(pdfPage),
     );
     _smartPenRedo[_smartPenHistoryKey]?.removeWhere(
-      (entry) => entry.pageNumber == pdfPage,
+      (entry) => entry.affectedPages.contains(pdfPage),
     );
     dirty = true;
     _revision++;
@@ -694,7 +1195,7 @@ class StudioState extends ChangeNotifier {
       entry.redoSequence = ++_historySequence;
       _smartPenRedo.putIfAbsent(_smartPenHistoryKey, () => []).add(entry);
       _revision++;
-      dirty = true;
+      if (entry.persistedChanged) dirty = true;
       notifyListeners();
       return;
     }
@@ -724,7 +1225,7 @@ class StudioState extends ChangeNotifier {
       entry.sequence = ++_historySequence;
       _smartPenUndo.putIfAbsent(_smartPenHistoryKey, () => []).add(entry);
       _revision++;
-      dirty = true;
+      if (entry.persistedChanged) dirty = true;
       notifyListeners();
       return;
     }
@@ -753,24 +1254,55 @@ class StudioState extends ChangeNotifier {
     _smartPenRedo[_smartPenHistoryKey]?.clear();
   }
 
-  void _clearSmartPenHistory() {
-    _smartPenUndo.clear();
-    _smartPenRedo.clear();
+  void _clearSmartPenHistory({String? documentId}) {
+    if (documentId == null) {
+      _smartPenUndo.clear();
+      _smartPenRedo.clear();
+      return;
+    }
+    _smartPenUndo.remove(documentId);
+    _smartPenRedo.remove(documentId);
   }
 
   void _applySmartPenHistory(
     _SmartPenHistoryEntry entry,
-    List<BoardStroke> snapshot,
+    Map<int, _SmartPenGroupSnapshot> snapshots,
   ) {
-    final pageStrokes = pdfAnnotations.putIfAbsent(
-      entry.pageNumber,
-      () => <BoardStroke>[],
+    final docOverrides = _temporarySmartPenOverrides.putIfAbsent(
+      _smartPenHistoryKey,
+      () => <int, Map<String, BoardStroke?>>{},
     );
-    pageStrokes.removeWhere(
-      (stroke) =>
-          stroke.isSmartPenOval && stroke.smartPenGroupId == entry.groupId,
-    );
-    pageStrokes.addAll(snapshot.map((stroke) => stroke.copy()));
+    for (final pageNumber in entry.affectedPages) {
+      final snapshot = snapshots[pageNumber];
+      if (snapshot == null) continue;
+      final pageStrokes = pdfAnnotations[pageNumber];
+      if (pageStrokes != null || snapshot.persisted.isNotEmpty) {
+        final target = pageStrokes ?? <BoardStroke>[];
+        target.removeWhere(
+          (stroke) =>
+              stroke.isSmartPenOval && stroke.smartPenGroupId == entry.groupId,
+        );
+        target.addAll(snapshot.persisted.map((stroke) => stroke.copy()));
+        if (target.isEmpty) {
+          pdfAnnotations.remove(pageNumber);
+        } else if (pageStrokes == null) {
+          pdfAnnotations[pageNumber] = target;
+        }
+      }
+      final pageOverrides = docOverrides.putIfAbsent(
+        pageNumber,
+        () => <String, BoardStroke?>{},
+      );
+      if (snapshot.hasTemporaryOverride) {
+        pageOverrides[entry.groupId] = snapshot.temporaryOverride?.copy();
+      } else {
+        pageOverrides.remove(entry.groupId);
+      }
+      if (pageOverrides.isEmpty) docOverrides.remove(pageNumber);
+    }
+    if (docOverrides.isEmpty) {
+      _temporarySmartPenOverrides.remove(_smartPenHistoryKey);
+    }
   }
 
   void nextPage() {
@@ -907,6 +1439,15 @@ class StudioState extends ChangeNotifier {
   }
 
   Map<String, dynamic> exportLessonJson() {
+    Map<String, dynamic> serializePdfAnnotations(
+      Map<int, List<BoardStroke>> annotations,
+    ) => annotations.map(
+      (page, strokes) => MapEntry(
+        page.toString(),
+        strokes.map((stroke) => stroke.toJson()).toList(),
+      ),
+    );
+
     return {
       'title': title,
       'subject': subject,
@@ -929,6 +1470,24 @@ class StudioState extends ChangeNotifier {
         (k, v) =>
             MapEntry(k.toString(), v.map((stroke) => stroke.toJson()).toList()),
       ),
+      'importedPdfDocuments': importedDocs.map((document) {
+        final annotations = document.id == activeDocId
+            ? pdfAnnotations
+            : document.annotations;
+        return {
+          'id': document.id,
+          'name': document.name,
+          'path': document.path,
+          'contentFingerprint': document.contentFingerprint ??
+              (document.bytes == null
+                  ? null
+                  : _pdfContentFingerprint(document.bytes!)),
+          'totalPages': document.id == activeDocId
+              ? pdfTotalPages
+              : document.totalPages,
+          'annotations': serializePdfAnnotations(annotations),
+        };
+      }).toList(),
       'pdfFilePath': pdfFilePath,
       'pdfPage': pdfPage,
       'pdfWindowMaximized': _pdfWindowMaximized,
@@ -942,6 +1501,56 @@ class StudioState extends ChangeNotifier {
   }
 
   void restoreFromJson(Map<String, dynamic> json) {
+    // This is a session preference, not lesson data. Loading any lesson starts
+    // with the safe default that new answer circles are saved.
+    _saveAnswerCirclesEnabled = true;
+    // Session-only answer overrides and their undo history belong to the
+    // previous lesson/PDF session, even when the incoming lesson has no PDF.
+    _temporarySmartPenOverrides.clear();
+    _clearSmartPenHistory();
+    // A restored lesson may have no active PDF even when this StudioState was
+    // previously showing one. Reset the old view before restoring document
+    // metadata so a closed-document lesson cannot keep displaying stale bytes.
+    pdfFilePath = null;
+    pdfBytes = null;
+    pdfPage = 1;
+    pdfTotalPages = 1;
+    pdfAnnotations.clear();
+    activeDocId = null;
+    importedDocs.clear();
+    if (json['importedPdfDocuments'] is List) {
+      for (final entry in json['importedPdfDocuments'] as List) {
+        if (entry is! Map) continue;
+        final documentJson = Map<String, dynamic>.from(entry);
+        final name = documentJson['name'] as String?;
+        if (name == null || name.isEmpty) continue;
+        final document = ImportedDocument(
+          id:
+              documentJson['id'] as String? ??
+              DateTime.now().microsecondsSinceEpoch.toString(),
+          name: name,
+          path: documentJson['path'] as String?,
+          contentFingerprint:
+              documentJson['contentFingerprint'] as String?,
+          totalPages: (documentJson['totalPages'] as num?)?.toInt() ?? 1,
+        );
+        final annotations = documentJson['annotations'];
+        if (annotations is Map) {
+          annotations.forEach((key, value) {
+            final pageNumber = int.tryParse(key.toString());
+            if (pageNumber == null || value is! List) return;
+            document.annotations[pageNumber] = value
+                .map(
+                  (stroke) => BoardStroke.fromJson(
+                    Map<String, dynamic>.from(stroke as Map),
+                  ),
+                )
+                .toList();
+          });
+        }
+        importedDocs.add(document);
+      }
+    }
     if (json.containsKey('title')) title = json['title'] as String? ?? title;
     if (json.containsKey('subject')) {
       subject = json['subject'] as String? ?? subject;
@@ -1068,6 +1677,17 @@ class StudioState extends ChangeNotifier {
         }
       });
     }
+    final restoredActiveDocument = activeDoc;
+    if (restoredActiveDocument != null) {
+      restoredActiveDocument.annotations
+        ..clear()
+        ..addAll(
+          pdfAnnotations.map(
+            (page, strokes) => MapEntry(page, List.of(strokes)),
+          ),
+        );
+      restoredActiveDocument.totalPages = pdfTotalPages;
+    }
     dirty = false;
     _revision++;
     notifyListeners();
@@ -1075,8 +1695,8 @@ class StudioState extends ChangeNotifier {
 
   Future<bool> save() async {
     if (saving) return false;
-    final revision = _revision;
     final lessonSnapshot = exportLessonJson();
+    final lessonSnapshotJson = jsonEncode(lessonSnapshot);
     final configSnapshot = {
       'endpoint': endpoint,
       'language': language,
@@ -1084,12 +1704,22 @@ class StudioState extends ChangeNotifier {
       'denoise': denoise,
       'audio': audio.preferences,
     };
+    final configSnapshotJson = jsonEncode(configSnapshot);
     saving = true;
     notifyListeners();
     try {
       await service.request('lesson', data: lessonSnapshot);
       await service.request('config', data: configSnapshot);
-      dirty = _revision != revision;
+      final currentConfig = {
+        'endpoint': endpoint,
+        'language': language,
+        'microphone': microphone,
+        'denoise': denoise,
+        'audio': audio.preferences,
+      };
+      dirty =
+          jsonEncode(exportLessonJson()) != lessonSnapshotJson ||
+          jsonEncode(currentConfig) != configSnapshotJson;
       final now = DateTime.now();
       savedAt =
           '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';

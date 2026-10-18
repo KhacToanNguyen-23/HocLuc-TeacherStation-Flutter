@@ -906,7 +906,7 @@
     "user_visible_behavior": "Teacher can enable or disable Smart Snap independently of pen color and width; disabled mode preserves current pen tap and drag behavior.",
     "verification_command": "Flutter tests verify the toggle state and that disabling Smart Snap preserves existing pen interactions.",
     "status": "passing",
-    "evidence": "smart_pen_gesture_test.dart: toggle independence and both toolbar layouts pass; PDF/studio regression tests pass.",
+    "evidence": "smart_pen_gesture_test.dart: toggle independence and both toolbar layouts pass. Annotation tests cover save-on/off transitions, visible temporary-answer toggle/replacement, persistence boundaries, and undo/redo; regression suite passes.",
     "notes": "",
     "priority": "P1"
   },
@@ -939,5 +939,45 @@
     "evidence": "smart_pen_gesture_test.dart: one active build, visible-page/neighbor reprioritization, ordered nearby work, and page bounds pass.",
     "notes": "",
     "priority": "P1"
+  },
+  {
+    "id": "smart-pen-flexible-layout-detection",
+    "verification_command": "Generated-PDF fixtures cover attached labels, wide formula layouts, vertical and two-column options, and bare error-identification markers; all intended labels are hit-testable.",
+    "title": "Recognize attached and unusual-layout answer labels",
+    "status": "passing",
+    "evidence": "smart_pen_index_test.dart: deterministic corpus v3 of 616 positive labels and 100 negative labels; TP=616, FP=0, FN=0; 100% precision/recall overall and for vertical, two-column, attached, inline, wide-formula, and error-identification layouts.",
+    "user_visible_behavior": "Teachers can circle choices in more PDF formats.",
+    "notes": "P1 story: recognize flexible layouts",
+    "priority": "P1"
+  },
+  {
+    "id": "smart-pen-answer-detection-semantic-safety",
+    "verification_command": "Labeled negative fixtures for prose, section headings, watermark fragments, duplicate labels, and ambiguous layouts produce no accepted candidate.",
+    "title": "Reject prose and ambiguous A-D letters",
+    "status": "passing",
+    "evidence": "smart_pen_index_test.dart: 100 labeled isolated negatives plus prose, headings, watermark, duplicate, and ambiguous cases; corpus FP=0; analyzer clean.",
+    "user_visible_behavior": "Flexible recognition does not create accidental circles.",
+    "notes": "P1 story: preserve semantic safety",
+    "priority": "P1"
+  },
+  {
+    "id": "smart-pen-cross-page-answer-groups",
+    "verification_command": "A cross-page fixture gets one stable group ID; selecting on either page leaves one circle and undo/redo restores the multi-page change atomically.",
+    "title": "Treat choices split across adjacent pages as one question",
+    "status": "passing",
+    "evidence": "smart_pen_index_test.dart covers ordered horizontal A/B→C/D edge fragments, split/number-first question-heading veto, ambiguity, generation scope, readiness-order stability and incremental neighbor refresh; smart_pen_annotation_test.dart covers cross-page saved/session-only replacement, toggle, undo/redo and provisional-ID migration, including two pre-index choices collapsing to the latest choice. Final acceptance suite and analyzer pass.",
+    "user_visible_behavior": "Selecting a new option replaces the earlier circle for the same question.",
+    "notes": "P1 story: link choices across adjacent pages",
+    "priority": "P1"
+  },
+  {
+    "id": "smart-pen-answer-debug-diagnostics",
+    "verification_command": "With SMART_PEN_DEBUG, raw fragments, accepted/rejected markers and link statuses are visible with reason codes; production builds retain no debug text overlay.",
+    "title": "Inspect Smart Pen extraction and link decisions",
+    "status": "passing",
+    "evidence": "Unit tests verify debug diagnostics are opt-in and distinguish accepted, partial, raw, and rejected fragments. SMART_PEN_DEBUG-enabled PdfStage tap widget smoke passed; final acceptance suite and analyzer pass.",
+    "user_visible_behavior": "Developers can tell whether a missed answer failed extraction, classification, or page linking.",
+    "notes": "P2 story: diagnose missed labels",
+    "priority": "P2"
   }
 ]
