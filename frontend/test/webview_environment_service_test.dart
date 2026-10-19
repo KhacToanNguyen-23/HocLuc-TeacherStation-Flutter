@@ -18,12 +18,11 @@ void main() {
     });
 
     test(
-      'chromiumAdditionalArguments contains fake-ui and fake-device flags',
+      'production browser uses real devices and the standard share picker',
       () {
         final args = WebviewEnvironmentService.chromiumAdditionalArguments;
-        expect(args, contains('--use-fake-ui-for-media-stream'));
-        expect(args, contains('--use-fake-device-for-media-stream'));
-        expect(args, contains('--enable-usermedia-screen-capturing'));
+        expect(args, isNot(contains('fake')));
+        expect(args, isNot(contains('auto-select')));
       },
     );
 

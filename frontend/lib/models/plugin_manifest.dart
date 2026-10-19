@@ -32,6 +32,9 @@ class PluginToolContribution {
     this.action = 'toggle_tool',
     this.target,
     this.widgetKey,
+    this.pdfTapMode = false,
+    this.settingKey,
+    this.defaultValue = false,
   });
 
   final String id;
@@ -41,6 +44,10 @@ class PluginToolContribution {
   final String action; // 'snip_region' | 'toggle_tool' | 'quick_input' | 'rpc_event'
   final String? target;
   final String? widgetKey;
+  /// Declares that this contributed tool owns PDF tap gestures while active.
+  final bool pdfTapMode;
+  final String? settingKey;
+  final bool defaultValue;
 
   factory PluginToolContribution.fromJson(Map<String, dynamic> json) {
     return PluginToolContribution(
@@ -51,6 +58,9 @@ class PluginToolContribution {
       action: json['action']?.toString() ?? 'toggle_tool',
       target: json['target']?.toString(),
       widgetKey: json['key']?.toString(),
+      pdfTapMode: json['pdf_tap_mode'] == true,
+      settingKey: json['setting_key']?.toString(),
+      defaultValue: json['default_value'] == true,
     );
   }
 
@@ -62,6 +72,9 @@ class PluginToolContribution {
     'action': action,
     if (target != null) 'target': target,
     if (widgetKey != null) 'key': widgetKey,
+    if (pdfTapMode) 'pdf_tap_mode': true,
+    if (settingKey != null) 'setting_key': settingKey,
+    if (settingKey != null) 'default_value': defaultValue,
   };
 }
 

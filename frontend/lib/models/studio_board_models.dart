@@ -50,6 +50,8 @@ class BoardStroke {
     this.isEraser = false,
     this.rect,
     this.isHollow = false,
+    this.smartPenGroupId,
+    this.smartPenLabel,
   });
   final Color color;
   final double width;
@@ -57,6 +59,10 @@ class BoardStroke {
   final bool isEraser;
   final Rect? rect;
   final bool isHollow;
+  final String? smartPenGroupId;
+  final String? smartPenLabel;
+  bool get isSmartPenOval =>
+      smartPenGroupId != null && smartPenLabel != null && points.length >= 3;
   Path? _cachedPath;
   Size? _cachedSize;
 
@@ -162,6 +168,17 @@ class BoardStroke {
     _cachedSize = null;
   }
 
+  BoardStroke copy() => BoardStroke(
+    color,
+    width,
+    List<Offset>.of(points),
+    isEraser: isEraser,
+    rect: rect,
+    isHollow: isHollow,
+    smartPenGroupId: smartPenGroupId,
+    smartPenLabel: smartPenLabel,
+  );
+
   Map<String, dynamic> toJson() => {
     'color': color.toARGB32(),
     'width': width,
@@ -170,6 +187,8 @@ class BoardStroke {
     if (rect != null)
       'rect': [rect!.left, rect!.top, rect!.width, rect!.height],
     if (isHollow) 'isHollow': true,
+    if (smartPenGroupId != null) 'smartPenGroupId': smartPenGroupId,
+    if (smartPenLabel != null) 'smartPenLabel': smartPenLabel,
   };
 
   static BoardStroke fromJson(Map<String, dynamic> json) {
@@ -196,6 +215,8 @@ class BoardStroke {
       isEraser: json['isEraser'] as bool? ?? false,
       rect: r,
       isHollow: json['isHollow'] == true,
+      smartPenGroupId: json['smartPenGroupId'] as String?,
+      smartPenLabel: json['smartPenLabel'] as String?,
     );
   }
 }
@@ -206,13 +227,15 @@ class ImportedDocument {
     required this.name,
     this.path,
     this.bytes,
+    this.contentFingerprint,
     this.totalPages = 1,
   });
 
   final String id;
   final String name;
-  final String? path;
-  final Uint8List? bytes;
+  String? path;
+  Uint8List? bytes;
+  String? contentFingerprint;
   int totalPages;
   final Map<int, List<BoardStroke>> annotations = {};
 

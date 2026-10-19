@@ -25,9 +25,8 @@ class WebviewEnvironmentService {
     return '';
   }
 
-  /// Chromium launch arguments ensuring bypass of permission prompts and isolation of physical camera devices.
-  static const String chromiumAdditionalArguments =
-      '--use-fake-ui-for-media-stream --use-fake-device-for-media-stream --enable-usermedia-screen-capturing';
+  /// Use real devices and the standard browser screen/window picker.
+  static const String chromiumAdditionalArguments = '';
 
   /// Explicitly initializes the shared WebView2 environment before any WebviewController is created.
   static Future<void> ensureInitialized({String? customPath}) async {

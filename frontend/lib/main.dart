@@ -4,9 +4,9 @@ import 'services/google_meet_auth_service.dart';
 import 'services/webview_environment_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/classroom_dashboard_screen.dart';
-import 'widgets/app_capture_surface.dart';
 import 'widgets/meet_admission_shell.dart';
 import 'services/meet_automation_service.dart';
+import 'widgets/meet_webview.dart';
 
 export 'constants/theme.dart';
 export 'screens/studio_screen.dart';
@@ -27,18 +27,16 @@ class CompanionApp extends StatelessWidget {
     final authService = GoogleMeetAuthService();
 
     return MaterialApp(
+      navigatorKey: MeetPermissionPrompt.navigatorKey,
       title: 'HocLucStation',
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => AppCaptureSurface(
-        child: Theme(
-          data: AppTheme.light(
-            reduceMotion:
-                MediaQuery.maybeOf(context)?.disableAnimations ?? false,
-          ),
-          child: MeetAdmissionShell(
-            service: MeetAutomationService(),
-            child: child ?? const SizedBox.shrink(),
-          ),
+      builder: (context, child) => Theme(
+        data: AppTheme.light(
+          reduceMotion: MediaQuery.maybeOf(context)?.disableAnimations ?? false,
+        ),
+        child: MeetAdmissionShell(
+          service: MeetAutomationService(),
+          child: child ?? const SizedBox.shrink(),
         ),
       ),
       theme: AppTheme.light(),

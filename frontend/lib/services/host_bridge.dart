@@ -141,7 +141,10 @@ class HostBridge {
     return result;
   }
 
-  void _enforcePermission(List<String> permissions, String requiredPermission) {
+  void _enforcePermission(
+    List<String> permissions,
+    String requiredPermission,
+  ) {
     if (permissions.isNotEmpty && !permissions.contains(requiredPermission)) {
       throw StateError(
         'Permission denied: Missing required permission "$requiredPermission"',

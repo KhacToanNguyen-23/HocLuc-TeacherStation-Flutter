@@ -7,7 +7,6 @@ import 'package:camera_windows/camera_windows.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
-import 'virtual_media_bridge.dart';
 
 enum MediaDeviceKind { videoInput, audioInput }
 
@@ -356,10 +355,6 @@ class MediaDeviceService extends ChangeNotifier {
     _currentAudioLevel = level;
     _audioLevelController.add(level);
     notifyListeners();
-
-    if (VirtualMediaBridge().isStreaming) {
-      VirtualMediaBridge().sendAudioChunk(pcm16Bytes);
-    }
   }
 
   /// Simulate audio amplitude level for tests and synthetic demonstrations

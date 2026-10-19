@@ -50,16 +50,19 @@ class FrontendLogger {
 
   static int _levelFor(String message) {
     final normalized = message.toLowerCase();
-    if (RegExp(r'\b(error|failed|exception|err)\b').hasMatch(normalized))
+    if (RegExp(r'\b(error|failed|exception|err)\b').hasMatch(normalized)) {
       return 1000;
+    }
     if (RegExp(
       r'\b(retry|retrying|fallback|timeout|missing|warning)\b',
-    ).hasMatch(normalized))
+    ).hasMatch(normalized)) {
       return 900;
+    }
     if (RegExp(
       r'\b(success(?:ful(?:ly)?)?|succeed(?:ed)?|started|stopping|stopped|updated|saved|deleted|extracted|completed)\b',
-    ).hasMatch(normalized))
+    ).hasMatch(normalized)) {
       return 800;
+    }
     return 500;
   }
 

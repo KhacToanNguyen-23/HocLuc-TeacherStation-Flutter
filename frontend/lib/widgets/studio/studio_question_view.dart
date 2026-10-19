@@ -32,7 +32,7 @@ class StudioQuestionView extends StatelessWidget {
               children: [
                 PresentationSurface(
                   studio: studio,
-                  broadcastSource: interactive,
+                  manageCamera: interactive,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Container(

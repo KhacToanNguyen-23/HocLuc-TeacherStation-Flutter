@@ -160,10 +160,11 @@ class LocalService {
             .get(Uri.parse('$base/api/classroom/active'), headers: headers)
             .timeout(const Duration(seconds: 5));
         if (response.statusCode == 401 && attempt == 0) continue;
-        if (response.statusCode != 200)
+        if (response.statusCode != 200) {
           throw StateError(
             'Không đọc được buổi học hiện tại (${response.statusCode}).',
           );
+        }
         return jsonDecode(utf8.decode(response.bodyBytes))
             as Map<String, dynamic>;
       }

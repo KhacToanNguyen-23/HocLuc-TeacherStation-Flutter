@@ -60,5 +60,8 @@ jobs:
           echo "🔍 Kiểm tra các bất biến kiến trúc Plugin (AGENTS.md & docs/architecture/plugin-development-guide.md)..."
           flutter test test/architecture_test.dart
 
+      - name: Prepare PDFium Native Asset for Flutter Tests
+        run: dart run tool/prepare_pdfium_test_assets.dart
+
       - name: Run Unit & Widget Tests
         run: flutter test

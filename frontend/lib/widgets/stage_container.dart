@@ -116,7 +116,7 @@ class StageContainer extends StatelessWidget {
                                 Positioned.fill(
                                   child: PresentationSurface(
                                     studio: studio,
-                                    broadcastSource: interactive,
+                                    manageCamera: interactive,
                                     child: AnimatedSwitcher(
                                       duration: AppMotion.duration(
                                         context,

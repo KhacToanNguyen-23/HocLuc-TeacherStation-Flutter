@@ -20,6 +20,7 @@ const VALID_PLACEMENTS = new Set([
 const VALID_TOOL_ACTIONS = new Set([
   'snip_region',
   'toggle_tool',
+  'toggle_setting',
   'quick_input',
   'rpc_event',
 ]);

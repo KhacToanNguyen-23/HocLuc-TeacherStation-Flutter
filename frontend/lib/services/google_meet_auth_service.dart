@@ -59,8 +59,9 @@ class GoogleMeetAuthService extends ChangeNotifier {
       if (_teacherName != null) await prefs.setString(_kName, _teacherName!);
       if (_teacherEmail != null) await prefs.setString(_kEmail, _teacherEmail!);
       if (_teacherPhone != null) await prefs.setString(_kPhone, _teacherPhone!);
-      if (_teacherAvatar != null)
+      if (_teacherAvatar != null) {
         await prefs.setString(_kAvatar, _teacherAvatar!);
+      }
       if (_authMethod != null) await prefs.setString(_kMethod, _authMethod!);
     } catch (e) {
       FrontendLogger.write('[GoogleMeetAuthService] persist error: $e');

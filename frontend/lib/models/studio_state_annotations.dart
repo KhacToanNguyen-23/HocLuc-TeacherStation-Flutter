@@ -485,5 +485,22 @@ extension StudioStateAnnotationsExt on StudioState {
       }
     } catch (_) {}
   }
-}
 
+  void clearPage() {
+    bool changed = false;
+    if (strokes.isNotEmpty) {
+      _currentRedoStack.addAll(strokes);
+      strokes.clear();
+      changed = true;
+    }
+    if (currentChalkAnnotations.isNotEmpty) {
+      currentChalkAnnotations.clear();
+      changed = true;
+    }
+    if (changed) {
+      _revision++;
+      dirty = true;
+      notifyListeners();
+    }
+  }
+}

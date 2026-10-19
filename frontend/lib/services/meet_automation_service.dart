@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:webview_windows/webview_windows.dart' as win;
-import 'camera_broadcast_service.dart';
+import 'meet_screen_share_script.dart';
 import '../models/meet_events.dart';
 import 'google_meet_auth_service.dart';
 import 'local_service.dart';
@@ -20,15 +20,7 @@ class MeetAutomationService extends ChangeNotifier {
   static final MeetAutomationService _instance =
       MeetAutomationService._internal();
   factory MeetAutomationService() => _instance;
-  MeetAutomationService._internal() {
-    CameraBroadcastService().addListener(() {
-      final broadcasting = CameraBroadcastService().isBroadcasting;
-      if (_isBroadcasting != broadcasting) {
-        _isBroadcasting = broadcasting;
-        notifyListeners();
-      }
-    });
-  }
+  MeetAutomationService._internal();
 
   win.WebviewController? _controller;
   String? _controllerMeetingUrl;
@@ -36,7 +28,7 @@ class MeetAutomationService extends ChangeNotifier {
   MeetStatus _status = MeetStatus.idle;
   String? _meetingUrl;
   String? _errorMessage;
-  bool _isBroadcasting = false;
+  bool _isScreenSharing = false;
   bool _needsGoogleLogin = false;
   bool _manualJoin = false;
   bool _hostJoined = false;
@@ -68,7 +60,6 @@ class MeetAutomationService extends ChangeNotifier {
   final List<MeetParticipant> _participants = [];
   int _pendingAdmitCount = 0;
   bool _isBridgeReady = false;
-  bool _hasHocLucCam = false;
 
   final Map<String, MeetAdmissionRequest> _admissionRequests = {};
   final Map<String, _AdmissionAttempt> _admissionAttempts = {};
@@ -98,7 +89,7 @@ class MeetAutomationService extends ChangeNotifier {
   MeetStatus get status => _status;
   String? get meetingUrl => _meetingUrl;
   String? get errorMessage => _errorMessage;
-  bool get isBroadcasting => _isBroadcasting;
+  bool get isScreenSharing => _isScreenSharing;
   bool get needsGoogleLogin => _needsGoogleLogin;
   bool get hasRoom =>
       _meetingUrl != null &&
@@ -116,7 +107,6 @@ class MeetAutomationService extends ChangeNotifier {
   bool isAdmitting(String id) => _admissionAttempts.containsKey(id);
   String? admissionError(String id) => _admissionErrors[id];
   bool get isBridgeReady => _isBridgeReady;
-  bool get hasHocLucCam => _hasHocLucCam;
   bool get autoAdmitEnabled => _autoAdmitEnabled;
 
   set autoAdmitEnabled(bool val) {
@@ -248,6 +238,9 @@ class MeetAutomationService extends ChangeNotifier {
       }
       _controller = win.WebviewController();
       await _controller!.initialize();
+      await _controller!.addScriptToExecuteOnDocumentCreated(
+        MeetScreenShareScript.script,
+      );
 
       _webMessageSubscription?.cancel();
       _webMessageSubscription = _controller!.webMessage.listen((data) {
@@ -261,6 +254,7 @@ class MeetAutomationService extends ChangeNotifier {
         if (_controller != controller) return;
         if (state == win.LoadingState.loading) {
           _resetAdmissions();
+          _isScreenSharing = false;
           notifyListeners();
         } else if (state == win.LoadingState.navigationCompleted) {
           _scheduleAutoJoin(controller);
@@ -547,8 +541,11 @@ class MeetAutomationService extends ChangeNotifier {
         // The named bridge is the only authority for admission notifications.
         // Legacy counts can include unrelated permission buttons.
         return;
-      } else if (type == 'MEET_MEDIA_DEVICE_SELECTED' && payload is Map) {
-        _hasHocLucCam = payload['hasHocLucCam'] == true;
+      } else if (type == 'MEET_SCREEN_SHARE_STATE' && payload is Map) {
+        if (!_isCurrentMeetMessage(data)) return;
+        final active = payload['active'] == true;
+        if (_isScreenSharing == active) return;
+        _isScreenSharing = active;
         notifyListeners();
       } else if (type == 'MEET_BRIDGE_READY') {
         _isBridgeReady = true;
@@ -612,4 +609,3 @@ class MeetAutomationService extends ChangeNotifier {
     super.dispose();
   }
 }
-
