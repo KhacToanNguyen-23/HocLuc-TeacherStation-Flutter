@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
-import '../constants/theme.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'package:teaching_companion/features/auth/presentation/auth_form_card.dart';
 import 'package:teaching_companion/features/auth/presentation/auth_hero_panel.dart';
-import 'classroom_dashboard_screen.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/screens/classroom_dashboard_screen.dart';
 
 /// Full-page dedicated 50/50 Split Login & Registration screen for teachers.
 class LoginScreen extends StatelessWidget {

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
 
 class SaveClassroomDialog extends StatelessWidget {

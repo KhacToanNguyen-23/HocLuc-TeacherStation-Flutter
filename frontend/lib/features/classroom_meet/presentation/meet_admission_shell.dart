@@ -1,9 +1,9 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'meet_webview.dart';
-import 'package:teaching_companion/constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import '../services/meet_automation_service.dart';
 import 'meet_admission_button.dart';
 

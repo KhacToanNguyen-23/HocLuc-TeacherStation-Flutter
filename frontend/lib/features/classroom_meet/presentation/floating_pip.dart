@@ -1,6 +1,6 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import '../services/teacher_media_service.dart';
 import 'package:teaching_companion/features/studio_board/presentation/presentation_surface.dart';
 import 'system_microphone_controls.dart';

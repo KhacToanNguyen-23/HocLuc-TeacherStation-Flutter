@@ -1,10 +1,10 @@
-import 'package:desktop_drop/desktop_drop.dart';
+﻿import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'grid_painter.dart';
 import 'stroke_canvas.dart';
 import 'smart_chalk_overlay.dart';

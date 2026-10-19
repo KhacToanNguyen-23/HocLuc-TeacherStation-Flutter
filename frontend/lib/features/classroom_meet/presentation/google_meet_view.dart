@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'meet_webview.dart';
 import '../services/meet_automation_service.dart';
-import 'package:teaching_companion/constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 
 /// Uses the existing Meet controller/cookies; never creates a second session.
 class GoogleMeetView extends StatelessWidget {

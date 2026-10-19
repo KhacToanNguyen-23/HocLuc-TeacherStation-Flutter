@@ -1,6 +1,6 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';

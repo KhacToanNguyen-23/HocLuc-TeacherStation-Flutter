@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/models/planning_meta.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/planning_list_card.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_top_bar.dart';
 

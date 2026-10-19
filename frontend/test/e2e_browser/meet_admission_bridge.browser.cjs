@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 function dartRaw(file) {
-  return fs.readFileSync(path.join(__dirname, '..', 'lib', 'services', file), 'utf8').match(/r'''([\s\S]*?)'''/)[1];
+  return fs.readFileSync(path.join(__dirname, '..', '..', 'lib', 'features', 'classroom_meet', 'services', file), 'utf8').match(/r'''([\s\S]*?)'''/)[1];
 }
 const admission = dartRaw('meet_admission_bridge_script.dart');
 const legacy = dartRaw('meet_bridge_script.dart');

@@ -1,10 +1,10 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
-import '../constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 import 'package:teaching_companion/features/auth/services/google_connection_flow.dart';
-import '../models/teaching_target.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teaching_launcher.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_connection_panel.dart';

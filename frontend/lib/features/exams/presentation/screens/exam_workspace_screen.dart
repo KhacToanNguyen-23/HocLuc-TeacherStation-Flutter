@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
-import '../../constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/exams/services/exam_api.dart';
 import 'package:teaching_companion/features/exams/services/exam_file.dart';
 import 'package:teaching_companion/features/exams/services/exam_files.dart';
@@ -12,7 +12,7 @@ import 'package:teaching_companion/features/classroom_meet/services/google_meet_
 import 'package:teaching_companion/features/exams/presentation/exam_widgets.dart';
 import 'question_review_dialog.dart';
 import 'exam_paper_editor.dart';
-import '../login_screen.dart';
+import 'package:teaching_companion/features/auth/presentation/screens/login_screen.dart';
 
 part 'exam_workspace_classes_and_results.dart';
 part 'exam_workspace_analytics_and_sources.dart';

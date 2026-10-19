@@ -1,4 +1,4 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';

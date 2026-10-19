@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
-const script = fs.readFileSync(path.join(__dirname, '../lib/services/meet_screen_share_script.dart'), 'utf8').match(/r'''([\s\S]*?)'''/)[1];
+const script = fs.readFileSync(path.join(__dirname, '../../lib/features/classroom_meet/services/meet_screen_share_script.dart'), 'utf8').match(/r'''([\s\S]*?)'''/)[1];
 
 function fixture({ reject = false, deferred = false, origin = 'https://meet.google.com' } = {}) {
   const messages = [];

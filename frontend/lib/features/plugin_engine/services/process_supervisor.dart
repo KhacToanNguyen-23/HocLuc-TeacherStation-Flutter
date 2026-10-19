@@ -1,10 +1,10 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:teaching_companion/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 
 class ProcessInstance {
   final String pluginId;

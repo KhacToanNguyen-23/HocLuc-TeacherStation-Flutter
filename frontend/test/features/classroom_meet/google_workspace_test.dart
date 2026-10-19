@@ -1,10 +1,10 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:teaching_companion/screens/google_workspace_screen.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/screens/google_workspace_screen.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 
 void main() {

@@ -1,11 +1,11 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
-import '../constants/theme.dart';
-import '../models/studio_state.dart';
-import '../screens/classroom_dashboard_screen.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/screens/classroom_dashboard_screen.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/studio_board/presentation/stage_container.dart';
@@ -20,8 +20,8 @@ import 'package:teaching_companion/features/studio_board/presentation/studio/stu
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_plugins_marketplace_panel.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/save_classroom_dialog.dart';
-import '../models/teaching_target.dart';
-import '../models/planning_meta.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 import 'package:teaching_companion/features/auth/presentation/google_webview_login_dialog.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/select_classroom_dialog.dart';
 

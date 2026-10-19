@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../constants/theme.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 
 /// Appearance only: local sizes, padding and navigation remain with the screens.
 abstract final class AppTheme {

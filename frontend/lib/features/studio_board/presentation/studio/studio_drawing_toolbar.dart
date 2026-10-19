@@ -1,7 +1,7 @@
-import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
+﻿import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
 import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'studio_camera_control_panel.dart';
 
 class StudioDrawingToolbar extends StatelessWidget {

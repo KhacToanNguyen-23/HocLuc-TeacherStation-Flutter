@@ -1055,5 +1055,45 @@
     "evidence": "Invariants 8, 9, 10 active in architecture_test.dart; 10/10 invariants passed; ARCHITECTURE.md created; AGENTS.md updated",
     "notes": "Covers Phase 04",
     "priority": "P1"
+  },
+  {
+    "id": "enterprise-root-models-migration",
+    "title": "Migrate All Data Models & Theme/Utils to Domain Modules and Core",
+    "user_visible_behavior": "Data models, styling, and utilities are strictly encapsulated in feature domain models and core utilities, removing root clutter.",
+    "verification_command": "flutter analyze --no-fatal-infos",
+    "status": "passing",
+    "evidence": "All models in lib/models/ and theme/utils moved to feature domain models & core; lib/models, theme, constants, utils deleted; analyzer 0 issues",
+    "notes": "Covers Phase 01",
+    "priority": "P1"
+  },
+  {
+    "id": "enterprise-root-screens-migration",
+    "title": "Migrate All Screens to Feature Presentation Layers",
+    "user_visible_behavior": "All screens reside strictly under lib/features/<module>/presentation/screens/ with lib/screens/ permanently eliminated.",
+    "verification_command": "flutter test",
+    "status": "passing",
+    "evidence": "All 10 screens moved to lib/features/<module>/presentation/screens/; lib/screens deleted; 395/395 tests passed",
+    "notes": "Covers Phase 02",
+    "priority": "P1"
+  },
+  {
+    "id": "architecture-invariants-11-and-12",
+    "title": "Enforce Invariants 11 and 12 (Zero Flat Screens/Models at Lib Root)",
+    "user_visible_behavior": "Architecture test permanently bans lib/screens/, lib/models/, lib/theme/, lib/utils/, and lib/constants/ at root.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "status": "passing",
+    "evidence": "Invariants 11 and 12 added and passing; 12/12 architecture invariants passed 100%; ARCHITECTURE.md and AGENTS.md synced",
+    "notes": "Covers Phase 03",
+    "priority": "P1"
+  },
+  {
+    "id": "ci-native-windows-and-e2e-runner",
+    "title": "Harden CI with Windows Native Compilation Check and E2E Node Runner",
+    "user_visible_behavior": "CI executes browser bridge tests via node --test and validates Windows native compilation readiness.",
+    "verification_command": "node --test test/e2e_browser/meet_screen_share.test.cjs",
+    "status": "passing",
+    "evidence": "node --test passes 6/6 tests (93ms); ci-frontend.yml updated with browser bridge step and windows-latest build-windows-check job",
+    "notes": "Covers Phase 04",
+    "priority": "P1"
   }
 ]

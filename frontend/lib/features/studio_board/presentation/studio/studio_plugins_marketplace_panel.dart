@@ -1,7 +1,7 @@
-import 'package:file_picker/file_picker.dart';
+﻿import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
-import 'package:teaching_companion/models/subject_plugin.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/subject_plugin.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 
 /// Right-side Activities & Marketplace Panel matching Google Meet Add-ons & VS Code Extensions UX.

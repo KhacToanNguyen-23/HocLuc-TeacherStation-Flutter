@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/models/plugin_manifest.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/studio_board/presentation/interactive_chalkboard.dart';
 import 'package:teaching_companion/features/studio_board/presentation/subject_tool_palette.dart';

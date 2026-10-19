@@ -1,6 +1,6 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import '../../constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/exams/services/exam_api.dart';
 import 'package:teaching_companion/features/exams/presentation/exam_widgets.dart';
 

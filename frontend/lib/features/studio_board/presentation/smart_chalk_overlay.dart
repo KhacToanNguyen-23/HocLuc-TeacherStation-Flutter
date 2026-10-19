@@ -1,7 +1,7 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:teaching_companion/models/smart_chalk_annotation.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/smart_chalk_annotation.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 
 class ChalkUnderlinePainter extends CustomPainter {
   ChalkUnderlinePainter({

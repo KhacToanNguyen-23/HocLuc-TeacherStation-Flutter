@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'studio_meet_cockpit_tab.dart';

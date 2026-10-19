@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:teaching_companion/models/studio_state.dart';
-import 'package:teaching_companion/screens/classroom_dashboard_screen.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/screens/classroom_dashboard_screen.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 
 void main() {

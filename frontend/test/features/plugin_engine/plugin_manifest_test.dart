@@ -1,8 +1,8 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teaching_companion/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 
 void main() {

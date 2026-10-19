@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
 
 /// Left panel in Classroom Lobby for Hardware, Camera, Mic testing and Virtual Backgrounds.

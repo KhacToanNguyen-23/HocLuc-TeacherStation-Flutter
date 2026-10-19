@@ -1,9 +1,9 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
 import 'package:teaching_companion/features/studio_board/presentation/stroke_canvas.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;

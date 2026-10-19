@@ -1,8 +1,8 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:teaching_companion/models/planning_meta.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 
 class LocalService {
   static const int defaultCompanionPort = 47831;

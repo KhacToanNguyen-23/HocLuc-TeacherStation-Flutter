@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/screens/classroom_lobby_screen.dart';
-import 'package:teaching_companion/screens/studio_screen.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/screens/classroom_lobby_screen.dart';
+import 'package:teaching_companion/features/studio_board/presentation/screens/studio_screen.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';

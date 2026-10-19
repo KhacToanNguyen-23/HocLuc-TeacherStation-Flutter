@@ -1,8 +1,8 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
-import 'package:teaching_companion/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 
 /// Manages physical storage, extraction, on-disk caching and uninstallation of plugins.
 class PluginStorageManager {

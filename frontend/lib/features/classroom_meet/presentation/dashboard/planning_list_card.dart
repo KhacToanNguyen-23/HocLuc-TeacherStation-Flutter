@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
-import 'package:teaching_companion/models/planning_meta.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 import 'dashboard_empty_card.dart';
 
 class PlanningListCard extends StatelessWidget {

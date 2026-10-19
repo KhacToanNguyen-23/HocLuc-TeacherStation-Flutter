@@ -1,7 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/models/teaching_target.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teaching_launcher.dart';

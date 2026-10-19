@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -8,13 +8,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:teaching_companion/constants/theme.dart';
-import 'package:teaching_companion/screens/google_workspace_screen.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/screens/google_workspace_screen.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/system_microphone_service.dart';
-import 'package:teaching_companion/theme/app_theme.dart';
+import 'package:teaching_companion/core/theme/app_theme.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_shell.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/system_microphone_controls.dart';
