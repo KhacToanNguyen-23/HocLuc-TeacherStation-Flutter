@@ -1,10 +1,10 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:webview_windows/webview_windows.dart' as win;
 import 'meet_screen_share_script.dart';
-import 'package:teaching_companion/models/meet_events.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/meet_events.dart';
 import 'google_meet_auth_service.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'meet_bridge_script.dart';

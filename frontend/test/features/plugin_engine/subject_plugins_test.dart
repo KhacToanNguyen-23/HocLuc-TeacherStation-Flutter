@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teaching_companion/models/subject_plugin.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/subject_plugin.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_plugins_marketplace_panel.dart';
 

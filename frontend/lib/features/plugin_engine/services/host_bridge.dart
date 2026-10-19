@@ -1,10 +1,10 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:teaching_companion/models/board_sticker.dart';
-import 'package:teaching_companion/models/plugin_manifest.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/board_sticker.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 
 /// Standard Host Bridge mediating Typed RPC messages between Plugin Webview and Studio State.
 class HostBridge {

@@ -1,10 +1,10 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_windows/webview_windows.dart' as win;
-import 'package:teaching_companion/constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/webview_environment_service.dart';
 import 'package:teaching_companion/core/platform/url_opener.dart';

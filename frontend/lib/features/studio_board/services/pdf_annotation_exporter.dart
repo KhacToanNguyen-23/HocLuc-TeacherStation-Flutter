@@ -1,10 +1,10 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 
 part 'pdf_annotation_handout_exporter.dart';
 

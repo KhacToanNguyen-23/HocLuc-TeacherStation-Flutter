@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart' as pdfrx;
-import 'package:teaching_companion/models/plugin_manifest.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/studio_board/services/smart_pen_answer_index.dart';
 import 'package:teaching_companion/features/studio_board/presentation/pdf_stage.dart';

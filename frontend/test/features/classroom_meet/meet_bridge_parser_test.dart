@@ -1,6 +1,6 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/models/meet_events.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/meet_events.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_bridge_script.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_admission_bridge_script.dart';
 

@@ -1,8 +1,8 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import '../services/plugin_web_server.dart';
 import '../services/process_supervisor.dart';
 import 'flat_host.dart';

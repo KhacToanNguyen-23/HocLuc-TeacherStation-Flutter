@@ -1,8 +1,8 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teaching_companion/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 import 'plugin_manager.dart';
 
 /// DTO representing an extension package advertised by the Backend Marketplace Registry.

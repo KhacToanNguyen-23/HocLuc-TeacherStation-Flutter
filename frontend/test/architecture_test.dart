@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:teaching_companion/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 import 'package:teaching_companion/features/plugin_engine/services/process_supervisor.dart';
 
 void main() {
@@ -388,6 +388,63 @@ void main() {
         ghostDependencies,
         isEmpty,
         reason: 'Phát hiện dependency ma (path không tồn tại) trong pubspec.yaml:\n${ghostDependencies.join("\n")}',
+      );
+    });
+
+    test('Bất biến 11: Cấm tồn tại thư mục phẳng lib/screens/ và lib/models/ tại root', () {
+      final forbiddenDirs = [
+        Directory('lib/screens'),
+        Directory('lib/models'),
+      ];
+      final violations = <String>[];
+
+      for (final dir in forbiddenDirs) {
+        if (dir.existsSync()) {
+          final files = dir.listSync(recursive: true).whereType<File>();
+          if (files.isNotEmpty) {
+            for (final f in files) {
+              violations.add('File trong thư mục cấm ${dir.path}: ${f.path}');
+            }
+          } else {
+            violations.add('Thư mục cấm ${dir.path} vẫn tồn tại trên đĩa');
+          }
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason:
+            'Phát hiện file/thư mục vi phạm quy chuẩn Clean Architecture (phải đặt trong lib/features/<module>/presentation/screens/ hoặc lib/features/<module>/domain/models/):\n${violations.join("\n")}',
+      );
+    });
+
+    test('Bất biến 12: Cấm tồn tại thư mục phẳng lib/theme/, lib/utils/, lib/constants/ tại root', () {
+      final forbiddenDirs = [
+        Directory('lib/theme'),
+        Directory('lib/utils'),
+        Directory('lib/constants'),
+      ];
+      final violations = <String>[];
+
+      for (final dir in forbiddenDirs) {
+        if (dir.existsSync()) {
+          final files = dir.listSync(recursive: true).whereType<File>();
+          if (files.isNotEmpty) {
+            for (final f in files) {
+              violations.add('File trong thư mục cấm ${dir.path}: ${f.path}');
+            }
+          } else {
+            violations.add('Thư mục cấm ${dir.path} vẫn tồn tại trên đĩa');
+          }
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason:
+            'Phát hiện file/thư mục vi phạm quy chuẩn Core layer (phải đặt trong lib/core/theme/, lib/core/utils/ hoặc lib/core/constants/):\n${violations.join("\n")}',
       );
     });
   });

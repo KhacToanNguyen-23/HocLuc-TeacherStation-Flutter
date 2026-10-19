@@ -1,11 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:teaching_companion/main.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 
 void main() {

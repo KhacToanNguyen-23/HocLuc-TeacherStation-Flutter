@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:teaching_companion/constants/theme.dart';
-import 'package:teaching_companion/models/planning_meta.dart';
-import 'package:teaching_companion/models/teaching_target.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teaching_launcher.dart';

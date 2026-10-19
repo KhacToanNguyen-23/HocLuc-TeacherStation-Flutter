@@ -1,12 +1,12 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teaching_companion/models/plugin_manifest.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_marketplace_service.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_storage_manager.dart';

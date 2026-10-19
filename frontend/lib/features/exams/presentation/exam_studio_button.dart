@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import '../services/exam_api.dart';
-import 'package:teaching_companion/screens/exams/exam_workspace_screen.dart';
+import 'package:teaching_companion/features/exams/presentation/screens/exam_workspace_screen.dart';
 
 /// Keeps exam navigation outside the teaching toolbar and board lifecycle.
 class ExamStudioButton extends StatelessWidget {

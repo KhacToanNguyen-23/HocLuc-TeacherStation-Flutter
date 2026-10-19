@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:teaching_companion/constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/core/platform/url_opener.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teaching_launcher.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';

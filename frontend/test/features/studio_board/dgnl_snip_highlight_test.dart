@@ -1,10 +1,10 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
-import 'package:teaching_companion/models/plugin_manifest.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/dgnl_service.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';

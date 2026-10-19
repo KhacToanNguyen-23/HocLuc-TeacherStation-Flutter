@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../theme/app_palette.dart';
-export '../theme/app_color_theme.dart';
-export '../theme/app_palette.dart';
-export '../theme/app_visuals.dart';
+import 'app_palette.dart';
+export 'app_color_theme.dart';
+export 'app_palette.dart';
+export 'app_visuals.dart';
 
 /// Shared 4-point spacing scale for predictable product UI density.
 class AppSpacing {

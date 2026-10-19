@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -9,7 +9,7 @@ import 'package:teaching_companion/features/classroom_meet/services/meet_automat
 import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_shell.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_drawing_toolbar.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import '../../support/meet_admission_fixture.dart';
 
 Widget app(

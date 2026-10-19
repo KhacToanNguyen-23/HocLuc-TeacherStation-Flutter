@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 
 /// Action card for top dashboard row (Join, Begin, Schedule).
 class DashboardActionCard extends StatefulWidget {

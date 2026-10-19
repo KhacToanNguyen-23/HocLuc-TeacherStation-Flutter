@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 
 class WorkspaceInviteDialog extends StatefulWidget {

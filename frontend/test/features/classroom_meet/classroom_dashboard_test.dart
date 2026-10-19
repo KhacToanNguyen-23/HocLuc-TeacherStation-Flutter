@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/main.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
-import 'package:teaching_companion/screens/login_screen.dart';
+import 'package:teaching_companion/features/auth/presentation/screens/login_screen.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/join_classroom_dialog.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/schedule_classroom_dialog.dart';
 

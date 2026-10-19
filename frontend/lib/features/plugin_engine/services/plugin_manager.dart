@@ -1,9 +1,9 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teaching_companion/models/plugin_manifest.dart';
-import 'package:teaching_companion/models/subject_plugin.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/subject_plugin.dart';
 import 'plugin_marketplace_service.dart';
 import 'plugin_storage_manager.dart';
 import 'plugin_web_server.dart';

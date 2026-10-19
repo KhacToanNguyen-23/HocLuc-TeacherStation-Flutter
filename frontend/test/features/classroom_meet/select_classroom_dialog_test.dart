@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/models/planning_meta.dart';
-import 'package:teaching_companion/models/teaching_target.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/select_classroom_dialog.dart';
 
 void main() {

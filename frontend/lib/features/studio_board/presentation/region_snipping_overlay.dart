@@ -1,9 +1,9 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import '../services/dgnl_service.dart';
 
 part 'region_snipping_painter.dart';

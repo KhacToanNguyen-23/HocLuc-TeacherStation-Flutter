@@ -1,19 +1,19 @@
-import 'package:teaching_companion/utils/frontend_logger.dart';
+﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teaching_launcher.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
-import '../models/teaching_target.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/lobby/lobby_header.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/lobby/lobby_media_preview.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/lobby/lobby_meet_room_card.dart';
 import 'package:teaching_companion/features/auth/presentation/google_webview_login_dialog.dart';
-import 'studio_screen.dart';
+import 'package:teaching_companion/features/studio_board/presentation/screens/studio_screen.dart';
 
 /// Classroom Lobby screen coordinating hardware pre-flight checks,
 /// Google Meet room connectivity, and transition to teaching Studio.

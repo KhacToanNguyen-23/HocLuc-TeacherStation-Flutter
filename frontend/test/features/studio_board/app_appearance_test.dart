@@ -1,11 +1,11 @@
-import 'dart:ui' show PointerDeviceKind;
+﻿import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/constants/theme.dart';
-import 'package:teaching_companion/theme/app_theme.dart';
-import 'package:teaching_companion/models/planning_meta.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/core/theme/app_theme.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/planning_list_card.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/dashboard_action_card.dart';
 import 'package:teaching_companion/features/studio_board/presentation/grid_painter.dart';

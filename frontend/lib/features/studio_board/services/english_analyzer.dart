@@ -1,8 +1,8 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:http/http.dart' as http;
-import 'package:teaching_companion/models/board_sticker.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/board_sticker.dart';
 import 'package:teaching_companion/features/plugin_engine/services/process_supervisor.dart';
 
 class EnglishSentenceAnalyzer {

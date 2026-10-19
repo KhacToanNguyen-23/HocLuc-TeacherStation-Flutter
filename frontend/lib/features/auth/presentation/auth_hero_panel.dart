@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// Left hero panel for auth modal showing exclusively the SVG illustration with zero text.

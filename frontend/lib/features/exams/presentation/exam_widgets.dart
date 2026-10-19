@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/constants/theme.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import '../services/exam_api.dart';
 
 typedef ExamRow = Map<String, dynamic>;

@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/classroom_meet/services/system_microphone_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
 

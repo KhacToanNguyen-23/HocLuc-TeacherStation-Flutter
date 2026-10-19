@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:teaching_companion/models/board_sticker.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/board_sticker.dart';
 
 class BoardStickerCard extends StatelessWidget {
   const BoardStickerCard({

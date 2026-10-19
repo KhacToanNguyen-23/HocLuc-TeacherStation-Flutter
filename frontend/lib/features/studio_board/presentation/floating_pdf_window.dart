@@ -1,7 +1,7 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:teaching_companion/models/studio_state.dart';
-import 'package:teaching_companion/utils/safe_clamp.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
+import 'package:teaching_companion/core/utils/safe_clamp.dart';
 import 'pdf_stage.dart';
 
 class FloatingPdfWindow extends StatefulWidget {

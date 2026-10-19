@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'theme/app_theme.dart';
+import 'core/theme/app_theme.dart';
 import 'features/classroom_meet/services/google_meet_auth_service.dart';
 import 'features/classroom_meet/services/webview_environment_service.dart';
-import 'screens/login_screen.dart';
-import 'screens/classroom_dashboard_screen.dart';
+import 'features/auth/presentation/screens/login_screen.dart';
+import 'features/classroom_meet/presentation/screens/classroom_dashboard_screen.dart';
 import 'features/classroom_meet/presentation/meet_admission_shell.dart';
 import 'features/classroom_meet/services/meet_automation_service.dart';
 import 'features/classroom_meet/presentation/meet_webview.dart';
 
-export 'constants/theme.dart';
-export 'screens/studio_screen.dart';
-export 'screens/classroom_dashboard_screen.dart';
+export 'core/theme/theme.dart';
+export 'features/studio_board/presentation/screens/studio_screen.dart';
+export 'features/classroom_meet/presentation/screens/classroom_dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

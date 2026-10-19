@@ -1,7 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/system_microphone_service.dart';
-import 'package:teaching_companion/constants/theme.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 
 class SystemMicrophoneControls extends StatefulWidget {
   const SystemMicrophoneControls({super.key, this.microphone});
