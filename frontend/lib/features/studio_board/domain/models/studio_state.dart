@@ -1,4 +1,4 @@
-﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -385,7 +385,9 @@ class StudioState extends ChangeNotifier {
       return;
     }
     final w = tool == 'highlight' ? highlighterWidth : strokeWidth;
-    final stroke = BoardStroke(ink, w, [point]);
+    final stroke = BoardStroke(ink, w, [
+      point,
+    ], isHighlighter: tool == 'highlight');
     list.add(stroke);
     if (target == null) {
       _recordBoardAction(stroke);
@@ -889,4 +891,3 @@ class StudioState extends ChangeNotifier {
     super.dispose();
   }
 }
-
