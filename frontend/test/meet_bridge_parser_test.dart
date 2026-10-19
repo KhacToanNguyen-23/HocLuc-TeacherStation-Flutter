@@ -13,7 +13,6 @@ void main() {
       expect(MeetBridgeScript.script, contains('scanChatMessages'));
       expect(MeetBridgeScript.script, contains('admitAll'));
       expect(MeetBridgeScript.script, contains('muteAll'));
-      expect(MeetBridgeScript.script, contains('startPresenting'));
       expect(MeetBridgeScript.script, contains('sendChat'));
       expect(MeetBridgeScript.script, contains('cho phép'));
       expect(MeetAdmissionBridgeScript.script, contains('chấp nhận'));
@@ -81,29 +80,9 @@ void main() {
       expect(event.pendingCount, equals(3));
     });
 
-    test('Parses MEET_MEDIA_DEVICE_SELECTED json from bridge', () {
-      const rawJson = '''
-      {
-        "type": "MEET_MEDIA_DEVICE_SELECTED",
-        "payload": {
-          "hasHocLucCam": true,
-          "hasHocLucMic": true,
-          "camLabel": "HocLuc Studio Camera",
-          "micLabel": "HocLuc Virtual Mic"
-        }
-      }
-      ''';
-
-      final Map<String, dynamic> data = jsonDecode(rawJson);
-      expect(data['type'], equals('MEET_MEDIA_DEVICE_SELECTED'));
-      expect(data['payload']['hasHocLucCam'], isTrue);
-      expect(data['payload']['hasHocLucMic'], isTrue);
-      expect(data['payload']['camLabel'], equals('HocLuc Studio Camera'));
-      expect(data['payload']['micLabel'], equals('HocLuc Virtual Mic'));
-
+    test('Bridge retains controls for real media devices', () {
       expect(MeetBridgeScript.script, contains('setMicMute'));
       expect(MeetBridgeScript.script, contains('setCamMute'));
-      expect(MeetBridgeScript.script, contains('MEET_MEDIA_DEVICE_SELECTED'));
     });
   });
 }

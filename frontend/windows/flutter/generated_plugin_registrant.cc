@@ -12,7 +12,6 @@
 #include <record_windows/record_windows_plugin_c_api.h>
 #include <url_launcher_windows/url_launcher_windows.h>
 #include <webview_windows/webview_windows_plugin.h>
-#include <wgc_broadcaster/wgc_broadcaster_plugin_c_api.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   AudioBridgePluginCApiRegisterWithRegistrar(
@@ -27,6 +26,4 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("UrlLauncherWindows"));
   WebviewWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("WebviewWindowsPlugin"));
-  WgcBroadcasterPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("WgcBroadcasterPluginCApi"));
 }

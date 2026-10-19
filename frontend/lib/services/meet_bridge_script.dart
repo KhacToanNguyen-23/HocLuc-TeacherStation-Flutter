@@ -251,21 +251,6 @@ class MeetBridgeScript {
       return buttons.length;
     },
 
-    startPresenting: function() {
-      var presentBtn = Array.from(document.querySelectorAll('button')).find(function(b) {
-        var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-        var a = (b.getAttribute('aria-label') || '').toLowerCase();
-        return t.includes('trình bày ngay') || t.includes('present now') ||
-               a.includes('trình bày ngay') || a.includes('present now') ||
-               a.includes('share screen') || a.includes('chia sẻ màn hình');
-      });
-      if (presentBtn) {
-        presentBtn.click();
-        return true;
-      }
-      return false;
-    },
-
     sendChat: function(message) {
       if (!message || !message.trim()) return false;
 
@@ -323,21 +308,6 @@ class MeetBridgeScript {
       return false;
     }
   };
-
-  if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-    try {
-      navigator.mediaDevices.enumerateDevices().then(function(devices) {
-        var hocLucCam = devices.find(function(d) { return (d.label || '').includes('HocLuc'); });
-        var hocLucMic = devices.find(function(d) { return (d.label || '').includes('HocLuc'); });
-        sendToFlutter('MEET_MEDIA_DEVICE_SELECTED', {
-          hasHocLucCam: !!hocLucCam,
-          hasHocLucMic: !!hocLucMic,
-          camLabel: hocLucCam ? hocLucCam.label : 'Default',
-          micLabel: hocLucMic ? hocLucMic.label : 'Default'
-        });
-      });
-    } catch (e) {}
-  }
 
   sendToFlutter('MEET_BRIDGE_READY', { status: 'ready', url: window.location.href });
 })();

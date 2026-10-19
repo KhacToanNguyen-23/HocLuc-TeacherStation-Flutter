@@ -2,7 +2,6 @@ import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/camera_broadcast_service.dart';
 import '../services/teacher_media_service.dart';
 import '../constants/theme.dart';
 import '../models/studio_state.dart';
@@ -383,7 +382,6 @@ class _StudioScreenState extends State<StudioScreen> {
     MeetAutomationService().removeListener(_onMeetChanged);
     _sessionApi.dispose();
     if (widget.teachingTarget == null) {
-      unawaited(CameraBroadcastService().stop());
       unawaited(TeacherMediaService().shutdown());
     }
     studio.removeListener(syncControllers);

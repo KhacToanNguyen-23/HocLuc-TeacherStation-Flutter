@@ -119,23 +119,18 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
     _pendingAdmitCount = 0;
   }
 
-  /// Bắt đầu phát sóng stream màn hình bảng vẽ lên Virtual Camera
-  Future<void> startBroadcast() async {
-    if (_isBroadcasting) return;
-    await CameraBroadcastService().start();
-  }
-
-  /// Tạm dừng / Dừng phát sóng stream
-  Future<void> stopBroadcast() async {
-    await CameraBroadcastService().stop();
-  }
-
-  /// Chuyển đổi trạng thái phát sóng ON / OFF
-  Future<void> toggleBroadcast() async {
-    if (_isBroadcasting) {
-      await stopBroadcast();
-    } else {
-      await startBroadcast();
+  /// Stop only streams returned by Meet's real screen/window picker.
+  Future<void> stopScreenSharing() async {
+    if (_controller == null && _testExecuteScript == null) return;
+    try {
+      await _executeAdmissionScript(
+        'window.HocLucScreenShare && window.HocLucScreenShare.stop();',
+      );
+    } catch (error) {
+      // A closed/navigating renderer must not prevent the room from closing.
+      FrontendLogger.write(
+        '[MeetAutomation] Could not stop display tracks: $error',
+      );
     }
   }
 
@@ -289,6 +284,7 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
   void clearMeetingEvents() {
     _resetAdmissions();
     _hostJoined = false;
+    _isScreenSharing = false;
     _messages.clear();
     _raisedHands.clear();
     _participants.clear();
@@ -300,14 +296,14 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
   /// Tạm dừng phiên giảng dạy (rời Studio tạm thời, giữ link Meet trên hệ thống)
   Future<void> pauseSession() async {
     _bridgeTimer?.cancel();
-    await stopBroadcast();
+    await stopScreenSharing();
     notifyListeners();
   }
 
   /// Đóng lớp học hoàn toàn (mặc định kết thúc cuộc gọi cho tất cả mọi người trên Google Meet)
   Future<void> leaveClassroom({bool endForEveryone = true}) async {
     _bridgeTimer?.cancel();
-    await stopBroadcast();
+    await stopScreenSharing();
     linkedTeacherEmail = null;
     _manualJoin = false;
     showEmbeddedMeet = false;
@@ -382,10 +378,9 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
     notifyListeners();
   }
 
-  /// Tương thích ngược: Vừa tạo phòng vừa bắt đầu phát sóng
+  /// Compatibility entry point. Presenting requires a user click inside Meet.
   Future<void> startAutoMeet() async {
     await createClassroom();
-    await startBroadcast();
   }
 
   /// Tương thích ngược
