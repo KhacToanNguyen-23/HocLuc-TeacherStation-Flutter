@@ -258,6 +258,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
   }) async {
     await _run(() async {
       if (changeAccount) await TeachingLauncher.requireIdleForAccountChange();
+      if (!mounted) return;
       final generation = ++_connectGeneration;
       setState(() => _polling = true);
       try {

@@ -17,10 +17,11 @@ class TeachingLauncher {
   }) async {
     final local = localService ?? LocalService();
     try {
-      if (_opening)
+      if (_opening) {
         throw StateError(
           'Đang mở buổi dạy. Vui lòng chờ hoàn tất trước khi đổi tài khoản.',
         );
+      }
       await MeetAutomationService().pendingSessionRegistration;
       final active = await local.getActiveClassroom(strict: true);
       if (hasStudio ||
