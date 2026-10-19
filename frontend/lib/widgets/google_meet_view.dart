@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:webview_windows/webview_windows.dart' as win;
+import 'meet_webview.dart';
 import '../services/meet_automation_service.dart';
 import '../constants/theme.dart';
 
@@ -41,6 +41,36 @@ class GoogleMeetView extends StatelessWidget {
         ),
       );
     }
-    return win.Webview(controller);
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: ListenableBuilder(
+            listenable: service,
+            builder: (context, _) => Row(
+              children: [
+                Icon(
+                  service.isScreenSharing
+                      ? Icons.screen_share
+                      : Icons.present_to_all,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    service.isScreenSharing
+                        ? 'Đang chia sẻ màn hình'
+                        : 'Bấm Trình bày ngay trong Meet, chọn cửa sổ hoặc màn hình rồi bấm Chia sẻ.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Expanded(child: MeetWebview(controller: controller)),
+      ],
+    );
   }
 }

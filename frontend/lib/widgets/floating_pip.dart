@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/studio_state.dart';
-import '../services/camera_broadcast_service.dart';
 import '../services/teacher_media_service.dart';
 import 'presentation_surface.dart';
 import 'system_microphone_controls.dart';
@@ -13,9 +12,8 @@ class FloatingPip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final media = TeacherMediaService();
-    final broadcast = CameraBroadcastService();
     return ListenableBuilder(
-      listenable: Listenable.merge([studio, media, broadcast]),
+      listenable: Listenable.merge([studio, media]),
       builder: (context, _) => LayoutBuilder(
         builder: (context, constraints) {
           final size = constraints.biggest;

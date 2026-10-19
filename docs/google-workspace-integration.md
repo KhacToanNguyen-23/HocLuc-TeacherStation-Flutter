@@ -75,6 +75,21 @@ Luồng Calendar không gọi Meet API để sửa accessType hay thêm co-host.
 - Lưu event ID và request body trước khi POST. Sau timeout/409, đọc lại đúng sự kiện và kiểm tra chủ sở hữu HocLuc, thời gian, danh sách khách, hội nghị trước khi dùng link. Hội nghị pending không được tự tạo một sự kiện khác. Buổi hết giờ không được khởi động lại như buổi mới.
 - Ngắt kết nối thu hồi OAuth rồi xóa token local; không xóa lớp, phòng hoặc lịch Google.
 
+## Chia sẻ màn hình trong Meet trên Windows
+
+UnityCapture và luồng camera ảo đã được gỡ bỏ. WebView2 sử dụng camera/microphone thật và hộp chọn chia sẻ của trình duyệt, không bật fake media hoặc tự chọn nguồn phát.
+
+Quyền camera/microphone (và đọc bộ nhớ tạm nếu Meet yêu cầu) được hỏi bằng hộp thoại Flutter **Cho phép / Không cho phép**, nằm trên cả panel Meet nhỏ. Ứng dụng chuyển quyết định trực tiếp qua callback `permissionRequested` của WebView2 để tránh popup trình duyệt không nhận được click trong texture nhúng. Chỉ origin HTTPS chính xác `meet.google.com` có thể hiện hộp hỏi này; quyền không hỗ trợ và yêu cầu từ origin khác bị từ chối. Đóng hộp hỏi hoặc đóng khung Meet cuối cùng sẽ trả về từ chối; nếu vẫn còn khung Meet khác dùng cùng phiên, callback cấp quyền vẫn hoạt động. Hộp chọn màn hình/cửa sổ là UI riêng của trình duyệt, không phải hộp cấp quyền camera/microphone.
+
+1. Khởi động lại ứng dụng sau khi cập nhật để WebView2 nhận cấu hình mới.
+2. Vào phòng Meet trong panel bên phải. Bấm **Trình bày ngay / Present now** trực tiếp trong trang Meet.
+3. Chọn cửa sổ hoặc màn hình trong hộp chọn của trình duyệt, rồi bấm **Chia sẻ / Share**. Nếu hộp chọn không vừa panel, dùng nút **Phóng lớn Meet trong ứng dụng** trước khi trình bày.
+4. Dừng bằng nút của Meet hoặc trình duyệt. Tạm rời/kết thúc lớp cũng yêu cầu dừng các track chia sẻ. Webcam/PIP trên bảng vẫn là tính năng riêng; chọn thiết bị thật trong cài đặt Meet nếu muốn truyền webcam/microphone.
+
+Trạng thái **Đang chia sẻ màn hình** chỉ xuất hiện sau khi `getDisplayMedia` trả về video track đang chạy; bấm nút hoặc hủy hộp chọn không được coi là đã phát. Chia sẻ cửa sổ/màn hình truyền cả nội dung nguồn đó; không còn chế độ tự crop chỉ vùng bảng qua camera ảo.
+
+Kiểm thử tự động kiểm tra vòng đời stream, hủy chọn, dừng track, xử lý trạng thái và kiến trúc. Vẫn cần kiểm chứng trực tiếp với tài khoản Meet trên Windows: panel nhỏ và phóng lớn, chọn đúng cửa sổ HocLuc, hủy rồi chia sẻ lại, dừng từ trình duyệt, và xác nhận bên học sinh nhận được hình/âm thanh đã chọn. Không coi các fixture tự động là bằng chứng của cuộc gọi Google thật.
+
 ## Kiểm chứng
 
 Luồng Google thống nhất: nút Google ở màn đăng nhập mở OAuth trong trình duyệt hệ thống. Tài khoản có email đã được Google xác minh trở thành danh tính HocLuc; không cần đăng nhập WebView trước và không lưu Google token ở Flutter. Màn lớp dùng lại kết nối đã lưu, backend tự gia hạn access token. Nút “Cấp quyền lại” chủ động yêu cầu consent để sửa quyền bị thiếu/thu hồi. Đổi tài khoản trong OAuth cập nhật danh tính và tải lại lớp của tài khoản mới. Phiên đăng nhập Meet WebView vẫn độc lập; lần đầu có thể cần đăng nhập cùng tài khoản, các lần sau giữ cookie. Không chuyển token OAuth thành cookie Meet. Cloud ở chế độ Testing có thể cấp refresh token hết hạn sau 7 ngày.

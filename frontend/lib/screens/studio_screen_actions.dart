@@ -301,7 +301,7 @@ extension _StudioScreenActionsExt on _StudioScreenState {
         return;
       }
       if (widget.teachingTarget != null) {
-        await MeetAutomationService().stopBroadcast();
+        await MeetAutomationService().stopScreenSharing();
         if (mounted) {
           await Navigator.of(context).push<void>(
             MaterialPageRoute(builder: (_) => const ClassroomDashboardScreen()),

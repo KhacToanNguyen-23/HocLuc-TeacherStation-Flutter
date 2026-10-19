@@ -17,8 +17,6 @@ dependencies:
   desktop_drop: ^0.8.4
   archive: ^4.0.0
   crypto: ^3.0.7
-  wgc_broadcaster:
-    path: plugins/wgc_broadcaster
   audio_bridge:
     path: plugins/audio_bridge
   web_socket_channel: ^3.0.3
