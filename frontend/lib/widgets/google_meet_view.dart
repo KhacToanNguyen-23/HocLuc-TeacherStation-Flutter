@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:webview_windows/webview_windows.dart' as win;
+import 'meet_webview.dart';
 import '../services/meet_automation_service.dart';
 import '../constants/theme.dart';
 
@@ -69,7 +69,7 @@ class GoogleMeetView extends StatelessWidget {
             ),
           ),
         ),
-        Expanded(child: win.Webview(controller)),
+        Expanded(child: MeetWebview(controller: controller)),
       ],
     );
   }

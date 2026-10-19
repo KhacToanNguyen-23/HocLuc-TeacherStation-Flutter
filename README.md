@@ -35,7 +35,7 @@
 ### FR-03: Google Meet Automation and Audio Bridge
 | ID | Feature | Description | Status |
 | :--- | :--- | :--- | :---: |
-| **FR-03.1** | Automated Meeting Launch and Join | Launches Google Meet inside an embedded WebView2 instance, suppresses duplicate browser camera/microphone prompts, and joins automatically. | Implemented |
+| **FR-03.1** | Automated Meeting Launch and Join | Launches Google Meet inside an embedded WebView2 instance, handles camera/microphone consent with Flutter Allow/Deny buttons, and joins automatically. | Implemented |
 | **FR-03.2** | Participant Admission and Cockpit | Displays a live student strip and Meet Cockpit inspector with pending admission counters, automatic admission toggle, speaking/hand-raise indicators, and end-call-for-all controls. | Implemented |
 | **FR-03.3** | System Microphone Sync and Translation | Synchronizes mute state and input gain directly with the Windows Audio Endpoint and feeds the live translation/captioning pipeline. | Implemented |
 | **FR-03.4** | Native Meet Screen Sharing | Use Present now in the embedded meeting panel, choose a window or screen, and confirm the browser capture picker. No virtual camera driver is required. | Requires live Windows verification |

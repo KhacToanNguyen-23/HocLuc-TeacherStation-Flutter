@@ -79,6 +79,8 @@ Luồng Calendar không gọi Meet API để sửa accessType hay thêm co-host.
 
 UnityCapture và luồng camera ảo đã được gỡ bỏ. WebView2 sử dụng camera/microphone thật và hộp chọn chia sẻ của trình duyệt, không bật fake media hoặc tự chọn nguồn phát.
 
+Quyền camera/microphone (và đọc bộ nhớ tạm nếu Meet yêu cầu) được hỏi bằng hộp thoại Flutter **Cho phép / Không cho phép**, nằm trên cả panel Meet nhỏ. Ứng dụng chuyển quyết định trực tiếp qua callback `permissionRequested` của WebView2 để tránh popup trình duyệt không nhận được click trong texture nhúng. Chỉ origin HTTPS chính xác `meet.google.com` có thể hiện hộp hỏi này; quyền không hỗ trợ và yêu cầu từ origin khác bị từ chối. Đóng hộp hỏi hoặc đóng khung Meet cuối cùng sẽ trả về từ chối; nếu vẫn còn khung Meet khác dùng cùng phiên, callback cấp quyền vẫn hoạt động. Hộp chọn màn hình/cửa sổ là UI riêng của trình duyệt, không phải hộp cấp quyền camera/microphone.
+
 1. Khởi động lại ứng dụng sau khi cập nhật để WebView2 nhận cấu hình mới.
 2. Vào phòng Meet trong panel bên phải. Bấm **Trình bày ngay / Present now** trực tiếp trong trang Meet.
 3. Chọn cửa sổ hoặc màn hình trong hộp chọn của trình duyệt, rồi bấm **Chia sẻ / Share**. Nếu hộp chọn không vừa panel, dùng nút **Phóng lớn Meet trong ứng dụng** trước khi trình bày.

@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:webview_windows/webview_windows.dart' as win;
+import 'meet_webview.dart';
 import '../constants/theme.dart';
 import '../services/meet_automation_service.dart';
 import 'meet_admission_button.dart';
@@ -416,7 +416,7 @@ class _MeetSessionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = service.webviewController;
     if (controller != null && controller.value.isInitialized) {
-      return SizedBox(height: 640, child: win.Webview(controller));
+      return SizedBox(height: 640, child: MeetWebview(controller: controller));
     }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
