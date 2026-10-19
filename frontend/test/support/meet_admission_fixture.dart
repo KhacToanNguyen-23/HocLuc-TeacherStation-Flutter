@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:teaching_companion/services/meet_automation_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 
 const room = 'https://meet.google.com/abc-defg-hij';
 Map<String, dynamic> message(
@@ -39,3 +39,4 @@ void seedAdmissions(
 Map<String, dynamic> command(String script) =>
     jsonDecode(RegExp(r'\.admit\((\{.*\})\) :').firstMatch(script)!.group(1)!)
         as Map<String, dynamic>;
+

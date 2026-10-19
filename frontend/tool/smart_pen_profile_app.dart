@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:pdfrx/pdfrx.dart' as pdfrx;
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
-import 'package:teaching_companion/services/smart_pen_answer_index.dart';
+import 'package:teaching_companion/features/studio_board/services/smart_pen_answer_index.dart';
 import 'smart_pen_profile_report_stub.dart'
     if (dart.library.js_interop) 'smart_pen_profile_report_web.dart'
     as profile_report;

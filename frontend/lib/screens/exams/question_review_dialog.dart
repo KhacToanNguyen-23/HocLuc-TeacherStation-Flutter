@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
-import '../../services/exam_api.dart';
-import '../../widgets/exams/exam_widgets.dart';
+import 'package:teaching_companion/features/exams/services/exam_api.dart';
+import 'package:teaching_companion/features/exams/presentation/exam_widgets.dart';
 
 class QuestionReviewDialog extends StatefulWidget {
   const QuestionReviewDialog({
@@ -523,3 +523,4 @@ class _QuestionReviewDialogState extends State<QuestionReviewDialog> {
     ),
   );
 }
+

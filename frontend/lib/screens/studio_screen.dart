@@ -2,28 +2,28 @@ import 'package:teaching_companion/utils/frontend_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/teacher_media_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
 import '../constants/theme.dart';
 import '../models/studio_state.dart';
 import '../screens/classroom_dashboard_screen.dart';
-import '../services/local_service.dart';
-import '../services/meet_automation_service.dart';
-import '../widgets/stage_container.dart';
-import '../widgets/studio/studio_drawing_toolbar.dart';
-import '../widgets/studio/studio_inspector_panel.dart';
-import '../widgets/studio/studio_speaker_notes_bar.dart';
-import '../widgets/studio/studio_preview_dialog.dart';
-import '../widgets/studio/studio_question_view.dart';
-import '../widgets/studio/studio_rename_dialog.dart';
-import '../widgets/studio/studio_students_drawer.dart';
-import '../widgets/studio/studio_top_bar.dart';
-import '../services/plugin_manager.dart';
-import '../widgets/studio/studio_plugins_marketplace_panel.dart';
-import '../widgets/studio/save_classroom_dialog.dart';
+import 'package:teaching_companion/core/network/local_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
+import 'package:teaching_companion/features/studio_board/presentation/stage_container.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_drawing_toolbar.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_inspector_panel.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_speaker_notes_bar.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_preview_dialog.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_question_view.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_rename_dialog.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_students_drawer.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_top_bar.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_plugins_marketplace_panel.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/save_classroom_dialog.dart';
 import '../models/teaching_target.dart';
 import '../models/planning_meta.dart';
-import '../widgets/auth/google_webview_login_dialog.dart';
-import '../widgets/dashboard/select_classroom_dialog.dart';
+import 'package:teaching_companion/features/auth/presentation/google_webview_login_dialog.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/select_classroom_dialog.dart';
 
 part 'studio_screen_actions.dart';
 
@@ -638,3 +638,4 @@ class _StudioScreenState extends State<StudioScreen> {
     },
   );
 }
+

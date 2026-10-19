@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
-import 'services/google_meet_auth_service.dart';
-import 'services/webview_environment_service.dart';
+import 'features/classroom_meet/services/google_meet_auth_service.dart';
+import 'features/classroom_meet/services/webview_environment_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/classroom_dashboard_screen.dart';
-import 'widgets/meet_admission_shell.dart';
-import 'services/meet_automation_service.dart';
-import 'widgets/meet_webview.dart';
+import 'features/classroom_meet/presentation/meet_admission_shell.dart';
+import 'features/classroom_meet/services/meet_automation_service.dart';
+import 'features/classroom_meet/presentation/meet_webview.dart';
 
 export 'constants/theme.dart';
 export 'screens/studio_screen.dart';

@@ -7,16 +7,16 @@ import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
-import '../services/local_service.dart';
-import '../services/audio_translation_service.dart';
-import '../services/teacher_media_service.dart';
-import '../services/desktop_lifecycle.dart';
-import '../services/plugin_manager.dart';
-import '../services/host_bridge.dart';
+import 'package:teaching_companion/core/network/local_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/audio_translation_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
+import 'package:teaching_companion/core/platform/desktop_lifecycle.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
+import 'package:teaching_companion/features/plugin_engine/services/host_bridge.dart';
 import 'board_sticker.dart';
 import 'smart_chalk_annotation.dart';
-import '../services/stroke_clusterer.dart';
-import '../services/english_analyzer.dart';
+import 'package:teaching_companion/features/studio_board/services/stroke_clusterer.dart';
+import 'package:teaching_companion/features/studio_board/services/english_analyzer.dart';
 import 'smart_pen_answer_selection.dart';
 export 'smart_pen_answer_selection.dart';
 
@@ -889,3 +889,4 @@ class StudioState extends ChangeNotifier {
     super.dispose();
   }
 }
+
