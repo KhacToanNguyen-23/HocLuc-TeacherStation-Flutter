@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/exam_api.dart';
-import '../../widgets/exams/exam_widgets.dart';
+import 'package:teaching_companion/features/exams/services/exam_api.dart';
+import 'package:teaching_companion/features/exams/presentation/exam_widgets.dart';
 
 /// Context blocks move and replace together; IDs never need manual copying.
 class ExamPaperEditor extends StatefulWidget {
@@ -238,3 +238,4 @@ class _ExamPaperEditorState extends State<ExamPaperEditor> {
     ),
   );
 }
+

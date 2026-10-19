@@ -31,7 +31,15 @@ When working on any plugin or extending the Teacher Station plugin system:
 
 ---
 
-## 3. Git Commit Rules
+## 3. Hard Invariants for Frontend Clean Architecture (Feature-First)
+
+1. **Zero Loose Files in Services / Widgets**: NEVER create files directly inside `lib/services/` or `lib/widgets/`. Code must reside in `lib/core/<layer>/` (for cross-cutting utilities/theme) or `lib/features/<module>/{services,presentation}/`.
+2. **Hierarchical Test Structure**: NEVER place test files flat at the root of `frontend/test/`. Only `architecture_test.dart` is permitted at root. All other tests must reside in `test/features/<module>/` or `test/e2e_browser/`.
+3. **No Ghost Dependencies**: All `path:` dependencies in `frontend/pubspec.yaml` must point to existing directories on disk.
+
+---
+
+## 4. Git Commit Rules
 
 - **Only commit source code**: NEVER commit environment configs, personal setup scripts (such as `setup_flutter.ps1`), secrets, or `.env` files.
 - All downloaded SDKs (e.g. `.sdk/`) must remain ignored.
@@ -39,11 +47,12 @@ When working on any plugin or extending the Teacher Station plugin system:
 
 ---
 
-## 4. Verification Before Completion (CI Gate)
+## 5. Verification Before Completion (CI Gate)
 
 Before declaring any task or implementation complete:
 - Run the fast plugin validator: `node scripts/validate_plugins.mjs` (or `node scripts/validate_plugins.mjs --fix` to auto-repackage out-of-sync plugins).
-- Run the architecture gate: `flutter test test/architecture_test.dart` (enforced as a dedicated step in GitHub Actions CI).
+- Run the architecture gate: `flutter test test/architecture_test.dart` (enforced as a dedicated step in GitHub Actions CI with 10 passing invariants).
+- Run the analyzer: `flutter analyze --no-fatal-infos` (0 errors, 0 warnings).
 - If any plugin in `plugins/<name>/` was added or modified, run `node scripts/package_plugin.mjs <name>` to keep `plugins/<name>.hlep` in sync.
 - Ensure no unintended files or temporary artifacts were created.
 
@@ -52,4 +61,5 @@ Before declaring any task or implementation complete:
 - [ ] **No Direct Plugin Imports**: Zero cross-imports between `frontend/lib/` and `plugins/`.
 - [ ] **Dynamic Ports**: Sidecar engines receive dynamic port via `--port` or `HOCLUC_PLUGIN_PORT`.
 - [ ] **Package Freshness**: `node scripts/validate_plugins.mjs` passes with 0 errors.
-- [ ] **Architecture Gate**: `flutter test test/architecture_test.dart` passes 100%.
+- [ ] **Clean Feature-First Structure**: No loose files in `lib/services/` or `lib/widgets/`; zero flat tests at `test/` root.
+- [ ] **Architecture Gate**: `flutter test test/architecture_test.dart` passes 10/10 invariants (100%).

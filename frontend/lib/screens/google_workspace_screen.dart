@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../constants/theme.dart';
-import '../services/google_meet_auth_service.dart';
-import '../services/google_workspace_api.dart';
-import '../services/google_connection_flow.dart';
+import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
+import 'package:teaching_companion/features/auth/services/google_connection_flow.dart';
 import '../models/teaching_target.dart';
-import '../services/teaching_launcher.dart';
-import '../services/meet_automation_service.dart';
-import '../widgets/workspace/workspace_connection_panel.dart';
-import '../widgets/workspace/workspace_invite_dialog.dart';
-import '../widgets/workspace/workspace_schedule_dialog.dart';
-import '../widgets/workspace/workspace_course_detail.dart';
-import '../widgets/google_brand_icon.dart';
+import 'package:teaching_companion/features/classroom_meet/services/teaching_launcher.dart';
+import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_connection_panel.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_invite_dialog.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_schedule_dialog.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_course_detail.dart';
+import 'package:teaching_companion/core/ui/google_brand_icon.dart';
 
 class GoogleWorkspaceScreen extends StatefulWidget {
   const GoogleWorkspaceScreen({
@@ -716,3 +716,4 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
     );
   }
 }
+

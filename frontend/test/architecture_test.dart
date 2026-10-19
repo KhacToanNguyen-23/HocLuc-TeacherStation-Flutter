@@ -4,7 +4,7 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:teaching_companion/models/plugin_manifest.dart';
-import 'package:teaching_companion/services/process_supervisor.dart';
+import 'package:teaching_companion/features/plugin_engine/services/process_supervisor.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -306,15 +306,90 @@ void main() {
         reason: 'Phát hiện file .dart mồ côi (Dead Code) trong lib/:\n${orphanFiles.join("\n")}',
       );
 
-      final pluginManagerFile = File('lib/services/plugin_manager.dart');
-      if (pluginManagerFile.existsSync()) {
-        final pmContent = pluginManagerFile.readAsStringSync();
-        expect(
-          pmContent.contains('Map<String, Uint8List> files'),
-          isFalse,
-          reason: 'InstalledPlugin không được giữ Map<String, Uint8List> files trong RAM (vi phạm AGENTS.md Rule 2.4)',
-        );
+      final pluginManagerFiles = [
+        File('lib/features/plugin_engine/services/plugin_manager.dart'),
+        File('lib/services/plugin_manager.dart'),
+      ];
+      for (final pluginManagerFile in pluginManagerFiles) {
+        if (pluginManagerFile.existsSync()) {
+          final pmContent = pluginManagerFile.readAsStringSync();
+          expect(
+            pmContent.contains('Map<String, Uint8List> files'),
+            isFalse,
+            reason: 'InstalledPlugin không được giữ Map<String, Uint8List> files trong RAM (vi phạm AGENTS.md Rule 2.4)',
+          );
+        }
       }
+    });
+
+    test('Bất biến 8: Cấm file code trôi nổi trực tiếp trong lib/widgets/ và lib/services/', () {
+      final forbiddenDirs = [Directory('lib/widgets'), Directory('lib/services')];
+      final violations = <String>[];
+
+      for (final dir in forbiddenDirs) {
+        if (dir.existsSync()) {
+          final files = dir.listSync(recursive: true).whereType<File>();
+          for (final f in files) {
+            violations.add('File trôi nổi trong ${dir.path}: ${f.path}');
+          }
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason: 'Phát hiện file trôi nổi ngoài module Clean Architecture (phải đặt trong lib/features/ hoặc lib/core/):\n${violations.join("\n")}',
+      );
+    });
+
+    test('Bất biến 9: Cấm file test nằm phẳng ở thư mục gốc test/ (ngoại trừ architecture_test.dart)', () {
+      final testDir = Directory('test');
+      expect(testDir.existsSync(), isTrue, reason: 'Thư mục test/ phải tồn tại');
+
+      final rootFiles = testDir.listSync(recursive: false).whereType<File>();
+      final violations = <String>[];
+
+      for (final f in rootFiles) {
+        final baseName = p.basename(f.path);
+        if (baseName != 'architecture_test.dart') {
+          violations.add('File test nằm phẳng ở root test/: $baseName');
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason: 'Phát hiện file test nằm phẳng ở root test/ (phải đặt trong test/features/ hoặc test/e2e_browser/):\n${violations.join("\n")}',
+      );
+    });
+
+    test('Bất biến 10: Cấm khai báo dependency path ma trong pubspec.yaml', () {
+      final pubspecFile = File('pubspec.yaml');
+      expect(pubspecFile.existsSync(), isTrue, reason: 'pubspec.yaml phải tồn tại');
+
+      final content = pubspecFile.readAsStringSync();
+      final lines = content.split('\n');
+      final ghostDependencies = <String>[];
+
+      final pathRegex = RegExp(r'^\s{4,}path:\s*(.+)$');
+      for (var i = 0; i < lines.length; i++) {
+        final rawLine = lines[i];
+        final match = pathRegex.firstMatch(rawLine);
+        if (match != null) {
+          final pathVal = match.group(1)!.trim().replaceAll("'", '').replaceAll('"', '');
+          final resolvedDir = Directory(pathVal);
+          if (!resolvedDir.existsSync()) {
+            ghostDependencies.add('Dòng ${i + 1}: path: $pathVal không tồn tại trên đĩa');
+          }
+        }
+      }
+
+      expect(
+        ghostDependencies,
+        isEmpty,
+        reason: 'Phát hiện dependency ma (path không tồn tại) trong pubspec.yaml:\n${ghostDependencies.join("\n")}',
+      );
     });
   });
 }
+

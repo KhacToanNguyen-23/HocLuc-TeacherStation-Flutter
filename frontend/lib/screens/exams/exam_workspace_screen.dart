@@ -1,15 +1,15 @@
-import '../../widgets/meet_admission_button.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 import '../../constants/theme.dart';
-import '../../services/exam_api.dart';
-import '../../services/exam_file.dart';
-import '../../services/exam_files.dart';
-import '../../services/google_meet_auth_service.dart';
-import '../../widgets/exams/exam_widgets.dart';
+import 'package:teaching_companion/features/exams/services/exam_api.dart';
+import 'package:teaching_companion/features/exams/services/exam_file.dart';
+import 'package:teaching_companion/features/exams/services/exam_files.dart';
+import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
+import 'package:teaching_companion/features/exams/presentation/exam_widgets.dart';
 import 'question_review_dialog.dart';
 import 'exam_paper_editor.dart';
 import '../login_screen.dart';
@@ -848,4 +848,5 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
     ),
   );
 }
+
 

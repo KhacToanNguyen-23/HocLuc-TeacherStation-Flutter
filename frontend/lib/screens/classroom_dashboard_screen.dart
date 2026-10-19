@@ -1,30 +1,30 @@
-import '../widgets/meet_admission_button.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
 import 'package:flutter/material.dart';
 import '../constants/theme.dart';
-import '../services/google_meet_auth_service.dart';
-import '../services/local_service.dart';
-import '../services/meet_automation_service.dart';
-import '../widgets/dashboard/dashboard_action_card.dart';
-import '../widgets/dashboard/exam_dashboard_card.dart';
-import '../widgets/dashboard/dashboard_empty_card.dart';
-import '../widgets/dashboard/join_classroom_dialog.dart';
-import '../widgets/dashboard/schedule_classroom_dialog.dart';
-import '../services/teaching_launcher.dart';
-import '../services/google_workspace_api.dart';
+import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
+import 'package:teaching_companion/core/network/local_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/dashboard_action_card.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/exam_dashboard_card.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/dashboard_empty_card.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/join_classroom_dialog.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/schedule_classroom_dialog.dart';
+import 'package:teaching_companion/features/classroom_meet/services/teaching_launcher.dart';
+import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 import '../models/teaching_target.dart';
-import '../services/teacher_media_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
 import 'login_screen.dart';
 import 'studio_screen.dart';
 import '../models/studio_state.dart';
-import '../services/pdf_annotation_exporter.dart';
+import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
 import '../models/planning_meta.dart';
-import '../widgets/dashboard/planning_list_card.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/planning_list_card.dart';
 import 'exams/exam_workspace_screen.dart';
-import '../services/exam_api.dart';
-import '../services/exam_session_service.dart';
+import 'package:teaching_companion/features/exams/services/exam_api.dart';
+import 'package:teaching_companion/features/exams/services/exam_session_service.dart';
 import 'google_workspace_screen.dart';
-import '../widgets/dashboard/select_classroom_dialog.dart';
-import '../widgets/google_brand_icon.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/select_classroom_dialog.dart';
+import 'package:teaching_companion/core/ui/google_brand_icon.dart';
 
 part 'classroom_dashboard_rooms_and_history.dart';
 
@@ -854,4 +854,5 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     );
   }
 }
+
 

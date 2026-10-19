@@ -196,7 +196,7 @@
     "status": "passing",
     "evidence": "Tests: 3 passed in test/sidecar_manager_test.dart, 43 total passed across suite",
     "user_visible_behavior": "Tiến trình service.exe tự động khởi chạy và tắt ngầm trên Windows, hiển thị trạng thái kết nối trên Web.",
-    "verification_command": "flutter test test/sidecar_manager_test.dart",
+    "verification_command": "flutter test test/process_supervisor_test.dart",
     "notes": "Covers stories: P2",
     "priority": "P2"
   },
@@ -1015,5 +1015,45 @@
     "user_visible_behavior": "Developers can tell whether a missed answer failed extraction, classification, or page linking.",
     "notes": "P2 story: diagnose missed labels",
     "priority": "P2"
+  },
+  {
+    "id": "clean-architecture-feature-first",
+    "title": "Migrate Frontend to Clean Architecture Feature-First Modules",
+    "user_visible_behavior": "Frontend codebase is cleanly structured into 4 domain modules (auth, classroom_meet, studio_board, plugin_engine) and core without any loose files.",
+    "verification_command": "flutter analyze --no-fatal-infos",
+    "status": "passing",
+    "evidence": "All 48 services and 36 widgets modularized into core and features; flutter analyze 0 issues; flutter test 392/392 passed",
+    "notes": "Covers Phase 02",
+    "priority": "P1"
+  },
+  {
+    "id": "test-suite-restructuring",
+    "title": "Restructure Test Suite into Feature and Layer Folders",
+    "user_visible_behavior": "All 64 tests are organized cleanly in test/features, test/unit, test/widgets, and test/e2e_browser without root-level clutter.",
+    "verification_command": "flutter test",
+    "status": "passing",
+    "evidence": "All 64 test files cleanly categorized in test/features/ & test/e2e_browser; architecture_test kept at root; 392/392 tests passed",
+    "notes": "Covers Phase 03",
+    "priority": "P1"
+  },
+  {
+    "id": "plugin-and-dead-code-cleanup",
+    "title": "Clean Up Dummy Plugins and Legacy Dead Code",
+    "user_visible_behavior": "Legacy sidecar managers and dummy smart pen plugin wrapper are removed, leaving a pure microkernel architecture.",
+    "verification_command": "node scripts/validate_plugins.mjs",
+    "status": "passing",
+    "evidence": "Dead sidecar managers & dummy smart pen plugin removed; 2 plugins valid; 7/7 architecture tests passed; flutter analyze 0 issues",
+    "notes": "Covers Phase 01",
+    "priority": "P1"
+  },
+  {
+    "id": "ci-architecture-invariants-enforcement",
+    "title": "Enforce Frontend Clean Structure Invariants in Architecture Test",
+    "user_visible_behavior": "CI and pre-commit hook permanently prevent loose files in services/widgets and unorganized root test files.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "status": "passing",
+    "evidence": "Invariants 8, 9, 10 active in architecture_test.dart; 10/10 invariants passed; ARCHITECTURE.md created; AGENTS.md updated",
+    "notes": "Covers Phase 04",
+    "priority": "P1"
   }
 ]

@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/theme.dart';
-import '../services/google_meet_auth_service.dart';
-import '../services/teaching_launcher.dart';
-import '../services/local_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/teaching_launcher.dart';
+import 'package:teaching_companion/core/network/local_service.dart';
 import '../models/teaching_target.dart';
-import '../services/meet_automation_service.dart';
-import '../services/teacher_media_service.dart';
-import '../widgets/lobby/lobby_header.dart';
-import '../widgets/lobby/lobby_media_preview.dart';
-import '../widgets/lobby/lobby_meet_room_card.dart';
-import '../widgets/auth/google_webview_login_dialog.dart';
+import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/lobby/lobby_header.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/lobby/lobby_media_preview.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/lobby/lobby_meet_room_card.dart';
+import 'package:teaching_companion/features/auth/presentation/google_webview_login_dialog.dart';
 import 'studio_screen.dart';
 
 /// Classroom Lobby screen coordinating hardware pre-flight checks,
@@ -499,3 +499,4 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     );
   }
 }
+
