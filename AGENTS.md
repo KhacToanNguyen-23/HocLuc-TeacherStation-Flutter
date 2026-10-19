@@ -35,12 +35,21 @@ When working on any plugin or extending the Teacher Station plugin system:
 
 - **Only commit source code**: NEVER commit environment configs, personal setup scripts (such as `setup_flutter.ps1`), secrets, or `.env` files.
 - All downloaded SDKs (e.g. `.sdk/`) must remain ignored.
+- **Git Hooks Enforced**: Git hooks are configured in `.githooks/` (`core.hooksPath`). Ensure hooks are active by running `node scripts/setup_hooks.mjs`.
 
 ---
 
 ## 4. Verification Before Completion (CI Gate)
 
 Before declaring any task or implementation complete:
+- Run the fast plugin validator: `node scripts/validate_plugins.mjs` (or `node scripts/validate_plugins.mjs --fix` to auto-repackage out-of-sync plugins).
 - Run the architecture gate: `flutter test test/architecture_test.dart` (enforced as a dedicated step in GitHub Actions CI).
 - If any plugin in `plugins/<name>/` was added or modified, run `node scripts/package_plugin.mjs <name>` to keep `plugins/<name>.hlep` in sync.
 - Ensure no unintended files or temporary artifacts were created.
+
+### Mandatory Pull Request Checklist
+- [ ] **Zero Hardcoded Names**: No plugin IDs or subject names hardcoded in `frontend/lib/`.
+- [ ] **No Direct Plugin Imports**: Zero cross-imports between `frontend/lib/` and `plugins/`.
+- [ ] **Dynamic Ports**: Sidecar engines receive dynamic port via `--port` or `HOCLUC_PLUGIN_PORT`.
+- [ ] **Package Freshness**: `node scripts/validate_plugins.mjs` passes with 0 errors.
+- [ ] **Architecture Gate**: `flutter test test/architecture_test.dart` passes 100%.

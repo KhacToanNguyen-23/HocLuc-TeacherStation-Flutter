@@ -187,12 +187,40 @@ await window.HocLuc.pinSticker({
 
 ---
 
-## 7. Quy Trình Kiểm Thử Kiến Trúc (Bắt Buộc Trước Khi Push Code)
+## 7. Quy Trình Kiểm Thử Kiến Trúc & Git Pre-Commit Hook
 
-Trước khi commit code hoặc tạo Pull Request, chạy lệnh:
+Hệ thống sử dụng cơ chế bảo vệ 2 lớp để đảm bảo 100% plugin không bị lỗi thời hay vi phạm kiến trúc:
+
+### Bước 1: Kích hoạt Git Hook (Chỉ cần chạy 1 lần sau khi clone repo)
 ```powershell
+node scripts/setup_hooks.mjs
+```
+*(Nếu mở repo bằng VS Code, hook sẽ được kích hoạt hoàn toàn tự động trong nền).*
+
+### Bước 2: Kiểm tra nhanh trước khi commit (Fast-Path Validator < 150ms)
+```powershell
+node scripts/validate_plugins.mjs
+```
+*(Nếu phát hiện gói `.hlep` bị out-of-sync do bạn sửa file code mà chưa đóng gói lại, có thể dùng `node scripts/validate_plugins.mjs --fix` để tự động đóng gói).*
+
+### Bước 3: Chạy bài kiểm thử kiến trúc sâu (Deep-Path Gate CI)
+```powershell
+cd frontend
 flutter test test/architecture_test.dart
 ```
 
-Nếu bài test báo **PASSED**, plugin của bạn đã đạt chuẩn kiến trúc và sẵn sàng đóng gói lên Marketplace!
+---
+
+## 8. Hướng Dẫn Cấu Hình Branch Protection Khóa Nhánh GitHub
+
+Để đảm bảo không ai (kể cả Admin) có thể merge code vi phạm vào nhánh `main` hoặc `develop`:
+
+1. Truy cập repo trên GitHub: **Settings** $\rightarrow$ **Branches** $\rightarrow$ **Branch protection rules**.
+2. Chọn nhánh cần bảo vệ (`main` hoặc `develop`).
+3. Tích chọn các mục sau:
+   - ✅ **Require a pull request before merging**
+   - ✅ **Require status checks to pass before merging**
+   - Trong danh sách status checks, tìm và chọn: **`Flutter Lint & Tests`** (chính là job chạy `validate_plugins.mjs` và `architecture_test.dart`).
+   - ✅ **Require branches to be up to date before merging**
+   - ✅ **Do not allow bypassing the above settings** (Áp dụng cho cả Repository Administrators).
 

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:teaching_companion/models/plugin_manifest.dart';
 import 'package:teaching_companion/services/process_supervisor.dart';
 
@@ -95,7 +97,24 @@ void main() {
       }
 
       expect(pluginsDir, isNotNull, reason: 'Phải tìm thấy thư mục plugins/');
-      final pluginFolders = pluginsDir!.listSync().whereType<Directory>();
+
+      // 1. Kiểm tra không có gói .hlep mồ côi (Orphan Packages)
+      final allHlepFiles = pluginsDir!
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.hlep'));
+      for (final hlep in allHlepFiles) {
+        final pluginName = p.basenameWithoutExtension(hlep.path);
+        final matchingFolder = Directory('${pluginsDir.path}/$pluginName');
+        expect(
+          matchingFolder.existsSync(),
+          isTrue,
+          reason:
+              'Phát hiện gói mồ côi: ${hlep.path}. Thư mục nguồn plugins/$pluginName không tồn tại! Hãy xóa file .hlep này nếu plugin đã bị gỡ bỏ.',
+        );
+      }
+
+      final pluginFolders = pluginsDir.listSync().whereType<Directory>();
 
       for (final folder in pluginFolders) {
         final manifestFile = File('${folder.path}/manifest.json');
@@ -142,6 +161,53 @@ void main() {
           reason:
               'Plugin "$folderName" chưa được đóng gói thành plugins/$folderName.hlep. Hãy chạy: node scripts/package_plugin.mjs $folderName',
         );
+
+        // 2. Kiểm tra Deep Content Integrity của gói .hlep
+        final archiveBytes = hlepFile.readAsBytesSync();
+        final archive = ZipDecoder().decodeBytes(archiveBytes);
+        final archiveFilesMap = {
+          for (final f in archive.files) f.name.replaceAll('\\', '/'): f
+        };
+
+        // Kiểm tra manifest.json bên trong zip khớp phiên bản
+        final zipManifestFile = archiveFilesMap['manifest.json'];
+        expect(
+          zipManifestFile,
+          isNotNull,
+          reason: 'Gói $folderName.hlep thiếu manifest.json bên trong archive!',
+        );
+        final zipManifestMap = jsonDecode(
+          utf8.decode(zipManifestFile!.content as List<int>),
+        ) as Map<String, dynamic>;
+        expect(
+          zipManifestMap['version'],
+          equals(manifest.version),
+          reason:
+              'Gói $folderName.hlep có version (${zipManifestMap['version']}) không khớp với manifest.json trên đĩa (${manifest.version})! Hãy chạy: node scripts/package_plugin.mjs $folderName',
+        );
+
+        // Kiểm tra mọi file trên đĩa đều có trong zip
+        final diskFiles = folder
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) {
+          final rel = p.relative(f.path, from: folder.path).replaceAll('\\', '/');
+          return !rel.contains('__pycache__') &&
+              !rel.contains('.venv') &&
+              !rel.contains('node_modules') &&
+              !rel.startsWith('.');
+        });
+
+        for (final diskFile in diskFiles) {
+          final relPath =
+              p.relative(diskFile.path, from: folder.path).replaceAll('\\', '/');
+          expect(
+            archiveFilesMap.containsKey(relPath),
+            isTrue,
+            reason:
+                'Gói $folderName.hlep bị THIẾU FILE: $relPath! Hãy chạy: node scripts/package_plugin.mjs $folderName',
+          );
+        }
       }
     });
 

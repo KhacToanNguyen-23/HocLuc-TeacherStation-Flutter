@@ -2,10 +2,14 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ensureHooksConfigured } from './setup_hooks.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
+
+// Tự động đảm bảo Git hook được cấu hình ngầm khi dev chạy lệnh đóng gói
+ensureHooksConfigured(true);
 
 const targetArg = process.argv[2] || 'casio_calculator';
 const targetPluginName = path.basename(targetArg);

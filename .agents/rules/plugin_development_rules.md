@@ -99,14 +99,38 @@ Mọi tệp `manifest.json` phải tuân theo 1 trong 2 mẫu chuẩn sau:
 
 ---
 
-## 4. ĐÓNG GÓI `.hlep` & KIỂM THỬ KIẾN TRÚC BẮT BUỘC
+## 4. QUY TRÌNH 3 CÔNG ĐOẠN: THÊM — SỬA — XÓA PLUGIN
+
+### A. Thêm Plugin Mới (ADD):
+1. Tạo thư mục `plugins/<plugin_id>/` độc lập với `manifest.json`, `icon.png`, `ui/index.html`.
+2. Đóng gói ra file `.hlep`: `node scripts/package_plugin.mjs <plugin_id>`.
+3. Kiểm tra tính toàn vẹn: `node scripts/validate_plugins.mjs`.
+4. Xác minh CI Gate: `cd frontend && flutter test test/architecture_test.dart`.
+
+### B. Chỉnh Sửa Plugin (EDIT):
+1. Sửa code trong `plugins/<plugin_id>/`. CẤM sửa bất kỳ file nào trong `frontend/lib/`.
+2. Tăng trường `version` trong `manifest.json` (SemVer `x.y.z`).
+3. Đóng gói lại bắt buộc: `node scripts/package_plugin.mjs <plugin_id>`.
+4. Kiểm tra độ tươi mtime: `node scripts/validate_plugins.mjs`.
+
+### C. Xóa Plugin (DELETE):
+1. Xóa thư mục nguồn `plugins/<plugin_id>/`.
+2. Xóa đồng thời file nén `plugins/<plugin_id>.hlep` (Tránh lỗi Orphan Package).
+3. Kiểm tra lại: `node scripts/validate_plugins.mjs`.
+
+---
+
+## 5. CHỐT CHẶN KIỂM THỬ BẮT BUỘC TRƯỚC KHI COMMIT & HOÀN THÀNH TASK
 Trước khi kết thúc bất kỳ task nào liên quan đến plugin, Agent bắt buộc phải:
-1. Đóng gói lại file `.hlep`:
+1. Đảm bảo Git Hook đã hoạt động: `node scripts/setup_hooks.mjs`.
+2. Chạy Fast Validator:
    ```powershell
-   node scripts/package_plugin.mjs <tên_thư_mục_plugin>
+   node scripts/validate_plugins.mjs
    ```
-2. Chạy lệnh kiểm thử kiến trúc (cũng là cổng chặn cứng trên GitHub Actions CI):
+   *(Hoặc dùng `node scripts/validate_plugins.mjs --fix` để tự động sửa các gói bị out-of-sync).*
+3. Chạy Deep Architecture Test:
    ```powershell
+   cd frontend
    flutter test test/architecture_test.dart
    ```
 Nếu test không pass hoặc phát hiện vi phạm phân tầng kiến trúc, Agent không được phép tuyên bố hoàn thành task.
