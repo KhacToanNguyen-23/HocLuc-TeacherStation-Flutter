@@ -901,6 +901,42 @@
     "priority": "P1"
   },
   {
+    "id": "phase-01-fast-cli-validator-and-hlep-freshness",
+    "title": "Fast CLI Validator & Hash Freshness (validate_plugins.mjs)",
+    "user_visible_behavior": "Developers and agents get instant (<150ms) CLI validation on Schema v2.1, entrypoints, and .hlep sync freshness.",
+    "verification_command": "node scripts/validate_plugins.mjs",
+    "status": "passing",
+    "evidence": "node scripts/validate_plugins.mjs: 2 plugins verified in 9ms, 0 errors.",
+    "notes": ""
+  },
+  {
+    "id": "phase-02-cross-platform-git-precommit-hook",
+    "title": "Cross-Platform Native Git Pre-Commit Hook (.githooks/pre-commit)",
+    "user_visible_behavior": "Commits modifying plugins without repackaging or violating schema are blocked locally with actionable fix commands.",
+    "verification_command": "node scripts/setup_hooks.mjs",
+    "status": "passing",
+    "evidence": ".githooks/pre-commit and setup_hooks.mjs active; core.hooksPath set to .githooks.",
+    "notes": ""
+  },
+  {
+    "id": "phase-03-deep-dart-architecture-test-hardening",
+    "title": "Deep Dart Architecture Test Hardening (architecture_test.dart)",
+    "user_visible_behavior": "Automated Dart tests verify byte-level parity between plugin source directories and .hlep archives, catching orphan packages.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "status": "passing",
+    "evidence": "flutter test test/architecture_test.dart: all 7 invariant tests passed including deep zip content parity & orphan package check.",
+    "notes": ""
+  },
+  {
+    "id": "phase-04-ci-pipeline-and-sop-documentation",
+    "title": "CI Pipeline Integration & SOP Rule Docs",
+    "user_visible_behavior": "GitHub Actions fails early on plugin violations and developers follow clear, documented SOPs for add/edit/delete plugin.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "status": "passing",
+    "evidence": "ci-frontend.yml updated with early validation step; AGENTS.md, plugin_development_rules.md, and plugin-development-guide.md updated with PR checklist and branch protection guide.",
+    "notes": ""
+  },
+  {
     "id": "smart-pen-toggle",
     "title": "Toggle answer snapping in the PDF pen",
     "user_visible_behavior": "Teacher can enable or disable Smart Snap independently of pen color and width; disabled mode preserves current pen tap and drag behavior.",

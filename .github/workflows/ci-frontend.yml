@@ -31,6 +31,16 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Set up Node.js for Plugin Validation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fast Plugin Validation (Schema v2.1 & .hlep Freshness)
+        run: |
+          echo "🔍 [Early Gate] Kiểm tra nhanh tính toàn vẹn Plugin và độ tươi của gói .hlep..."
+          node ../scripts/validate_plugins.mjs
+
       - name: Set up Flutter Environment
         uses: subosito/flutter-action@v2
         with:
