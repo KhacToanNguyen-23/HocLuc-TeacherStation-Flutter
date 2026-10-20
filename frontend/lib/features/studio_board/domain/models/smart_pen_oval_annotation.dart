@@ -1,4 +1,8 @@
-part of 'studio_state.dart';
+import 'dart:math' as math;
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'smart_pen_answer_selection.dart';
+import 'studio_board_models.dart';
 
 /// Stable, page-normalized geometry for one automatically selected answer.
 class SmartPenOvalAnnotation {

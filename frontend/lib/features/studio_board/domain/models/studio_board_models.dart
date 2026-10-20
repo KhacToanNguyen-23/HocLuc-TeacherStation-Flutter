@@ -1,4 +1,7 @@
-part of 'studio_state.dart';
+import 'dart:typed_data';
+import 'dart:ui';
+import 'package:flutter/painting.dart';
+import 'package:perfect_freehand/perfect_freehand.dart';
 
 enum StudioViewportMode { fullBoard, fullPdf, split }
 

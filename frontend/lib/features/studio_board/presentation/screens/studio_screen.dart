@@ -8,6 +8,7 @@ import 'package:teaching_companion/features/studio_board/domain/models/studio_st
 import 'package:teaching_companion/features/classroom_meet/presentation/screens/classroom_dashboard_screen.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
+import 'package:teaching_companion/features/studio_board/presentation/scoped_listenable_builder.dart';
 import 'package:teaching_companion/features/studio_board/presentation/stage_container.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_drawing_toolbar.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_inspector_panel.dart';
@@ -22,6 +23,7 @@ import 'package:teaching_companion/features/studio_board/presentation/studio/stu
 import 'package:teaching_companion/features/studio_board/presentation/studio/save_classroom_dialog.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
+import 'package:teaching_companion/features/classroom_meet/services/planning_repository.dart';
 import 'package:teaching_companion/features/auth/presentation/google_webview_login_dialog.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/select_classroom_dialog.dart';
 
@@ -347,7 +349,9 @@ class _StudioScreenState extends State<StudioScreen> {
     try {
       _currentPlanningId = id;
       await studio.service.connect();
-      final content = await studio.service.getPlanningContent(id);
+      final content =
+          await PlanningRepository(localService: studio.service)
+              .getPlanningContent(id);
       if (content != null) {
         studio.change(() {
           studio.restoreFromJson(content);
@@ -399,8 +403,14 @@ class _StudioScreenState extends State<StudioScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: studio,
+  Widget build(BuildContext context) =>
+      ScopedListenableBuilder<({bool dirty, String view})>(
+    // The screen shell only depends on the dirty flag (back navigation guard)
+    // and the active view. Stage, toolbar, notes and panels subscribe to the
+    // studio themselves, so pen/laser/PDF/audio updates no longer rebuild the
+    // whole screen.
+    listenable: studio,
+    selector: () => (dirty: studio.dirty, view: studio.view),
     builder: (context, _) {
       return PopScope(
         canPop:

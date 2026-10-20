@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
+import 'package:teaching_companion/features/auth/services/google_meet_auth_service.dart';
 
 void main() {
   test(

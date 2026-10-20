@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -12,7 +12,7 @@ import 'package:teaching_companion/features/exams/presentation/exam_studio_butto
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/exams/services/exam_api.dart';
 import 'package:teaching_companion/features/exams/services/exam_session_service.dart';
-import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
+import 'package:teaching_companion/features/auth/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/exams/services/exam_oauth_client.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 

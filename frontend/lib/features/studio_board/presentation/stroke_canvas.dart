@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
@@ -310,15 +310,20 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                     ),
                   ),
                   // Layer 3: Laser Trail Overlay (Auto-fade after 1.5s)
+                  // Repaints from its own notifiers only (trail + pointer), so
+                  // laser movement never rebuilds the surrounding screen.
                   if (widget.studio.tool == 'laser')
                     RepaintBoundary(
-                      child: ValueListenableBuilder<List<LaserPoint>>(
-                        valueListenable: _laserTrailNotifier,
-                        builder: (context, laserPoints, _) {
+                      child: ListenableBuilder(
+                        listenable: Listenable.merge([
+                          _laserTrailNotifier,
+                          widget.studio.laserOffsetListenable,
+                        ]),
+                        builder: (context, _) {
                           return CustomPaint(
                             size: size,
                             painter: LaserTrailPainter(
-                              laserPoints: laserPoints,
+                              laserPoints: _laserTrailNotifier.value,
                               laserOffset:
                                   widget.studio.laserOffset ??
                                   _laserHoverOffset,

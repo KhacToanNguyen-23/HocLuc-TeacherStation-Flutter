@@ -1,8 +1,7 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:teaching_companion/features/studio_board/domain/models/smart_chalk_annotation.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'english_analyzer.dart';
 

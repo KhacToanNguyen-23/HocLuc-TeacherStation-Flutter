@@ -8,7 +8,7 @@ import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/exams/services/exam_api.dart';
 import 'package:teaching_companion/features/exams/services/exam_file.dart';
 import 'package:teaching_companion/features/exams/services/exam_files.dart';
-import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
+import 'package:teaching_companion/features/auth/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/exams/presentation/exam_widgets.dart';
 import 'question_review_dialog.dart';
 import 'exam_paper_editor.dart';

@@ -1,8 +1,7 @@
-﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 
 class LocalService {
   static const int defaultCompanionPort = 47831;
@@ -155,7 +154,7 @@ class LocalService {
   Future<Map<String, dynamic>> getActiveClassroom({bool strict = false}) async {
     try {
       for (var attempt = 0; attempt < 2; attempt++) {
-        final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
+        final headers = await getAuthHeaders(forceRefresh: attempt > 0);
         final response = await client
             .get(Uri.parse('$base/api/classroom/active'), headers: headers)
             .timeout(const Duration(seconds: 5));
@@ -195,7 +194,7 @@ class LocalService {
     try {
       final url = Uri.parse('$base/api/classroom/$classroomId/content');
       final res = await client
-          .get(url, headers: await _getAuthHeaders())
+          .get(url, headers: await getAuthHeaders())
           .timeout(const Duration(seconds: 4));
       if (res.statusCode == 200 && res.body.isNotEmpty) {
         return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -212,7 +211,7 @@ class LocalService {
           ? Uri.parse('$base/api/classroom/history?teacherId=$teacherId')
           : Uri.parse('$base/api/classroom/history');
       final res = await client
-          .get(url, headers: await _getAuthHeaders())
+          .get(url, headers: await getAuthHeaders())
           .timeout(const Duration(seconds: 4));
       if (res.statusCode == 200 && res.body.isNotEmpty) {
         return jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
@@ -228,7 +227,7 @@ class LocalService {
       final res = await client
           .delete(
             Uri.parse('$base/api/classroom/history/$id'),
-            headers: await _getAuthHeaders(),
+            headers: await getAuthHeaders(),
           )
           .timeout(const Duration(seconds: 4));
       if (res.statusCode == 200 && res.body.isNotEmpty) {
@@ -248,7 +247,7 @@ class LocalService {
           ? Uri.parse('$base/api/classroom/history?teacherId=$teacherId')
           : Uri.parse('$base/api/classroom/history');
       final res = await client
-          .delete(url, headers: await _getAuthHeaders())
+          .delete(url, headers: await getAuthHeaders())
           .timeout(const Duration(seconds: 4));
       if (res.statusCode == 200 && res.body.isNotEmpty) {
         final data =
@@ -326,7 +325,7 @@ class LocalService {
     }
   }
 
-  Future<Map<String, String>> _getAuthHeaders({
+  Future<Map<String, String>> getAuthHeaders({
     bool forceRefresh = false,
   }) async {
     if (_token == null || forceRefresh) {
@@ -345,266 +344,6 @@ class LocalService {
       headers['X-Companion-Token'] = _token!;
     }
     return headers;
-  }
-
-  Future<List<PlanningMeta>> getPlannings() async {
-    for (int attempt = 0; attempt < 2; attempt++) {
-      try {
-        final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
-        final res = await client
-            .get(Uri.parse('$base/api/plannings'), headers: headers)
-            .timeout(const Duration(seconds: 5));
-        if (res.statusCode == 200) {
-          final decoded = jsonDecode(utf8.decode(res.bodyBytes));
-          if (decoded is List) {
-            return decoded
-                .map((e) => PlanningMeta.fromJson(e as Map<String, dynamic>))
-                .toList();
-          }
-        }
-        if (res.statusCode == 401 && attempt == 0) {
-          FrontendLogger.write(
-            '[LocalService] getPlannings received 401. Refreshing token and retrying...',
-          );
-          _token = null;
-          continue;
-        }
-        FrontendLogger.write(
-          '[LocalService] getPlannings failed | status=${res.statusCode}',
-        );
-        break;
-      } catch (e) {
-        FrontendLogger.write(
-          '[LocalService] getPlannings attempt ${attempt + 1} error: $e',
-        );
-        if (attempt == 0) {
-          _token = null;
-          continue;
-        }
-      }
-    }
-    return [];
-  }
-
-  Future<Map<String, dynamic>?> getPlanningContent(String id) async {
-    for (int attempt = 0; attempt < 2; attempt++) {
-      try {
-        final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
-        final res = await client
-            .get(Uri.parse('$base/api/plannings/$id'), headers: headers)
-            .timeout(const Duration(seconds: 8));
-        if (res.statusCode == 200) {
-          return jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-        }
-        if (res.statusCode == 401 && attempt == 0) {
-          FrontendLogger.write(
-            '[LocalService] getPlanningContent received 401. Refreshing token...',
-          );
-          _token = null;
-          continue;
-        }
-        FrontendLogger.write(
-          '[LocalService] getPlanningContent failed | status=${res.statusCode}',
-        );
-        break;
-      } catch (e) {
-        FrontendLogger.write(
-          '[LocalService] getPlanningContent attempt ${attempt + 1} error: $e',
-        );
-        if (attempt == 0) {
-          _token = null;
-          continue;
-        }
-      }
-    }
-    return null;
-  }
-
-  Future<PlanningMeta?> createPlanning({
-    required String title,
-    required String subject,
-    Map<String, dynamic>? content,
-  }) async {
-    final payload = <String, dynamic>{'title': title, 'subject': subject};
-    if (content != null) payload['content'] = content;
-    final body = jsonEncode(payload);
-
-    FrontendLogger.write('[LocalService] createPlanning started');
-
-    for (int attempt = 0; attempt < 2; attempt++) {
-      try {
-        final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
-        FrontendLogger.write(
-          '[LocalService] createPlanning request sent | attempt=${attempt + 1}',
-        );
-        final res = await client
-            .post(
-              Uri.parse('$base/api/plannings'),
-              headers: headers,
-              body: body,
-            )
-            .timeout(const Duration(seconds: 10));
-
-        FrontendLogger.write(
-          '[LocalService] createPlanning [attempt ${attempt + 1}]: HTTP ${res.statusCode}',
-        );
-
-        if (res.statusCode == 200 || res.statusCode == 201) {
-          final decoded =
-              jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-          FrontendLogger.write('[LocalService] createPlanning succeeded');
-          return PlanningMeta.fromJson(decoded);
-        }
-
-        if (res.statusCode == 401 && attempt == 0) {
-          FrontendLogger.write(
-            '[LocalService] Token rejected (401). Retrying with fresh token...',
-          );
-          _token = null;
-          continue;
-        }
-
-        FrontendLogger.write(
-          '[LocalService] createPlanning failed | status=${res.statusCode}',
-        );
-        break;
-      } catch (e) {
-        FrontendLogger.write(
-          '[LocalService] createPlanning exception | attempt=${attempt + 1} cause=${e.runtimeType}',
-        );
-        if (attempt == 0) {
-          _token = null;
-          continue;
-        }
-      }
-    }
-    return null;
-  }
-
-  Future<PlanningMeta?> updatePlanning({
-    required String id,
-    String? title,
-    String? subject,
-    Map<String, dynamic>? content,
-  }) async {
-    final payload = <String, dynamic>{};
-    if (title != null) payload['title'] = title;
-    if (subject != null) payload['subject'] = subject;
-    if (content != null) payload['content'] = content;
-    final body = jsonEncode(payload);
-
-    FrontendLogger.write('[LocalService] updatePlanning started');
-
-    for (int attempt = 0; attempt < 2; attempt++) {
-      try {
-        final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
-        FrontendLogger.write(
-          '[LocalService] updatePlanning request sent | attempt=${attempt + 1}',
-        );
-        final res = await client
-            .put(
-              Uri.parse('$base/api/plannings/$id'),
-              headers: headers,
-              body: body,
-            )
-            .timeout(const Duration(seconds: 10));
-
-        FrontendLogger.write(
-          '[LocalService] updatePlanning [attempt ${attempt + 1}]: HTTP ${res.statusCode}',
-        );
-
-        if (res.statusCode == 200) {
-          final decoded =
-              jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-          FrontendLogger.write('[LocalService] updatePlanning succeeded');
-          return PlanningMeta.fromJson(decoded);
-        }
-
-        if (res.statusCode == 401 && attempt == 0) {
-          FrontendLogger.write(
-            '[LocalService] Token rejected (401). Retrying with fresh token...',
-          );
-          _token = null;
-          continue;
-        }
-
-        FrontendLogger.write(
-          '[LocalService] updatePlanning failed | status=${res.statusCode}',
-        );
-        break;
-      } catch (e) {
-        FrontendLogger.write(
-          '[LocalService] updatePlanning exception | attempt=${attempt + 1} cause=${e.runtimeType}',
-        );
-        if (attempt == 0) {
-          _token = null;
-          continue;
-        }
-      }
-    }
-    return null;
-  }
-
-  Future<bool> deletePlanning(String id) async {
-    for (int attempt = 0; attempt < 2; attempt++) {
-      try {
-        final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
-        final res = await client
-            .delete(Uri.parse('$base/api/plannings/$id'), headers: headers)
-            .timeout(const Duration(seconds: 5));
-        if (res.statusCode == 200) {
-          final decoded = jsonDecode(utf8.decode(res.bodyBytes));
-          return decoded['success'] == true;
-        }
-        if (res.statusCode == 401 && attempt == 0) {
-          _token = null;
-          continue;
-        }
-        break;
-      } catch (e) {
-        FrontendLogger.write(
-          '[LocalService] deletePlanning failed | cause=${e.runtimeType}',
-        );
-        if (attempt == 0) {
-          _token = null;
-          continue;
-        }
-      }
-    }
-    return false;
-  }
-
-  Future<bool> clonePlanningToClassroom(String id) async {
-    for (int attempt = 0; attempt < 2; attempt++) {
-      try {
-        final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
-        final res = await client
-            .post(
-              Uri.parse('$base/api/plannings/$id/clone-to-classroom'),
-              headers: headers,
-              body: jsonEncode({}),
-            )
-            .timeout(const Duration(seconds: 8));
-        if (res.statusCode == 200) {
-          final decoded = jsonDecode(utf8.decode(res.bodyBytes));
-          return decoded['success'] == true;
-        }
-        if (res.statusCode == 401 && attempt == 0) {
-          _token = null;
-          continue;
-        }
-        break;
-      } catch (e) {
-        FrontendLogger.write(
-          '[LocalService] clonePlanningToClassroom failed | cause=${e.runtimeType}',
-        );
-        if (attempt == 0) {
-          _token = null;
-          continue;
-        }
-      }
-    }
-    return false;
   }
 
   void dispose() => client.close();

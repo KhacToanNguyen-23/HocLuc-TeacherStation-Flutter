@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
+import 'package:teaching_companion/features/auth/services/google_meet_auth_service.dart';
 import 'exam_session_service.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 

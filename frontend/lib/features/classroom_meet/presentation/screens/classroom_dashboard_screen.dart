@@ -18,6 +18,7 @@ import 'package:teaching_companion/features/studio_board/presentation/screens/st
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
+import 'package:teaching_companion/features/classroom_meet/services/planning_repository.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/planning_list_card.dart';
 import 'package:teaching_companion/features/exams/presentation/screens/exam_workspace_screen.dart';
 import 'package:teaching_companion/features/exams/services/exam_api.dart';
@@ -41,6 +42,7 @@ class ClassroomDashboardScreen extends StatefulWidget {
 class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   final _authService = GoogleMeetAuthService();
   final _localService = LocalService();
+  late final _planningRepository = PlanningRepository(localService: _localService);
   String _selectedRoomFilter = 'Tất cả';
 
   int _selectedTabIndex = 0; // 0: Phòng học, 1: Kế hoạch bài giảng, 2: Lịch sử
@@ -85,7 +87,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
 
   Future<void> _loadPlannings() async {
     setState(() => _loadingPlannings = true);
-    final list = await _localService.getPlannings();
+    final list = await _planningRepository.getPlannings();
     if (mounted) {
       setState(() {
         _plannings = list;
@@ -207,7 +209,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     final title = titleController.text.trim().isNotEmpty
         ? titleController.text.trim()
         : 'Kế hoạch bài giảng mới';
-    final newPlan = await _localService.createPlanning(
+    final newPlan = await _planningRepository.createPlanning(
       title: title,
       subject: selectedSub,
     );
@@ -282,7 +284,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     );
 
     if (confirm == true) {
-      await _localService.deletePlanning(plan.id);
+      await _planningRepository.deletePlanning(plan.id);
       _loadPlannings();
     }
   }
