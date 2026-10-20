@@ -1,6 +1,6 @@
-﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/core/ui/hocluc_brand_mark.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
@@ -60,31 +60,17 @@ class SelectClassroomDialog extends StatefulWidget {
   State<SelectClassroomDialog> createState() => _SelectClassroomDialogState();
 }
 
-enum _ClassSourceType { googleCourse, presetClass, customClass }
-
 class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
   final _authService = GoogleMeetAuthService();
-  final _customClassController = TextEditingController();
-  final _meetUrlController = TextEditingController();
+  final _searchController = TextEditingController();
 
-  _ClassSourceType _sourceType = _ClassSourceType.presetClass;
-  String _selectedPreset = '12A1';
   Map<String, dynamic>? _selectedGoogleCourse;
+  String? _selectionBeforeSearch;
 
   List<Map<String, dynamic>> _googleCourses = [];
   bool _loadingCourses = false;
   bool _isLaunching = false;
   String? _errorMessage;
-
-  final List<String> _presetClasses = const [
-    '12A1',
-    '12A2',
-    '12A3',
-    '11A1',
-    '11A2',
-    '10A1',
-    '10A2',
-  ];
 
   @override
   void initState() {
@@ -94,13 +80,12 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
 
   @override
   void dispose() {
-    _customClassController.dispose();
-    _meetUrlController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _loadGoogleCourses() async {
-    final email = _authService.teacherEmail;
+    final email = _authService.teacherEmail ?? widget.googleApi?.email;
     if (email == null || email.isEmpty) return;
 
     setState(() => _loadingCourses = true);
@@ -111,162 +96,138 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
       if (status['connected'] == true) {
         final result = await api.call('courses');
         if (!mounted) return;
-        final list = (result['courses'] as List? ?? [])
-            .cast<Map<String, dynamic>>();
+        final list =
+            (result['courses'] as List? ?? []).cast<Map<String, dynamic>>()
+              ..sort((a, b) {
+                final countOrder = _studentCount(b).compareTo(_studentCount(a));
+                if (countOrder != 0) return countOrder;
+                return (a['title'] as String? ?? '').toLowerCase().compareTo(
+                  (b['title'] as String? ?? '').toLowerCase(),
+                );
+              });
+        Map<String, dynamic>? firstWithStudents;
+        for (final course in list) {
+          if (_studentCount(course) > 0) {
+            firstWithStudents = course;
+            break;
+          }
+        }
         setState(() {
           _googleCourses = list;
-          if (list.isNotEmpty) {
-            _sourceType = _ClassSourceType.googleCourse;
-            _selectedGoogleCourse = list.first;
+          if (firstWithStudents != null) {
+            _selectedGoogleCourse = firstWithStudents;
           }
         });
       }
     } catch (_) {
-      // Offline or Google service not connected - keep preset class default
+      // Offline or Google service not connected; the empty state explains it.
     } finally {
       if (widget.googleApi == null) api.close();
       if (mounted) setState(() => _loadingCourses = false);
     }
   }
 
-  Color _getSubjectColor(String subject) {
-    final lower = subject.toLowerCase();
-    if (lower.contains('anh') || lower.contains('english')) {
-      return AppColors.primary;
-    } else if (lower.contains('toán') || lower.contains('math')) {
-      return AppColors.warning;
-    } else if (lower.contains('văn') || lower.contains('việt')) {
-      return AppColors.success;
-    } else if (lower.contains('lý') ||
-        lower.contains('hóa') ||
-        lower.contains('sinh')) {
-      return const Color(0xFF7C3AED);
-    }
-    return AppColors.textSecondary;
+  int _studentCount(Map<String, dynamic> course) =>
+      (course['students'] as List? ?? []).length;
+
+  String _getTargetClassName() =>
+      _selectedGoogleCourse?['title'] as String? ?? 'Lớp Google Classroom';
+
+  List<Map<String, dynamic>> get _filteredCourses {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _googleCourses;
+    return _googleCourses.where((course) {
+      final title = (course['title'] as String? ?? '').toLowerCase();
+      return title.contains(query);
+    }).toList();
   }
 
-  Color _getSubjectBg(String subject) {
-    final lower = subject.toLowerCase();
-    if (lower.contains('anh') || lower.contains('english')) {
-      return AppColors.sky50;
-    } else if (lower.contains('toán') || lower.contains('math')) {
-      return AppColors.warningSurface;
-    } else if (lower.contains('văn') || lower.contains('việt')) {
-      return AppColors.successSurface;
-    } else if (lower.contains('lý') ||
-        lower.contains('hóa') ||
-        lower.contains('sinh')) {
-      return const Color(0xFFF5F3FF);
-    }
-    return AppColors.surfaceMuted;
-  }
+  void _onSearchChanged(String value) {
+    final query = value.trim().toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        if (_selectedGoogleCourse == null && _selectionBeforeSearch != null) {
+          for (final course in _googleCourses) {
+            if (course['id'] == _selectionBeforeSearch) {
+              _selectedGoogleCourse = course;
+              break;
+            }
+          }
+        }
+        _selectionBeforeSearch = null;
+        return;
+      }
 
-  String _getTargetClassName() {
-    switch (_sourceType) {
-      case _ClassSourceType.googleCourse:
-        return _selectedGoogleCourse?['title'] as String? ?? 'Lớp Google Meet';
-      case _ClassSourceType.presetClass:
-        return 'Lớp $_selectedPreset';
-      case _ClassSourceType.customClass:
-        final text = _customClassController.text.trim();
-        return text.isNotEmpty ? text : 'Lớp học';
-    }
+      final selected = _selectedGoogleCourse;
+      final selectedTitle = selected?['title']?.toString().toLowerCase() ?? '';
+      if (selected != null && !selectedTitle.contains(query)) {
+        _selectionBeforeSearch ??= selected['id']?.toString();
+        _selectedGoogleCourse = null;
+      }
+    });
   }
 
   Future<void> _handleConfirm() async {
-    final className = _getTargetClassName();
-    if (_sourceType == _ClassSourceType.customClass &&
-        _customClassController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Vui lòng nhập tên lớp học.');
+    final course = _selectedGoogleCourse;
+    if (course == null || _studentCount(course) == 0) {
+      setState(() => _errorMessage = 'Vui lòng chọn một lớp có học sinh.');
       return;
     }
-
+    final className = _getTargetClassName();
     setState(() {
       _isLaunching = true;
       _errorMessage = null;
     });
 
     try {
-      TeachingTarget target;
-      if (_sourceType == _ClassSourceType.googleCourse &&
-          _selectedGoogleCourse != null) {
-        final course = _selectedGoogleCourse!;
-        final email = _authService.teacherEmail ?? '';
-        String? meetingUrl = course['meetingUrl'] as String?;
+      final email = _authService.teacherEmail ?? widget.googleApi?.email ?? '';
+      String? meetingUrl = course['meetingUrl'] as String?;
 
-        // If course doesn't have meetingUrl yet, trigger start on Google with polling
-        if (meetingUrl == null || meetingUrl.isEmpty) {
-          final api = widget.googleApi ?? GoogleWorkspaceApi(email: email);
-          try {
-            final startReq = GoogleWorkspaceApi.requestId();
-            for (var attempt = 0; attempt < 10; attempt++) {
-              final ready = await api.call(
-                'courses/${course['id']}/start',
-                post: true,
-                body: {'requestId': startReq},
-              );
-              if (ready['calendarStatus'] == 'READY' &&
-                  ready['meetingUrl'] is String &&
-                  (ready['meetingUrl'] as String).isNotEmpty) {
-                meetingUrl = ready['meetingUrl'] as String;
-                break;
-              }
-              if (!{'PENDING', 'CREATING'}.contains(ready['calendarStatus']) ||
-                  attempt >= 9) {
-                final warnings = (ready['warnings'] as List? ?? []).join('\n');
-                throw StateError(
-                  warnings.isEmpty
-                      ? 'Chưa chuẩn bị xong phòng Meet. Vui lòng thử lại.'
-                      : warnings,
-                );
-              }
-              await Future<void>.delayed(const Duration(seconds: 1));
+      if (meetingUrl == null || meetingUrl.isEmpty) {
+        final api = widget.googleApi ?? GoogleWorkspaceApi(email: email);
+        try {
+          final startReq = GoogleWorkspaceApi.requestId();
+          for (var attempt = 0; attempt < 10; attempt++) {
+            final ready = await api.call(
+              'courses/${course['id']}/start',
+              post: true,
+              body: {'requestId': startReq},
+            );
+            if (ready['calendarStatus'] == 'READY' &&
+                ready['meetingUrl'] is String &&
+                (ready['meetingUrl'] as String).isNotEmpty) {
+              meetingUrl = ready['meetingUrl'] as String;
+              break;
             }
-          } finally {
-            if (widget.googleApi == null) api.close();
+            if (!{'PENDING', 'CREATING'}.contains(ready['calendarStatus']) ||
+                attempt >= 9) {
+              final warnings = (ready['warnings'] as List? ?? []).join('\n');
+              throw StateError(
+                warnings.isEmpty
+                    ? 'Chưa chuẩn bị xong phòng Meet. Vui lòng thử lại.'
+                    : warnings,
+              );
+            }
+            await Future<void>.delayed(const Duration(seconds: 1));
           }
+        } finally {
+          if (widget.googleApi == null) api.close();
         }
-
-        target = TeachingTarget(
-          title: '$className · ${widget.plan.title}',
-          meetingUrl: meetingUrl,
-          courseId: course['id'] as String?,
-          teacherEmail: email.isNotEmpty ? email : null,
-          planningId: widget.plan.id,
-        );
-      } else {
-        final rawMeetUrl = _meetUrlController.text.trim();
-        String? meetingUrl;
-        if (rawMeetUrl.isNotEmpty) {
-          final extracted = SelectClassroomDialog.extractRealGoogleMeetUrl(
-            rawMeetUrl,
-          );
-          if (extracted == null) {
-            setState(() {
-              _isLaunching = false;
-              _errorMessage =
-                  'Link Google Meet không hợp lệ (cần dạng https://meet.google.com/xxx-yyyy-zzz).';
-            });
-            return;
-          }
-          meetingUrl = extracted;
-        }
-
-        target = TeachingTarget(
-          title: '$className · ${widget.plan.title}',
-          meetingUrl: meetingUrl,
-          planningId: widget.plan.id,
-        );
       }
 
-      if (!mounted) return;
-      final nav = Navigator.of(context);
-      nav.pop();
+      final target = TeachingTarget(
+        title: '$className · ${widget.plan.title}',
+        meetingUrl: meetingUrl,
+        courseId: course['id'] as String?,
+        teacherEmail: email.isNotEmpty ? email : null,
+        planningId: widget.plan.id,
+      );
 
+      if (!mounted) return;
+      Navigator.of(context).pop();
       if (widget.onLaunch != null) {
         await widget.onLaunch!(target);
-      } else {
-        if (!context.mounted) return;
+      } else if (context.mounted) {
         await TeachingLauncher.open(context, target);
       }
     } catch (e) {
@@ -281,27 +242,30 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final slate = AppColors.textPrimary;
-    final sky = AppColors.primary;
-    final subColor = _getSubjectColor(widget.plan.subject);
-    final subBg = _getSubjectBg(widget.plan.subject);
+    final filteredCourses = _filteredCourses;
+    final compact = MediaQuery.sizeOf(context).width < 600;
 
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 14 : 32,
+        vertical: compact ? 18 : 32,
+      ),
       child: Container(
-        width: 520,
-        constraints: const BoxConstraints(maxHeight: 640),
-        padding: const EdgeInsets.all(26),
+        width: 560,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+        ),
+        padding: EdgeInsets.all(compact ? 18 : 24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadii.panel),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
+              color: AppColors.accentDark.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -314,15 +278,14 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    color: AppColors.sky50,
+                    color: AppColors.surfaceSoft,
                     borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
-                  child: Center(
-                    child: Icon(Icons.videocam_rounded, color: sky, size: 22),
-                  ),
+                  alignment: Alignment.center,
+                  child: const HocLucBrandMark(size: 34),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -332,9 +295,9 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                       Text(
                         'Chọn lớp để bắt đầu dạy',
                         style: TextStyle(
-                          fontSize: 17,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: slate,
+                          color: AppColors.textPrimary,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -347,15 +310,15 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: subBg,
+                              color: AppColors.shellSidebarActive,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               widget.plan.subject,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: subColor,
+                                color: AppColors.accentDark,
                               ),
                             ),
                           ),
@@ -366,9 +329,9 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.slate600,
+                                color: AppColors.textDim,
                               ),
                             ),
                           ),
@@ -389,7 +352,7 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             const Divider(height: 1, color: AppColors.border),
             const SizedBox(height: 16),
 
@@ -399,49 +362,190 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Option A: Google Classroom Courses (if available or connected)
-                    if (_googleCourses.isNotEmpty) ...[
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.school_rounded,
-                            size: 16,
-                            color: AppColors.primary,
+                    TextField(
+                      controller: _searchController,
+                      enabled: !_isLaunching,
+                      onChanged: _onSearchChanged,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Tìm lớp theo tên',
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          color: AppColors.textDim,
+                        ),
+                        hintStyle: const TextStyle(
+                          color: AppColors.textFaint,
+                          fontSize: 14,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.surfaceInput,
+                        suffixIcon: _searchController.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Xóa tìm kiếm',
+                                onPressed: _isLaunching
+                                    ? null
+                                    : () {
+                                        _searchController.clear();
+                                        setState(() {});
+                                      },
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.control),
+                          borderSide: const BorderSide(
+                            color: AppColors.inputBorder,
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            'LỚP TỪ GOOGLE CLASSROOM',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.slate600,
-                              letterSpacing: 0.5,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.control),
+                          borderSide: const BorderSide(
+                            color: AppColors.inputBorder,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.control),
+                          borderSide: const BorderSide(
+                            color: AppColors.sky,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Google Classroom courses
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.school_rounded,
+                          size: 16,
+                          color: AppColors.sky,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'LỚP TỪ GOOGLE CLASSROOM',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textHeadingMuted,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_loadingCourses)
+                      Column(
+                        children: List.generate(
+                          3,
+                          (_) => Container(
+                            height: 58,
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceSoft,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.skeletonHighlight,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        height: 12,
+                                        width: 170,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.skeletonHighlight,
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 7),
+                                      Container(
+                                        height: 9,
+                                        width: 110,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.skeletonHighlight,
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
+                        ),
+                      )
+                    else if (_googleCourses.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 18),
+                        child: Center(
+                          child: Text(
+                            'Chưa có lớp Google Classroom để hiển thị.',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (filteredCourses.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 18),
+                        child: Center(
+                          child: Text(
+                            'Không tìm thấy lớp phù hợp.',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
                       ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _googleCourses.length,
+                        itemCount: filteredCourses.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 6),
                         itemBuilder: (context, index) {
-                          final course = _googleCourses[index];
+                          final course = filteredCourses[index];
                           final isSelected =
-                              _sourceType == _ClassSourceType.googleCourse &&
                               _selectedGoogleCourse?['id'] == course['id'];
-                          final studentCount =
-                              (course['students'] as List? ?? []).length;
+                          final studentCount = _studentCount(course);
+                          final isEmpty = studentCount == 0;
 
                           return InkWell(
-                            onTap: _isLaunching
+                            onTap: _isLaunching || isEmpty
                                 ? null
                                 : () {
                                     setState(() {
-                                      _sourceType =
-                                          _ClassSourceType.googleCourse;
                                       _selectedGoogleCourse = course;
+                                      _selectionBeforeSearch = null;
+                                      _errorMessage = null;
                                     });
                                   },
                             borderRadius: BorderRadius.circular(10),
@@ -451,25 +555,35 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.sky50
-                                    : AppColors.surfaceMuted,
+                                color: isEmpty
+                                    ? AppColors.lockSoft
+                                    : isSelected
+                                    ? AppColors.shellSidebarActive
+                                    : AppColors.surfaceSoft,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: isSelected ? sky : Colors.transparent,
+                                  color: isSelected
+                                      ? AppColors.sky
+                                      : isEmpty
+                                      ? AppColors.border
+                                      : Colors.transparent,
                                   width: 1.5,
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Icon(
-                                    isSelected
+                                    isEmpty
+                                        ? Icons.lock_outline_rounded
+                                        : isSelected
                                         ? Icons.radio_button_checked_rounded
                                         : Icons.radio_button_off_rounded,
                                     size: 18,
-                                    color: isSelected
-                                        ? sky
-                                        : AppColors.textMuted,
+                                    color: isEmpty
+                                        ? AppColors.lock
+                                        : isSelected
+                                        ? AppColors.sky
+                                        : AppColors.textDim,
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
@@ -481,18 +595,22 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                                           course['title'] as String? ??
                                               'Lớp học',
                                           style: TextStyle(
-                                            fontSize: 13.5,
+                                            fontSize: 14,
                                             fontWeight: isSelected
                                                 ? FontWeight.w700
                                                 : FontWeight.w600,
-                                            color: slate,
+                                            color: isEmpty
+                                                ? AppColors.textDim
+                                                : AppColors.textPrimary,
                                           ),
                                         ),
                                         Text(
-                                          '$studentCount học sinh · Sẵn sàng phòng Meet',
+                                          isEmpty
+                                              ? '0 học sinh · Không thể chọn'
+                                              : '$studentCount học sinh',
                                           style: const TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.textMuted,
+                                            fontSize: 12,
+                                            color: AppColors.textDim,
                                           ),
                                         ),
                                       ],
@@ -504,267 +622,7 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                           );
                         },
                       ),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Option B: Standard / Preset Classes
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.groups_rounded,
-                          size: 16,
-                          color: AppColors.slate600,
-                        ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'LỚP HỌC TIÊU CHUẨN',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.slate600,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        if (_loadingCourses) ...[
-                          const SizedBox(width: 8),
-                          const SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _presetClasses.map((cls) {
-                        final isSelected =
-                            _sourceType == _ClassSourceType.presetClass &&
-                            _selectedPreset == cls;
-                        return ChoiceChip(
-                          label: Text('Lớp $cls'),
-                          selected: isSelected,
-                          onSelected: _isLaunching
-                              ? null
-                              : (selected) {
-                                  if (selected) {
-                                    setState(() {
-                                      _sourceType =
-                                          _ClassSourceType.presetClass;
-                                      _selectedPreset = cls;
-                                    });
-                                  }
-                                },
-                          selectedColor: AppColors.sky50,
-                          backgroundColor: AppColors.surfaceMuted,
-                          side: BorderSide(
-                            color: isSelected ? sky : AppColors.inputBorder,
-                            width: isSelected ? 1.5 : 1,
-                          ),
-                          labelStyle: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected ? sky : AppColors.slate700,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        );
-                      }).toList(),
-                    ),
                     const SizedBox(height: 16),
-
-                    // Option C: Custom Class Name
-                    InkWell(
-                      onTap: _isLaunching
-                          ? null
-                          : () {
-                              setState(() {
-                                _sourceType = _ClassSourceType.customClass;
-                              });
-                            },
-                      child: Row(
-                        children: [
-                          Icon(
-                            _sourceType == _ClassSourceType.customClass
-                                ? Icons.radio_button_checked_rounded
-                                : Icons.radio_button_off_rounded,
-                            size: 18,
-                            color: _sourceType == _ClassSourceType.customClass
-                                ? sky
-                                : AppColors.textMuted,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Hoặc nhập tên lớp khác:',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.slate700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _customClassController,
-                      enabled: !_isLaunching,
-                      onTap: () {
-                        if (_sourceType != _ClassSourceType.customClass) {
-                          setState(() {
-                            _sourceType = _ClassSourceType.customClass;
-                          });
-                        }
-                      },
-                      onChanged: (val) {
-                        if (_sourceType != _ClassSourceType.customClass) {
-                          setState(() {
-                            _sourceType = _ClassSourceType.customClass;
-                          });
-                        } else {
-                          setState(() {});
-                        }
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Ví dụ: 12 Chuyên Toán, Lớp Ôn Thi ĐH...',
-                        hintStyle: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textMuted,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadii.control),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadii.control),
-                          borderSide: BorderSide(color: sky, width: 1.5),
-                        ),
-                      ),
-                    ),
-                    if (_sourceType != _ClassSourceType.googleCourse) ...[
-                      const SizedBox(height: 16),
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.video_call_rounded,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'LINK GOOGLE MEET (TÙY CHỌN)',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.slate600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _meetUrlController,
-                        enabled: !_isLaunching,
-                        onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(
-                          hintText:
-                              'https://meet.google.com/xxx-yyyy-zzz (hoặc để trống để tạo tự động)',
-                          hintStyle: const TextStyle(
-                            fontSize: 12.5,
-                            color: AppColors.textMuted,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          suffixIcon: IconButton(
-                            icon: const Icon(
-                              Icons.content_paste_rounded,
-                              size: 18,
-                            ),
-                            tooltip: 'Dán từ clipboard',
-                            onPressed: _isLaunching
-                                ? null
-                                : () async {
-                                    final data = await Clipboard.getData(
-                                      Clipboard.kTextPlain,
-                                    );
-                                    final text = data?.text?.trim();
-                                    if (text != null && text.isNotEmpty) {
-                                      final extracted =
-                                          SelectClassroomDialog.extractRealGoogleMeetUrl(
-                                            text,
-                                          );
-                                      setState(() {
-                                        _meetUrlController.text =
-                                            extracted ?? text;
-                                      });
-                                    }
-                                  },
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppRadii.control,
-                            ),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppRadii.control,
-                            ),
-                            borderSide: BorderSide(color: sky, width: 1.5),
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-
-                    // Information summary card
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceMuted,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.surfaceBorder),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 16,
-                            color: sky,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _sourceType == _ClassSourceType.googleCourse
-                                  ? 'Nhấn xác nhận để nhân bản bài giảng "${widget.plan.title}" và kết nối phòng Google Meet từ Google Classroom ${_getTargetClassName()}.'
-                                  : (_meetUrlController.text.trim().isNotEmpty
-                                        ? 'Nhấn xác nhận để nhân bản bài giảng "${widget.plan.title}" và bắt đầu dạy với link Google Meet đã nhập.'
-                                        : 'Nhấn xác nhận để nhân bản bài giảng "${widget.plan.title}" và tự động tạo phòng Google Meet mới cho ${_getTargetClassName()}.'),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                height: 1.4,
-                                color: AppColors.slate600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
 
                     if (_errorMessage != null) ...[
                       const SizedBox(height: 12),
@@ -823,7 +681,9 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton.icon(
-                  onPressed: _isLaunching ? null : _handleConfirm,
+                  onPressed: _isLaunching || _selectedGoogleCourse == null
+                      ? null
+                      : _handleConfirm,
                   icon: _isLaunching
                       ? const SizedBox(
                           width: 16,
@@ -842,7 +702,9 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
                         : 'Xác nhận & Bắt đầu dạy',
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: sky,
+                    backgroundColor: AppColors.accentDark,
+                    disabledBackgroundColor: AppColors.lockSoft,
+                    disabledForegroundColor: AppColors.textDim,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(

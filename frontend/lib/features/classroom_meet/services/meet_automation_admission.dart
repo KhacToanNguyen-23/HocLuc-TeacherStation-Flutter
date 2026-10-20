@@ -215,25 +215,29 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
   }
 
   /// Tắt tiếng micro của toàn bộ học sinh trong phòng
-  Future<void> muteAllParticipants() async {
-    for (int i = 0; i < _participants.length; i++) {
-      _participants[i] = _participants[i].copyWith(
-        isMuted: true,
-        isSpeaking: false,
-      );
-    }
-    notifyListeners();
-    if (_controller != null) {
+  Future<bool> muteAllParticipants() async {
+    final controller = _controller;
+    if (!_hostJoined || controller == null) return false;
+
+    final stopwatch = Stopwatch()..start();
+    var openPeoplePanel = true;
+    while (stopwatch.elapsed < const Duration(seconds: 3)) {
       try {
-        await _controller!.executeScript(
-          'window.MeetBridge && window.MeetBridge.muteAll();',
+        final raw = await controller.executeScript(
+          'window.MeetBridge ? window.MeetBridge.muteAll($openPeoplePanel) : false;',
         );
+        openPeoplePanel = false;
+        dynamic result = jsonDecode(raw);
+        if (result is String) result = jsonDecode(result);
+        if (result == true) return true;
       } catch (e) {
         FrontendLogger.write(
           '[MeetAutomation] Error executing muteAll script: $e',
         );
       }
+      await Future<void>.delayed(const Duration(milliseconds: 250));
     }
+    return false;
   }
 
   /// Bật/Tắt tiếng micro riêng từng học sinh

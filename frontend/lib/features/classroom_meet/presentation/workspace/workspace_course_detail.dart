@@ -19,6 +19,8 @@ class WorkspaceCourseDetail extends StatelessWidget {
     required this.onAddStudents,
     required this.onSync,
     required this.onSchedule,
+    required this.onEdit,
+    required this.onDelete,
     required this.onSetMeetAccess,
     this.classroomSyncing = false,
     this.classroomSyncError,
@@ -33,21 +35,16 @@ class WorkspaceCourseDetail extends StatelessWidget {
   final VoidCallback onAddStudents;
   final VoidCallback onSync;
   final VoidCallback onSchedule;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
   final void Function(Map<String, dynamic> course, Map<String, dynamic> student)
   onSetMeetAccess;
   final bool classroomSyncing;
   final String? classroomSyncError;
 
-  static String _date(String iso) {
-    final date = DateTime.tryParse(iso)?.toLocal();
-    if (date == null) return iso;
-    String two(int value) => value.toString().padLeft(2, '0');
-    return '${two(date.day)}/${two(date.month)}/${date.year} · ${two(date.hour)}:${two(date.minute)}';
-  }
-
   Widget _notice(String text, {bool error = false}) => Container(
-    margin: const EdgeInsets.symmetric(vertical: 10),
-    padding: const EdgeInsets.all(14),
+    margin: const EdgeInsets.symmetric(vertical: 6),
+    padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
       color: error ? const Color(0xfffff1ed) : const Color(0xffe8f4f3),
       borderRadius: BorderRadius.circular(8),
@@ -73,19 +70,10 @@ class WorkspaceCourseDetail extends StatelessWidget {
   }) {
     final state = course['classroomState'];
     if (syncing) {
-      final pendingGuidance = state == 'PROVISIONED'
-          ? ' Nếu lớp chưa được kích hoạt. Mở Classroom để chấp nhận.'
-          : '';
-      return (message: 'Đang đồng bộ Classroom…$pendingGuidance', error: false);
+      return (message: 'Đang đồng bộ Classroom…', error: false);
     }
     if (syncError != null) {
-      final retryGuidance = state == 'PROVISIONED'
-          ? ' Lớp vẫn chờ được kích hoạt. Mở Classroom để chấp nhận. Thử lại bằng nút Đồng bộ hoặc khi bạn quay lại ứng dụng.'
-          : ' Bấm nút Đồng bộ để thử lại.';
-      return (
-        message: 'Không thể đồng bộ Classroom: $syncError.$retryGuidance',
-        error: true,
-      );
+      return (message: 'Đồng bộ Classroom thất bại: $syncError', error: true);
     }
     if (state is! String || state.isEmpty) return null;
 
@@ -93,8 +81,7 @@ class WorkspaceCourseDetail extends StatelessWidget {
         .cast<String>();
     if (state == 'PROVISIONED') {
       return (
-        message:
-            'Lớp đã tạo nhưng chưa được Google kích hoạt. Mở Classroom để chấp nhận; HocLucStation sẽ tự kiểm tra khi bạn quay lại.',
+        message: 'Đang chờ kích hoạt trên Google Classroom.',
         error: false,
       );
     }
@@ -107,11 +94,10 @@ class WorkspaceCourseDetail extends StatelessWidget {
       }
       if (course['classroomSyncedAt'] is String &&
           (course['classroomSyncedAt'] as String).isNotEmpty) {
-        return (message: 'Đã đồng bộ thành viên từ Classroom.', error: false);
+        return null;
       }
       return (
-        message:
-            'Lớp đã kích hoạt nhưng chưa xác nhận đồng bộ thành viên. Bấm Đồng bộ để thử lại.',
+        message: 'Chưa đồng bộ thành viên. Bấm Đồng bộ để thử lại.',
         error: true,
       );
     }
@@ -149,7 +135,7 @@ class WorkspaceCourseDetail extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
@@ -158,18 +144,37 @@ class WorkspaceCourseDetail extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                course['title'] as String,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      course['title'] as String,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    enabled: !disabled,
+                    tooltip: 'Tùy chọn lớp',
+                    onSelected: (action) =>
+                        action == 'edit' ? onEdit() : onDelete(),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Sửa thông tin'),
+                      ),
+                      PopupMenuItem(value: 'delete', child: Text('Xóa lớp')),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 '$joined đã tham gia · ${students.where((s) => s['classroomStatus'] == 'INVITED').length} chờ chấp nhận · ${students.length} trong danh sách',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
@@ -197,18 +202,6 @@ class WorkspaceCourseDetail extends StatelessWidget {
                     onPressed: disabled ? null : onAddStudents,
                     icon: const Icon(Icons.person_add_outlined),
                     label: const Text('Thêm email học sinh'),
-                  ),
-                  PopupMenuButton<String>(
-                    enabled: !disabled,
-                    tooltip: 'Thao tác khác',
-                    onSelected: (_) => onSync(),
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                        value: 'sync',
-                        child: Text('Đồng bộ'),
-                      ),
-                    ],
-                    icon: const Icon(Icons.more_horiz),
                   ),
                   OutlinedButton.icon(
                     onPressed: disabled ? null : onSchedule,
@@ -239,21 +232,10 @@ class WorkspaceCourseDetail extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                course['classroomSyncedAt'] == null
-                    ? 'Chưa đồng bộ thành viên.'
-                    : 'Đồng bộ gần nhất: ${_date(course['classroomSyncedAt'] as String)}',
-                style: const TextStyle(color: AppColors.textMuted),
-              ),
               if (classroomStatus != null) ...[
                 const SizedBox(height: 8),
                 _notice(classroomStatus.message, error: classroomStatus.error),
               ],
-              const SizedBox(height: 6),
-              const Text(
-                'Nhập email học sinh một lần, sau đó bấm Bắt đầu dạy. HocLucStation tự chuẩn bị phòng và gửi lời mời cho buổi học. Học sinh dùng link của buổi này và đúng email được mời.',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
             ],
           ),
         ),

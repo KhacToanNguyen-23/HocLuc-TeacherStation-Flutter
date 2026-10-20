@@ -19,6 +19,20 @@ class StudioStudentsDrawer extends StatefulWidget {
 }
 
 class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
+  Future<void> _muteAllParticipants() async {
+    final muted = await widget.meetService.muteAllParticipants();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          muted
+              ? 'Đã gửi yêu cầu tắt tiếng mic cả lớp đến Google Meet.'
+              : 'Không tìm thấy nút tắt tiếng trong Google Meet. Hãy kiểm tra quyền chủ trì.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -192,9 +206,11 @@ class _StudioStudentsDrawerState extends State<StudioStudentsDrawer> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: participants.isEmpty
+                        onPressed:
+                            participants.isEmpty ||
+                                !widget.meetService.isHostJoined
                             ? null
-                            : () => widget.meetService.muteAllParticipants(),
+                            : _muteAllParticipants,
                         icon: const Icon(Icons.mic_off_rounded, size: 14),
                         label: const Text(
                           'Tắt tiếng tất cả',

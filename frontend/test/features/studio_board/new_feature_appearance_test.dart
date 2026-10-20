@@ -179,7 +179,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           find.text(
-            connected ? 'Google đã kết nối' : 'Google cần cấp quyền lại',
+            connected ? 'Google đã kết nối' : 'Cần cấp quyền Google',
           ),
           findsOneWidget,
         );
