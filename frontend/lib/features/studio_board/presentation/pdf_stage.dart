@@ -1,4 +1,4 @@
-﻿import 'package:desktop_drop/desktop_drop.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -424,7 +424,9 @@ class _PdfStageState extends State<PdfStage> {
     final studio = widget.studio;
     final highlighter = studio.tool == 'highlight';
     final width = highlighter ? studio.highlighterWidth : studio.strokeWidth;
-    final stroke = BoardStroke(studio.ink, width, [normalizedPoint]);
+    final stroke = BoardStroke(studio.ink, width, [
+      normalizedPoint,
+    ], isHighlighter: highlighter);
     studio.addStroke(stroke, target: target);
   }
 
@@ -701,4 +703,3 @@ class _SmartPenDebugBoundsPainter extends CustomPainter {
       oldDelegate.linkedGroupIds != linkedGroupIds ||
       oldDelegate.pageSize != pageSize;
 }
-

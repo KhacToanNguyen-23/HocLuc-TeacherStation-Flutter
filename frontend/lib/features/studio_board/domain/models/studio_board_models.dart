@@ -48,11 +48,13 @@ class BoardStroke {
     this.width,
     this.points, {
     this.isEraser = false,
+    bool? isHighlighter,
     this.rect,
     this.isHollow = false,
     this.smartPenGroupId,
     this.smartPenLabel,
-  });
+  }) : isHighlighter = isHighlighter ?? (width > 6 || rect != null);
+  final bool isHighlighter;
   final Color color;
   final double width;
   final List<Offset> points;
@@ -104,7 +106,7 @@ class BoardStroke {
         pointVectors,
         options: StrokeOptions(
           size: width,
-          thinning: 0.35,
+          thinning: isHighlighter ? 0.0 : 0.35,
           smoothing: 0.65,
           streamline: 0.5,
           isComplete: true,
@@ -139,12 +141,11 @@ class BoardStroke {
     final pointVectors = points
         .map((p) => PointVector(p.dx * size.width, p.dy * size.height))
         .toList();
-    final isHighlight = width > 6;
     final outline = getStroke(
       pointVectors,
       options: StrokeOptions(
         size: width,
-        thinning: isHighlight ? 0.0 : 0.35,
+        thinning: isHighlighter ? 0.0 : 0.35,
         smoothing: 0.65,
         streamline: 0.5,
         isComplete: true,
@@ -173,6 +174,7 @@ class BoardStroke {
     width,
     List<Offset>.of(points),
     isEraser: isEraser,
+    isHighlighter: isHighlighter,
     rect: rect,
     isHollow: isHollow,
     smartPenGroupId: smartPenGroupId,
@@ -183,6 +185,7 @@ class BoardStroke {
     'color': color.toARGB32(),
     'width': width,
     'isEraser': isEraser,
+    'isHighlighter': isHighlighter,
     'points': points.map((p) => [p.dx, p.dy]).toList(),
     if (rect != null)
       'rect': [rect!.left, rect!.top, rect!.width, rect!.height],
@@ -213,6 +216,7 @@ class BoardStroke {
           )
           .toList(),
       isEraser: json['isEraser'] as bool? ?? false,
+      isHighlighter: json['isHighlighter'] as bool?,
       rect: r,
       isHollow: json['isHollow'] == true,
       smartPenGroupId: json['smartPenGroupId'] as String?,
@@ -248,4 +252,3 @@ class ImportedDocument {
     return '${(b / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }
-
