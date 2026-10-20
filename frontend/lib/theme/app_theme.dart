@@ -34,9 +34,9 @@ abstract final class AppTheme {
       color: states.contains(WidgetState.disabled)
           ? AppColors.border
           : states.contains(WidgetState.focused)
-          ? AppColors.textPrimary
+          ? AppColors.sky
           : states.contains(WidgetState.hovered)
-          ? AppColors.primary
+          ? AppColors.sky
           : AppColors.inputBorder,
       width: states.contains(WidgetState.focused) ? 2 : 1,
     );
@@ -89,7 +89,7 @@ abstract final class AppTheme {
         surfaceContainerLow: AppColors.background,
         surfaceContainer: AppColors.surfaceMuted,
         surfaceContainerHigh: AppColors.surfaceMuted,
-        surfaceContainerHighest: AppColors.slate200,
+        surfaceContainerHighest: AppColors.surfaceSoft,
         surfaceTint: Colors.transparent,
         outline: AppColors.inputBorder,
         outlineVariant: AppColors.border,
@@ -167,7 +167,7 @@ abstract final class AppTheme {
         border: border,
         enabledBorder: border,
         focusedBorder: border.copyWith(
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: const BorderSide(color: AppColors.sky, width: 2),
         ),
         errorBorder: border.copyWith(
           borderSide: const BorderSide(color: AppColors.error),
@@ -223,6 +223,12 @@ abstract final class AppTheme {
         scrolledUnderElevation: 0,
       ),
       dividerTheme: const DividerThemeData(color: AppColors.border),
+      scrollbarTheme: ScrollbarThemeData(
+        thumbColor: const WidgetStatePropertyAll(AppColors.scrollbarThumb),
+        trackColor: const WidgetStatePropertyAll(AppColors.scrollbarTrack),
+        thickness: const WidgetStatePropertyAll(6),
+        radius: const Radius.circular(8),
+      ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
       ),

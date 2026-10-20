@@ -25,6 +25,7 @@ import '../services/exam_session_service.dart';
 import 'google_workspace_screen.dart';
 import '../widgets/dashboard/select_classroom_dialog.dart';
 import '../widgets/google_brand_icon.dart';
+import '../widgets/branding/hocluc_brand_mark.dart';
 
 part 'classroom_dashboard_rooms_and_history.dart';
 
@@ -482,25 +483,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
               decoration: const BoxDecoration(color: Colors.white),
               child: Row(
                 children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(AppRadii.control),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'H',
-                        style: TextStyle(
-                          fontFamily: 'Literata',
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
+                  const HocLucBrandMark(size: 34),
                   const SizedBox(width: 12),
                   const Text(
                     'HocLucStation',
@@ -854,4 +837,3 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     );
   }
 }
-

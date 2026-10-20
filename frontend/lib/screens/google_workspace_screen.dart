@@ -7,10 +7,12 @@ import '../services/google_connection_flow.dart';
 import '../models/teaching_target.dart';
 import '../services/teaching_launcher.dart';
 import '../services/meet_automation_service.dart';
+import '../utils/course_title.dart';
 import '../widgets/workspace/workspace_connection_panel.dart';
 import '../widgets/workspace/workspace_invite_dialog.dart';
 import '../widgets/workspace/workspace_schedule_dialog.dart';
 import '../widgets/workspace/workspace_course_detail.dart';
+import '../widgets/workspace/workspace_class_edit_dialog.dart';
 import '../widgets/google_brand_icon.dart';
 
 class GoogleWorkspaceScreen extends StatefulWidget {
@@ -149,6 +151,21 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
       if (course['id'] == id) return course;
     }
     return null;
+  }
+
+  String _courseChipLabel(Map<String, dynamic> course) {
+    final title = (course['title'] as String? ?? 'Lớp học').trim();
+    final normalizedTitle = normalizeCourseTitle(title);
+    final sameTitleCourses = _courses.where((candidate) {
+      return normalizeCourseTitle(candidate['title'] as String? ?? '') ==
+          normalizedTitle;
+    }).toList();
+    if (sameTitleCourses.length < 2) return title;
+
+    final index = sameTitleCourses.indexWhere(
+      (candidate) => candidate['id'] == course['id'],
+    );
+    return '$title (${index + 1})';
   }
 
   void _rememberPendingCourse(Map<String, dynamic> course) {
@@ -367,9 +384,59 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
       context,
       api: _api,
       course: course,
+      existingCourses: _courses,
       onSuccess: _replace,
     );
     if (mounted) await _load();
+  }
+
+  Future<void> _editClassDetails(Map<String, dynamic> course) async {
+    await WorkspaceClassEditDialog.show(
+      context,
+      api: _api,
+      course: course,
+      onSuccess: _replace,
+    );
+  }
+
+  Future<void> _deleteClass(Map<String, dynamic> course) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xóa lớp học?'),
+        content: Text(
+          course['courseId'] is String &&
+                  (course['courseId'] as String).isNotEmpty
+              ? '“${course['title']}” sẽ bị xóa khỏi HocLucStation và Google Classroom. Không thể hoàn tác.'
+              : '“${course['title']}” sẽ bị xóa khỏi HocLucStation.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run(() async {
+      final id = course['id'] as String;
+      await _api.call('courses/$id', method: 'DELETE');
+      if (!mounted) return;
+      setState(() {
+        _courses.removeWhere((item) => item['id'] == id);
+        _selected = _courses.isEmpty ? null : _courses.first['id'] as String;
+        _startRequests.remove(id);
+        _syncingClassrooms.remove(id);
+        _classroomSyncErrors.remove(id);
+        if (_pendingClassroomCourseId == id) _pendingClassroomCourseId = null;
+        _error = null;
+      });
+    });
   }
 
   Future<void> _schedule(
@@ -490,18 +557,6 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
     });
   }
 
-  Future<void> _oneOff() async {
-    await _run(() async {
-      await TeachingLauncher.open(
-        context,
-        TeachingTarget(
-          title: widget.lessonTitle ?? 'Buổi học riêng',
-          planningId: widget.planningId,
-        ),
-      );
-    });
-  }
-
   Widget _notice(String text, {bool error = false}) => Container(
     margin: const EdgeInsets.symmetric(vertical: 10),
     padding: const EdgeInsets.all(14),
@@ -557,11 +612,6 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
           ],
         ),
         actions: [
-          TextButton.icon(
-            onPressed: disabled ? null : _oneOff,
-            icon: const Icon(Icons.video_call_outlined),
-            label: const Text('Dạy buổi lẻ'),
-          ),
           IconButton(
             tooltip: 'Tải lại',
             onPressed: disabled ? null : () => _run(_load),
@@ -571,7 +621,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
       ),
       body: SelectionArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           children: [
             Center(
               child: ConstrainedBox(
@@ -611,7 +661,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                       },
                     ),
                     if (connected) ...[
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       Wrap(
                         spacing: 16,
                         runSpacing: 12,
@@ -631,7 +681,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       if (_courses.isEmpty)
                         _panel(
                           child: const Text(
@@ -645,9 +695,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                             .map(
                               (course) => ChoiceChip(
                                 selected: _selected == course['id'],
-                                label: Text(
-                                  course['title'] as String? ?? 'Lớp học',
-                                ),
+                                label: Text(_courseChipLabel(course)),
                                 onSelected: disabled
                                     ? null
                                     : (_) {
@@ -668,7 +716,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                             .toList(),
                       ),
                       if (selected != null) ...[
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         WorkspaceCourseDetail(
                           course: selected,
                           classroomSyncing: _syncingClassrooms.contains(
@@ -701,6 +749,8 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                           onSync: () =>
                               _syncClassroomCourse(selected['id'] as String),
                           onSchedule: () => _schedule(selected),
+                          onEdit: () => _editClassDetails(selected),
+                          onDelete: () => _deleteClass(selected),
                           onSetMeetAccess: _setMeetAccess,
                         ),
                       ],

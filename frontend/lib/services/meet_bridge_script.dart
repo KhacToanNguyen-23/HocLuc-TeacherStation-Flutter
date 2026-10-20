@@ -240,15 +240,41 @@ class MeetBridgeScript {
       return false;
     },
 
-    muteAll: function() {
-      var buttons = Array.from(document.querySelectorAll('button')).filter(function(b) {
-        var t = (b.innerText || b.textContent || '').trim().toLowerCase();
-        var a = (b.getAttribute('aria-label') || '').toLowerCase();
-        return t.includes('tắt tiếng tất cả') || t.includes('mute all') ||
-               a.includes('tắt tiếng tất cả') || a.includes('mute all');
+    muteAll: function(openPeoplePanel) {
+      var normalize = function(value) {
+        return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      };
+      var buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
+      var labelOf = function(b) {
+        return normalize([b.innerText, b.textContent, b.getAttribute('aria-label'), b.getAttribute('data-tooltip'), b.title].join(' ')).replace(/\s+/g, ' ').trim();
+      };
+      var inCall = buttons.some(function(b) {
+        return /leave call|leave the call|roi khoi|roi cuoc goi|ket thuc cuoc goi/.test(labelOf(b));
       });
-      buttons.forEach(function(btn) { btn.click(); });
-      return buttons.length;
+      if (!inCall) return false;
+
+      var peopleButton = buttons.find(function(b) {
+        return /people|participants|nguoi tham gia|moi nguoi/.test(labelOf(b));
+      }) || document.querySelector('button[data-panel-id="1"]');
+      var panel = Array.from(document.querySelectorAll('[role="tabpanel"], [data-tab-id="1"], div[jsname="AznF2e"]')).find(function(el) {
+        return /people|participants|moi nguoi|nguoi tham gia/.test(labelOf(el)) || el.matches('[data-tab-id="1"], div[jsname="AznF2e"]');
+      });
+      if (openPeoplePanel && (!panel || panel.offsetParent === null) && peopleButton && !peopleButton.disabled) {
+        peopleButton.click();
+      }
+
+      var findAndMute = function() {
+        var muteButton = Array.from(document.querySelectorAll('button, [role="button"]')).find(function(b) {
+          var label = labelOf(b);
+          return /^(mute everyone|mute all|tat tieng moi nguoi|tat tieng tat ca)(\b|$)/.test(label);
+        });
+        if (muteButton && !muteButton.disabled) {
+          muteButton.click();
+          return true;
+        }
+        return false;
+      };
+      return findAndMute();
     },
 
     startPresenting: function() {

@@ -48,6 +48,10 @@ public class GoogleStore {
         if (jdbc.update("UPDATE exam_platform.google_courses SET data=? WHERE id=? AND subject=?", data, id, subject) == 0)
             jdbc.update("INSERT INTO exam_platform.google_courses(id,subject,data) VALUES(?,?,?)", id, subject, data);
     }
+    public void deleteCourse(String subject, String id) {
+        if (jdbc.update("DELETE FROM exam_platform.google_courses WHERE subject=? AND id=?", subject, id) == 0)
+            throw new GoogleFailure(404, "COURSE_NOT_FOUND", "Không tìm thấy lớp của tài khoản này.");
+    }
     String write(Object value) { try { return json.writeValueAsString(value); } catch (Exception e) { throw new IllegalStateException("Cannot save Google connection", e); } }
     @SuppressWarnings("unchecked") Map<String, Object> read(String value) {
         try { return json.readValue(value, LinkedHashMap.class); } catch (Exception e) { throw new IllegalStateException("Invalid Google connection data", e); }

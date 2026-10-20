@@ -7,6 +7,7 @@ import '../../services/meet_automation_service.dart';
 import '../../services/url_opener.dart';
 import '../create_classroom_dialog.dart';
 import '../google_brand_icon.dart';
+import '../branding/hocluc_brand_mark.dart';
 
 class StudioTopBar extends StatelessWidget {
   const StudioTopBar({
@@ -206,25 +207,7 @@ class StudioTopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 1. Logo
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(AppRadii.control),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'H',
-                      style: TextStyle(
-                        fontFamily: 'Literata',
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
+                const HocLucBrandMark(size: 30),
                 const SizedBox(width: 8),
 
                 // 2. Tiêu đề bài giảng (Tự co giãn nếu chật, tối đa 240px)

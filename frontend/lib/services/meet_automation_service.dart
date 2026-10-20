@@ -217,7 +217,8 @@ class MeetAutomationService extends ChangeNotifier {
     if (existingUrl != null &&
         _controllerMeetingUrl == existingUrl &&
         _controller != null &&
-        _status != MeetStatus.error) {
+        _status != MeetStatus.error &&
+        (!autoJoin || _hostJoined)) {
       return existingUrl;
     }
     _resetAdmissions();
@@ -612,4 +613,3 @@ class MeetAutomationService extends ChangeNotifier {
     super.dispose();
   }
 }
-

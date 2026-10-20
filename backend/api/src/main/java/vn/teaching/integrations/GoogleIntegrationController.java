@@ -16,6 +16,7 @@ public class GoogleIntegrationController {
     record Start(String email, Boolean forceConsent) { }
     record Poll(String state,String pollToken) { }
     record Create(String requestId,String title,String description,List<String> emails) { }
+    record UpdateCourse(String title,String description) { }
     record Invite(List<String> emails) { }
     record MeetAccess(String email, Boolean allowed) { }
     record Schedule(String requestId,String start,String end) { }
@@ -29,6 +30,8 @@ public class GoogleIntegrationController {
     @PostMapping("/disconnect") public Object disconnect(HttpServletRequest req) { connections.disconnect(email(req)); return Map.of("connected",false); }
     @GetMapping("/courses") public Object courses(HttpServletRequest req) { return Map.of("courses",classes.list(email(req))); }
     @PostMapping("/courses") public Object create(HttpServletRequest req,@RequestBody Create body) { return classes.create(email(req),body.requestId(),body.title(),body.description(),body.emails()); }
+    @PutMapping("/courses/{id}") public Object updateCourse(HttpServletRequest req,@PathVariable String id,@RequestBody UpdateCourse body) { return classes.update(email(req),id,body.title(),body.description()); }
+    @DeleteMapping("/courses/{id}") public Object deleteCourse(HttpServletRequest req,@PathVariable String id) { classes.delete(email(req),id); return Map.of("deleted",true); }
     @PostMapping("/courses/{id}/invite") public Object invite(HttpServletRequest req,@PathVariable String id,@RequestBody Invite body) { return classes.invite(email(req),id,body.emails()); }
     @PostMapping("/courses/{id}/sync") public Object sync(HttpServletRequest req,@PathVariable String id) { return classes.sync(email(req),id); }
     @PostMapping("/courses/{id}/access") public Object access(HttpServletRequest req,@PathVariable String id,@RequestBody MeetAccess body) {
