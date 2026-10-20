@@ -85,7 +85,7 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
   }
 
   Future<void> _loadGoogleCourses() async {
-    final email = _authService.teacherEmail;
+    final email = _authService.teacherEmail ?? widget.googleApi?.email;
     if (email == null || email.isEmpty) return;
 
     setState(() => _loadingCourses = true);
@@ -180,7 +180,7 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
     });
 
     try {
-      final email = _authService.teacherEmail ?? '';
+      final email = _authService.teacherEmail ?? widget.googleApi?.email ?? '';
       String? meetingUrl = course['meetingUrl'] as String?;
 
       if (meetingUrl == null || meetingUrl.isEmpty) {
