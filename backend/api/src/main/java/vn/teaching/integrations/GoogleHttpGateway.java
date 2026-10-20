@@ -1,5 +1,7 @@
 package vn.teaching.integrations;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -14,6 +16,7 @@ import java.util.Map;
 
 @Component
 public class GoogleHttpGateway implements GoogleGateway {
+    private static final Logger log = LoggerFactory.getLogger(GoogleHttpGateway.class);
     private final RestClient http;
     public GoogleHttpGateway() {
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
@@ -27,9 +30,12 @@ public class GoogleHttpGateway implements GoogleGateway {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED).body(fields).retrieve().body(Map.class);
         } catch (RestClientResponseException e) {
             String error = "";
-            try { error = new com.fasterxml.jackson.databind.ObjectMapper().readTree(e.getResponseBodyAsString()).path("error").asText(); }
-            catch (Exception ignored) { }
-            throw tokenFailure(e.getStatusCode().value(),error);
+            try { 
+                error = new com.fasterxml.jackson.databind.ObjectMapper().readTree(e.getResponseBodyAsString()).path("error").asText(); 
+            } catch (Exception parseEx) {
+                log.debug("[google-http] Unable to parse token error body: {}", parseEx.getMessage());
+            }
+            throw tokenFailure(e.getStatusCode().value(), error);
         } catch (ResourceAccessException e) {
             throw new GoogleFailure(503,"GOOGLE_NETWORK","Không kết nối được Google. Kiểm tra mạng rồi thử lại; chưa cần cấp quyền lại.");
         }
@@ -66,7 +72,9 @@ public class GoogleHttpGateway implements GoogleGateway {
                     if ("FAILED_PRECONDITION".equals(body.path("error").path("status").asText()))
                         throw preconditionFailure();
                 } catch (GoogleFailure unsupported) { throw unsupported; }
-                catch (Exception ignored) { }
+                catch (Exception parseEx) {
+                    log.debug("[google-http] Failed to inspect 400 body: {}", parseEx.getMessage());
+                }
             }
             if (status == 403) {
                 try {
@@ -76,7 +84,9 @@ public class GoogleHttpGateway implements GoogleGateway {
                             throw new GoogleFailure(403,"SCOPE_MISSING","Google chưa cấp đủ quyền cho thao tác này. Vui lòng cấp quyền lại.");
                     }
                 } catch (GoogleFailure missing) { throw missing; }
-                catch (Exception ignored) { }
+                catch (Exception parseEx) {
+                    log.debug("[google-http] Failed to inspect 403 body: {}", parseEx.getMessage());
+                }
             }
             // Never return Google's raw body: it can contain tokens or personal data.
             throw new GoogleFailure(status == 401 ? 401 : 502, "GOOGLE_" + status,

@@ -8,9 +8,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.ActiveProfiles;
-import vn.teaching.model.LoginRequest;
-import vn.teaching.model.OtpAuthRequest;
-import vn.teaching.model.RegisterRequest;
+import vn.teaching.modules.auth.dto.LoginRequest;
+import vn.teaching.modules.auth.dto.OtpAuthRequest;
+import vn.teaching.modules.auth.dto.RegisterRequest;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -126,5 +126,30 @@ public class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void testLoginValidationBlankFields() throws Exception {
+        LoginRequest req = new LoginRequest("", "");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").isNotEmpty())
+                .andExpect(jsonPath("$.details").isArray());
+    }
+
+    @Test
+    void testRegisterValidationShortPassword() throws Exception {
+        RegisterRequest req = new RegisterRequest("teacher@example.com", "123456", "123");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Mật khẩu phải có ít nhất 6 ký tự."));
     }
 }

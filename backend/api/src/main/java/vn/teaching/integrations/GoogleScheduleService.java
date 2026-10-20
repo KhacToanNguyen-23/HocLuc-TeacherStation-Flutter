@@ -16,12 +16,12 @@ public class GoogleScheduleService {
     private final GoogleConnectionService connections;
     private final GoogleGateway google;
     private final GoogleStore store;
-    private final vn.teaching.service.ClassroomService classrooms;
+    private final vn.teaching.modules.classroom.service.ClassroomService classrooms;
 
     public GoogleScheduleService(GoogleConnectionService connections,
                                  GoogleGateway google,
                                  GoogleStore store,
-                                 vn.teaching.service.ClassroomService classrooms) {
+                                 vn.teaching.modules.classroom.service.ClassroomService classrooms) {
         this.connections = connections;
         this.google = google;
         this.store = store;
