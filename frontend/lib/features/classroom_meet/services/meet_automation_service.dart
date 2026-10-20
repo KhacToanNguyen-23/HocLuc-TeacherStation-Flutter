@@ -1,4 +1,4 @@
-﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -226,7 +226,9 @@ class MeetAutomationService extends ChangeNotifier {
       if (_controller != null) {
         try {
           _controller!.dispose();
-        } catch (_) {}
+        } catch (e) {
+          FrontendLogger.write('[MeetAutomationService] Error disposing controller: $e');
+        }
         _controller = null;
       }
       _controllerMeetingUrl = null;
@@ -410,7 +412,9 @@ class MeetAutomationService extends ChangeNotifier {
               onMeetingUrlDetected('https://meet.google.com/$cleaned');
             }
           }
-        } catch (_) {}
+        } catch (e) {
+          FrontendLogger.write('[MeetAutomationService] Auto-click tick error: $e');
+        }
       });
 
       timeoutTimer = Timer(timeout, () {

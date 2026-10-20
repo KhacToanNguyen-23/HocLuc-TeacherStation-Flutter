@@ -1,6 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
-import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
+import 'package:teaching_companion/features/auth/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'auth_form_card.dart';
 import 'auth_hero_panel.dart';

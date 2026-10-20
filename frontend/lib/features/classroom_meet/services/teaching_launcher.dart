@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/features/studio_board/presentation/screens/studio_screen.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/planning_repository.dart';
 import 'meet_automation_service.dart';
 import 'teacher_media_service.dart';
 
@@ -111,7 +112,8 @@ class TeachingLauncher {
       }
       if (!context.mounted) return;
       if (target.planningId != null) {
-        final cloned = await local.clonePlanningToClassroom(target.planningId!);
+        final cloned = await PlanningRepository(localService: local)
+            .clonePlanningToClassroom(target.planningId!);
         if (!cloned) {
           throw StateError('Chưa chuẩn bị được bài giảng. Vui lòng thử lại.');
         }

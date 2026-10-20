@@ -1,4 +1,4 @@
-﻿import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
@@ -6,6 +6,7 @@ import 'package:teaching_companion/core/platform/url_opener.dart';
 import 'package:teaching_companion/core/ui/google_brand_icon.dart';
 import 'package:teaching_companion/core/ui/hocluc_brand_mark.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
+import 'package:teaching_companion/features/studio_board/presentation/scoped_listenable_builder.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/create_classroom_dialog.dart';
 
@@ -184,7 +185,36 @@ class StudioTopBar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ScopedListenableBuilder<
+        ({
+          bool online,
+          String? error,
+          bool loading,
+          bool saving,
+          String savedAt,
+          bool dirty,
+          String title,
+          String view,
+        })
+      >(
+        // Rebuild only for workspace-level state the bar actually shows, not
+        // for pen strokes, laser, PDF or audio updates.
+        listenable: studio,
+        selector: () => (
+          online: studio.online,
+          error: studio.error,
+          loading: studio.loading,
+          saving: studio.saving,
+          savedAt: studio.savedAt,
+          dirty: studio.dirty,
+          title: studio.title,
+          view: studio.view,
+        ),
+        builder: (context, _) => _buildBar(context),
+      );
+
+  Widget _buildBar(BuildContext context) {
     const pine = AppColors.pine;
     const muted = AppColors.muted;
     const line = AppColors.line;

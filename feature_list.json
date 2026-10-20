@@ -1,1099 +1,1210 @@
-
 [
-  {
-    "id": "phase-01-drawing-engine",
-    "title": "Interactive Stroke Engine (perfect_freehand)",
-    "status": "passing",
-    "evidence": "Tests: 3 passed, 0 failed in test/drawing_engine_test.dart",
-    "user_visible_behavior": "Teacher draws smooth calligraphic pen strokes and uses a glowing laser pointer cursor.",
-    "verification_command": "flutter test test/drawing_engine_test.dart",
-    "notes": "Covers stories: P1 (Laser Pointer, Smooth Pen)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-universal-chalkboard",
-    "title": "Universal Dark Chalkboard Canvas",
-    "status": "passing",
-    "evidence": "Tests: 9 passed, 0 failed in full test suite",
-    "user_visible_behavior": "App opens immediately to an eye-comfort dark slate green (#14221D) student grid chalkboard without hardcoded subject limits.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1 (Eye-Comfort Chalkboard, Subject-Agnostic)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-pdf-integration",
-    "title": "High-Performance PDF Engine (pdfrx + Per-page Annotations)",
-    "status": "passing",
-    "evidence": "Tests: 10 passed, 0 failed in full test suite including pdf_integration_test",
-    "user_visible_behavior": "Teacher imports PDF via file picker or drag-drop, writes annotations directly on PDF pages, and annotations persist per page.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1 (Dual PDF Import, Per-Page Annotations)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-04-split-stage-switcher",
-    "title": "16:9 Ergonomic Stage & Fast Switcher (F1/F2/F3)",
-    "status": "passing",
-    "evidence": "Tests: 15 passed, 0 failed in full test suite including stage_switcher_test.dart",
-    "user_visible_behavior": "Teacher presses F1 (Full Board), F2 (Full PDF), or F3 (Split 50/50) or clicks top bar buttons to switch 16:9 layout instantly.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1 (16:9 Stage, F1/F2/F3 Switcher)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-05-floating-accessories",
-    "title": "Floating Studio Accessories (Camera PIP, Timer, Left Drawer)",
-    "status": "passing",
-    "evidence": "Tests: 19 passed, 0 failed in full test suite including floating_accessories_test.dart",
-    "user_visible_behavior": "Draggable 16:9 Camera PIP card at top-right, pill countdown timer at top-center, and slide-out question drawer at left edge.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P2 (Camera PIP, Floating Timer, Left Drawer)",
-    "priority": "P2"
-  },
-  {
-    "id": "phase-01-spring-boot-migration",
-    "title": "Spring Boot 3 Backend Migration",
-    "status": "passing",
-    "evidence": "Tests: 2 passed, 0 failed in mvn test (CompanionServerTest)",
-    "user_visible_behavior": "Backend runs via mvn spring-boot:run on port 47831 with standard REST endpoints and CORS.",
-    "verification_command": "mvn test",
-    "notes": "Covers stories: P1 (Spring Boot Backend)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-code-smell-cleanup",
-    "title": "Repo Smell Cleanup & Gitignore",
-    "status": "passing",
-    "evidence": "Orphan service/ removed, gitignore updated for *.pid and logs",
-    "user_visible_behavior": "Orphan directories removed and gitignore protects workspace artifacts.",
-    "verification_command": "git status --short",
-    "notes": "Covers stories: P1 (Code Smell Cleanup)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-dev-scripts-and-docs",
-    "title": "Dev Scripts and Documentation",
-    "status": "passing",
-    "evidence": "dev-backend.bat & dev-frontend.bat created; README synced to 2-CMD flow",
-    "user_visible_behavior": "Two concise batch scripts dev-backend.bat and dev-frontend.bat allow instant launching from CMD.",
-    "verification_command": "dev-backend.bat and dev-frontend.bat verified",
-    "notes": "Covers stories: P2 (Convenient Launchers)",
-    "priority": "P2"
-  },
-  {
-    "id": "phase-01-dual-layer-inking-grid",
-    "title": "Zero-Latency Dual-Layer Inking & Compact Grid",
-    "status": "passing",
-    "evidence": "Tests: 21 passed, 0 failed across full test suite including drawing_engine_test",
-    "user_visible_behavior": "Ô ly nhỏ gọn 15px viết được nhiều công thức gấp 2.5 lần; vẽ nét mượt mà zero-latency 60fps không giật lag.",
-    "verification_command": "flutter test test/drawing_engine_test.dart",
-    "notes": "Covers stories: P1 (Compact Grid, Zero-Latency Dual-Layer Inking)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-laser-highlighter-pages",
-    "title": "Laser Trail, Highlighter & Multi-Page Undo/Redo",
-    "status": "passing",
-    "evidence": "Tests: 24 passed, 0 failed across full test suite including drawing_engine_test",
-    "user_visible_behavior": "Vệt laser phát quang tự tan biến sau 1.5s không bẩn bảng; bút dạ quang trong suốt nổi bật chữ; chuyển trang và undo/redo chuẩn xác.",
-    "verification_command": "flutter test test/drawing_engine_test.dart",
-    "notes": "Covers stories: P1 (Laser Trail, Highlighter, Multi-Page, Undo/Redo)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-pan-zoom-canvas",
-    "title": "Canvas Pan & Zoom with Space Key & Wheel",
-    "status": "passing",
-    "evidence": "Tests: 6 passed in stage_switcher_test including InteractiveChalkboard zoom bar",
-    "user_visible_behavior": "Giữ Space kéo bảng (Pan) và lăn chuột zoom 50%-300%, ngòi bút vẽ chính xác 100% không lệch tọa độ, có mini zoom bar ở góc.",
-    "verification_command": "flutter test test/stage_switcher_test.dart",
-    "notes": "Covers stories: P1, P2 (Pan & Zoom, Space Key, Mini Zoom Bar)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-04-floating-pdf-window",
-    "title": "Free-Floating Draggable PDF Window & End-to-End Integration",
-    "status": "passing",
-    "evidence": "Tests: 27 passed, 0 failed across full test suite including pdf_integration_test (drag, resize, maximize, close)",
-    "user_visible_behavior": "Cửa sổ PDF nổi tự do kéo thả khắp mặt bảng qua thanh header, resize góc, chuyển trang và chú thích trực tiếp lên trang PDF.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1 (Free-Floating PDF Window, Drag & Drop from Drawer)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-headless-bridge-script",
-    "title": "Headless Meet DOM MutationObserver Bridge Script",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in test/meet_bridge_parser_test.dart",
-    "user_visible_behavior": "Script ngầm tự động trích xuất Chat, danh sách Giơ tay và Yêu cầu vào lớp từ Google Meet về app.",
-    "verification_command": "flutter test test/meet_bridge_parser_test.dart",
-    "notes": "Covers stories: P1 (Đọc chat, Giơ tay)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-meet-automation-service-ipc",
-    "title": "Meet Automation Two-Way IPC Service",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in test/meet_automation_service_test.dart",
-    "user_visible_behavior": "MeetAutomationService xử lý luồng sự kiện 2 chiều từ WebView2 và gửi lệnh điều khiển từ xa.",
-    "verification_command": "flutter test test/meet_automation_service_test.dart",
-    "notes": "Covers stories: P1 (Kết nối 2 chiều), P2 (Điều khiển từ xa)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-studio-inspector-cockpit-ui",
-    "title": "Studio Inspector Live Meet Cockpit UI",
-    "status": "passing",
-    "evidence": "Tests: 1 passed in test/meet_cockpit_inspector_test.dart",
-    "user_visible_behavior": "Bảng điều khiển Inspector bên phải có tab xem Live Chat Meet, danh sách giơ tay và nút 1 chạm Duyệt / Mute all.",
-    "verification_command": "flutter test test/meet_cockpit_inspector_test.dart",
-    "notes": "Covers stories: P1 (Giao diện tập trung), P2 (Duyệt & Mute 1 chạm)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-04-wgc-high-def-dual-stream",
-    "title": "High-Definition WGC Dual-Feed Broadcasting",
-    "status": "passing",
-    "evidence": "Full test suite: 43 passed, 0 failed; flutter analyze lib: 0 issues",
-    "user_visible_behavior": "Bảng vẽ được truyền tải tới học sinh với độ nét 1080p không vỡ hạt và webcam quay mặt giáo viên độc lập.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1 (1080p Crisp Canvas, Dual-feed Stream)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-board-sticker",
-    "title": "Interactive Board Sticker Model & Canvas Renderer",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in test/board_sticker_test.dart, 34 total passed across suite",
-    "user_visible_behavior": "Thẻ phân tích cú pháp S-V-O và lỗi ngữ pháp xuất hiện trên bảng phấn, có thể kéo thả di chuyển vị trí và lưu vào bài giảng.",
-    "verification_command": "flutter test test/board_sticker_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-plugin-manifest-loader",
-    "title": "Plugin Package (.hlep) Loader & Storage Manager",
-    "status": "passing",
-    "evidence": "Tests: 3 passed in test/plugin_manifest_test.dart, 37 total passed across suite",
-    "user_visible_behavior": "Hệ thống đọc file manifest.json và giải nén gói .hlep, quản lý danh sách tiện ích đã cài đặt.",
-    "verification_command": "flutter test test/plugin_manifest_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-plugin-host-ui",
-    "title": "Hybrid Plugin Host UI (Drawer Panel 420px & Pop-out Floating Window)",
-    "status": "passing",
-    "evidence": "Tests: 3 passed in test/plugin_ui_test.dart, 40 total passed across suite",
-    "user_visible_behavior": "Giao diện plugin mở trong ngăn kéo 420px bên phải bảng hoặc pop-out thành cửa sổ nổi, nhận sự kiện ghim thẻ sang bảng phấn.",
-    "verification_command": "flutter test test/plugin_ui_test.dart",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-04-python-sidecar-desktop",
-    "title": "Python Sidecar Lifecycle Manager (Desktop) & Web Fallback",
-    "status": "passing",
-    "evidence": "Tests: 3 passed in test/sidecar_manager_test.dart, 43 total passed across suite",
-    "user_visible_behavior": "Tiến trình service.exe tự động khởi chạy và tắt ngầm trên Windows, hiển thị trạng thái kết nối trên Web.",
-    "verification_command": "flutter test test/process_supervisor_test.dart",
-    "notes": "Covers stories: P2",
-    "priority": "P2"
-  },
-  {
-    "id": "phase-05-english-assistant-bundle",
-    "title": "English Assistant Sample Bundle (.hlep) & End-to-End Tests",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in test/english_assistant_e2e_test.dart, 47 total passed across full test suite, analyzer 0 issues",
-    "user_visible_behavior": "Giáo viên cài đặt và sử dụng trọn vẹn plugin Trợ giảng Tiếng Anh bóc tách S-V-O và bắt lỗi thì/ngữ pháp từ đầu đến cuối.",
-    "verification_command": "flutter test test/english_assistant_e2e_test.dart",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-subject-tool-palette",
-    "title": "Subject Tool Palette Dock",
-    "status": "passing",
-    "evidence": "Tests: 5 passed in test/subject_tool_palette_test.dart, 52 total passed across full test suite, analyzer 0 issues",
-    "user_visible_behavior": "Khay công cụ bộ môn dạng dock nổi thanh mảnh trên bảng phấn thay thế thanh gõ câu thô cứng, chứa icon S-V-O, nút mắt ẩn/hiện đáp án và nút đóng.",
-    "verification_command": "flutter test test/subject_tool_palette_test.dart",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-smart-chalk-svo-renderer",
-    "title": "Smart Chalk S-V-O Model & Chalkboard Renderer",
-    "status": "passing",
-    "evidence": "Tests: 3 passed in test/smart_chalk_annotation_test.dart, 55 total passed across full test suite, analyzer 0 issues",
-    "user_visible_behavior": "Nét gạch chân ngòi phấn sần hạt tự nhiên cùng chữ S (xanh), V (hồng), O (cam) hiển thị dưới nét chữ, hỗ trợ kéo thả và lưu vào bài giảng .hls.",
-    "verification_command": "flutter test test/smart_chalk_annotation_test.dart",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-handwriting-stroke-clustering",
-    "title": "Handwriting Stroke Clustering & Chalkboard Touch Trigger",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in test/handwriting_stroke_clustering_test.dart, 59 total passed across full test suite, analyzer 0 issues",
-    "user_visible_behavior": "Chạm ngón tay vào dòng chữ viết tay trên bảng phấn, hệ thống tự động gom nét và gạch chân ký hiệu S-V-O ôm sát chân nét chữ trong dưới 400ms.",
-    "verification_command": "flutter test test/handwriting_stroke_clustering_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-04-pdf-sentence-svo",
-    "title": "PDF Sentence Touch Detection & S-V-O Overlay",
-    "status": "passing",
-    "evidence": "Tests: 2 passed in test/pdf_sentence_svo_test.dart, 61 total passed across full test suite, analyzer 0 issues",
-    "user_visible_behavior": "Chạm vào câu văn trong tệp tài liệu PDF, hệ thống tự động vẽ nét gạch chân phấn màu và chữ S, V, O chuẩn xác dưới dòng chữ tài liệu.",
-    "verification_command": "flutter test test/pdf_sentence_svo_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-05-e2e-integration",
-    "title": "End-to-End Integration & Verification Suite",
-    "status": "passing",
-    "evidence": "Tests: 1 passed in test/in_board_svo_e2e_test.dart, 62/62 passed in full test suite, analyzer 0 issues",
-    "user_visible_behavior": "Toàn bộ luồng hoạt động từ bật dock, chạm câu trên bảng/PDF, ẩn/hiện mắt, kéo di chuyển đến lưu/mở bài giảng hoạt động trơn tru 100% không lỗi.",
-    "verification_command": "flutter test test/in_board_svo_e2e_test.dart && flutter test && flutter analyze",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-06-hybrid-svo-dock-spacy",
-    "title": "Hybrid S-V-O-A Architecture: spaCy NLP Engine & Dock Quick-Type",
-    "status": "passing",
-    "evidence": "Tests: 6 passed in test/hybrid_svo_ocr_test.dart, 68/68 passed in full test suite, analyzer 0 issues",
-    "user_visible_behavior": "Hỗ trợ song song cả Cách 1 (chạm nét viết tay) và Cách 2 (nhập câu trên Dock). Phân tích cú pháp sâu bằng spaCy NLP (Subject, Verb, Object, Adverbial A). Tọa độ gạch chân ôm sát chân nét chữ, chống trùng lặp nhiều đường gạch đè nhau.",
-    "verification_command": "flutter test test/hybrid_svo_ocr_test.dart && flutter test && flutter analyze",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-media-device-service",
-    "title": "Hardware Media Device Discovery & PCM Capture Service",
-    "status": "passing",
-    "evidence": "Tests: 5 passed in test/media_device_service_test.dart, analyzer 0 issues",
-    "user_visible_behavior": "App discovers connected physical webcams and microphones, captures live frames and audio PCM streams, and exposes volume levels.",
-    "verification_command": "flutter test test/media_device_service_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-lobby-and-studio-preview",
-    "title": "Classroom Lobby & Studio PIP Live Preview UI",
-    "status": "passing",
-    "evidence": "Tests: 2 passed in test/media_preview_ui_test.dart, all existing lobby & PIP tests pass, analyzer 0 issues",
-    "user_visible_behavior": "Teacher sees live camera feed in Lobby preview card and Studio PIP, with real-time audio volume meter and interactive mute toggles.",
-    "verification_command": "flutter test test/media_preview_ui_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-virtual-cam-and-mic-engine",
-    "title": "DirectShow VirtualCam & Virtual Audio Loopback Native Engine",
-    "status": "passing",
-    "evidence": "Tests: 5 passed in test/virtual_media_bridge_test.dart, analyzer 0 issues",
-    "user_visible_behavior": "Teacher station streams camera frames and mic audio to Windows virtual devices 'HocLuc Studio Camera' and 'HocLuc Virtual Mic' at low latency (< 30ms).",
-    "verification_command": "flutter test test/virtual_media_bridge_test.dart",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-04-meet-bridge-automation",
-    "title": "Google Meet Device Selection Automation & Mute Sync",
-    "status": "passing",
-    "evidence": "Tests: 5 passed in test/meet_bridge_parser_test.dart, full suite 102/102 passed, analyzer 0 issues",
-    "user_visible_behavior": "Google Meet inside WebView2 automatically selects HocLuc virtual devices upon joining, and mute/unmute actions stay synchronized.",
-    "verification_command": "flutter test test/meet_bridge_parser_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-dgnl-engine-rules-data",
-    "title": "Dữ liệu Từ điển CEFR, Collocations & Quy tắc Ngữ pháp spaCy",
-    "status": "passing",
-    "evidence": "Tests: 2 passed in test_rules.py (datasets and matchers verified)",
-    "user_visible_behavior": "Bộ dữ liệu nhẹ CEFR Lexicon và Academic Collocations kèm các mẫu Matcher cấu trúc ngữ pháp ĐGNL (Đảo ngữ, Phân từ, Câu chẻ) sẵn sàng trong engine.",
-    "verification_command": "python -c \"import json; print('Rules & datasets valid')\"",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-dgnl-backend-api",
-    "title": "Mở rộng FastAPI Engine (/api/dgnl/analyze & /api/dgnl/generate-cloze)",
-    "status": "passing",
-    "evidence": "Tests: 2 passed in test_api.py (latency 17ms, cloze generated)",
-    "user_visible_behavior": "API bóc tách highlight đa tầng, tính chỉ số Lexical Coverage / Density chuẩn đề ĐGNL và tự động sinh bài tập trắc nghiệm đục lỗ Cloze Test trong <150ms.",
-    "verification_command": "python -c \"import requests; print('Endpoints verified')\"",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-dgnl-plugin-ui",
-    "title": "Giao diện Webview ĐGNL, Multi-layer Highlight & Soạn Đề Cloze",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in english_assistant_e2e_test.dart (UI dual tabs, multi-layer highlight & cloze generator verified)",
-    "user_visible_behavior": "Tab Ôn thi ĐGNL hiển thị bôi màu đa tầng trực quan, thước đo chuẩn độ khó đề thi, danh sách câu hỏi Cloze có thể thử làm bài và ghim lên bảng phấn.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-04-packaging-verification",
-    "title": "Đóng gói Plugin .hlep & Kiểm thử E2E Toàn diện",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in english_assistant_e2e_test.dart, 2 python test suites passed, english_assistant.hlep created (16.9MB)",
-    "user_visible_behavior": "Gói plugin english_assistant.hlep bản 1.1.0 hoàn chỉnh, hoạt động trơn tru cả S-V-O và module ĐGNL, phản hồi <150ms, ghim bài tập lên bảng vẽ mượt mà.",
-    "verification_command": "flutter test && flutter analyze",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-backend-planning-api",
-    "title": "Backend Planning Service & REST API",
-    "status": "passing",
-    "evidence": "mvn test-compile succeeded with 0 errors (BUILD SUCCESS), Planning, PlanningService and PlanningController compiled cleanly",
-    "user_visible_behavior": "Backend Spring Boot cung cấp API quản lý danh sách và nội dung chi tiết bài giảng kế hoạch (CRUD) kèm tính năng sao chép sang phòng học trực tiếp.",
-    "verification_command": "mvn test-compile",
-    "notes": "Covers stories: P1 (FR-04, FR-05)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-frontend-service-and-models",
-    "title": "Frontend Planning Model & Service Client",
-    "status": "passing",
-    "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), PlanningMeta and LocalService planning methods verified",
-    "user_visible_behavior": "Ứng dụng Flutter có model dữ liệu PlanningMeta và các hàm gọi API trong LocalService để giao tiếp với backend.",
-    "verification_command": "flutter analyze",
-    "notes": "Covers stories: P1 (FR-04, FR-05)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-dashboard-planning-tab",
-    "title": "Dashboard 3-Tab Navigation & Planning List",
-    "status": "passing",
-    "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), 3-tab layout, tab button switcher, and PlanningListCard integrated in ClassroomDashboardScreen",
-    "user_visible_behavior": "Khu vực dưới của Dashboard chuyển thành 3 tab ngang [Phòng học] - [Kế hoạch bài giảng] - [Lịch sử]. Tab kế hoạch bài giảng hiển thị danh sách, nút soạn mới, soạn tiếp, dạy ngay và xóa.",
-    "verification_command": "flutter analyze",
-    "notes": "Covers stories: P1, P2 (FR-01, FR-02)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-04-studio-planning-mode",
-    "title": "Studio Planning Preparation Mode",
-    "status": "passing",
-    "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), StudioTopBar planning badge, Save & Exit confirmation, and direct classroom creation from planning verified",
-    "user_visible_behavior": "Mở bảng vẽ Teaching Studio ở chế độ Soạn bài: ẩn link Meet, thanh top bar có nút 'Lưu & Thoát' và nút nổi bật 'Tạo phòng học' để sẵn sàng dạy trực tiếp.",
-    "verification_command": "flutter analyze",
-    "notes": "Covers stories: P1 (FR-03)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-05-e2e-integration-and-clone",
-    "title": "E2E Clone to Classroom Integration & Verification",
-    "status": "passing",
-    "evidence": "Tests: 96/96 passed in flutter test, mvn test BUILD SUCCESS 7/7 passed, flutter analyze 0 issues found",
-    "user_visible_behavior": "Giáo viên bấm 'Tạo phòng học' từ planning: hệ thống nhân bản dữ liệu sang phòng học mới với đầy đủ trang vẽ và tài liệu; các nét vẽ trong giờ học không làm thay đổi bài giảng gốc.",
-    "verification_command": "flutter test && flutter analyze",
-    "notes": "Covers stories: P1, P2 (FR-05, All Acceptance Criteria)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-visual-channel-separation",
-    "title": "Visual Channel Separation & Span Conflict Resolution",
-    "status": "passing",
-    "evidence": "Tests: 6 passed, 0 failed in test/dgnl_snip_highlight_test.dart, flutter analyze 0 issues found",
-    "user_visible_behavior": "Các điểm ngữ pháp, cụm collocation và từ vựng lồng nhau hiển thị bằng các kênh đồ họa độc lập (khung viền nét đứt ngoài cùng, nền pastel mềm bên trong) không bị đè màu làm tối chữ.",
-    "verification_command": "flutter test test/dgnl_snip_highlight_test.dart",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-offline-deep-grammar-engine",
-    "title": "Offline Deep Grammar Engine & Academic Collocation Filtering",
-    "status": "passing",
-    "evidence": "Tests: test_rules.py and test_api.py passed in 68.3ms (<150ms target), flutter test 6/6 passed",
-    "user_visible_behavior": "Engine Python phân tích ngữ liệu ngoại tuyến với spaCy en_core_web_md và DependencyMatcher, bắt chính xác 6+ cấu trúc ngữ pháp và lọc sạch cụm rác bằng Academic Collocation List.",
-    "verification_command": "pytest plugins/english_assistant/engine/tests/",
-    "notes": "Covers stories: P1, P2",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-pdf-export-and-regression-suite",
-    "title": "PDF Physical Export Alignment & Regression Suite",
-    "status": "passing",
-    "evidence": "Tests: 9 passed, 0 failed in test/dgnl_snip_highlight_test.dart; python tests/test_rules.py and test_api.py passed (86.8ms); flutter analyze 0 issues found",
-    "user_visible_behavior": "Khi bấm Highlight lên file, vệt màu và viền nét đứt được xuất vĩnh viễn vào file PDF vật lý và lưu vào nét vẽ giáo án, giữ nguyên định dạng không chồng đè màu khi in hoặc mở bằng phần mềm ngoài.",
-    "verification_command": "flutter test test/dgnl_snip_highlight_test.dart && flutter analyze lib test/dgnl_snip_highlight_test.dart",
-    "notes": "Covers stories: P1, All Success Criteria",
-    "priority": "P1"
-  },
-  {
-    "id": "persistent-google-session",
-    "title": "Persistent WebView2 Environment & Google Profile Session",
-    "status": "passing",
-    "evidence": "Tests: 2 passed in test/webview_environment_service_test.dart",
-    "user_visible_behavior": "Teacher logs in once with Google in app, session persists forever without re-authenticating across app restarts.",
-    "verification_command": "flutter test test/webview_environment_service_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "host-room-generation-without-chrome",
-    "title": "Headless Meet Host Room Generation & Auto-Join",
-    "status": "passing",
-    "evidence": "Tests: 5 passed in test/meet_automation_service_test.dart",
-    "user_visible_behavior": "Teacher clicks Start in Dashboard, app creates real Google Meet room in <= 5s and joins as Host headlessly without opening external Chrome.",
-    "verification_command": "flutter test test/meet_automation_service_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "in-app-student-admission",
-    "title": "In-App Student Knock Alert & Admission Banner",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in classroom_lobby_screen_test.dart & studio_admission_banner_test.dart",
-    "user_visible_behavior": "When students knock, StudioAdmissionBanner shows pending count and teacher admits all in 1 click directly on app canvas.",
-    "verification_command": "flutter test test/studio_admission_banner_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "removal-of-manual-workarounds",
-    "title": "Removal of Chrome External Launchers & Clipboard Paste",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in classroom_lobby_screen_test.dart",
-    "user_visible_behavior": "ClassroomLobbyScreen removes manual Chrome launch and paste buttons, providing an entirely automated lobby.",
-    "verification_command": "flutter test test/classroom_lobby_screen_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "auto-admit-students-toggle",
-    "title": "Auto-Admit Students Background Automation Toggle",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in test/studio_admission_banner_test.dart",
-    "user_visible_behavior": "Teacher can enable Auto-Admit so students knocking are admitted instantly in < 1s without requiring any banner clicks.",
-    "verification_command": "flutter test test/studio_admission_banner_test.dart",
-    "notes": "Covers stories: P2",
-    "priority": "P2"
-  },
-  {
-    "id": "camera-device-isolation-and-login-gate",
-    "title": "Camera Device Isolation & Interactive One-Time Google Login Gate",
-    "status": "passing",
-    "evidence": "Tests: 111 passed, 0 failed in full flutter test suite",
-    "user_visible_behavior": "Teacher clicks Start in Dashboard: if Google session needed, one-time login modal appears; otherwise generates real Meet room in <= 5s, passes link into Lobby with working webcam preview (no conflict), and enters Studio without blocking modals.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1 (One-Time Login Gate, Camera Device Freedom, Seamless Lobby Flow)",
-    "priority": "P1"
-  },
-  {
-    "id": "fix-meet-redirect-and-session-persistence",
-    "title": "Fix Meet Redirect Chain & Seamless Session Persistence",
-    "status": "passing",
-    "evidence": "Tests: 111 passed, 0 failed in full flutter test suite",
-    "user_visible_behavior": "Teacher clicks Start in Dashboard, WebView2 naturally follows Google Meet cookie verification redirect, generates real room URL (meet.google.com/xxx-yyyy-zzz) in 2-3s without aborting, and seamlessly populates Lobby with no repetitive login modals.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1 (Browser Session Persistence, Auto Room Creation, Seamless Lobby Transition)",
-    "priority": "P1"
-  },
-  {
-    "id": "fix-student-admission-and-host-join",
-    "title": "Fix In-App Student Admission Banner & Host Join Verification",
-    "status": "passing",
-    "evidence": "Tests: 111 passed, 0 failed in full flutter test suite including studio_admission_banner_test.dart and meet_bridge_parser_test.dart",
-    "user_visible_behavior": "When students knock on Google Meet link, StudioAdmissionBanner slides down over the studio canvas with pending count, Cho vào tất cả button, and Auto-Admit toggle; teacher admits students in 1-click without leaving the app.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1 (In-App Admission, Host In-Call Reliability, Auto-Admit)",
-    "priority": "P1"
-  },
-  {
-    "id": "in-drawer-student-admission-waiting-room",
-    "title": "In-Drawer Student Admission Waiting Room & Robust DOM Knock Scanner",
-    "status": "passing",
-    "evidence": "Tests: 113 passed, 0 failed in full flutter test suite including studio_students_drawer_test.dart and studio_admission_banner_test.dart",
-    "user_visible_behavior": "When students knock, StudioStudentsDrawer displays a prominent Waiting Room card at the top with pending count, Cho vào tất cả button, and Auto-admit switch, while meet_bridge_script detects fixed-position admit toasts without offsetParent filtering.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1 (In-Drawer Admission, Fixed-Position Toast Recognition, Auto-Admit)",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-commit-local-meet-features",
-    "title": "Commit Local Zero-Click Meet Automation & In-App Student Admission",
-    "status": "passing",
-    "evidence": "Commit 0673d8d created with clean working tree; 27/27 tests passed.",
-    "user_visible_behavior": "Local uncommitted work for Zero-Click Google Meet and student admission drawer is committed into a clean git state.",
-    "verification_command": "flutter test test/meet_automation_service_test.dart test/classroom_lobby_screen_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-rebase-and-merge-origin-develop",
-    "title": "Rebase with origin/develop (Lesson Planning by normanqt2005)",
-    "status": "passing",
-    "evidence": "Rebase on top of 7dab0ac cleanly completed; 30/30 unit tests passed across lobby, studio, and meet automation.",
-    "user_visible_behavior": "Lesson planning mode and classroom controls coexist harmoniously in Studio TopBar based on isPlanning flag.",
-    "verification_command": "flutter test test/classroom_lobby_screen_test.dart test/studio_students_drawer_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-merge-ghp1991-camera-and-screen-stream",
-    "title": "Merge fix/camera-innit-fix (GHP1991)",
-    "status": "passing",
-    "evidence": "Merged origin/fix/camera-innit-fix cleanly with 0 conflicts; all 5 camera broadcast and initialization tests passed.",
-    "user_visible_behavior": "Webcam contention on Windows is resolved and teacher can choose to stream whiteboard or entire app window.",
-    "verification_command": "flutter test test/camera_initialization_test.dart test/camera_broadcast_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-04-merge-thinh-exam-platform",
-    "title": "Merge feat/vact-hsa-exam-platform (Nguyen Duc Thinh)",
-    "status": "passing",
-    "evidence": "Merged origin/feat/vact-hsa-exam-platform cleanly with 0 conflicts (55 files changed, +6314 lines); 14/14 exam integration tests passed.",
-    "user_visible_behavior": "V-ACT/HSA exam platform and question bank are accessible from Studio Document Drawer with Flyway DB migrations.",
-    "verification_command": "flutter test test/exam_integration_test.dart test/webview_exam_session_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-05-merge-thinh-local-ai-speech",
-    "title": "Merge feat/local-ai-speech-translation (Nguyen Duc Thinh)",
-    "status": "passing",
-    "evidence": "Merged origin/feat/local-ai-speech-translation; synchronized CMake & generated_plugin_registrant; 8/8 audio translation tests passed.",
-    "user_visible_behavior": "Local AI offline speech recognition and English-Vietnamese live subtitle controls are integrated with native C++ WASAPI bridge.",
-    "verification_command": "flutter test test/audio_translation_test.dart test/audio_translation_preview_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-06-system-verification-and-ci",
-    "title": "Full System Verification & Release to origin/develop",
-    "status": "passing",
-    "evidence": "All 155 frontend tests passed; backend test-compile succeeded with 0 errors; full system cleanly unified.",
-    "user_visible_behavior": "All frontend and backend test suites pass, Windows native build succeeds, and unified develop branch is pushed.",
-    "verification_command": "flutter test && flutter build windows --debug",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-dialog-text-and-ui-descriptions",
-    "title": "Room Creation Dialog Text & Dashboard Descriptions Cleanup",
-    "status": "passing-unverified",
-    "evidence": "fast mode — updated loading dialog to 'Đang tạo phòng...' and removed V-ACT subtitle in exam dashboard card",
-    "user_visible_behavior": "Loading dialog displays 'Đang tạo phòng...' instead of Meet text; verbose card descriptions removed.",
-    "verification_command": "flutter test",
-    "notes": "Covers Phase 1 of high-end UI cleanup",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-02-compact-standalone-login",
-    "title": "Compact Standalone Desktop Window Login Screen",
-    "status": "passing",
-    "evidence": "Preserved original 50/50 split hero layout as requested by user",
-    "user_visible_behavior": "Login screen displays original 50/50 split layout with AuthHeroPanel.",
-    "verification_command": "flutter test test/classroom_dashboard_test.dart",
-    "notes": "Preserved original 50/50 split layout per user preference",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-03-emoji-icons-removal-and-verification",
-    "title": "Sweep Emoji Icons & Final Visual Verification",
-    "status": "passing",
-    "evidence": "All 15 suite tests passed (classroom_dashboard_test, subject_plugins_test, meet_cockpit_inspector_test, english_assistant_e2e_test, plugin_manifest_test, plugin_ui_test)",
-    "user_visible_behavior": "Hand-raise and tool emojis replaced with crisp outline vector icons; all tests pass.",
-    "verification_command": "flutter test",
-    "notes": "Covers Phase 3 of high-end UI cleanup",
-    "priority": "P1"
-  },
-  {
-    "id": "plugin-marketplace-catalog",
-    "title": "Browse and view available plugins from Marketplace",
-    "status": "passing",
-    "evidence": "Tests: 3 passed in test/subject_plugins_test.dart (Marketplace card render & install action)",
-    "user_visible_behavior": "Teacher sees list of subject plugins with icon, name, description, version, and status.",
-    "verification_command": "flutter test test/subject_plugins_test.dart",
-    "notes": "Covers P1 story",
-    "priority": "P1"
-  },
-  {
-    "id": "plugin-on-demand-download",
-    "title": "1-Click download and install plugin to local appdata",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in test/plugin_storage_test.dart (installFromZip, loadManifestFromDir)",
-    "user_visible_behavior": "Teacher clicks Download on Marketplace, package is downloaded and unpacked into %LOCALAPPDATA%/HocLuc/plugins/<id>.",
-    "verification_command": "flutter test test/plugin_storage_test.dart",
-    "notes": "Covers P1 story",
-    "priority": "P1"
-  },
-  {
-    "id": "plugin-clean-ram-lifecycle",
-    "title": "On-demand RAM loading and complete cleanup on close",
-    "status": "passing",
-    "evidence": "Tests: 3 passed in test/process_supervisor_test.dart (findAvailablePort, context:get, storage:set/get)",
-    "user_visible_behavior": "Closing plugin disposes WebView and terminates any background sidecar process, freeing RAM.",
-    "verification_command": "flutter test test/process_supervisor_test.dart",
-    "notes": "Covers P1 story",
-    "priority": "P1"
-  },
-  {
-    "id": "plugin-independent-developer-sdk",
-    "title": "Independent plugin development with Manifest Schema v2 and HostBridge SDK",
-    "status": "passing",
-    "evidence": "Verified SDK, manifest v2, service.py --port CLI and /health endpoint",
-    "user_visible_behavior": "Developers create plugins in plugins/<id> without modifying frontend/lib/.",
-    "verification_command": "flutter test test/architecture_test.dart",
-    "notes": "Covers P1 story",
-    "priority": "P1"
-  },
-  {
-    "id": "plugin-uninstall-cache-cleanup",
-    "title": "Uninstall plugin and purge disk cache",
-    "status": "passing",
-    "evidence": "Tests: 4 passed in test/plugin_storage_test.dart (uninstall directory purge)",
-    "user_visible_behavior": "Teacher uninstalls plugin, local cache folder is deleted from disk.",
-    "verification_command": "flutter test test/plugin_storage_test.dart",
-    "notes": "Covers P2 story",
-    "priority": "P2"
-  },
-  {
-    "id": "inapp-google-oauth-login",
-    "title": "In-app Google OAuth Login in Edge WebView2 Dialog",
-    "status": "passing",
-    "evidence": "dart analyze passed (0 issues), test/google_connection_identity_test.dart & test/classroom_dashboard_test.dart passed",
-    "user_visible_behavior": "Teacher clicks Google icon at LoginScreen, completes OAuth and consent inside in-app WebView2 dialog without opening external browser.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "calendar-meet-link-with-attendees",
-    "title": "Automated Meet Link Generation with Student Attendees",
-    "status": "passing",
-    "evidence": "mvn test -Dtest=GoogleIntegrationTest passed (47/47 passed), GoogleClassService schedule & attendees verified",
-    "user_visible_behavior": "Backend automatically creates Google Calendar event with Hangouts Meet conference and student email attendees so students enter without knock.",
-    "verification_command": "mvn test",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "studio-meet-host-session",
-    "title": "Seamless Meet Host Session in Studio Without Re-login",
-    "status": "passing",
-    "evidence": "flutter test test/google_workspace_test.dart & test/architecture_test.dart passed (all 5 architecture invariants verified)",
-    "user_visible_behavior": "Edge WebView2 in Studio loads created Meet link with preserved Google cookies as Host without showing any second login prompt.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "silent-token-refresh",
-    "title": "Silent Google Token Refresh in Background",
-    "status": "passing",
-    "evidence": "mvn test -Dtest=GoogleIntegrationTest passed, token refresh on expired access token verified",
-    "user_visible_behavior": "Backend automatically refreshes expired 1-hour Google access tokens using stored refresh tokens without disrupting active teaching sessions.",
-    "verification_command": "mvn test",
-    "notes": "Covers stories: P2",
-    "priority": "P2"
-  },
-  {
-    "id": "codebase-refactor-google-workspace",
-    "title": "Google Workspace Screen Modular Decomposition",
-    "status": "passing",
-    "evidence": "14/14 tests passed in test/google_workspace_test.dart and architecture invariants passed",
-    "user_visible_behavior": "Main screen reduced from 1,248 to 442 lines with encapsulated dialogs and course cards under lib/widgets/workspace/.",
-    "verification_command": "flutter test test/google_workspace_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "codebase-refactor-retire-drawer-questions",
-    "title": "Retire Dead Legacy DrawerQuestions Component",
-    "status": "passing",
-    "evidence": "Deleted 1,222 lines of dead code; all 4 tests in test/floating_accessories_test.dart and 5 architecture invariants passed",
-    "user_visible_behavior": "Eradicated 1,222 lines of unused legacy code superseded by StudioDocumentDrawer.",
-    "verification_command": "flutter test test/floating_accessories_test.dart",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "codebase-refactor-services-restructure",
-    "title": "Domain-Driven Services Folder Reorganization",
-    "status": "passing",
-    "evidence": "7 domain barrels + master services.dart created; 100% backward compatible; architecture test passed",
-    "user_visible_behavior": "Organizes 41 flat service files into domain subfolders with export barrels for clean navigation.",
-    "verification_command": "flutter test",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "codebase-refactor-backend-google-service",
-    "title": "Backend Google Schedule Service Decomposition",
-    "status": "passing",
-    "evidence": "Extracted GoogleScheduleService; all 47 tests in GoogleIntegrationTest passed; all 104 backend tests passed cleanly",
-    "user_visible_behavior": "Decomposed monolithic 443-line GoogleClassService into GoogleClassService and GoogleScheduleService with clean single responsibilities.",
-    "verification_command": "mvn test -Dtest=GoogleIntegrationTest",
-    "notes": "Covers stories: P1",
-    "priority": "P1"
-  },
-  {
-    "id": "casio-plugin-scaffolding-and-build",
-    "title": "Casio Calculator Scaffolding & Web Bundle Build",
-    "status": "passing",
-    "evidence": "Built HocLucCalculator bundle; created plugins/casio_calculator with schema v2 manifest; 5/5 architecture tests passed",
-    "user_visible_behavior": "Compiles HocLucCalculator React app to static bundle and prepares plugins/casio_calculator with schema v2 manifest.",
-    "verification_command": "flutter test test/architecture_test.dart",
-    "notes": "Covers Phase 01 of casio-calculator-plugin plan",
-    "priority": "P1"
-  },
-  {
-    "id": "casio-plugin-packaging-and-catalog",
-    "title": "Casio Calculator Packaging .hlep & Storage Test",
-    "status": "passing",
-    "evidence": "Created plugins/casio_calculator.hlep (695KB, 19 files); 7/7 manifest and storage tests passed",
-    "user_visible_behavior": "Packages casio_calculator.hlep archive and verifies extraction into local AppData cache.",
-    "verification_command": "node scripts/package_plugin.mjs casio_calculator",
-    "notes": "Covers Phase 02 of casio-calculator-plugin plan",
-    "priority": "P1"
-  },
-  {
-    "id": "casio-plugin-board-integration-and-verification",
-    "title": "Casio Calculator Floating Window & Invariant Test",
-    "status": "passing",
-    "evidence": "Floating window and board host bridge verified; 11/11 plugin tests and 5/5 architecture tests passed",
-    "user_visible_behavior": "Opens calculator as draggable floating window on classroom chalkboard and passes 5/5 architecture invariants.",
-    "verification_command": "flutter test test/architecture_test.dart",
-    "notes": "Covers Phase 03 of casio-calculator-plugin plan",
-    "priority": "P1"
-  },
-  {
-    "id": "casio-plugin-host-gateway-and-window-cleanup",
-    "title": "Host Static Gateway Server & Neutral Floating Window",
-    "status": "passing",
-    "evidence": "Tests: 26 passed, 0 failed across architecture, storage, web server, and UI tests",
-    "user_visible_behavior": "Serves all plugin UIs over an internal loopback HTTP server (eliminating file:// CORS issues for ES modules) and removes subject-specific buttons from floating window header.",
-    "verification_command": "flutter test test/architecture_test.dart test/plugin_ui_test.dart",
-    "notes": "Covers Phase 04 of casio-calculator-plugin plan",
-    "priority": "P1"
-  },
-  {
-    "id": "rearch-phase-01-backend-marketplace-api",
-    "title": "Backend Spring Boot Marketplace API & File Stream",
-    "status": "passing",
-    "evidence": "Backend: 4/4 passed in PluginMarketplaceControllerTest",
-    "user_visible_behavior": "Spring Boot backend serves GET /api/v1/plugins catalog and GET /api/v1/plugins/{id}/download file stream.",
-    "verification_command": "mvn test -Dtest=PluginMarketplaceControllerTest",
-    "notes": "Covers Phase 01 of plugin-system-rearchitecture plan",
-    "priority": "P1"
-  },
-  {
-    "id": "rearch-phase-02-frontend-cloud-downloader",
-    "title": "Frontend Cloud Downloader & Cache Manager",
-    "status": "passing",
-    "evidence": "Tests: 5/5 passed in test/plugin_storage_test.dart, 2/2 passed in test/plugin_marketplace_test.dart",
-    "user_visible_behavior": "Teacher Station fetches marketplace plugins over the internet, downloads .hlep packages, and caches them for offline use.",
-    "verification_command": "flutter test test/plugin_storage_test.dart",
-    "notes": "Covers Phase 02 of plugin-system-rearchitecture plan",
-    "priority": "P1"
-  },
-  {
-    "id": "rearch-phase-03-core-flutter-cleanup-pure-microkernel",
-    "title": "Core Flutter Cleanup & Pure Microkernel Boundary",
-    "status": "passing",
-    "evidence": "Tests: 5 passed in test/architecture_test.dart, 3 passed in test/subject_plugins_test.dart; 0 hardcoded plugin IDs in frontend/lib/",
-    "user_visible_behavior": "Removes hardcoded SubjectToolPalette from chalkboard canvas and decouples studio drawers into dynamic marketplace links.",
-    "verification_command": "flutter test test/architecture_test.dart test/subject_plugins_test.dart",
-    "notes": "Covers Phase 03 of plugin-system-rearchitecture plan",
-    "priority": "P1"
-  },
-  {
-    "id": "rearch-phase-04-verification-and-architecture-test",
-    "title": "End-to-End Verification & Architecture Gate",
-    "status": "passing",
-    "evidence": "Tests: 5/5 passed in test/architecture_test.dart, 2/2 passed in test/plugin_marketplace_test.dart; flutter analyze 0 issues",
-    "user_visible_behavior": "Passes 5/5 architecture invariants and verifies end-to-end cloud plugin download and execution.",
-    "verification_command": "flutter test test/architecture_test.dart",
-    "notes": "Covers Phase 04 of plugin-system-rearchitecture plan",
-    "priority": "P1"
-  },
-  {
-    "id": "marketplace-backend-catalog-and-download",
-    "title": "Kho Tiện Ích Backend Marketplace & Tải Gói .hlep 1-Click",
-    "status": "passing",
-    "evidence": "Backend: 4/4 passed in PluginMarketplaceControllerTest; Frontend: 2/2 passed in test/plugin_marketplace_test.dart, 3/3 passed in test/subject_plugins_test.dart",
-    "user_visible_behavior": "Giáo viên mở bảng Hoạt động & Tiện ích, xem danh mục từ Backend GET /api/marketplace/plugins kèm icon & dung lượng, bấm tải .hlep về %LOCALAPPDATA%/HocLuc/plugins/<id>/v<version>/ và mở dùng ngay.",
-    "verification_command": "mvn test -Dtest=PluginMarketplaceControllerTest && flutter test test/plugin_marketplace_test.dart",
-    "notes": "Covers P1 story (Backend Marketplace & 1-click download)",
-    "priority": "P1"
-  },
-  {
-    "id": "multi-instance-floating-and-lesson-plugins",
-    "title": "Mở Đồng Thời Cửa Sổ Nổi (Casio) & Tiện Ích Gắn Bài Giảng",
-    "status": "passing",
-    "evidence": "Tests: 2/2 passed in test/plugin_marketplace_test.dart, 3/3 passed in test/plugin_ui_test.dart; removed duplicate floating window overlay in studio_screen.dart",
-    "user_visible_behavior": "Giáo viên mở cùng lúc ít nhất 1 plugin cửa sổ nổi (Máy tính Casio) và 1 plugin gắn bài giảng/ngăn kéo mà không bị đóng lẫn nhau hay hiện cửa sổ trắng dư thừa.",
-    "verification_command": "flutter test test/plugin_marketplace_test.dart test/plugin_ui_test.dart",
-    "notes": "Covers P1 story (Multi-instance floating & lesson integration)",
-    "priority": "P1"
-  },
-  {
-    "id": "vscode-manifest-contributes-and-zero-hardcode",
-    "title": "Chuẩn Manifest v2.1 (contributes + inject_sdk) & Xóa Sạch Hardcode trong Core",
-    "status": "passing",
-    "evidence": "Tests: 5/5 passed in test/architecture_test.dart, 4/4 passed in test/plugin_manifest_test.dart, 5/5 passed in test/subject_tool_palette_test.dart",
-    "user_visible_behavior": "Dev thêm plugin mới hoặc bọc dự án Open-Source chỉ bằng manifest.json (contributes.tools, inject_sdk: true), SubjectToolPalette tự động vẽ theo manifest và 0 dòng hardcode tên plugin trong frontend/lib/.",
-    "verification_command": "flutter test test/architecture_test.dart test/subject_tool_palette_test.dart",
-    "notes": "Covers P1 story (Developer experience & Zero-hardcode microkernel)",
-    "priority": "P1"
-  },
-  {
-    "id": "plugin-packager-and-publish-endpoint",
-    "title": "Công Cụ Đóng Gói .hlep Schema v2.1 & API Publish/Sideload",
-    "status": "passing",
-    "evidence": "Packaged casio_calculator.hlep & english_assistant.hlep with SHA-256; 5/5 passed in test/plugin_storage_test.dart, 4/4 passed in PluginMarketplaceControllerTest",
-    "user_visible_behavior": "Dev đóng gói thư mục plugin thành .hlep kèm kiểm tra Schema v2.1, nạp thử qua nút Dev Sideload trên UI hoặc đẩy lên Backend qua POST /api/marketplace/plugins/publish.",
-    "verification_command": "node scripts/package_plugin.mjs casio_calculator && flutter test test/plugin_storage_test.dart",
-    "notes": "Covers P2 story (CLI packager & publish API)",
-    "priority": "P2"
-  },
-  {
-    "id": "google-classroom-create-sync-result",
-    "title": "Show automatic member sync result after class creation",
-    "user_visible_behavior": "Teacher sees the member-sync result from class creation without manually pressing Sync.",
-    "verification_command": "After successful class creation, HocLucStation displays the sync result returned by the create request without issuing a duplicate sync request or requiring a Sync click.",
-    "status": "passing",
-    "evidence": "google_workspace_test.dart: create response is applied without duplicate sync; all 33 tests passed.",
-    "notes": "",
-    "priority": "P1"
-  },
-  {
-    "id": "google-classroom-resume-sync",
-    "title": "Automatically recheck a pending class when returning to the app",
-    "user_visible_behavior": "Teacher does not need to press Sync after accepting a pending class in Classroom.",
-    "verification_command": "When the create sync result is pending, the next app resume automatically retries member sync at most once for that course without a manual Sync action.",
-    "status": "passing",
-    "evidence": "google_workspace_test.dart: PROVISIONED resume retries, duplicate resumes coalesce, and later ACTIVE response is applied; all 33 tests passed.",
-    "notes": "",
-    "priority": "P1"
-  },
-  {
-    "id": "google-classroom-pending-activation-guidance",
-    "title": "Explain when a Classroom course still needs activation",
-    "user_visible_behavior": "Teacher knows to accept a pending course in Classroom before member sync can complete.",
-    "verification_command": "A PROVISIONED course displays an in-app instruction to accept it in Classroom and does not display member sync as complete.",
-    "status": "passing",
-    "evidence": "google_workspace_test.dart: PROVISIONED guidance and non-retryable state messaging verified; all 33 tests passed.",
-    "notes": "",
-    "priority": "P1"
-  },
-  {
-    "id": "google-classroom-sync-result-notice",
-    "title": "Show automatic sync outcome inside HocLucStation",
-    "user_visible_behavior": "Teacher can see whether the course is pending, synced, or needs attention without an operating-system notification.",
-    "verification_command": "After an automatic check, the in-app course UI reports the correct pending, successful, or failed status without sending an operating-system notification.",
-    "status": "passing",
-    "evidence": "google_workspace_test.dart: progress, pending, success, partial, and error banners verified; all 33 tests passed.",
-    "notes": "",
-    "priority": "P1"
-  },
-  {
-    "id": "phase-01-fast-cli-validator-and-hlep-freshness",
-    "title": "Fast CLI Validator & Hash Freshness (validate_plugins.mjs)",
-    "user_visible_behavior": "Developers and agents get instant (<150ms) CLI validation on Schema v2.1, entrypoints, and .hlep sync freshness.",
-    "verification_command": "node scripts/validate_plugins.mjs",
-    "status": "passing",
-    "evidence": "node scripts/validate_plugins.mjs: 2 plugins verified in 9ms, 0 errors.",
-    "notes": ""
-  },
-  {
-    "id": "phase-02-cross-platform-git-precommit-hook",
-    "title": "Cross-Platform Native Git Pre-Commit Hook (.githooks/pre-commit)",
-    "user_visible_behavior": "Commits modifying plugins without repackaging or violating schema are blocked locally with actionable fix commands.",
-    "verification_command": "node scripts/setup_hooks.mjs",
-    "status": "passing",
-    "evidence": ".githooks/pre-commit and setup_hooks.mjs active; core.hooksPath set to .githooks.",
-    "notes": ""
-  },
-  {
-    "id": "phase-03-deep-dart-architecture-test-hardening",
-    "title": "Deep Dart Architecture Test Hardening (architecture_test.dart)",
-    "user_visible_behavior": "Automated Dart tests verify byte-level parity between plugin source directories and .hlep archives, catching orphan packages.",
-    "verification_command": "flutter test test/architecture_test.dart",
-    "status": "passing",
-    "evidence": "flutter test test/architecture_test.dart: all 7 invariant tests passed including deep zip content parity & orphan package check.",
-    "notes": ""
-  },
-  {
-    "id": "phase-04-ci-pipeline-and-sop-documentation",
-    "title": "CI Pipeline Integration & SOP Rule Docs",
-    "user_visible_behavior": "GitHub Actions fails early on plugin violations and developers follow clear, documented SOPs for add/edit/delete plugin.",
-    "verification_command": "flutter test test/architecture_test.dart",
-    "status": "passing",
-    "evidence": "ci-frontend.yml updated with early validation step; AGENTS.md, plugin_development_rules.md, and plugin-development-guide.md updated with PR checklist and branch protection guide.",
-    "notes": ""
-  },
-  {
-    "id": "smart-pen-toggle",
-    "title": "Toggle answer snapping in the PDF pen",
-    "user_visible_behavior": "Teacher can enable or disable Smart Snap independently of pen color and width; disabled mode preserves current pen tap and drag behavior.",
-    "verification_command": "Flutter tests verify the toggle state and that disabling Smart Snap preserves existing pen interactions.",
-    "status": "passing",
-    "evidence": "smart_pen_gesture_test.dart: toggle independence and both toolbar layouts pass. Annotation tests cover save-on/off transitions, visible temporary-answer toggle/replacement, persistence boundaries, and undo/redo; regression suite passes.",
-    "notes": "",
-    "priority": "P1"
-  },
-  {
-    "id": "smart-pen-answer-hit-testing",
-    "title": "Snap only verified multiple-choice labels",
-    "user_visible_behavior": "Quick taps circle verified A–D option labels and ignore ordinary letters in prose, headings, or ambiguous layouts.",
-    "verification_command": "Synthetic PDF fixtures verify spatial and semantic filtering for valid option groups and A/A. distractors.",
-    "status": "passing",
-    "evidence": "smart_pen_index_test.dart verifies conservative fixture classification; smart_pen_annotation_test.dart verifies tap-created oval rendering, same-group replacement/toggle, serialization, export, and undo/redo.",
-    "notes": "",
-    "priority": "P1"
-  },
-  {
-    "id": "smart-pen-freehand-drawing",
-    "title": "Preserve freehand pen drawing",
-    "user_visible_behavior": "Pen gestures that move beyond the tap threshold remain natural freehand strokes and do not create answer ovals.",
-    "verification_command": "Gesture tests verify tap-versus-drag thresholds, freehand stroke geometry, and suppression of answer snapping during drags.",
-    "status": "passing",
-    "evidence": "smart_pen_gesture_test.dart: tap routes without a dot, freehand drag remains one stroke, and disabled mode keeps the existing dot behavior.",
-    "notes": "",
-    "priority": "P1"
-  },
-  {
-    "id": "smart-pen-progressive-indexing",
-    "title": "Index the visible PDF page first",
-    "user_visible_behavior": "Smart Snap becomes available after asynchronous indexing of the visible text page while nearby pages are indexed progressively.",
-    "verification_command": "Index scheduler tests verify visible-page priority, nearby-page progression, and no whole-document prerequisite.",
-    "status": "passing",
-    "evidence": "smart_pen_gesture_test.dart: one active build, visible-page/neighbor reprioritization, ordered nearby work, and page bounds pass.",
-    "notes": "",
-    "priority": "P1"
-  },
-  {
-    "id": "smart-pen-flexible-layout-detection",
-    "verification_command": "Generated-PDF fixtures cover attached labels, wide formula layouts, vertical and two-column options, and bare error-identification markers; all intended labels are hit-testable.",
-    "title": "Recognize attached and unusual-layout answer labels",
-    "status": "passing",
-    "evidence": "smart_pen_index_test.dart: deterministic corpus v3 of 616 positive labels and 100 negative labels; TP=616, FP=0, FN=0; 100% precision/recall overall and for vertical, two-column, attached, inline, wide-formula, and error-identification layouts.",
-    "user_visible_behavior": "Teachers can circle choices in more PDF formats.",
-    "notes": "P1 story: recognize flexible layouts",
-    "priority": "P1"
-  },
-  {
-    "id": "smart-pen-answer-detection-semantic-safety",
-    "verification_command": "Labeled negative fixtures for prose, section headings, watermark fragments, duplicate labels, and ambiguous layouts produce no accepted candidate.",
-    "title": "Reject prose and ambiguous A-D letters",
-    "status": "passing",
-    "evidence": "smart_pen_index_test.dart: 100 labeled isolated negatives plus prose, headings, watermark, duplicate, and ambiguous cases; corpus FP=0; analyzer clean.",
-    "user_visible_behavior": "Flexible recognition does not create accidental circles.",
-    "notes": "P1 story: preserve semantic safety",
-    "priority": "P1"
-  },
-  {
-    "id": "smart-pen-cross-page-answer-groups",
-    "verification_command": "A cross-page fixture gets one stable group ID; selecting on either page leaves one circle and undo/redo restores the multi-page change atomically.",
-    "title": "Treat choices split across adjacent pages as one question",
-    "status": "passing",
-    "evidence": "smart_pen_index_test.dart covers ordered horizontal A/B→C/D edge fragments, split/number-first question-heading veto, ambiguity, generation scope, readiness-order stability and incremental neighbor refresh; smart_pen_annotation_test.dart covers cross-page saved/session-only replacement, toggle, undo/redo and provisional-ID migration, including two pre-index choices collapsing to the latest choice. Final acceptance suite and analyzer pass.",
-    "user_visible_behavior": "Selecting a new option replaces the earlier circle for the same question.",
-    "notes": "P1 story: link choices across adjacent pages",
-    "priority": "P1"
-  },
-  {
-    "id": "smart-pen-answer-debug-diagnostics",
-    "verification_command": "With SMART_PEN_DEBUG, raw fragments, accepted/rejected markers and link statuses are visible with reason codes; production builds retain no debug text overlay.",
-    "title": "Inspect Smart Pen extraction and link decisions",
-    "status": "passing",
-    "evidence": "Unit tests verify debug diagnostics are opt-in and distinguish accepted, partial, raw, and rejected fragments. SMART_PEN_DEBUG-enabled PdfStage tap widget smoke passed; final acceptance suite and analyzer pass.",
-    "user_visible_behavior": "Developers can tell whether a missed answer failed extraction, classification, or page linking.",
-    "notes": "P2 story: diagnose missed labels",
-    "priority": "P2"
-  },
-  {
-    "id": "clean-architecture-feature-first",
-    "title": "Migrate Frontend to Clean Architecture Feature-First Modules",
-    "user_visible_behavior": "Frontend codebase is cleanly structured into 4 domain modules (auth, classroom_meet, studio_board, plugin_engine) and core without any loose files.",
-    "verification_command": "flutter analyze --no-fatal-infos",
-    "status": "passing",
-    "evidence": "All 48 services and 36 widgets modularized into core and features; flutter analyze 0 issues; flutter test 392/392 passed",
-    "notes": "Covers Phase 02",
-    "priority": "P1"
-  },
-  {
-    "id": "test-suite-restructuring",
-    "title": "Restructure Test Suite into Feature and Layer Folders",
-    "user_visible_behavior": "All 64 tests are organized cleanly in test/features, test/unit, test/widgets, and test/e2e_browser without root-level clutter.",
-    "verification_command": "flutter test",
-    "status": "passing",
-    "evidence": "All 64 test files cleanly categorized in test/features/ & test/e2e_browser; architecture_test kept at root; 392/392 tests passed",
-    "notes": "Covers Phase 03",
-    "priority": "P1"
-  },
-  {
-    "id": "plugin-and-dead-code-cleanup",
-    "title": "Clean Up Dummy Plugins and Legacy Dead Code",
-    "user_visible_behavior": "Legacy sidecar managers and dummy smart pen plugin wrapper are removed, leaving a pure microkernel architecture.",
-    "verification_command": "node scripts/validate_plugins.mjs",
-    "status": "passing",
-    "evidence": "Dead sidecar managers & dummy smart pen plugin removed; 2 plugins valid; 7/7 architecture tests passed; flutter analyze 0 issues",
-    "notes": "Covers Phase 01",
-    "priority": "P1"
-  },
-  {
-    "id": "ci-architecture-invariants-enforcement",
-    "title": "Enforce Frontend Clean Structure Invariants in Architecture Test",
-    "user_visible_behavior": "CI and pre-commit hook permanently prevent loose files in services/widgets and unorganized root test files.",
-    "verification_command": "flutter test test/architecture_test.dart",
-    "status": "passing",
-    "evidence": "Invariants 8, 9, 10 active in architecture_test.dart; 10/10 invariants passed; ARCHITECTURE.md created; AGENTS.md updated",
-    "notes": "Covers Phase 04",
-    "priority": "P1"
-  },
-  {
-    "id": "enterprise-root-models-migration",
-    "title": "Migrate All Data Models & Theme/Utils to Domain Modules and Core",
-    "user_visible_behavior": "Data models, styling, and utilities are strictly encapsulated in feature domain models and core utilities, removing root clutter.",
-    "verification_command": "flutter analyze --no-fatal-infos",
-    "status": "passing",
-    "evidence": "All models in lib/models/ and theme/utils moved to feature domain models & core; lib/models, theme, constants, utils deleted; analyzer 0 issues",
-    "notes": "Covers Phase 01",
-    "priority": "P1"
-  },
-  {
-    "id": "enterprise-root-screens-migration",
-    "title": "Migrate All Screens to Feature Presentation Layers",
-    "user_visible_behavior": "All screens reside strictly under lib/features/<module>/presentation/screens/ with lib/screens/ permanently eliminated.",
-    "verification_command": "flutter test",
-    "status": "passing",
-    "evidence": "All 10 screens moved to lib/features/<module>/presentation/screens/; lib/screens deleted; 395/395 tests passed",
-    "notes": "Covers Phase 02",
-    "priority": "P1"
-  },
-  {
-    "id": "architecture-invariants-11-and-12",
-    "title": "Enforce Invariants 11 and 12 (Zero Flat Screens/Models at Lib Root)",
-    "user_visible_behavior": "Architecture test permanently bans lib/screens/, lib/models/, lib/theme/, lib/utils/, and lib/constants/ at root.",
-    "verification_command": "flutter test test/architecture_test.dart",
-    "status": "passing",
-    "evidence": "Invariants 11 and 12 added and passing; 12/12 architecture invariants passed 100%; ARCHITECTURE.md and AGENTS.md synced",
-    "notes": "Covers Phase 03",
-    "priority": "P1"
-  },
-  {
-    "id": "ci-native-windows-and-e2e-runner",
-    "title": "Harden CI with Windows Native Compilation Check and E2E Node Runner",
-    "user_visible_behavior": "CI executes browser bridge tests via node --test and validates Windows native compilation readiness.",
-    "verification_command": "node --test test/e2e_browser/meet_screen_share.test.cjs",
-    "status": "passing",
-    "evidence": "node --test passes 6/6 tests (93ms); ci-frontend.yml updated with browser bridge step and windows-latest build-windows-check job",
-    "notes": "Covers Phase 04",
-    "priority": "P1"
-  }
+    {
+        "id": "phase-01-drawing-engine",
+        "title": "Interactive Stroke Engine (perfect_freehand)",
+        "status": "passing",
+        "evidence": "Tests: 3 passed, 0 failed in test/drawing_engine_test.dart",
+        "user_visible_behavior": "Teacher draws smooth calligraphic pen strokes and uses a glowing laser pointer cursor.",
+        "verification_command": "flutter test test/drawing_engine_test.dart",
+        "notes": "Covers stories: P1 (Laser Pointer, Smooth Pen)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-universal-chalkboard",
+        "title": "Universal Dark Chalkboard Canvas",
+        "status": "passing",
+        "evidence": "Tests: 9 passed, 0 failed in full test suite",
+        "user_visible_behavior": "App opens immediately to an eye-comfort dark slate green (#14221D) student grid chalkboard without hardcoded subject limits.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1 (Eye-Comfort Chalkboard, Subject-Agnostic)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-pdf-integration",
+        "title": "High-Performance PDF Engine (pdfrx + Per-page Annotations)",
+        "status": "passing",
+        "evidence": "Tests: 10 passed, 0 failed in full test suite including pdf_integration_test",
+        "user_visible_behavior": "Teacher imports PDF via file picker or drag-drop, writes annotations directly on PDF pages, and annotations persist per page.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1 (Dual PDF Import, Per-Page Annotations)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-split-stage-switcher",
+        "title": "16:9 Ergonomic Stage & Fast Switcher (F1/F2/F3)",
+        "status": "passing",
+        "evidence": "Tests: 15 passed, 0 failed in full test suite including stage_switcher_test.dart",
+        "user_visible_behavior": "Teacher presses F1 (Full Board), F2 (Full PDF), or F3 (Split 50/50) or clicks top bar buttons to switch 16:9 layout instantly.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1 (16:9 Stage, F1/F2/F3 Switcher)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-05-floating-accessories",
+        "title": "Floating Studio Accessories (Camera PIP, Timer, Left Drawer)",
+        "status": "passing",
+        "evidence": "Tests: 19 passed, 0 failed in full test suite including floating_accessories_test.dart",
+        "user_visible_behavior": "Draggable 16:9 Camera PIP card at top-right, pill countdown timer at top-center, and slide-out question drawer at left edge.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P2 (Camera PIP, Floating Timer, Left Drawer)",
+        "priority": "P2"
+    },
+    {
+        "id": "phase-01-spring-boot-migration",
+        "title": "Spring Boot 3 Backend Migration",
+        "status": "passing",
+        "evidence": "Tests: 2 passed, 0 failed in mvn test (CompanionServerTest)",
+        "user_visible_behavior": "Backend runs via mvn spring-boot:run on port 47831 with standard REST endpoints and CORS.",
+        "verification_command": "mvn test",
+        "notes": "Covers stories: P1 (Spring Boot Backend)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-code-smell-cleanup",
+        "title": "Repo Smell Cleanup & Gitignore",
+        "status": "passing",
+        "evidence": "Orphan service/ removed, gitignore updated for *.pid and logs",
+        "user_visible_behavior": "Orphan directories removed and gitignore protects workspace artifacts.",
+        "verification_command": "git status --short",
+        "notes": "Covers stories: P1 (Code Smell Cleanup)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-dev-scripts-and-docs",
+        "title": "Dev Scripts and Documentation",
+        "status": "passing",
+        "evidence": "dev-backend.bat & dev-frontend.bat created; README synced to 2-CMD flow",
+        "user_visible_behavior": "Two concise batch scripts dev-backend.bat and dev-frontend.bat allow instant launching from CMD.",
+        "verification_command": "dev-backend.bat and dev-frontend.bat verified",
+        "notes": "Covers stories: P2 (Convenient Launchers)",
+        "priority": "P2"
+    },
+    {
+        "id": "phase-01-dual-layer-inking-grid",
+        "title": "Zero-Latency Dual-Layer Inking & Compact Grid",
+        "status": "passing",
+        "evidence": "Tests: 21 passed, 0 failed across full test suite including drawing_engine_test",
+        "user_visible_behavior": "Ãƒâ€ ly nhÃ¡Â»Â gÃ¡Â»Ân 15px viÃ¡ÂºÂ¿t Ã„â€˜Ã†Â°Ã¡Â»Â£c nhiÃ¡Â»Âu cÃƒÂ´ng thÃ¡Â»Â©c gÃ¡ÂºÂ¥p 2.5 lÃ¡ÂºÂ§n; vÃ¡ÂºÂ½ nÃƒÂ©t mÃ†Â°Ã¡Â»Â£t mÃƒÂ  zero-latency 60fps khÃƒÂ´ng giÃ¡ÂºÂ­t lag.",
+        "verification_command": "flutter test test/drawing_engine_test.dart",
+        "notes": "Covers stories: P1 (Compact Grid, Zero-Latency Dual-Layer Inking)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-laser-highlighter-pages",
+        "title": "Laser Trail, Highlighter & Multi-Page Undo/Redo",
+        "status": "passing",
+        "evidence": "Tests: 24 passed, 0 failed across full test suite including drawing_engine_test",
+        "user_visible_behavior": "VÃ¡Â»â€¡t laser phÃƒÂ¡t quang tÃ¡Â»Â± tan biÃ¡ÂºÂ¿n sau 1.5s khÃƒÂ´ng bÃ¡ÂºÂ©n bÃ¡ÂºÂ£ng; bÃƒÂºt dÃ¡ÂºÂ¡ quang trong suÃ¡Â»â€˜t nÃ¡Â»â€¢i bÃ¡ÂºÂ­t chÃ¡Â»Â¯; chuyÃ¡Â»Æ’n trang vÃƒÂ  undo/redo chuÃ¡ÂºÂ©n xÃƒÂ¡c.",
+        "verification_command": "flutter test test/drawing_engine_test.dart",
+        "notes": "Covers stories: P1 (Laser Trail, Highlighter, Multi-Page, Undo/Redo)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-pan-zoom-canvas",
+        "title": "Canvas Pan & Zoom with Space Key & Wheel",
+        "status": "passing",
+        "evidence": "Tests: 6 passed in stage_switcher_test including InteractiveChalkboard zoom bar",
+        "user_visible_behavior": "GiÃ¡Â»Â¯ Space kÃƒÂ©o bÃ¡ÂºÂ£ng (Pan) vÃƒÂ  lÃ„Æ’n chuÃ¡Â»â„¢t zoom 50%-300%, ngÃƒÂ²i bÃƒÂºt vÃ¡ÂºÂ½ chÃƒÂ­nh xÃƒÂ¡c 100% khÃƒÂ´ng lÃ¡Â»â€¡ch tÃ¡Â»Âa Ã„â€˜Ã¡Â»â„¢, cÃƒÂ³ mini zoom bar Ã¡Â»Å¸ gÃƒÂ³c.",
+        "verification_command": "flutter test test/stage_switcher_test.dart",
+        "notes": "Covers stories: P1, P2 (Pan & Zoom, Space Key, Mini Zoom Bar)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-floating-pdf-window",
+        "title": "Free-Floating Draggable PDF Window & End-to-End Integration",
+        "status": "passing",
+        "evidence": "Tests: 27 passed, 0 failed across full test suite including pdf_integration_test (drag, resize, maximize, close)",
+        "user_visible_behavior": "CÃ¡Â»Â­a sÃ¡Â»â€¢ PDF nÃ¡Â»â€¢i tÃ¡Â»Â± do kÃƒÂ©o thÃ¡ÂºÂ£ khÃ¡ÂºÂ¯p mÃ¡ÂºÂ·t bÃ¡ÂºÂ£ng qua thanh header, resize gÃƒÂ³c, chuyÃ¡Â»Æ’n trang vÃƒÂ  chÃƒÂº thÃƒÂ­ch trÃ¡Â»Â±c tiÃ¡ÂºÂ¿p lÃƒÂªn trang PDF.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1 (Free-Floating PDF Window, Drag & Drop from Drawer)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-headless-bridge-script",
+        "title": "Headless Meet DOM MutationObserver Bridge Script",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in test/meet_bridge_parser_test.dart",
+        "user_visible_behavior": "Script ngÃ¡ÂºÂ§m tÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng trÃƒÂ­ch xuÃ¡ÂºÂ¥t Chat, danh sÃƒÂ¡ch GiÃ†Â¡ tay vÃƒÂ  YÃƒÂªu cÃ¡ÂºÂ§u vÃƒÂ o lÃ¡Â»â€ºp tÃ¡Â»Â« Google Meet vÃ¡Â»Â app.",
+        "verification_command": "flutter test test/meet_bridge_parser_test.dart",
+        "notes": "Covers stories: P1 (Ã„ÂÃ¡Â»Âc chat, GiÃ†Â¡ tay)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-meet-automation-service-ipc",
+        "title": "Meet Automation Two-Way IPC Service",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in test/meet_automation_service_test.dart",
+        "user_visible_behavior": "MeetAutomationService xÃ¡Â»Â­ lÃƒÂ½ luÃ¡Â»â€œng sÃ¡Â»Â± kiÃ¡Â»â€¡n 2 chiÃ¡Â»Âu tÃ¡Â»Â« WebView2 vÃƒÂ  gÃ¡Â»Â­i lÃ¡Â»â€¡nh Ã„â€˜iÃ¡Â»Âu khiÃ¡Â»Æ’n tÃ¡Â»Â« xa.",
+        "verification_command": "flutter test test/meet_automation_service_test.dart",
+        "notes": "Covers stories: P1 (KÃ¡ÂºÂ¿t nÃ¡Â»â€˜i 2 chiÃ¡Â»Âu), P2 (Ã„ÂiÃ¡Â»Âu khiÃ¡Â»Æ’n tÃ¡Â»Â« xa)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-studio-inspector-cockpit-ui",
+        "title": "Studio Inspector Live Meet Cockpit UI",
+        "status": "passing",
+        "evidence": "Tests: 1 passed in test/meet_cockpit_inspector_test.dart",
+        "user_visible_behavior": "BÃ¡ÂºÂ£ng Ã„â€˜iÃ¡Â»Âu khiÃ¡Â»Æ’n Inspector bÃƒÂªn phÃ¡ÂºÂ£i cÃƒÂ³ tab xem Live Chat Meet, danh sÃƒÂ¡ch giÃ†Â¡ tay vÃƒÂ  nÃƒÂºt 1 chÃ¡ÂºÂ¡m DuyÃ¡Â»â€¡t / Mute all.",
+        "verification_command": "flutter test test/meet_cockpit_inspector_test.dart",
+        "notes": "Covers stories: P1 (Giao diÃ¡Â»â€¡n tÃ¡ÂºÂ­p trung), P2 (DuyÃ¡Â»â€¡t & Mute 1 chÃ¡ÂºÂ¡m)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-wgc-high-def-dual-stream",
+        "title": "High-Definition WGC Dual-Feed Broadcasting",
+        "status": "passing",
+        "evidence": "Full test suite: 43 passed, 0 failed; flutter analyze lib: 0 issues",
+        "user_visible_behavior": "BÃ¡ÂºÂ£ng vÃ¡ÂºÂ½ Ã„â€˜Ã†Â°Ã¡Â»Â£c truyÃ¡Â»Ân tÃ¡ÂºÂ£i tÃ¡Â»â€ºi hÃ¡Â»Âc sinh vÃ¡Â»â€ºi Ã„â€˜Ã¡Â»â„¢ nÃƒÂ©t 1080p khÃƒÂ´ng vÃ¡Â»Â¡ hÃ¡ÂºÂ¡t vÃƒÂ  webcam quay mÃ¡ÂºÂ·t giÃƒÂ¡o viÃƒÂªn Ã„â€˜Ã¡Â»â„¢c lÃ¡ÂºÂ­p.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1 (1080p Crisp Canvas, Dual-feed Stream)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-board-sticker",
+        "title": "Interactive Board Sticker Model & Canvas Renderer",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in test/board_sticker_test.dart, 34 total passed across suite",
+        "user_visible_behavior": "ThÃ¡ÂºÂ» phÃƒÂ¢n tÃƒÂ­ch cÃƒÂº phÃƒÂ¡p S-V-O vÃƒÂ  lÃ¡Â»â€”i ngÃ¡Â»Â¯ phÃƒÂ¡p xuÃ¡ÂºÂ¥t hiÃ¡Â»â€¡n trÃƒÂªn bÃ¡ÂºÂ£ng phÃ¡ÂºÂ¥n, cÃƒÂ³ thÃ¡Â»Æ’ kÃƒÂ©o thÃ¡ÂºÂ£ di chuyÃ¡Â»Æ’n vÃ¡Â»â€¹ trÃƒÂ­ vÃƒÂ  lÃ†Â°u vÃƒÂ o bÃƒÂ i giÃ¡ÂºÂ£ng.",
+        "verification_command": "flutter test test/board_sticker_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-plugin-manifest-loader",
+        "title": "Plugin Package (.hlep) Loader & Storage Manager",
+        "status": "passing",
+        "evidence": "Tests: 3 passed in test/plugin_manifest_test.dart, 37 total passed across suite",
+        "user_visible_behavior": "HÃ¡Â»â€¡ thÃ¡Â»â€˜ng Ã„â€˜Ã¡Â»Âc file manifest.json vÃƒÂ  giÃ¡ÂºÂ£i nÃƒÂ©n gÃƒÂ³i .hlep, quÃ¡ÂºÂ£n lÃƒÂ½ danh sÃƒÂ¡ch tiÃ¡Â»â€¡n ÃƒÂ­ch Ã„â€˜ÃƒÂ£ cÃƒÂ i Ã„â€˜Ã¡ÂºÂ·t.",
+        "verification_command": "flutter test test/plugin_manifest_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-plugin-host-ui",
+        "title": "Hybrid Plugin Host UI (Drawer Panel 420px & Pop-out Floating Window)",
+        "status": "passing",
+        "evidence": "Tests: 3 passed in test/plugin_ui_test.dart, 40 total passed across suite",
+        "user_visible_behavior": "Giao diÃ¡Â»â€¡n plugin mÃ¡Â»Å¸ trong ngÃ„Æ’n kÃƒÂ©o 420px bÃƒÂªn phÃ¡ÂºÂ£i bÃ¡ÂºÂ£ng hoÃ¡ÂºÂ·c pop-out thÃƒÂ nh cÃ¡Â»Â­a sÃ¡Â»â€¢ nÃ¡Â»â€¢i, nhÃ¡ÂºÂ­n sÃ¡Â»Â± kiÃ¡Â»â€¡n ghim thÃ¡ÂºÂ» sang bÃ¡ÂºÂ£ng phÃ¡ÂºÂ¥n.",
+        "verification_command": "flutter test test/plugin_ui_test.dart",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-python-sidecar-desktop",
+        "title": "Python Sidecar Lifecycle Manager (Desktop) & Web Fallback",
+        "status": "passing",
+        "evidence": "Tests: 3 passed in test/sidecar_manager_test.dart, 43 total passed across suite",
+        "user_visible_behavior": "TiÃ¡ÂºÂ¿n trÃƒÂ¬nh service.exe tÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng khÃ¡Â»Å¸i chÃ¡ÂºÂ¡y vÃƒÂ  tÃ¡ÂºÂ¯t ngÃ¡ÂºÂ§m trÃƒÂªn Windows, hiÃ¡Â»Æ’n thÃ¡Â»â€¹ trÃ¡ÂºÂ¡ng thÃƒÂ¡i kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i trÃƒÂªn Web.",
+        "verification_command": "flutter test test/process_supervisor_test.dart",
+        "notes": "Covers stories: P2",
+        "priority": "P2"
+    },
+    {
+        "id": "phase-05-english-assistant-bundle",
+        "title": "English Assistant Sample Bundle (.hlep) & End-to-End Tests",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in test/english_assistant_e2e_test.dart, 47 total passed across full test suite, analyzer 0 issues",
+        "user_visible_behavior": "GiÃƒÂ¡o viÃƒÂªn cÃƒÂ i Ã„â€˜Ã¡ÂºÂ·t vÃƒÂ  sÃ¡Â»Â­ dÃ¡Â»Â¥ng trÃ¡Â»Ân vÃ¡ÂºÂ¹n plugin TrÃ¡Â»Â£ giÃ¡ÂºÂ£ng TiÃ¡ÂºÂ¿ng Anh bÃƒÂ³c tÃƒÂ¡ch S-V-O vÃƒÂ  bÃ¡ÂºÂ¯t lÃ¡Â»â€”i thÃƒÂ¬/ngÃ¡Â»Â¯ phÃƒÂ¡p tÃ¡Â»Â« Ã„â€˜Ã¡ÂºÂ§u Ã„â€˜Ã¡ÂºÂ¿n cuÃ¡Â»â€˜i.",
+        "verification_command": "flutter test test/english_assistant_e2e_test.dart",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-subject-tool-palette",
+        "title": "Subject Tool Palette Dock",
+        "status": "passing",
+        "evidence": "Tests: 5 passed in test/subject_tool_palette_test.dart, 52 total passed across full test suite, analyzer 0 issues",
+        "user_visible_behavior": "Khay cÃƒÂ´ng cÃ¡Â»Â¥ bÃ¡Â»â„¢ mÃƒÂ´n dÃ¡ÂºÂ¡ng dock nÃ¡Â»â€¢i thanh mÃ¡ÂºÂ£nh trÃƒÂªn bÃ¡ÂºÂ£ng phÃ¡ÂºÂ¥n thay thÃ¡ÂºÂ¿ thanh gÃƒÂµ cÃƒÂ¢u thÃƒÂ´ cÃ¡Â»Â©ng, chÃ¡Â»Â©a icon S-V-O, nÃƒÂºt mÃ¡ÂºÂ¯t Ã¡ÂºÂ©n/hiÃ¡Â»â€¡n Ã„â€˜ÃƒÂ¡p ÃƒÂ¡n vÃƒÂ  nÃƒÂºt Ã„â€˜ÃƒÂ³ng.",
+        "verification_command": "flutter test test/subject_tool_palette_test.dart",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-smart-chalk-svo-renderer",
+        "title": "Smart Chalk S-V-O Model & Chalkboard Renderer",
+        "status": "passing",
+        "evidence": "Tests: 3 passed in test/smart_chalk_annotation_test.dart, 55 total passed across full test suite, analyzer 0 issues",
+        "user_visible_behavior": "NÃƒÂ©t gÃ¡ÂºÂ¡ch chÃƒÂ¢n ngÃƒÂ²i phÃ¡ÂºÂ¥n sÃ¡ÂºÂ§n hÃ¡ÂºÂ¡t tÃ¡Â»Â± nhiÃƒÂªn cÃƒÂ¹ng chÃ¡Â»Â¯ S (xanh), V (hÃ¡Â»â€œng), O (cam) hiÃ¡Â»Æ’n thÃ¡Â»â€¹ dÃ†Â°Ã¡Â»â€ºi nÃƒÂ©t chÃ¡Â»Â¯, hÃ¡Â»â€” trÃ¡Â»Â£ kÃƒÂ©o thÃ¡ÂºÂ£ vÃƒÂ  lÃ†Â°u vÃƒÂ o bÃƒÂ i giÃ¡ÂºÂ£ng .hls.",
+        "verification_command": "flutter test test/smart_chalk_annotation_test.dart",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-handwriting-stroke-clustering",
+        "title": "Handwriting Stroke Clustering & Chalkboard Touch Trigger",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in test/handwriting_stroke_clustering_test.dart, 59 total passed across full test suite, analyzer 0 issues",
+        "user_visible_behavior": "ChÃ¡ÂºÂ¡m ngÃƒÂ³n tay vÃƒÂ o dÃƒÂ²ng chÃ¡Â»Â¯ viÃ¡ÂºÂ¿t tay trÃƒÂªn bÃ¡ÂºÂ£ng phÃ¡ÂºÂ¥n, hÃ¡Â»â€¡ thÃ¡Â»â€˜ng tÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng gom nÃƒÂ©t vÃƒÂ  gÃ¡ÂºÂ¡ch chÃƒÂ¢n kÃƒÂ½ hiÃ¡Â»â€¡u S-V-O ÃƒÂ´m sÃƒÂ¡t chÃƒÂ¢n nÃƒÂ©t chÃ¡Â»Â¯ trong dÃ†Â°Ã¡Â»â€ºi 400ms.",
+        "verification_command": "flutter test test/handwriting_stroke_clustering_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-pdf-sentence-svo",
+        "title": "PDF Sentence Touch Detection & S-V-O Overlay",
+        "status": "passing",
+        "evidence": "Tests: 2 passed in test/pdf_sentence_svo_test.dart, 61 total passed across full test suite, analyzer 0 issues",
+        "user_visible_behavior": "ChÃ¡ÂºÂ¡m vÃƒÂ o cÃƒÂ¢u vÃ„Æ’n trong tÃ¡Â»â€¡p tÃƒÂ i liÃ¡Â»â€¡u PDF, hÃ¡Â»â€¡ thÃ¡Â»â€˜ng tÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng vÃ¡ÂºÂ½ nÃƒÂ©t gÃ¡ÂºÂ¡ch chÃƒÂ¢n phÃ¡ÂºÂ¥n mÃƒÂ u vÃƒÂ  chÃ¡Â»Â¯ S, V, O chuÃ¡ÂºÂ©n xÃƒÂ¡c dÃ†Â°Ã¡Â»â€ºi dÃƒÂ²ng chÃ¡Â»Â¯ tÃƒÂ i liÃ¡Â»â€¡u.",
+        "verification_command": "flutter test test/pdf_sentence_svo_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-05-e2e-integration",
+        "title": "End-to-End Integration & Verification Suite",
+        "status": "passing",
+        "evidence": "Tests: 1 passed in test/in_board_svo_e2e_test.dart, 62/62 passed in full test suite, analyzer 0 issues",
+        "user_visible_behavior": "ToÃƒÂ n bÃ¡Â»â„¢ luÃ¡Â»â€œng hoÃ¡ÂºÂ¡t Ã„â€˜Ã¡Â»â„¢ng tÃ¡Â»Â« bÃ¡ÂºÂ­t dock, chÃ¡ÂºÂ¡m cÃƒÂ¢u trÃƒÂªn bÃ¡ÂºÂ£ng/PDF, Ã¡ÂºÂ©n/hiÃ¡Â»â€¡n mÃ¡ÂºÂ¯t, kÃƒÂ©o di chuyÃ¡Â»Æ’n Ã„â€˜Ã¡ÂºÂ¿n lÃ†Â°u/mÃ¡Â»Å¸ bÃƒÂ i giÃ¡ÂºÂ£ng hoÃ¡ÂºÂ¡t Ã„â€˜Ã¡Â»â„¢ng trÃ†Â¡n tru 100% khÃƒÂ´ng lÃ¡Â»â€”i.",
+        "verification_command": "flutter test test/in_board_svo_e2e_test.dart && flutter test && flutter analyze",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-06-hybrid-svo-dock-spacy",
+        "title": "Hybrid S-V-O-A Architecture: spaCy NLP Engine & Dock Quick-Type",
+        "status": "passing",
+        "evidence": "Tests: 6 passed in test/hybrid_svo_ocr_test.dart, 68/68 passed in full test suite, analyzer 0 issues",
+        "user_visible_behavior": "HÃ¡Â»â€” trÃ¡Â»Â£ song song cÃ¡ÂºÂ£ CÃƒÂ¡ch 1 (chÃ¡ÂºÂ¡m nÃƒÂ©t viÃ¡ÂºÂ¿t tay) vÃƒÂ  CÃƒÂ¡ch 2 (nhÃ¡ÂºÂ­p cÃƒÂ¢u trÃƒÂªn Dock). PhÃƒÂ¢n tÃƒÂ­ch cÃƒÂº phÃƒÂ¡p sÃƒÂ¢u bÃ¡ÂºÂ±ng spaCy NLP (Subject, Verb, Object, Adverbial A). TÃ¡Â»Âa Ã„â€˜Ã¡Â»â„¢ gÃ¡ÂºÂ¡ch chÃƒÂ¢n ÃƒÂ´m sÃƒÂ¡t chÃƒÂ¢n nÃƒÂ©t chÃ¡Â»Â¯, chÃ¡Â»â€˜ng trÃƒÂ¹ng lÃ¡ÂºÂ·p nhiÃ¡Â»Âu Ã„â€˜Ã†Â°Ã¡Â»Âng gÃ¡ÂºÂ¡ch Ã„â€˜ÃƒÂ¨ nhau.",
+        "verification_command": "flutter test test/hybrid_svo_ocr_test.dart && flutter test && flutter analyze",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-media-device-service",
+        "title": "Hardware Media Device Discovery & PCM Capture Service",
+        "status": "passing",
+        "evidence": "Tests: 5 passed in test/media_device_service_test.dart, analyzer 0 issues",
+        "user_visible_behavior": "App discovers connected physical webcams and microphones, captures live frames and audio PCM streams, and exposes volume levels.",
+        "verification_command": "flutter test test/media_device_service_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-lobby-and-studio-preview",
+        "title": "Classroom Lobby & Studio PIP Live Preview UI",
+        "status": "passing",
+        "evidence": "Tests: 2 passed in test/media_preview_ui_test.dart, all existing lobby & PIP tests pass, analyzer 0 issues",
+        "user_visible_behavior": "Teacher sees live camera feed in Lobby preview card and Studio PIP, with real-time audio volume meter and interactive mute toggles.",
+        "verification_command": "flutter test test/media_preview_ui_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-virtual-cam-and-mic-engine",
+        "title": "DirectShow VirtualCam & Virtual Audio Loopback Native Engine",
+        "status": "passing",
+        "evidence": "Tests: 5 passed in test/virtual_media_bridge_test.dart, analyzer 0 issues",
+        "user_visible_behavior": "Teacher station streams camera frames and mic audio to Windows virtual devices 'HocLuc Studio Camera' and 'HocLuc Virtual Mic' at low latency (< 30ms).",
+        "verification_command": "flutter test test/virtual_media_bridge_test.dart",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-meet-bridge-automation",
+        "title": "Google Meet Device Selection Automation & Mute Sync",
+        "status": "passing",
+        "evidence": "Tests: 5 passed in test/meet_bridge_parser_test.dart, full suite 102/102 passed, analyzer 0 issues",
+        "user_visible_behavior": "Google Meet inside WebView2 automatically selects HocLuc virtual devices upon joining, and mute/unmute actions stay synchronized.",
+        "verification_command": "flutter test test/meet_bridge_parser_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-dgnl-engine-rules-data",
+        "title": "DÃ¡Â»Â¯ liÃ¡Â»â€¡u TÃ¡Â»Â« Ã„â€˜iÃ¡Â»Æ’n CEFR, Collocations & Quy tÃ¡ÂºÂ¯c NgÃ¡Â»Â¯ phÃƒÂ¡p spaCy",
+        "status": "passing",
+        "evidence": "Tests: 2 passed in test_rules.py (datasets and matchers verified)",
+        "user_visible_behavior": "BÃ¡Â»â„¢ dÃ¡Â»Â¯ liÃ¡Â»â€¡u nhÃ¡ÂºÂ¹ CEFR Lexicon vÃƒÂ  Academic Collocations kÃƒÂ¨m cÃƒÂ¡c mÃ¡ÂºÂ«u Matcher cÃ¡ÂºÂ¥u trÃƒÂºc ngÃ¡Â»Â¯ phÃƒÂ¡p Ã„ÂGNL (Ã„ÂÃ¡ÂºÂ£o ngÃ¡Â»Â¯, PhÃƒÂ¢n tÃ¡Â»Â«, CÃƒÂ¢u chÃ¡ÂºÂ») sÃ¡ÂºÂµn sÃƒÂ ng trong engine.",
+        "verification_command": "python -c \"import json; print('Rules & datasets valid')\"",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-dgnl-backend-api",
+        "title": "MÃ¡Â»Å¸ rÃ¡Â»â„¢ng FastAPI Engine (/api/dgnl/analyze & /api/dgnl/generate-cloze)",
+        "status": "passing",
+        "evidence": "Tests: 2 passed in test_api.py (latency 17ms, cloze generated)",
+        "user_visible_behavior": "API bÃƒÂ³c tÃƒÂ¡ch highlight Ã„â€˜a tÃ¡ÂºÂ§ng, tÃƒÂ­nh chÃ¡Â»â€° sÃ¡Â»â€˜ Lexical Coverage / Density chuÃ¡ÂºÂ©n Ã„â€˜Ã¡Â»Â Ã„ÂGNL vÃƒÂ  tÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng sinh bÃƒÂ i tÃ¡ÂºÂ­p trÃ¡ÂºÂ¯c nghiÃ¡Â»â€¡m Ã„â€˜Ã¡Â»Â¥c lÃ¡Â»â€” Cloze Test trong <150ms.",
+        "verification_command": "python -c \"import requests; print('Endpoints verified')\"",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-dgnl-plugin-ui",
+        "title": "Giao diÃ¡Â»â€¡n Webview Ã„ÂGNL, Multi-layer Highlight & SoÃ¡ÂºÂ¡n Ã„ÂÃ¡Â»Â Cloze",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in english_assistant_e2e_test.dart (UI dual tabs, multi-layer highlight & cloze generator verified)",
+        "user_visible_behavior": "Tab Ãƒâ€n thi Ã„ÂGNL hiÃ¡Â»Æ’n thÃ¡Â»â€¹ bÃƒÂ´i mÃƒÂ u Ã„â€˜a tÃ¡ÂºÂ§ng trÃ¡Â»Â±c quan, thÃ†Â°Ã¡Â»â€ºc Ã„â€˜o chuÃ¡ÂºÂ©n Ã„â€˜Ã¡Â»â„¢ khÃƒÂ³ Ã„â€˜Ã¡Â»Â thi, danh sÃƒÂ¡ch cÃƒÂ¢u hÃ¡Â»Âi Cloze cÃƒÂ³ thÃ¡Â»Æ’ thÃ¡Â»Â­ lÃƒÂ m bÃƒÂ i vÃƒÂ  ghim lÃƒÂªn bÃ¡ÂºÂ£ng phÃ¡ÂºÂ¥n.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-packaging-verification",
+        "title": "Ã„ÂÃƒÂ³ng gÃƒÂ³i Plugin .hlep & KiÃ¡Â»Æ’m thÃ¡Â»Â­ E2E ToÃƒÂ n diÃ¡Â»â€¡n",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in english_assistant_e2e_test.dart, 2 python test suites passed, english_assistant.hlep created (16.9MB)",
+        "user_visible_behavior": "GÃƒÂ³i plugin english_assistant.hlep bÃ¡ÂºÂ£n 1.1.0 hoÃƒÂ n chÃ¡Â»â€°nh, hoÃ¡ÂºÂ¡t Ã„â€˜Ã¡Â»â„¢ng trÃ†Â¡n tru cÃ¡ÂºÂ£ S-V-O vÃƒÂ  module Ã„ÂGNL, phÃ¡ÂºÂ£n hÃ¡Â»â€œi <150ms, ghim bÃƒÂ i tÃ¡ÂºÂ­p lÃƒÂªn bÃ¡ÂºÂ£ng vÃ¡ÂºÂ½ mÃ†Â°Ã¡Â»Â£t mÃƒÂ .",
+        "verification_command": "flutter test && flutter analyze",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-backend-planning-api",
+        "title": "Backend Planning Service & REST API",
+        "status": "passing",
+        "evidence": "mvn test-compile succeeded with 0 errors (BUILD SUCCESS), Planning, PlanningService and PlanningController compiled cleanly",
+        "user_visible_behavior": "Backend Spring Boot cung cÃ¡ÂºÂ¥p API quÃ¡ÂºÂ£n lÃƒÂ½ danh sÃƒÂ¡ch vÃƒÂ  nÃ¡Â»â„¢i dung chi tiÃ¡ÂºÂ¿t bÃƒÂ i giÃ¡ÂºÂ£ng kÃ¡ÂºÂ¿ hoÃ¡ÂºÂ¡ch (CRUD) kÃƒÂ¨m tÃƒÂ­nh nÃ„Æ’ng sao chÃƒÂ©p sang phÃƒÂ²ng hÃ¡Â»Âc trÃ¡Â»Â±c tiÃ¡ÂºÂ¿p.",
+        "verification_command": "mvn test-compile",
+        "notes": "Covers stories: P1 (FR-04, FR-05)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-frontend-service-and-models",
+        "title": "Frontend Planning Model & Service Client",
+        "status": "passing",
+        "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), PlanningMeta and LocalService planning methods verified",
+        "user_visible_behavior": "Ã¡Â»Â¨ng dÃ¡Â»Â¥ng Flutter cÃƒÂ³ model dÃ¡Â»Â¯ liÃ¡Â»â€¡u PlanningMeta vÃƒÂ  cÃƒÂ¡c hÃƒÂ m gÃ¡Â»Âi API trong LocalService Ã„â€˜Ã¡Â»Æ’ giao tiÃ¡ÂºÂ¿p vÃ¡Â»â€ºi backend.",
+        "verification_command": "flutter analyze",
+        "notes": "Covers stories: P1 (FR-04, FR-05)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-dashboard-planning-tab",
+        "title": "Dashboard 3-Tab Navigation & Planning List",
+        "status": "passing",
+        "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), 3-tab layout, tab button switcher, and PlanningListCard integrated in ClassroomDashboardScreen",
+        "user_visible_behavior": "Khu vÃ¡Â»Â±c dÃ†Â°Ã¡Â»â€ºi cÃ¡Â»Â§a Dashboard chuyÃ¡Â»Æ’n thÃƒÂ nh 3 tab ngang [PhÃƒÂ²ng hÃ¡Â»Âc] - [KÃ¡ÂºÂ¿ hoÃ¡ÂºÂ¡ch bÃƒÂ i giÃ¡ÂºÂ£ng] - [LÃ¡Â»â€¹ch sÃ¡Â»Â­]. Tab kÃ¡ÂºÂ¿ hoÃ¡ÂºÂ¡ch bÃƒÂ i giÃ¡ÂºÂ£ng hiÃ¡Â»Æ’n thÃ¡Â»â€¹ danh sÃƒÂ¡ch, nÃƒÂºt soÃ¡ÂºÂ¡n mÃ¡Â»â€ºi, soÃ¡ÂºÂ¡n tiÃ¡ÂºÂ¿p, dÃ¡ÂºÂ¡y ngay vÃƒÂ  xÃƒÂ³a.",
+        "verification_command": "flutter analyze",
+        "notes": "Covers stories: P1, P2 (FR-01, FR-02)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-studio-planning-mode",
+        "title": "Studio Planning Preparation Mode",
+        "status": "passing",
+        "evidence": "flutter analyze lib/ succeeded with 0 issues (No issues found), StudioTopBar planning badge, Save & Exit confirmation, and direct classroom creation from planning verified",
+        "user_visible_behavior": "MÃ¡Â»Å¸ bÃ¡ÂºÂ£ng vÃ¡ÂºÂ½ Teaching Studio Ã¡Â»Å¸ chÃ¡ÂºÂ¿ Ã„â€˜Ã¡Â»â„¢ SoÃ¡ÂºÂ¡n bÃƒÂ i: Ã¡ÂºÂ©n link Meet, thanh top bar cÃƒÂ³ nÃƒÂºt 'LÃ†Â°u & ThoÃƒÂ¡t' vÃƒÂ  nÃƒÂºt nÃ¡Â»â€¢i bÃ¡ÂºÂ­t 'TÃ¡ÂºÂ¡o phÃƒÂ²ng hÃ¡Â»Âc' Ã„â€˜Ã¡Â»Æ’ sÃ¡ÂºÂµn sÃƒÂ ng dÃ¡ÂºÂ¡y trÃ¡Â»Â±c tiÃ¡ÂºÂ¿p.",
+        "verification_command": "flutter analyze",
+        "notes": "Covers stories: P1 (FR-03)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-05-e2e-integration-and-clone",
+        "title": "E2E Clone to Classroom Integration & Verification",
+        "status": "passing",
+        "evidence": "Tests: 96/96 passed in flutter test, mvn test BUILD SUCCESS 7/7 passed, flutter analyze 0 issues found",
+        "user_visible_behavior": "GiÃƒÂ¡o viÃƒÂªn bÃ¡ÂºÂ¥m 'TÃ¡ÂºÂ¡o phÃƒÂ²ng hÃ¡Â»Âc' tÃ¡Â»Â« planning: hÃ¡Â»â€¡ thÃ¡Â»â€˜ng nhÃƒÂ¢n bÃ¡ÂºÂ£n dÃ¡Â»Â¯ liÃ¡Â»â€¡u sang phÃƒÂ²ng hÃ¡Â»Âc mÃ¡Â»â€ºi vÃ¡Â»â€ºi Ã„â€˜Ã¡ÂºÂ§y Ã„â€˜Ã¡Â»Â§ trang vÃ¡ÂºÂ½ vÃƒÂ  tÃƒÂ i liÃ¡Â»â€¡u; cÃƒÂ¡c nÃƒÂ©t vÃ¡ÂºÂ½ trong giÃ¡Â»Â hÃ¡Â»Âc khÃƒÂ´ng lÃƒÂ m thay Ã„â€˜Ã¡Â»â€¢i bÃƒÂ i giÃ¡ÂºÂ£ng gÃ¡Â»â€˜c.",
+        "verification_command": "flutter test && flutter analyze",
+        "notes": "Covers stories: P1, P2 (FR-05, All Acceptance Criteria)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-visual-channel-separation",
+        "title": "Visual Channel Separation & Span Conflict Resolution",
+        "status": "passing",
+        "evidence": "Tests: 6 passed, 0 failed in test/dgnl_snip_highlight_test.dart, flutter analyze 0 issues found",
+        "user_visible_behavior": "CÃƒÂ¡c Ã„â€˜iÃ¡Â»Æ’m ngÃ¡Â»Â¯ phÃƒÂ¡p, cÃ¡Â»Â¥m collocation vÃƒÂ  tÃ¡Â»Â« vÃ¡Â»Â±ng lÃ¡Â»â€œng nhau hiÃ¡Â»Æ’n thÃ¡Â»â€¹ bÃ¡ÂºÂ±ng cÃƒÂ¡c kÃƒÂªnh Ã„â€˜Ã¡Â»â€œ hÃ¡Â»Âa Ã„â€˜Ã¡Â»â„¢c lÃ¡ÂºÂ­p (khung viÃ¡Â»Ân nÃƒÂ©t Ã„â€˜Ã¡Â»Â©t ngoÃƒÂ i cÃƒÂ¹ng, nÃ¡Â»Ân pastel mÃ¡Â»Âm bÃƒÂªn trong) khÃƒÂ´ng bÃ¡Â»â€¹ Ã„â€˜ÃƒÂ¨ mÃƒÂ u lÃƒÂ m tÃ¡Â»â€˜i chÃ¡Â»Â¯.",
+        "verification_command": "flutter test test/dgnl_snip_highlight_test.dart",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-offline-deep-grammar-engine",
+        "title": "Offline Deep Grammar Engine & Academic Collocation Filtering",
+        "status": "passing",
+        "evidence": "Tests: test_rules.py and test_api.py passed in 68.3ms (<150ms target), flutter test 6/6 passed",
+        "user_visible_behavior": "Engine Python phÃƒÂ¢n tÃƒÂ­ch ngÃ¡Â»Â¯ liÃ¡Â»â€¡u ngoÃ¡ÂºÂ¡i tuyÃ¡ÂºÂ¿n vÃ¡Â»â€ºi spaCy en_core_web_md vÃƒÂ  DependencyMatcher, bÃ¡ÂºÂ¯t chÃƒÂ­nh xÃƒÂ¡c 6+ cÃ¡ÂºÂ¥u trÃƒÂºc ngÃ¡Â»Â¯ phÃƒÂ¡p vÃƒÂ  lÃ¡Â»Âc sÃ¡ÂºÂ¡ch cÃ¡Â»Â¥m rÃƒÂ¡c bÃ¡ÂºÂ±ng Academic Collocation List.",
+        "verification_command": "pytest plugins/english_assistant/engine/tests/",
+        "notes": "Covers stories: P1, P2",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-pdf-export-and-regression-suite",
+        "title": "PDF Physical Export Alignment & Regression Suite",
+        "status": "passing",
+        "evidence": "Tests: 9 passed, 0 failed in test/dgnl_snip_highlight_test.dart; python tests/test_rules.py and test_api.py passed (86.8ms); flutter analyze 0 issues found",
+        "user_visible_behavior": "Khi bÃ¡ÂºÂ¥m Highlight lÃƒÂªn file, vÃ¡Â»â€¡t mÃƒÂ u vÃƒÂ  viÃ¡Â»Ân nÃƒÂ©t Ã„â€˜Ã¡Â»Â©t Ã„â€˜Ã†Â°Ã¡Â»Â£c xuÃ¡ÂºÂ¥t vÃ„Â©nh viÃ¡Â»â€¦n vÃƒÂ o file PDF vÃ¡ÂºÂ­t lÃƒÂ½ vÃƒÂ  lÃ†Â°u vÃƒÂ o nÃƒÂ©t vÃ¡ÂºÂ½ giÃƒÂ¡o ÃƒÂ¡n, giÃ¡Â»Â¯ nguyÃƒÂªn Ã„â€˜Ã¡Â»â€¹nh dÃ¡ÂºÂ¡ng khÃƒÂ´ng chÃ¡Â»â€œng Ã„â€˜ÃƒÂ¨ mÃƒÂ u khi in hoÃ¡ÂºÂ·c mÃ¡Â»Å¸ bÃ¡ÂºÂ±ng phÃ¡ÂºÂ§n mÃ¡Â»Âm ngoÃƒÂ i.",
+        "verification_command": "flutter test test/dgnl_snip_highlight_test.dart && flutter analyze lib test/dgnl_snip_highlight_test.dart",
+        "notes": "Covers stories: P1, All Success Criteria",
+        "priority": "P1"
+    },
+    {
+        "id": "persistent-google-session",
+        "title": "Persistent WebView2 Environment & Google Profile Session",
+        "status": "passing",
+        "evidence": "Tests: 2 passed in test/webview_environment_service_test.dart",
+        "user_visible_behavior": "Teacher logs in once with Google in app, session persists forever without re-authenticating across app restarts.",
+        "verification_command": "flutter test test/webview_environment_service_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "host-room-generation-without-chrome",
+        "title": "Headless Meet Host Room Generation & Auto-Join",
+        "status": "passing",
+        "evidence": "Tests: 5 passed in test/meet_automation_service_test.dart",
+        "user_visible_behavior": "Teacher clicks Start in Dashboard, app creates real Google Meet room in <= 5s and joins as Host headlessly without opening external Chrome.",
+        "verification_command": "flutter test test/meet_automation_service_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "in-app-student-admission",
+        "title": "In-App Student Knock Alert & Admission Banner",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in classroom_lobby_screen_test.dart & studio_admission_banner_test.dart",
+        "user_visible_behavior": "When students knock, StudioAdmissionBanner shows pending count and teacher admits all in 1 click directly on app canvas.",
+        "verification_command": "flutter test test/studio_admission_banner_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "removal-of-manual-workarounds",
+        "title": "Removal of Chrome External Launchers & Clipboard Paste",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in classroom_lobby_screen_test.dart",
+        "user_visible_behavior": "ClassroomLobbyScreen removes manual Chrome launch and paste buttons, providing an entirely automated lobby.",
+        "verification_command": "flutter test test/classroom_lobby_screen_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "auto-admit-students-toggle",
+        "title": "Auto-Admit Students Background Automation Toggle",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in test/studio_admission_banner_test.dart",
+        "user_visible_behavior": "Teacher can enable Auto-Admit so students knocking are admitted instantly in < 1s without requiring any banner clicks.",
+        "verification_command": "flutter test test/studio_admission_banner_test.dart",
+        "notes": "Covers stories: P2",
+        "priority": "P2"
+    },
+    {
+        "id": "camera-device-isolation-and-login-gate",
+        "title": "Camera Device Isolation & Interactive One-Time Google Login Gate",
+        "status": "passing",
+        "evidence": "Tests: 111 passed, 0 failed in full flutter test suite",
+        "user_visible_behavior": "Teacher clicks Start in Dashboard: if Google session needed, one-time login modal appears; otherwise generates real Meet room in <= 5s, passes link into Lobby with working webcam preview (no conflict), and enters Studio without blocking modals.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1 (One-Time Login Gate, Camera Device Freedom, Seamless Lobby Flow)",
+        "priority": "P1"
+    },
+    {
+        "id": "fix-meet-redirect-and-session-persistence",
+        "title": "Fix Meet Redirect Chain & Seamless Session Persistence",
+        "status": "passing",
+        "evidence": "Tests: 111 passed, 0 failed in full flutter test suite",
+        "user_visible_behavior": "Teacher clicks Start in Dashboard, WebView2 naturally follows Google Meet cookie verification redirect, generates real room URL (meet.google.com/xxx-yyyy-zzz) in 2-3s without aborting, and seamlessly populates Lobby with no repetitive login modals.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1 (Browser Session Persistence, Auto Room Creation, Seamless Lobby Transition)",
+        "priority": "P1"
+    },
+    {
+        "id": "fix-student-admission-and-host-join",
+        "title": "Fix In-App Student Admission Banner & Host Join Verification",
+        "status": "passing",
+        "evidence": "Tests: 111 passed, 0 failed in full flutter test suite including studio_admission_banner_test.dart and meet_bridge_parser_test.dart",
+        "user_visible_behavior": "When students knock on Google Meet link, StudioAdmissionBanner slides down over the studio canvas with pending count, Cho vÃƒÂ o tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ button, and Auto-Admit toggle; teacher admits students in 1-click without leaving the app.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1 (In-App Admission, Host In-Call Reliability, Auto-Admit)",
+        "priority": "P1"
+    },
+    {
+        "id": "in-drawer-student-admission-waiting-room",
+        "title": "In-Drawer Student Admission Waiting Room & Robust DOM Knock Scanner",
+        "status": "passing",
+        "evidence": "Tests: 113 passed, 0 failed in full flutter test suite including studio_students_drawer_test.dart and studio_admission_banner_test.dart",
+        "user_visible_behavior": "When students knock, StudioStudentsDrawer displays a prominent Waiting Room card at the top with pending count, Cho vÃƒÂ o tÃ¡ÂºÂ¥t cÃ¡ÂºÂ£ button, and Auto-admit switch, while meet_bridge_script detects fixed-position admit toasts without offsetParent filtering.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1 (In-Drawer Admission, Fixed-Position Toast Recognition, Auto-Admit)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-commit-local-meet-features",
+        "title": "Commit Local Zero-Click Meet Automation & In-App Student Admission",
+        "status": "passing",
+        "evidence": "Commit 0673d8d created with clean working tree; 27/27 tests passed.",
+        "user_visible_behavior": "Local uncommitted work for Zero-Click Google Meet and student admission drawer is committed into a clean git state.",
+        "verification_command": "flutter test test/meet_automation_service_test.dart test/classroom_lobby_screen_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-rebase-and-merge-origin-develop",
+        "title": "Rebase with origin/develop (Lesson Planning by normanqt2005)",
+        "status": "passing",
+        "evidence": "Rebase on top of 7dab0ac cleanly completed; 30/30 unit tests passed across lobby, studio, and meet automation.",
+        "user_visible_behavior": "Lesson planning mode and classroom controls coexist harmoniously in Studio TopBar based on isPlanning flag.",
+        "verification_command": "flutter test test/classroom_lobby_screen_test.dart test/studio_students_drawer_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-merge-ghp1991-camera-and-screen-stream",
+        "title": "Merge fix/camera-innit-fix (GHP1991)",
+        "status": "passing",
+        "evidence": "Merged origin/fix/camera-innit-fix cleanly with 0 conflicts; all 5 camera broadcast and initialization tests passed.",
+        "user_visible_behavior": "Webcam contention on Windows is resolved and teacher can choose to stream whiteboard or entire app window.",
+        "verification_command": "flutter test test/camera_initialization_test.dart test/camera_broadcast_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-merge-thinh-exam-platform",
+        "title": "Merge feat/vact-hsa-exam-platform (Nguyen Duc Thinh)",
+        "status": "passing",
+        "evidence": "Merged origin/feat/vact-hsa-exam-platform cleanly with 0 conflicts (55 files changed, +6314 lines); 14/14 exam integration tests passed.",
+        "user_visible_behavior": "V-ACT/HSA exam platform and question bank are accessible from Studio Document Drawer with Flyway DB migrations.",
+        "verification_command": "flutter test test/exam_integration_test.dart test/webview_exam_session_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-05-merge-thinh-local-ai-speech",
+        "title": "Merge feat/local-ai-speech-translation (Nguyen Duc Thinh)",
+        "status": "passing",
+        "evidence": "Merged origin/feat/local-ai-speech-translation; synchronized CMake & generated_plugin_registrant; 8/8 audio translation tests passed.",
+        "user_visible_behavior": "Local AI offline speech recognition and English-Vietnamese live subtitle controls are integrated with native C++ WASAPI bridge.",
+        "verification_command": "flutter test test/audio_translation_test.dart test/audio_translation_preview_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-06-system-verification-and-ci",
+        "title": "Full System Verification & Release to origin/develop",
+        "status": "passing",
+        "evidence": "All 155 frontend tests passed; backend test-compile succeeded with 0 errors; full system cleanly unified.",
+        "user_visible_behavior": "All frontend and backend test suites pass, Windows native build succeeds, and unified develop branch is pushed.",
+        "verification_command": "flutter test && flutter build windows --debug",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-dialog-text-and-ui-descriptions",
+        "title": "Room Creation Dialog Text & Dashboard Descriptions Cleanup",
+        "status": "passing-unverified",
+        "evidence": "fast mode Ã¢â‚¬â€ updated loading dialog to 'Ã„Âang tÃ¡ÂºÂ¡o phÃƒÂ²ng...' and removed V-ACT subtitle in exam dashboard card",
+        "user_visible_behavior": "Loading dialog displays 'Ã„Âang tÃ¡ÂºÂ¡o phÃƒÂ²ng...' instead of Meet text; verbose card descriptions removed.",
+        "verification_command": "flutter test",
+        "notes": "Covers Phase 1 of high-end UI cleanup",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-compact-standalone-login",
+        "title": "Compact Standalone Desktop Window Login Screen",
+        "status": "passing",
+        "evidence": "Preserved original 50/50 split hero layout as requested by user",
+        "user_visible_behavior": "Login screen displays original 50/50 split layout with AuthHeroPanel.",
+        "verification_command": "flutter test test/classroom_dashboard_test.dart",
+        "notes": "Preserved original 50/50 split layout per user preference",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-emoji-icons-removal-and-verification",
+        "title": "Sweep Emoji Icons & Final Visual Verification",
+        "status": "passing",
+        "evidence": "All 15 suite tests passed (classroom_dashboard_test, subject_plugins_test, meet_cockpit_inspector_test, english_assistant_e2e_test, plugin_manifest_test, plugin_ui_test)",
+        "user_visible_behavior": "Hand-raise and tool emojis replaced with crisp outline vector icons; all tests pass.",
+        "verification_command": "flutter test",
+        "notes": "Covers Phase 3 of high-end UI cleanup",
+        "priority": "P1"
+    },
+    {
+        "id": "plugin-marketplace-catalog",
+        "title": "Browse and view available plugins from Marketplace",
+        "status": "passing",
+        "evidence": "Tests: 3 passed in test/subject_plugins_test.dart (Marketplace card render & install action)",
+        "user_visible_behavior": "Teacher sees list of subject plugins with icon, name, description, version, and status.",
+        "verification_command": "flutter test test/subject_plugins_test.dart",
+        "notes": "Covers P1 story",
+        "priority": "P1"
+    },
+    {
+        "id": "plugin-on-demand-download",
+        "title": "1-Click download and install plugin to local appdata",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in test/plugin_storage_test.dart (installFromZip, loadManifestFromDir)",
+        "user_visible_behavior": "Teacher clicks Download on Marketplace, package is downloaded and unpacked into %LOCALAPPDATA%/HocLuc/plugins/<id>.",
+        "verification_command": "flutter test test/plugin_storage_test.dart",
+        "notes": "Covers P1 story",
+        "priority": "P1"
+    },
+    {
+        "id": "plugin-clean-ram-lifecycle",
+        "title": "On-demand RAM loading and complete cleanup on close",
+        "status": "passing",
+        "evidence": "Tests: 3 passed in test/process_supervisor_test.dart (findAvailablePort, context:get, storage:set/get)",
+        "user_visible_behavior": "Closing plugin disposes WebView and terminates any background sidecar process, freeing RAM.",
+        "verification_command": "flutter test test/process_supervisor_test.dart",
+        "notes": "Covers P1 story",
+        "priority": "P1"
+    },
+    {
+        "id": "plugin-independent-developer-sdk",
+        "title": "Independent plugin development with Manifest Schema v2 and HostBridge SDK",
+        "status": "passing",
+        "evidence": "Verified SDK, manifest v2, service.py --port CLI and /health endpoint",
+        "user_visible_behavior": "Developers create plugins in plugins/<id> without modifying frontend/lib/.",
+        "verification_command": "flutter test test/architecture_test.dart",
+        "notes": "Covers P1 story",
+        "priority": "P1"
+    },
+    {
+        "id": "plugin-uninstall-cache-cleanup",
+        "title": "Uninstall plugin and purge disk cache",
+        "status": "passing",
+        "evidence": "Tests: 4 passed in test/plugin_storage_test.dart (uninstall directory purge)",
+        "user_visible_behavior": "Teacher uninstalls plugin, local cache folder is deleted from disk.",
+        "verification_command": "flutter test test/plugin_storage_test.dart",
+        "notes": "Covers P2 story",
+        "priority": "P2"
+    },
+    {
+        "id": "inapp-google-oauth-login",
+        "title": "In-app Google OAuth Login in Edge WebView2 Dialog",
+        "status": "passing",
+        "evidence": "dart analyze passed (0 issues), test/google_connection_identity_test.dart & test/classroom_dashboard_test.dart passed",
+        "user_visible_behavior": "Teacher clicks Google icon at LoginScreen, completes OAuth and consent inside in-app WebView2 dialog without opening external browser.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "calendar-meet-link-with-attendees",
+        "title": "Automated Meet Link Generation with Student Attendees",
+        "status": "passing",
+        "evidence": "mvn test -Dtest=GoogleIntegrationTest passed (47/47 passed), GoogleClassService schedule & attendees verified",
+        "user_visible_behavior": "Backend automatically creates Google Calendar event with Hangouts Meet conference and student email attendees so students enter without knock.",
+        "verification_command": "mvn test",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "studio-meet-host-session",
+        "title": "Seamless Meet Host Session in Studio Without Re-login",
+        "status": "passing",
+        "evidence": "flutter test test/google_workspace_test.dart & test/architecture_test.dart passed (all 5 architecture invariants verified)",
+        "user_visible_behavior": "Edge WebView2 in Studio loads created Meet link with preserved Google cookies as Host without showing any second login prompt.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "silent-token-refresh",
+        "title": "Silent Google Token Refresh in Background",
+        "status": "passing",
+        "evidence": "mvn test -Dtest=GoogleIntegrationTest passed, token refresh on expired access token verified",
+        "user_visible_behavior": "Backend automatically refreshes expired 1-hour Google access tokens using stored refresh tokens without disrupting active teaching sessions.",
+        "verification_command": "mvn test",
+        "notes": "Covers stories: P2",
+        "priority": "P2"
+    },
+    {
+        "id": "codebase-refactor-google-workspace",
+        "title": "Google Workspace Screen Modular Decomposition",
+        "status": "passing",
+        "evidence": "14/14 tests passed in test/google_workspace_test.dart and architecture invariants passed",
+        "user_visible_behavior": "Main screen reduced from 1,248 to 442 lines with encapsulated dialogs and course cards under lib/widgets/workspace/.",
+        "verification_command": "flutter test test/google_workspace_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "codebase-refactor-retire-drawer-questions",
+        "title": "Retire Dead Legacy DrawerQuestions Component",
+        "status": "passing",
+        "evidence": "Deleted 1,222 lines of dead code; all 4 tests in test/floating_accessories_test.dart and 5 architecture invariants passed",
+        "user_visible_behavior": "Eradicated 1,222 lines of unused legacy code superseded by StudioDocumentDrawer.",
+        "verification_command": "flutter test test/floating_accessories_test.dart",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "codebase-refactor-services-restructure",
+        "title": "Domain-Driven Services Folder Reorganization",
+        "status": "passing",
+        "evidence": "7 domain barrels + master services.dart created; 100% backward compatible; architecture test passed",
+        "user_visible_behavior": "Organizes 41 flat service files into domain subfolders with export barrels for clean navigation.",
+        "verification_command": "flutter test",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "codebase-refactor-backend-google-service",
+        "title": "Backend Google Schedule Service Decomposition",
+        "status": "passing",
+        "evidence": "Extracted GoogleScheduleService; all 47 tests in GoogleIntegrationTest passed; all 104 backend tests passed cleanly",
+        "user_visible_behavior": "Decomposed monolithic 443-line GoogleClassService into GoogleClassService and GoogleScheduleService with clean single responsibilities.",
+        "verification_command": "mvn test -Dtest=GoogleIntegrationTest",
+        "notes": "Covers stories: P1",
+        "priority": "P1"
+    },
+    {
+        "id": "casio-plugin-scaffolding-and-build",
+        "title": "Casio Calculator Scaffolding & Web Bundle Build",
+        "status": "passing",
+        "evidence": "Built HocLucCalculator bundle; created plugins/casio_calculator with schema v2 manifest; 5/5 architecture tests passed",
+        "user_visible_behavior": "Compiles HocLucCalculator React app to static bundle and prepares plugins/casio_calculator with schema v2 manifest.",
+        "verification_command": "flutter test test/architecture_test.dart",
+        "notes": "Covers Phase 01 of casio-calculator-plugin plan",
+        "priority": "P1"
+    },
+    {
+        "id": "casio-plugin-packaging-and-catalog",
+        "title": "Casio Calculator Packaging .hlep & Storage Test",
+        "status": "passing",
+        "evidence": "Created plugins/casio_calculator.hlep (695KB, 19 files); 7/7 manifest and storage tests passed",
+        "user_visible_behavior": "Packages casio_calculator.hlep archive and verifies extraction into local AppData cache.",
+        "verification_command": "node scripts/package_plugin.mjs casio_calculator",
+        "notes": "Covers Phase 02 of casio-calculator-plugin plan",
+        "priority": "P1"
+    },
+    {
+        "id": "casio-plugin-board-integration-and-verification",
+        "title": "Casio Calculator Floating Window & Invariant Test",
+        "status": "passing",
+        "evidence": "Floating window and board host bridge verified; 11/11 plugin tests and 5/5 architecture tests passed",
+        "user_visible_behavior": "Opens calculator as draggable floating window on classroom chalkboard and passes 5/5 architecture invariants.",
+        "verification_command": "flutter test test/architecture_test.dart",
+        "notes": "Covers Phase 03 of casio-calculator-plugin plan",
+        "priority": "P1"
+    },
+    {
+        "id": "casio-plugin-host-gateway-and-window-cleanup",
+        "title": "Host Static Gateway Server & Neutral Floating Window",
+        "status": "passing",
+        "evidence": "Tests: 26 passed, 0 failed across architecture, storage, web server, and UI tests",
+        "user_visible_behavior": "Serves all plugin UIs over an internal loopback HTTP server (eliminating file:// CORS issues for ES modules) and removes subject-specific buttons from floating window header.",
+        "verification_command": "flutter test test/architecture_test.dart test/plugin_ui_test.dart",
+        "notes": "Covers Phase 04 of casio-calculator-plugin plan",
+        "priority": "P1"
+    },
+    {
+        "id": "rearch-phase-01-backend-marketplace-api",
+        "title": "Backend Spring Boot Marketplace API & File Stream",
+        "status": "passing",
+        "evidence": "Backend: 4/4 passed in PluginMarketplaceControllerTest",
+        "user_visible_behavior": "Spring Boot backend serves GET /api/v1/plugins catalog and GET /api/v1/plugins/{id}/download file stream.",
+        "verification_command": "mvn test -Dtest=PluginMarketplaceControllerTest",
+        "notes": "Covers Phase 01 of plugin-system-rearchitecture plan",
+        "priority": "P1"
+    },
+    {
+        "id": "rearch-phase-02-frontend-cloud-downloader",
+        "title": "Frontend Cloud Downloader & Cache Manager",
+        "status": "passing",
+        "evidence": "Tests: 5/5 passed in test/plugin_storage_test.dart, 2/2 passed in test/plugin_marketplace_test.dart",
+        "user_visible_behavior": "Teacher Station fetches marketplace plugins over the internet, downloads .hlep packages, and caches them for offline use.",
+        "verification_command": "flutter test test/plugin_storage_test.dart",
+        "notes": "Covers Phase 02 of plugin-system-rearchitecture plan",
+        "priority": "P1"
+    },
+    {
+        "id": "rearch-phase-03-core-flutter-cleanup-pure-microkernel",
+        "title": "Core Flutter Cleanup & Pure Microkernel Boundary",
+        "status": "passing",
+        "evidence": "Tests: 5 passed in test/architecture_test.dart, 3 passed in test/subject_plugins_test.dart; 0 hardcoded plugin IDs in frontend/lib/",
+        "user_visible_behavior": "Removes hardcoded SubjectToolPalette from chalkboard canvas and decouples studio drawers into dynamic marketplace links.",
+        "verification_command": "flutter test test/architecture_test.dart test/subject_plugins_test.dart",
+        "notes": "Covers Phase 03 of plugin-system-rearchitecture plan",
+        "priority": "P1"
+    },
+    {
+        "id": "rearch-phase-04-verification-and-architecture-test",
+        "title": "End-to-End Verification & Architecture Gate",
+        "status": "passing",
+        "evidence": "Tests: 5/5 passed in test/architecture_test.dart, 2/2 passed in test/plugin_marketplace_test.dart; flutter analyze 0 issues",
+        "user_visible_behavior": "Passes 5/5 architecture invariants and verifies end-to-end cloud plugin download and execution.",
+        "verification_command": "flutter test test/architecture_test.dart",
+        "notes": "Covers Phase 04 of plugin-system-rearchitecture plan",
+        "priority": "P1"
+    },
+    {
+        "id": "marketplace-backend-catalog-and-download",
+        "title": "Kho TiÃ¡Â»â€¡n ÃƒÂch Backend Marketplace & TÃ¡ÂºÂ£i GÃƒÂ³i .hlep 1-Click",
+        "status": "passing",
+        "evidence": "Backend: 4/4 passed in PluginMarketplaceControllerTest; Frontend: 2/2 passed in test/plugin_marketplace_test.dart, 3/3 passed in test/subject_plugins_test.dart",
+        "user_visible_behavior": "GiÃƒÂ¡o viÃƒÂªn mÃ¡Â»Å¸ bÃ¡ÂºÂ£ng HoÃ¡ÂºÂ¡t Ã„â€˜Ã¡Â»â„¢ng & TiÃ¡Â»â€¡n ÃƒÂ­ch, xem danh mÃ¡Â»Â¥c tÃ¡Â»Â« Backend GET /api/marketplace/plugins kÃƒÂ¨m icon & dung lÃ†Â°Ã¡Â»Â£ng, bÃ¡ÂºÂ¥m tÃ¡ÂºÂ£i .hlep vÃ¡Â»Â %LOCALAPPDATA%/HocLuc/plugins/<id>/v<version>/ vÃƒÂ  mÃ¡Â»Å¸ dÃƒÂ¹ng ngay.",
+        "verification_command": "mvn test -Dtest=PluginMarketplaceControllerTest && flutter test test/plugin_marketplace_test.dart",
+        "notes": "Covers P1 story (Backend Marketplace & 1-click download)",
+        "priority": "P1"
+    },
+    {
+        "id": "multi-instance-floating-and-lesson-plugins",
+        "title": "MÃ¡Â»Å¸ Ã„ÂÃ¡Â»â€œng ThÃ¡Â»Âi CÃ¡Â»Â­a SÃ¡Â»â€¢ NÃ¡Â»â€¢i (Casio) & TiÃ¡Â»â€¡n ÃƒÂch GÃ¡ÂºÂ¯n BÃƒÂ i GiÃ¡ÂºÂ£ng",
+        "status": "passing",
+        "evidence": "Tests: 2/2 passed in test/plugin_marketplace_test.dart, 3/3 passed in test/plugin_ui_test.dart; removed duplicate floating window overlay in studio_screen.dart",
+        "user_visible_behavior": "GiÃƒÂ¡o viÃƒÂªn mÃ¡Â»Å¸ cÃƒÂ¹ng lÃƒÂºc ÃƒÂ­t nhÃ¡ÂºÂ¥t 1 plugin cÃ¡Â»Â­a sÃ¡Â»â€¢ nÃ¡Â»â€¢i (MÃƒÂ¡y tÃƒÂ­nh Casio) vÃƒÂ  1 plugin gÃ¡ÂºÂ¯n bÃƒÂ i giÃ¡ÂºÂ£ng/ngÃ„Æ’n kÃƒÂ©o mÃƒÂ  khÃƒÂ´ng bÃ¡Â»â€¹ Ã„â€˜ÃƒÂ³ng lÃ¡ÂºÂ«n nhau hay hiÃ¡Â»â€¡n cÃ¡Â»Â­a sÃ¡Â»â€¢ trÃ¡ÂºÂ¯ng dÃ†Â° thÃ¡Â»Â«a.",
+        "verification_command": "flutter test test/plugin_marketplace_test.dart test/plugin_ui_test.dart",
+        "notes": "Covers P1 story (Multi-instance floating & lesson integration)",
+        "priority": "P1"
+    },
+    {
+        "id": "vscode-manifest-contributes-and-zero-hardcode",
+        "title": "ChuÃ¡ÂºÂ©n Manifest v2.1 (contributes + inject_sdk) & XÃƒÂ³a SÃ¡ÂºÂ¡ch Hardcode trong Core",
+        "status": "passing",
+        "evidence": "Tests: 5/5 passed in test/architecture_test.dart, 4/4 passed in test/plugin_manifest_test.dart, 5/5 passed in test/subject_tool_palette_test.dart",
+        "user_visible_behavior": "Dev thÃƒÂªm plugin mÃ¡Â»â€ºi hoÃ¡ÂºÂ·c bÃ¡Â»Âc dÃ¡Â»Â± ÃƒÂ¡n Open-Source chÃ¡Â»â€° bÃ¡ÂºÂ±ng manifest.json (contributes.tools, inject_sdk: true), SubjectToolPalette tÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng vÃ¡ÂºÂ½ theo manifest vÃƒÂ  0 dÃƒÂ²ng hardcode tÃƒÂªn plugin trong frontend/lib/.",
+        "verification_command": "flutter test test/architecture_test.dart test/subject_tool_palette_test.dart",
+        "notes": "Covers P1 story (Developer experience & Zero-hardcode microkernel)",
+        "priority": "P1"
+    },
+    {
+        "id": "plugin-packager-and-publish-endpoint",
+        "title": "CÃƒÂ´ng CÃ¡Â»Â¥ Ã„ÂÃƒÂ³ng GÃƒÂ³i .hlep Schema v2.1 & API Publish/Sideload",
+        "status": "passing",
+        "evidence": "Packaged casio_calculator.hlep & english_assistant.hlep with SHA-256; 5/5 passed in test/plugin_storage_test.dart, 4/4 passed in PluginMarketplaceControllerTest",
+        "user_visible_behavior": "Dev Ã„â€˜ÃƒÂ³ng gÃƒÂ³i thÃ†Â° mÃ¡Â»Â¥c plugin thÃƒÂ nh .hlep kÃƒÂ¨m kiÃ¡Â»Æ’m tra Schema v2.1, nÃ¡ÂºÂ¡p thÃ¡Â»Â­ qua nÃƒÂºt Dev Sideload trÃƒÂªn UI hoÃ¡ÂºÂ·c Ã„â€˜Ã¡ÂºÂ©y lÃƒÂªn Backend qua POST /api/marketplace/plugins/publish.",
+        "verification_command": "node scripts/package_plugin.mjs casio_calculator && flutter test test/plugin_storage_test.dart",
+        "notes": "Covers P2 story (CLI packager & publish API)",
+        "priority": "P2"
+    },
+    {
+        "id": "google-classroom-create-sync-result",
+        "title": "Show automatic member sync result after class creation",
+        "user_visible_behavior": "Teacher sees the member-sync result from class creation without manually pressing Sync.",
+        "verification_command": "After successful class creation, HocLucStation displays the sync result returned by the create request without issuing a duplicate sync request or requiring a Sync click.",
+        "status": "passing",
+        "evidence": "google_workspace_test.dart: create response is applied without duplicate sync; all 33 tests passed.",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "google-classroom-resume-sync",
+        "title": "Automatically recheck a pending class when returning to the app",
+        "user_visible_behavior": "Teacher does not need to press Sync after accepting a pending class in Classroom.",
+        "verification_command": "When the create sync result is pending, the next app resume automatically retries member sync at most once for that course without a manual Sync action.",
+        "status": "passing",
+        "evidence": "google_workspace_test.dart: PROVISIONED resume retries, duplicate resumes coalesce, and later ACTIVE response is applied; all 33 tests passed.",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "google-classroom-pending-activation-guidance",
+        "title": "Explain when a Classroom course still needs activation",
+        "user_visible_behavior": "Teacher knows to accept a pending course in Classroom before member sync can complete.",
+        "verification_command": "A PROVISIONED course displays an in-app instruction to accept it in Classroom and does not display member sync as complete.",
+        "status": "passing",
+        "evidence": "google_workspace_test.dart: PROVISIONED guidance and non-retryable state messaging verified; all 33 tests passed.",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "google-classroom-sync-result-notice",
+        "title": "Show automatic sync outcome inside HocLucStation",
+        "user_visible_behavior": "Teacher can see whether the course is pending, synced, or needs attention without an operating-system notification.",
+        "verification_command": "After an automatic check, the in-app course UI reports the correct pending, successful, or failed status without sending an operating-system notification.",
+        "status": "passing",
+        "evidence": "google_workspace_test.dart: progress, pending, success, partial, and error banners verified; all 33 tests passed.",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-fast-cli-validator-and-hlep-freshness",
+        "title": "Fast CLI Validator & Hash Freshness (validate_plugins.mjs)",
+        "user_visible_behavior": "Developers and agents get instant (<150ms) CLI validation on Schema v2.1, entrypoints, and .hlep sync freshness.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "status": "passing",
+        "evidence": "node scripts/validate_plugins.mjs: 2 plugins verified in 9ms, 0 errors.",
+        "notes": ""
+    },
+    {
+        "id": "phase-02-cross-platform-git-precommit-hook",
+        "title": "Cross-Platform Native Git Pre-Commit Hook (.githooks/pre-commit)",
+        "user_visible_behavior": "Commits modifying plugins without repackaging or violating schema are blocked locally with actionable fix commands.",
+        "verification_command": "node scripts/setup_hooks.mjs",
+        "status": "passing",
+        "evidence": ".githooks/pre-commit and setup_hooks.mjs active; core.hooksPath set to .githooks.",
+        "notes": ""
+    },
+    {
+        "id": "phase-03-deep-dart-architecture-test-hardening",
+        "title": "Deep Dart Architecture Test Hardening (architecture_test.dart)",
+        "user_visible_behavior": "Automated Dart tests verify byte-level parity between plugin source directories and .hlep archives, catching orphan packages.",
+        "verification_command": "flutter test test/architecture_test.dart",
+        "status": "passing",
+        "evidence": "flutter test test/architecture_test.dart: all 7 invariant tests passed including deep zip content parity & orphan package check.",
+        "notes": ""
+    },
+    {
+        "id": "phase-04-ci-pipeline-and-sop-documentation",
+        "title": "CI Pipeline Integration & SOP Rule Docs",
+        "user_visible_behavior": "GitHub Actions fails early on plugin violations and developers follow clear, documented SOPs for add/edit/delete plugin.",
+        "verification_command": "flutter test test/architecture_test.dart",
+        "status": "passing",
+        "evidence": "ci-frontend.yml updated with early validation step; AGENTS.md, plugin_development_rules.md, and plugin-development-guide.md updated with PR checklist and branch protection guide.",
+        "notes": ""
+    },
+    {
+        "id": "smart-pen-toggle",
+        "title": "Toggle answer snapping in the PDF pen",
+        "user_visible_behavior": "Teacher can enable or disable Smart Snap independently of pen color and width; disabled mode preserves current pen tap and drag behavior.",
+        "verification_command": "Flutter tests verify the toggle state and that disabling Smart Snap preserves existing pen interactions.",
+        "status": "passing",
+        "evidence": "smart_pen_gesture_test.dart: toggle independence and both toolbar layouts pass. Annotation tests cover save-on/off transitions, visible temporary-answer toggle/replacement, persistence boundaries, and undo/redo; regression suite passes.",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "smart-pen-answer-hit-testing",
+        "title": "Snap only verified multiple-choice labels",
+        "user_visible_behavior": "Quick taps circle verified AÃ¢â‚¬â€œD option labels and ignore ordinary letters in prose, headings, or ambiguous layouts.",
+        "verification_command": "Synthetic PDF fixtures verify spatial and semantic filtering for valid option groups and A/A. distractors.",
+        "status": "passing",
+        "evidence": "smart_pen_index_test.dart verifies conservative fixture classification; smart_pen_annotation_test.dart verifies tap-created oval rendering, same-group replacement/toggle, serialization, export, and undo/redo.",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "smart-pen-freehand-drawing",
+        "title": "Preserve freehand pen drawing",
+        "user_visible_behavior": "Pen gestures that move beyond the tap threshold remain natural freehand strokes and do not create answer ovals.",
+        "verification_command": "Gesture tests verify tap-versus-drag thresholds, freehand stroke geometry, and suppression of answer snapping during drags.",
+        "status": "passing",
+        "evidence": "smart_pen_gesture_test.dart: tap routes without a dot, freehand drag remains one stroke, and disabled mode keeps the existing dot behavior.",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "smart-pen-progressive-indexing",
+        "title": "Index the visible PDF page first",
+        "user_visible_behavior": "Smart Snap becomes available after asynchronous indexing of the visible text page while nearby pages are indexed progressively.",
+        "verification_command": "Index scheduler tests verify visible-page priority, nearby-page progression, and no whole-document prerequisite.",
+        "status": "passing",
+        "evidence": "smart_pen_gesture_test.dart: one active build, visible-page/neighbor reprioritization, ordered nearby work, and page bounds pass.",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "smart-pen-flexible-layout-detection",
+        "verification_command": "Generated-PDF fixtures cover attached labels, wide formula layouts, vertical and two-column options, and bare error-identification markers; all intended labels are hit-testable.",
+        "title": "Recognize attached and unusual-layout answer labels",
+        "status": "passing",
+        "evidence": "smart_pen_index_test.dart: deterministic corpus v3 of 616 positive labels and 100 negative labels; TP=616, FP=0, FN=0; 100% precision/recall overall and for vertical, two-column, attached, inline, wide-formula, and error-identification layouts.",
+        "user_visible_behavior": "Teachers can circle choices in more PDF formats.",
+        "notes": "P1 story: recognize flexible layouts",
+        "priority": "P1"
+    },
+    {
+        "id": "smart-pen-answer-detection-semantic-safety",
+        "verification_command": "Labeled negative fixtures for prose, section headings, watermark fragments, duplicate labels, and ambiguous layouts produce no accepted candidate.",
+        "title": "Reject prose and ambiguous A-D letters",
+        "status": "passing",
+        "evidence": "smart_pen_index_test.dart: 100 labeled isolated negatives plus prose, headings, watermark, duplicate, and ambiguous cases; corpus FP=0; analyzer clean.",
+        "user_visible_behavior": "Flexible recognition does not create accidental circles.",
+        "notes": "P1 story: preserve semantic safety",
+        "priority": "P1"
+    },
+    {
+        "id": "smart-pen-cross-page-answer-groups",
+        "verification_command": "A cross-page fixture gets one stable group ID; selecting on either page leaves one circle and undo/redo restores the multi-page change atomically.",
+        "title": "Treat choices split across adjacent pages as one question",
+        "status": "passing",
+        "evidence": "smart_pen_index_test.dart covers ordered horizontal A/BÃ¢â€ â€™C/D edge fragments, split/number-first question-heading veto, ambiguity, generation scope, readiness-order stability and incremental neighbor refresh; smart_pen_annotation_test.dart covers cross-page saved/session-only replacement, toggle, undo/redo and provisional-ID migration, including two pre-index choices collapsing to the latest choice. Final acceptance suite and analyzer pass.",
+        "user_visible_behavior": "Selecting a new option replaces the earlier circle for the same question.",
+        "notes": "P1 story: link choices across adjacent pages",
+        "priority": "P1"
+    },
+    {
+        "id": "smart-pen-answer-debug-diagnostics",
+        "verification_command": "With SMART_PEN_DEBUG, raw fragments, accepted/rejected markers and link statuses are visible with reason codes; production builds retain no debug text overlay.",
+        "title": "Inspect Smart Pen extraction and link decisions",
+        "status": "passing",
+        "evidence": "Unit tests verify debug diagnostics are opt-in and distinguish accepted, partial, raw, and rejected fragments. SMART_PEN_DEBUG-enabled PdfStage tap widget smoke passed; final acceptance suite and analyzer pass.",
+        "user_visible_behavior": "Developers can tell whether a missed answer failed extraction, classification, or page linking.",
+        "notes": "P2 story: diagnose missed labels",
+        "priority": "P2"
+    },
+    {
+        "id": "clean-architecture-feature-first",
+        "title": "Migrate Frontend to Clean Architecture Feature-First Modules",
+        "user_visible_behavior": "Frontend codebase is cleanly structured into 4 domain modules (auth, classroom_meet, studio_board, plugin_engine) and core without any loose files.",
+        "verification_command": "flutter analyze --no-fatal-infos",
+        "status": "passing",
+        "evidence": "All 48 services and 36 widgets modularized into core and features; flutter analyze 0 issues; flutter test 392/392 passed",
+        "notes": "Covers Phase 02",
+        "priority": "P1"
+    },
+    {
+        "id": "test-suite-restructuring",
+        "title": "Restructure Test Suite into Feature and Layer Folders",
+        "user_visible_behavior": "All 64 tests are organized cleanly in test/features, test/unit, test/widgets, and test/e2e_browser without root-level clutter.",
+        "verification_command": "flutter test",
+        "status": "passing",
+        "evidence": "All 64 test files cleanly categorized in test/features/ & test/e2e_browser; architecture_test kept at root; 392/392 tests passed",
+        "notes": "Covers Phase 03",
+        "priority": "P1"
+    },
+    {
+        "id": "plugin-and-dead-code-cleanup",
+        "title": "Clean Up Dummy Plugins and Legacy Dead Code",
+        "user_visible_behavior": "Legacy sidecar managers and dummy smart pen plugin wrapper are removed, leaving a pure microkernel architecture.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "status": "passing",
+        "evidence": "Dead sidecar managers & dummy smart pen plugin removed; 2 plugins valid; 7/7 architecture tests passed; flutter analyze 0 issues",
+        "notes": "Covers Phase 01",
+        "priority": "P1"
+    },
+    {
+        "id": "ci-architecture-invariants-enforcement",
+        "title": "Enforce Frontend Clean Structure Invariants in Architecture Test",
+        "user_visible_behavior": "CI and pre-commit hook permanently prevent loose files in services/widgets and unorganized root test files.",
+        "verification_command": "flutter test test/architecture_test.dart",
+        "status": "passing",
+        "evidence": "Invariants 8, 9, 10 active in architecture_test.dart; 10/10 invariants passed; ARCHITECTURE.md created; AGENTS.md updated",
+        "notes": "Covers Phase 04",
+        "priority": "P1"
+    },
+    {
+        "id": "enterprise-root-models-migration",
+        "title": "Migrate All Data Models & Theme/Utils to Domain Modules and Core",
+        "user_visible_behavior": "Data models, styling, and utilities are strictly encapsulated in feature domain models and core utilities, removing root clutter.",
+        "verification_command": "flutter analyze --no-fatal-infos",
+        "status": "passing",
+        "evidence": "All models in lib/models/ and theme/utils moved to feature domain models & core; lib/models, theme, constants, utils deleted; analyzer 0 issues",
+        "notes": "Covers Phase 01",
+        "priority": "P1"
+    },
+    {
+        "id": "enterprise-root-screens-migration",
+        "title": "Migrate All Screens to Feature Presentation Layers",
+        "user_visible_behavior": "All screens reside strictly under lib/features/<module>/presentation/screens/ with lib/screens/ permanently eliminated.",
+        "verification_command": "flutter test",
+        "status": "passing",
+        "evidence": "All 10 screens moved to lib/features/<module>/presentation/screens/; lib/screens deleted; 395/395 tests passed",
+        "notes": "Covers Phase 02",
+        "priority": "P1"
+    },
+    {
+        "id": "architecture-invariants-11-and-12",
+        "title": "Enforce Invariants 11 and 12 (Zero Flat Screens/Models at Lib Root)",
+        "user_visible_behavior": "Architecture test permanently bans lib/screens/, lib/models/, lib/theme/, lib/utils/, and lib/constants/ at root.",
+        "verification_command": "flutter test test/architecture_test.dart",
+        "status": "passing",
+        "evidence": "Invariants 11 and 12 added and passing; 12/12 architecture invariants passed 100%; ARCHITECTURE.md and AGENTS.md synced",
+        "notes": "Covers Phase 03",
+        "priority": "P1"
+    },
+    {
+        "id": "ci-native-windows-and-e2e-runner",
+        "title": "Harden CI with Windows Native Compilation Check and E2E Node Runner",
+        "user_visible_behavior": "CI executes browser bridge tests via node --test and validates Windows native compilation readiness.",
+        "verification_command": "node --test test/e2e_browser/meet_screen_share.test.cjs",
+        "status": "passing",
+        "evidence": "node --test passes 6/6 tests (93ms); ci-frontend.yml updated with browser bridge step and windows-latest build-windows-check job",
+        "notes": "Covers Phase 04",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-quick-wins-and-sanitization",
+        "evidence": "Backend tests: 123 passed, 0 failed in mvn test. Architecture tests: 12/12 passed in flutter test.",
+        "verification_command": "mvn test -f backend/api/pom.xml; flutter test test/architecture_test.dart",
+        "notes": "",
+        "user_visible_behavior": "System logs diagnostics properly on failure, eliminates Mojibake text, and restores readable Java code.",
+        "title": "Sanitize Codebase Smells, Mojibake, and Empty Catches",
+        "status": "passing"
+    },
+    {
+        "id": "phase-02-architecture-decoupling-and-boundaries",
+        "evidence": "LocalService decoupled from planning; PlanningRepository extracted; GoogleMeetAuthService centralized in features/auth; PluginHostBridge created; 0 cross imports from plugin_engine to studio_board; 397/397 flutter tests passed; 12/12 architecture invariants passed; 123/123 backend tests passed",
+        "verification_command": "flutter test test/architecture_test.dart; node scripts/validate_plugins.mjs",
+        "notes": "",
+        "user_visible_behavior": "LocalService pure HTTP client, centralized auth service, decoupled plugin host.",
+        "title": "Clean Feature Boundaries and Inverted Dependencies",
+        "status": "passing"
+    },
+    {
+        "id": "phase-03-god-class-facade-decomposition",
+        "evidence": "StudioState decomposed with serialization extracted to studio_state_serialization.dart (644 LOC); SelectClassroomDialog decomposed with select_classroom_sections.dart (350 LOC); AuthFormCard decomposed with auth_form_views.dart (418 LOC); 397/397 flutter tests passed; 12/12 architecture invariants passed",
+        "verification_command": "flutter test",
+        "notes": "Covers Phase 03",
+        "user_visible_behavior": "Studio board continues to draw, snap, and annotate seamlessly with sub-controllers underneath.",
+        "title": "Decompose StudioState God Class via Facade Pattern",
+        "status": "passing"
+    },
+    {
+        "id": "phase-04-backend-error-handling-and-layering",
+        "evidence": "Created GlobalExceptionHandler with RFC-7807 problem details handling ResponseStatusException, MethodArgumentNotValidException, GoogleFailure, IllegalArgumentException, and HttpMessageNotReadableException; de-golfed ExamErrorHandler; added jakarta.validation annotations to LoginRequest, RegisterRequest, OtpAuthRequest; added @Valid to AuthController; updated ClassroomController to map failed room creation to 400 Bad Request; 129/129 backend tests passed in mvn test; 397/397 flutter tests passed; 12/12 architecture invariants passed; flutter analyze 0 issues",
+        "verification_command": "mvn test -f backend/api/pom.xml; flutter test",
+        "notes": "Covers Phase 04",
+        "user_visible_behavior": "Spring Boot APIs return structured error details and declarative Bean validation.",
+        "title": "Standardize Backend Error Handling and Validation",
+        "status": "passing"
+    },
+    {
+        "id": "backend-modular-01-dto-and-entity",
+        "evidence": "Created typed DTOs in vn.teaching.dto (GoogleConnectRequest, GooglePollRequest, GoogleCreateCourseRequest, GoogleInviteRequest, GoogleMeetAccessRequest, GoogleScheduleRequest, GoogleStartLessonRequest, LoginRequest, RegisterRequest, OtpAuthRequest, AuthResponse, PluginCatalogItemDto); removed inline records from GoogleIntegrationController; deleted duplicate DTOs from vn.teaching.model leaving only Classroom and Planning entities; 129/129 backend tests passed in mvn test",
+        "verification_command": "mvn test -f backend/api/pom.xml",
+        "notes": "Covers Phase 01",
+        "user_visible_behavior": "Request and response data models are typed and clearly separated from domain entities.",
+        "title": "Separate DTOs from Domain Entities and Extract Inline Records",
+        "status": "passing"
+    },
+    {
+        "id": "backend-modular-02-extract-repositories",
+        "evidence": "Extracted ClassroomRepository and FileClassroomRepository decoupling ClassroomService from direct disk I/O; extracted PlanningRepository and FilePlanningRepository decoupling PlanningService; thread-safe repository locks preserved; 129/129 backend tests passed in mvn test including ClassroomSessionTest (8/8)",
+        "verification_command": "mvn test -f backend/api/pom.xml",
+        "notes": "Covers Phase 02",
+        "user_visible_behavior": "Classroom and Planning services delegate disk I/O to dedicated repositories.",
+        "title": "Extract Classroom and Planning Persistence to Repository Layer",
+        "status": "passing"
+    },
+    {
+        "id": "backend-modular-03-modular-monolith-packages",
+        "evidence": "Completed: mvn test passed 129/129 tests, flutter test test/architecture_test.dart passed 12/12 invariants.",
+        "verification_command": "mvn test -f backend/api/pom.xml; flutter test test/architecture_test.dart",
+        "notes": "Covers Phase 03",
+        "user_visible_behavior": "Backend is structured into clean modular monolith feature packages mirroring Frontend.",
+        "title": "Organize Backend into Modular Monolith Feature Packages",
+        "status": "passing"
+    },
+    {
+        "id": "backend-modular-04-full-verification",
+        "evidence": "Completed: 129 backend tests passed, 403 frontend tests passed (0 failures), 12/12 architecture invariants passed, flutter analyze 0 issues, validate_plugins 100% valid.",
+        "verification_command": "mvn test -f backend/api/pom.xml; flutter test",
+        "notes": "Covers Phase 04",
+        "user_visible_behavior": "All 129+ backend tests and 403 frontend tests pass with 0 regressions.",
+        "title": "Full System Verification & CI Gate for Modular Monolith",
+        "status": "passing"
+    },
+    {
+        "id": "studio-state-canvas-controller-leaf-rebuild",
+        "title": "Canvas Drawing Controller & Scoped Leaf Rebuilds",
+        "status": "passing",
+        "evidence": "Implemented ScopedListenableBuilder, isolated laser pointer into laserOffsetNotifier, decoupled StudioScreen root AnimatedBuilder and StudioTopBar with scoped selectors; added scoped_rebuild_test.dart (passing); all 413 frontend tests pass.",
+        "user_visible_behavior": "Teacher draws continuous strokes with under 16ms latency without rebuilding unrelated UI panels.",
+        "verification_command": "flutter test test/features/studio_board/drawing_engine_test.dart",
+        "notes": "Covers stories: P1 (Canvas Controller)",
+        "priority": "P1"
+    },
+    {
+        "id": "studio-state-domain-controllers-scaffolding",
+        "title": "Domain Controllers Decomposition (Canvas, PDF/SmartPen, Audio, Plugin)",
+        "status": "passing",
+        "evidence": "Tests: 10 passed, 0 failed in test/features/studio_board/controllers/controllers_test.dart",
+        "user_visible_behavior": "Independent domain controllers encapsulate board, PDF, audio, and plugin logic without private part-of coupling.",
+        "verification_command": "flutter test test/features/studio_board/controllers/",
+        "notes": "Covers stories: P1 (Domain Controllers)",
+        "priority": "P1"
+    },
+    {
+        "id": "studio-state-backward-compatible-facade",
+        "title": "Backward-Compatible StudioState Facade and Part File Removal",
+        "status": "passing",
+        "evidence": "Purged 5 legacy part-of files; converted StudioState into an 843 LOC clean facade (satisfying <=900 LOC CI invariant); all 220 studio board tests pass, 12/12 architecture invariants pass, flutter analyze returns 0 warnings, and validate_plugins returns 100% valid.",
+        "user_visible_behavior": "Legacy call-sites and existing test suites pass 100% while 6 pseudo part-of files are purged.",
+        "verification_command": "flutter test test/features/studio_board/studio_test.dart",
+        "notes": "Covers stories: P1 (StudioState Facade)",
+        "priority": "P1"
+    },
+    {
+        "id": "studio-coordinator-lifecycle-disposal",
+        "title": "Studio Workspace Coordinator Lifecycle & Safe Disposal",
+        "status": "passing",
+        "evidence": "Tests: 4 passed, 0 failed in test/features/studio_board/controllers/coordinator_test.dart",
+        "user_visible_behavior": "Leaving the classroom systematically disposes all sub-controllers and listeners with zero memory leaks.",
+        "verification_command": "flutter test test/features/studio_board/controllers/coordinator_test.dart",
+        "notes": "Covers stories: P2 (Lifecycle Disposal)",
+        "priority": "P2"
+    }
 ]

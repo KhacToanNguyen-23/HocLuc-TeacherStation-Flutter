@@ -19,9 +19,9 @@ public class GoogleClassService {
     private final GoogleConnectionService connections;
     private final GoogleGateway google;
     private final GoogleStore store;
-    private final vn.teaching.service.ClassroomService classrooms;
+    private final vn.teaching.modules.classroom.service.ClassroomService classrooms;
     private final GoogleScheduleService scheduleService;
-    public GoogleClassService(GoogleConnectionService connections, GoogleGateway google, GoogleStore store, vn.teaching.service.ClassroomService classrooms, GoogleScheduleService scheduleService) {
+    public GoogleClassService(GoogleConnectionService connections, GoogleGateway google, GoogleStore store, vn.teaching.modules.classroom.service.ClassroomService classrooms, GoogleScheduleService scheduleService) {
         this.connections=connections; this.google=google; this.store=store;
         this.classrooms=classrooms; this.scheduleService=scheduleService;
     }

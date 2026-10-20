@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 import 'package:teaching_companion/core/platform/url_opener.dart';
 import '../presentation/google_webview_login_dialog.dart';
@@ -54,7 +55,9 @@ class GoogleConnectionFlow {
             }
             return result['email'] as String;
           }
-        } catch (_) {}
+        } catch (e) {
+          FrontendLogger.write('[GoogleConnectionFlow] Poll tick error: $e');
+        }
       }
 
       await dialogFuture;
@@ -69,7 +72,9 @@ class GoogleConnectionFlow {
         if (result['status'] == 'COMPLETE') {
           return result['email'] as String;
         }
-      } catch (_) {}
+      } catch (e) {
+        FrontendLogger.write('[GoogleConnectionFlow] Final poll error: $e');
+      }
 
       throw StateError('Phiên kết nối Google chưa hoàn tất hoặc đã bị đóng.');
     }

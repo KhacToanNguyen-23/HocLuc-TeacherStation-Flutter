@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:audio_bridge/audio_bridge.dart';
 import 'package:flutter/foundation.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 
@@ -340,7 +341,9 @@ class AudioTranslationService extends ChangeNotifier {
     if (socket != null) {
       try {
         await socket.sink.close().timeout(const Duration(seconds: 2));
-      } catch (_) {}
+      } catch (e) {
+        FrontendLogger.write('[AudioTranslationService] Close socket warning: $e');
+      }
     }
   }
 
@@ -350,12 +353,16 @@ class AudioTranslationService extends ChangeNotifier {
     requested = false;
     try {
       await bridge.stop();
-    } catch (_) {}
+    } catch (e) {
+      FrontendLogger.write('[AudioTranslationService] Bridge stop warning: $e');
+    }
     await _closeSocket();
     if (filePreparing && manageRuntime) {
       try {
         await service.post('audio/stop', data: {'clientId': clientId});
-      } catch (_) {}
+      } catch (e) {
+        FrontendLogger.write('[AudioTranslationService] Audio stop request warning: $e');
+      }
     }
     captureReady = false;
     mode = muted ? 'muted' : 'unavailable';
@@ -377,12 +384,16 @@ class AudioTranslationService extends ChangeNotifier {
       if (_connectInFlight != null) {
         try {
           await _connectInFlight!.timeout(const Duration(seconds: 15));
-        } catch (_) {}
+        } catch (e) {
+          FrontendLogger.write('[AudioTranslationService] Connect in-flight timeout: $e');
+        }
       }
       if (_ownsRuntime || _connectInFlight != null) {
         try {
           await service.post('audio/stop', data: {'clientId': clientId});
-        } catch (_) {}
+        } catch (e) {
+          FrontendLogger.write('[AudioTranslationService] Runtime stop warning: $e');
+        }
       }
       service.dispose();
     }

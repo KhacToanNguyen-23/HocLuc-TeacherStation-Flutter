@@ -25,7 +25,7 @@ class GoogleIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired String companionToken;
     @MockBean GoogleGateway google;
-    @MockBean vn.teaching.service.ClassroomService classrooms;
+    @MockBean vn.teaching.modules.classroom.service.ClassroomService classrooms;
     static final String EMAIL="teacher@example.com", SUBJECT="teacher-sub", COURSE="11111111-1111-4111-8111-111111111111";
     static final String C="https://classroom.googleapis.com/v1/", M="https://meet.googleapis.com/v2/";
     @BeforeEach void setup() {

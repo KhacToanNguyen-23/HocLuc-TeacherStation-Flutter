@@ -15,8 +15,9 @@ extension _StudioScreenActionsExt on _StudioScreenState {
         );
 
         bool success = false;
+        final planningRepo = PlanningRepository(localService: studio.service);
         if (targetId != null) {
-          final res = await studio.service.updatePlanning(
+          final res = await planningRepo.updatePlanning(
             id: targetId,
             title: studio.title,
             subject: studio.subject,
@@ -27,7 +28,7 @@ extension _StudioScreenActionsExt on _StudioScreenState {
             errorMessage = 'Backend từ chối cập nhật bài giảng "$targetId"';
           }
         } else {
-          final res = await studio.service.createPlanning(
+          final res = await planningRepo.createPlanning(
             title: studio.title,
             subject: studio.subject,
             content: lessonSnapshot,

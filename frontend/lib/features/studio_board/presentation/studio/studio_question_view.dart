@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
@@ -17,6 +17,15 @@ class StudioQuestionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The screen shell no longer rebuilds on every studio change, so the
+    // question view subscribes to the studio itself.
+    return ListenableBuilder(
+      listenable: studio,
+      builder: (context, _) => _buildView(context),
+    );
+  }
+
+  Widget _buildView(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = math.min(

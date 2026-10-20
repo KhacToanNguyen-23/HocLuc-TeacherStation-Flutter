@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
-import 'features/classroom_meet/services/google_meet_auth_service.dart';
+import 'features/auth/services/google_meet_auth_service.dart';
 import 'features/classroom_meet/services/webview_environment_service.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/classroom_meet/presentation/screens/classroom_dashboard_screen.dart';

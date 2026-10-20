@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
@@ -18,11 +18,17 @@ class _StudioSpeakerNotesBarState extends State<StudioSpeakerNotesBar> {
   bool _isExpanded = false;
   late final TextEditingController _controller;
   int _lastPageIndex = 0;
+  int _lastTotalPages = 0;
+  String _lastTitle = '';
+  String _lastNote = '';
 
   @override
   void initState() {
     super.initState();
     _lastPageIndex = widget.studio.page;
+    _lastTotalPages = widget.studio.pages.length;
+    _lastTitle = _currentTitle();
+    _lastNote = widget.studio.currentPageNote;
     _controller = TextEditingController(text: widget.studio.currentPageNote);
     widget.studio.addListener(_onStudioChanged);
   }
@@ -35,14 +41,34 @@ class _StudioSpeakerNotesBarState extends State<StudioSpeakerNotesBar> {
   }
 
   void _onStudioChanged() {
-    if (_lastPageIndex != widget.studio.page) {
+    final pageChanged = _lastPageIndex != widget.studio.page;
+    final title = _currentTitle();
+    final total = widget.studio.pages.length;
+    final note = widget.studio.currentPageNote;
+    final changed =
+        pageChanged ||
+        title != _lastTitle ||
+        total != _lastTotalPages ||
+        note != _lastNote;
+    if (pageChanged) {
       _lastPageIndex = widget.studio.page;
-      final newNote = widget.studio.currentPageNote;
-      if (_controller.text != newNote) {
-        _controller.text = newNote;
+      if (_controller.text != note) {
+        _controller.text = note;
       }
-      if (mounted) setState(() {});
     }
+    _lastTitle = title;
+    _lastTotalPages = total;
+    _lastNote = note;
+    // The screen shell no longer rebuilds on every studio change, so refresh
+    // whenever any value this bar displays changes.
+    if (changed && mounted) setState(() {});
+  }
+
+  String _currentTitle() {
+    final studio = widget.studio;
+    return studio.page < studio.pageTitles.length
+        ? studio.pageTitles[studio.page]
+        : 'Trang ${studio.page + 1}';
   }
 
   void _onNoteChanged(String text) {
