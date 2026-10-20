@@ -196,7 +196,7 @@
     "status": "passing",
     "evidence": "Tests: 3 passed in test/sidecar_manager_test.dart, 43 total passed across suite",
     "user_visible_behavior": "Tiến trình service.exe tự động khởi chạy và tắt ngầm trên Windows, hiển thị trạng thái kết nối trên Web.",
-    "verification_command": "flutter test test/sidecar_manager_test.dart",
+    "verification_command": "flutter test test/process_supervisor_test.dart",
     "notes": "Covers stories: P2",
     "priority": "P2"
   },
@@ -901,6 +901,42 @@
     "priority": "P1"
   },
   {
+    "id": "phase-01-fast-cli-validator-and-hlep-freshness",
+    "title": "Fast CLI Validator & Hash Freshness (validate_plugins.mjs)",
+    "user_visible_behavior": "Developers and agents get instant (<150ms) CLI validation on Schema v2.1, entrypoints, and .hlep sync freshness.",
+    "verification_command": "node scripts/validate_plugins.mjs",
+    "status": "passing",
+    "evidence": "node scripts/validate_plugins.mjs: 2 plugins verified in 9ms, 0 errors.",
+    "notes": ""
+  },
+  {
+    "id": "phase-02-cross-platform-git-precommit-hook",
+    "title": "Cross-Platform Native Git Pre-Commit Hook (.githooks/pre-commit)",
+    "user_visible_behavior": "Commits modifying plugins without repackaging or violating schema are blocked locally with actionable fix commands.",
+    "verification_command": "node scripts/setup_hooks.mjs",
+    "status": "passing",
+    "evidence": ".githooks/pre-commit and setup_hooks.mjs active; core.hooksPath set to .githooks.",
+    "notes": ""
+  },
+  {
+    "id": "phase-03-deep-dart-architecture-test-hardening",
+    "title": "Deep Dart Architecture Test Hardening (architecture_test.dart)",
+    "user_visible_behavior": "Automated Dart tests verify byte-level parity between plugin source directories and .hlep archives, catching orphan packages.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "status": "passing",
+    "evidence": "flutter test test/architecture_test.dart: all 7 invariant tests passed including deep zip content parity & orphan package check.",
+    "notes": ""
+  },
+  {
+    "id": "phase-04-ci-pipeline-and-sop-documentation",
+    "title": "CI Pipeline Integration & SOP Rule Docs",
+    "user_visible_behavior": "GitHub Actions fails early on plugin violations and developers follow clear, documented SOPs for add/edit/delete plugin.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "status": "passing",
+    "evidence": "ci-frontend.yml updated with early validation step; AGENTS.md, plugin_development_rules.md, and plugin-development-guide.md updated with PR checklist and branch protection guide.",
+    "notes": ""
+  },
+  {
     "id": "smart-pen-toggle",
     "title": "Toggle answer snapping in the PDF pen",
     "user_visible_behavior": "Teacher can enable or disable Smart Snap independently of pen color and width; disabled mode preserves current pen tap and drag behavior.",
@@ -979,5 +1015,85 @@
     "user_visible_behavior": "Developers can tell whether a missed answer failed extraction, classification, or page linking.",
     "notes": "P2 story: diagnose missed labels",
     "priority": "P2"
+  },
+  {
+    "id": "clean-architecture-feature-first",
+    "title": "Migrate Frontend to Clean Architecture Feature-First Modules",
+    "user_visible_behavior": "Frontend codebase is cleanly structured into 4 domain modules (auth, classroom_meet, studio_board, plugin_engine) and core without any loose files.",
+    "verification_command": "flutter analyze --no-fatal-infos",
+    "status": "passing",
+    "evidence": "All 48 services and 36 widgets modularized into core and features; flutter analyze 0 issues; flutter test 392/392 passed",
+    "notes": "Covers Phase 02",
+    "priority": "P1"
+  },
+  {
+    "id": "test-suite-restructuring",
+    "title": "Restructure Test Suite into Feature and Layer Folders",
+    "user_visible_behavior": "All 64 tests are organized cleanly in test/features, test/unit, test/widgets, and test/e2e_browser without root-level clutter.",
+    "verification_command": "flutter test",
+    "status": "passing",
+    "evidence": "All 64 test files cleanly categorized in test/features/ & test/e2e_browser; architecture_test kept at root; 392/392 tests passed",
+    "notes": "Covers Phase 03",
+    "priority": "P1"
+  },
+  {
+    "id": "plugin-and-dead-code-cleanup",
+    "title": "Clean Up Dummy Plugins and Legacy Dead Code",
+    "user_visible_behavior": "Legacy sidecar managers and dummy smart pen plugin wrapper are removed, leaving a pure microkernel architecture.",
+    "verification_command": "node scripts/validate_plugins.mjs",
+    "status": "passing",
+    "evidence": "Dead sidecar managers & dummy smart pen plugin removed; 2 plugins valid; 7/7 architecture tests passed; flutter analyze 0 issues",
+    "notes": "Covers Phase 01",
+    "priority": "P1"
+  },
+  {
+    "id": "ci-architecture-invariants-enforcement",
+    "title": "Enforce Frontend Clean Structure Invariants in Architecture Test",
+    "user_visible_behavior": "CI and pre-commit hook permanently prevent loose files in services/widgets and unorganized root test files.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "status": "passing",
+    "evidence": "Invariants 8, 9, 10 active in architecture_test.dart; 10/10 invariants passed; ARCHITECTURE.md created; AGENTS.md updated",
+    "notes": "Covers Phase 04",
+    "priority": "P1"
+  },
+  {
+    "id": "enterprise-root-models-migration",
+    "title": "Migrate All Data Models & Theme/Utils to Domain Modules and Core",
+    "user_visible_behavior": "Data models, styling, and utilities are strictly encapsulated in feature domain models and core utilities, removing root clutter.",
+    "verification_command": "flutter analyze --no-fatal-infos",
+    "status": "passing",
+    "evidence": "All models in lib/models/ and theme/utils moved to feature domain models & core; lib/models, theme, constants, utils deleted; analyzer 0 issues",
+    "notes": "Covers Phase 01",
+    "priority": "P1"
+  },
+  {
+    "id": "enterprise-root-screens-migration",
+    "title": "Migrate All Screens to Feature Presentation Layers",
+    "user_visible_behavior": "All screens reside strictly under lib/features/<module>/presentation/screens/ with lib/screens/ permanently eliminated.",
+    "verification_command": "flutter test",
+    "status": "passing",
+    "evidence": "All 10 screens moved to lib/features/<module>/presentation/screens/; lib/screens deleted; 395/395 tests passed",
+    "notes": "Covers Phase 02",
+    "priority": "P1"
+  },
+  {
+    "id": "architecture-invariants-11-and-12",
+    "title": "Enforce Invariants 11 and 12 (Zero Flat Screens/Models at Lib Root)",
+    "user_visible_behavior": "Architecture test permanently bans lib/screens/, lib/models/, lib/theme/, lib/utils/, and lib/constants/ at root.",
+    "verification_command": "flutter test test/architecture_test.dart",
+    "status": "passing",
+    "evidence": "Invariants 11 and 12 added and passing; 12/12 architecture invariants passed 100%; ARCHITECTURE.md and AGENTS.md synced",
+    "notes": "Covers Phase 03",
+    "priority": "P1"
+  },
+  {
+    "id": "ci-native-windows-and-e2e-runner",
+    "title": "Harden CI with Windows Native Compilation Check and E2E Node Runner",
+    "user_visible_behavior": "CI executes browser bridge tests via node --test and validates Windows native compilation readiness.",
+    "verification_command": "node --test test/e2e_browser/meet_screen_share.test.cjs",
+    "status": "passing",
+    "evidence": "node --test passes 6/6 tests (93ms); ci-frontend.yml updated with browser bridge step and windows-latest build-windows-check job",
+    "notes": "Covers Phase 04",
+    "priority": "P1"
   }
 ]

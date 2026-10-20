@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   analyze-and-test:
-    name: Flutter Lint & Tests
+    name: Flutter Lint, Browser & Unit Tests
     runs-on: ubuntu-latest
 
     defaults:
@@ -30,6 +30,21 @@ jobs:
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+
+      - name: Set up Node.js for Plugin Validation & Browser Tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fast Plugin Validation (Schema v2.1 & .hlep Freshness)
+        run: |
+          echo "🔍 [Early Gate] Kiểm tra nhanh tính toàn vẹn Plugin và độ tươi của gói .hlep..."
+          node ../scripts/validate_plugins.mjs
+
+      - name: Run Browser Bridge Scripts E2E Test (Node.js)
+        run: |
+          echo "🔍 [Browser Gate] Chạy kiểm thử tự động Browser Bridge Script..."
+          node --test test/e2e_browser/meet_screen_share.test.cjs
 
       - name: Set up Flutter Environment
         uses: subosito/flutter-action@v2
@@ -45,9 +60,9 @@ jobs:
       - name: Analyze Static Code Quality
         run: flutter analyze --no-fatal-infos
 
-      - name: Enforce Plugin Architecture Invariants (AGENTS.md)
+      - name: Enforce Architecture Invariants (12 Invariants - AGENTS.md)
         run: |
-          echo "🔍 Kiểm tra các bất biến kiến trúc Plugin (AGENTS.md & docs/architecture/plugin-development-guide.md)..."
+          echo "🔍 Kiểm tra 12 bất biến kiến trúc Clean Architecture & Plugin (AGENTS.md)..."
           flutter test test/architecture_test.dart
 
       - name: Prepare PDFium Native Asset for Flutter Tests
@@ -55,3 +70,34 @@ jobs:
 
       - name: Run Unit & Widget Tests
         run: flutter test
+
+  build-windows-check:
+    name: Windows Native Desktop Build Verification
+    runs-on: windows-latest
+    # Tối ưu Action minutes: Chạy khi merge/push vào develop/main hoặc PR có thay đổi native/pubspec/ci
+    if: github.event_name == 'push' || contains(github.ref, 'develop') || contains(github.ref, 'main')
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter Environment
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Enable Flutter Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Verify Windows Native Compilation (Debug Build)
+        run: |
+          echo "🔍 [Windows Native Gate] Biên dịch thử nghiệm Flutter Windows Native..."
+          flutter build windows --debug

@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teaching_companion/models/plugin_manifest.dart';
-import 'package:teaching_companion/services/process_supervisor.dart';
+import 'package:path/path.dart' as p;
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/plugin_engine/services/process_supervisor.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -95,7 +97,24 @@ void main() {
       }
 
       expect(pluginsDir, isNotNull, reason: 'Phải tìm thấy thư mục plugins/');
-      final pluginFolders = pluginsDir!.listSync().whereType<Directory>();
+
+      // 1. Kiểm tra không có gói .hlep mồ côi (Orphan Packages)
+      final allHlepFiles = pluginsDir!
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.hlep'));
+      for (final hlep in allHlepFiles) {
+        final pluginName = p.basenameWithoutExtension(hlep.path);
+        final matchingFolder = Directory('${pluginsDir.path}/$pluginName');
+        expect(
+          matchingFolder.existsSync(),
+          isTrue,
+          reason:
+              'Phát hiện gói mồ côi: ${hlep.path}. Thư mục nguồn plugins/$pluginName không tồn tại! Hãy xóa file .hlep này nếu plugin đã bị gỡ bỏ.',
+        );
+      }
+
+      final pluginFolders = pluginsDir.listSync().whereType<Directory>();
 
       for (final folder in pluginFolders) {
         final manifestFile = File('${folder.path}/manifest.json');
@@ -142,6 +161,53 @@ void main() {
           reason:
               'Plugin "$folderName" chưa được đóng gói thành plugins/$folderName.hlep. Hãy chạy: node scripts/package_plugin.mjs $folderName',
         );
+
+        // 2. Kiểm tra Deep Content Integrity của gói .hlep
+        final archiveBytes = hlepFile.readAsBytesSync();
+        final archive = ZipDecoder().decodeBytes(archiveBytes);
+        final archiveFilesMap = {
+          for (final f in archive.files) f.name.replaceAll('\\', '/'): f
+        };
+
+        // Kiểm tra manifest.json bên trong zip khớp phiên bản
+        final zipManifestFile = archiveFilesMap['manifest.json'];
+        expect(
+          zipManifestFile,
+          isNotNull,
+          reason: 'Gói $folderName.hlep thiếu manifest.json bên trong archive!',
+        );
+        final zipManifestMap = jsonDecode(
+          utf8.decode(zipManifestFile!.content as List<int>),
+        ) as Map<String, dynamic>;
+        expect(
+          zipManifestMap['version'],
+          equals(manifest.version),
+          reason:
+              'Gói $folderName.hlep có version (${zipManifestMap['version']}) không khớp với manifest.json trên đĩa (${manifest.version})! Hãy chạy: node scripts/package_plugin.mjs $folderName',
+        );
+
+        // Kiểm tra mọi file trên đĩa đều có trong zip
+        final diskFiles = folder
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) {
+          final rel = p.relative(f.path, from: folder.path).replaceAll('\\', '/');
+          return !rel.contains('__pycache__') &&
+              !rel.contains('.venv') &&
+              !rel.contains('node_modules') &&
+              !rel.startsWith('.');
+        });
+
+        for (final diskFile in diskFiles) {
+          final relPath =
+              p.relative(diskFile.path, from: folder.path).replaceAll('\\', '/');
+          expect(
+            archiveFilesMap.containsKey(relPath),
+            isTrue,
+            reason:
+                'Gói $folderName.hlep bị THIẾU FILE: $relPath! Hãy chạy: node scripts/package_plugin.mjs $folderName',
+          );
+        }
       }
     });
 
@@ -240,15 +306,147 @@ void main() {
         reason: 'Phát hiện file .dart mồ côi (Dead Code) trong lib/:\n${orphanFiles.join("\n")}',
       );
 
-      final pluginManagerFile = File('lib/services/plugin_manager.dart');
-      if (pluginManagerFile.existsSync()) {
-        final pmContent = pluginManagerFile.readAsStringSync();
-        expect(
-          pmContent.contains('Map<String, Uint8List> files'),
-          isFalse,
-          reason: 'InstalledPlugin không được giữ Map<String, Uint8List> files trong RAM (vi phạm AGENTS.md Rule 2.4)',
-        );
+      final pluginManagerFiles = [
+        File('lib/features/plugin_engine/services/plugin_manager.dart'),
+        File('lib/services/plugin_manager.dart'),
+      ];
+      for (final pluginManagerFile in pluginManagerFiles) {
+        if (pluginManagerFile.existsSync()) {
+          final pmContent = pluginManagerFile.readAsStringSync();
+          expect(
+            pmContent.contains('Map<String, Uint8List> files'),
+            isFalse,
+            reason: 'InstalledPlugin không được giữ Map<String, Uint8List> files trong RAM (vi phạm AGENTS.md Rule 2.4)',
+          );
+        }
       }
+    });
+
+    test('Bất biến 8: Cấm file code trôi nổi trực tiếp trong lib/widgets/ và lib/services/', () {
+      final forbiddenDirs = [Directory('lib/widgets'), Directory('lib/services')];
+      final violations = <String>[];
+
+      for (final dir in forbiddenDirs) {
+        if (dir.existsSync()) {
+          final files = dir.listSync(recursive: true).whereType<File>();
+          for (final f in files) {
+            violations.add('File trôi nổi trong ${dir.path}: ${f.path}');
+          }
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason: 'Phát hiện file trôi nổi ngoài module Clean Architecture (phải đặt trong lib/features/ hoặc lib/core/):\n${violations.join("\n")}',
+      );
+    });
+
+    test('Bất biến 9: Cấm file test nằm phẳng ở thư mục gốc test/ (ngoại trừ architecture_test.dart)', () {
+      final testDir = Directory('test');
+      expect(testDir.existsSync(), isTrue, reason: 'Thư mục test/ phải tồn tại');
+
+      final rootFiles = testDir.listSync(recursive: false).whereType<File>();
+      final violations = <String>[];
+
+      for (final f in rootFiles) {
+        final baseName = p.basename(f.path);
+        if (baseName != 'architecture_test.dart') {
+          violations.add('File test nằm phẳng ở root test/: $baseName');
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason: 'Phát hiện file test nằm phẳng ở root test/ (phải đặt trong test/features/ hoặc test/e2e_browser/):\n${violations.join("\n")}',
+      );
+    });
+
+    test('Bất biến 10: Cấm khai báo dependency path ma trong pubspec.yaml', () {
+      final pubspecFile = File('pubspec.yaml');
+      expect(pubspecFile.existsSync(), isTrue, reason: 'pubspec.yaml phải tồn tại');
+
+      final content = pubspecFile.readAsStringSync();
+      final lines = content.split('\n');
+      final ghostDependencies = <String>[];
+
+      final pathRegex = RegExp(r'^\s{4,}path:\s*(.+)$');
+      for (var i = 0; i < lines.length; i++) {
+        final rawLine = lines[i];
+        final match = pathRegex.firstMatch(rawLine);
+        if (match != null) {
+          final pathVal = match.group(1)!.trim().replaceAll("'", '').replaceAll('"', '');
+          final resolvedDir = Directory(pathVal);
+          if (!resolvedDir.existsSync()) {
+            ghostDependencies.add('Dòng ${i + 1}: path: $pathVal không tồn tại trên đĩa');
+          }
+        }
+      }
+
+      expect(
+        ghostDependencies,
+        isEmpty,
+        reason: 'Phát hiện dependency ma (path không tồn tại) trong pubspec.yaml:\n${ghostDependencies.join("\n")}',
+      );
+    });
+
+    test('Bất biến 11: Cấm tồn tại thư mục phẳng lib/screens/ và lib/models/ tại root', () {
+      final forbiddenDirs = [
+        Directory('lib/screens'),
+        Directory('lib/models'),
+      ];
+      final violations = <String>[];
+
+      for (final dir in forbiddenDirs) {
+        if (dir.existsSync()) {
+          final files = dir.listSync(recursive: true).whereType<File>();
+          if (files.isNotEmpty) {
+            for (final f in files) {
+              violations.add('File trong thư mục cấm ${dir.path}: ${f.path}');
+            }
+          } else {
+            violations.add('Thư mục cấm ${dir.path} vẫn tồn tại trên đĩa');
+          }
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason:
+            'Phát hiện file/thư mục vi phạm quy chuẩn Clean Architecture (phải đặt trong lib/features/<module>/presentation/screens/ hoặc lib/features/<module>/domain/models/):\n${violations.join("\n")}',
+      );
+    });
+
+    test('Bất biến 12: Cấm tồn tại thư mục phẳng lib/theme/, lib/utils/, lib/constants/ tại root', () {
+      final forbiddenDirs = [
+        Directory('lib/theme'),
+        Directory('lib/utils'),
+        Directory('lib/constants'),
+      ];
+      final violations = <String>[];
+
+      for (final dir in forbiddenDirs) {
+        if (dir.existsSync()) {
+          final files = dir.listSync(recursive: true).whereType<File>();
+          if (files.isNotEmpty) {
+            for (final f in files) {
+              violations.add('File trong thư mục cấm ${dir.path}: ${f.path}');
+            }
+          } else {
+            violations.add('Thư mục cấm ${dir.path} vẫn tồn tại trên đĩa');
+          }
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason:
+            'Phát hiện file/thư mục vi phạm quy chuẩn Core layer (phải đặt trong lib/core/theme/, lib/core/utils/ hoặc lib/core/constants/):\n${violations.join("\n")}',
+      );
     });
   });
 }
+

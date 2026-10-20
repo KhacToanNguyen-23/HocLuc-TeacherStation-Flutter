@@ -9,7 +9,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   record_windows
   url_launcher_windows
   webview_windows
-  wgc_broadcaster
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

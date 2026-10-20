@@ -31,16 +31,36 @@ When working on any plugin or extending the Teacher Station plugin system:
 
 ---
 
-## 3. Git Commit Rules
+## 3. Hard Invariants for Frontend Clean Architecture (Feature-First)
 
-- **Only commit source code**: NEVER commit environment configs, personal setup scripts (such as `setup_flutter.ps1`), secrets, or `.env` files.
-- All downloaded SDKs (e.g. `.sdk/`) must remain ignored.
+1. **Pure Modular Root Structure**: Root `frontend/lib/` must ONLY contain `main.dart`, `core/`, and `features/`. NEVER create flat files or directories directly inside `lib/screens/`, `lib/models/`, `lib/services/`, `lib/widgets/`, `lib/theme/`, `lib/utils/`, or `lib/constants/`.
+2. **Feature Encapsulation**: Feature code must reside strictly within `lib/features/<module>/{presentation/screens, presentation/widgets, services, domain/models}/`.
+3. **Hierarchical Test Structure**: NEVER place test files flat at the root of `frontend/test/`. Only `architecture_test.dart` is permitted at root. All other tests must reside in `test/features/<module>/` or `test/e2e_browser/`.
+4. **No Ghost Dependencies**: All `path:` dependencies in `frontend/pubspec.yaml` must point to existing directories on disk.
 
 ---
 
-## 4. Verification Before Completion (CI Gate)
+## 4. Git Commit Rules
+
+- **Only commit source code**: NEVER commit environment configs, personal setup scripts (such as `setup_flutter.ps1`), secrets, or `.env` files.
+- All downloaded SDKs (e.g. `.sdk/`) must remain ignored.
+- **Git Hooks Enforced**: Git hooks are configured in `.githooks/` (`core.hooksPath`). Ensure hooks are active by running `node scripts/setup_hooks.mjs`.
+
+---
+
+## 5. Verification Before Completion (CI Gate)
 
 Before declaring any task or implementation complete:
-- Run the architecture gate: `flutter test test/architecture_test.dart` (enforced as a dedicated step in GitHub Actions CI).
+- Run the fast plugin validator: `node scripts/validate_plugins.mjs` (or `node scripts/validate_plugins.mjs --fix` to auto-repackage out-of-sync plugins).
+- Run the architecture gate: `flutter test test/architecture_test.dart` (enforced as a dedicated step in GitHub Actions CI with 12 passing invariants).
+- Run the analyzer: `flutter analyze --no-fatal-infos` (0 errors, 0 warnings).
 - If any plugin in `plugins/<name>/` was added or modified, run `node scripts/package_plugin.mjs <name>` to keep `plugins/<name>.hlep` in sync.
 - Ensure no unintended files or temporary artifacts were created.
+
+### Mandatory Pull Request Checklist
+- [ ] **Zero Hardcoded Names**: No plugin IDs or subject names hardcoded in `frontend/lib/`.
+- [ ] **No Direct Plugin Imports**: Zero cross-imports between `frontend/lib/` and `plugins/`.
+- [ ] **Dynamic Ports**: Sidecar engines receive dynamic port via `--port` or `HOCLUC_PLUGIN_PORT`.
+- [ ] **Package Freshness**: `node scripts/validate_plugins.mjs` passes with 0 errors.
+- [ ] **Pure Clean Architecture**: Root `lib/` has only `main.dart`, `core/`, `features/`; zero flat tests at `test/` root.
+- [ ] **Architecture Gate**: `flutter test test/architecture_test.dart` passes 12/12 invariants (100%).

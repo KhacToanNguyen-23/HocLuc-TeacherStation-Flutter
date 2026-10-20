@@ -11,7 +11,7 @@
 ### Core Design Principles
 - **Teacher-First Ergonomics:** A calm, high-contrast workspace (Warm Paper and Chalkboard palette) designed to reduce cognitive load and keep teachers in full control during live instruction.
 - **Pure Microkernel Plugin Host:** The core application (`frontend/lib/`) is completely agnostic to subject-specific tools. Subject extensions (Mathematics, Physics, Chemistry, English, Casio fx-580VN X Calculator, etc.) are packaged as `.hlep` archives, distributed via the **On-Demand Cloud Marketplace**, cached locally on disk, and fully unloaded from memory when closed.
-- **Seamless Google Classroom and Google Meet Integration:** Automated roster synchronization, embedded meeting control, automatic student admission, system-level microphone synchronization, and low-latency window broadcasting via a native C++ virtual camera bridge (`wgc_broadcaster`).
+- **Seamless Google Classroom and Google Meet Integration:** Automated roster synchronization, embedded meeting control, automatic student admission, system-level microphone synchronization, and native Google Meet screen sharing from the embedded meeting panel.
 
 ---
 
@@ -35,10 +35,10 @@
 ### FR-03: Google Meet Automation and Audio Bridge
 | ID | Feature | Description | Status |
 | :--- | :--- | :--- | :---: |
-| **FR-03.1** | Automated Meeting Launch and Join | Launches Google Meet inside an embedded WebView2 instance, suppresses duplicate browser camera/microphone prompts, and joins automatically. | Implemented |
+| **FR-03.1** | Automated Meeting Launch and Join | Launches Google Meet inside an embedded WebView2 instance, handles camera/microphone consent with Flutter Allow/Deny buttons, and joins automatically. | Implemented |
 | **FR-03.2** | Participant Admission and Cockpit | Displays a live student strip and Meet Cockpit inspector with pending admission counters, automatic admission toggle, speaking/hand-raise indicators, and end-call-for-all controls. | Implemented |
 | **FR-03.3** | System Microphone Sync and Translation | Synchronizes mute state and input gain directly with the Windows Audio Endpoint and feeds the live translation/captioning pipeline. | Implemented |
-| **FR-03.4** | Low-Latency Virtual Camera Broadcast | Captures the stage window directly via C++ `Windows.Graphics.Capture` (`wgc_broadcaster`) and streams frames to DirectShow (`UnityCapture`). | Implemented |
+| **FR-03.4** | Native Meet Screen Sharing | Use Present now in the embedded meeting panel, choose a window or screen, and confirm the browser capture picker. No virtual camera driver is required. | Requires live Windows verification |
 
 ### FR-04: Exam Workspace, Question Bank, and Competency Analytics
 | ID | Feature | Description | Status |
@@ -90,8 +90,7 @@ HocLuc-TeacherStation-Flutter/
 │   │   ├── services/              # PluginManager, PluginWebServer, PluginMarketplaceService, HostBridge
 │   │   └── widgets/               # FloatingPluginWindow (Frameless/Standard), SubjectToolPalette, Stage
 │   ├── plugins/
-│   │   ├── audio_bridge/          # Native system audio endpoint bridge
-│   │   └── wgc_broadcaster/       # C++ Windows.Graphics.Capture native plugin
+│   │   └── audio_bridge/          # Native system audio endpoint bridge
 │   └── test/                      # 270+ unit, widget, visual geometry, E2E, and architecture tests
 ├── plugins/                       # Isolated subject extension packages (.hlep)
 │   ├── casio_calculator/          # Casio fx-580VN X Calculator plugin (Frameless Bare-Device mode)
