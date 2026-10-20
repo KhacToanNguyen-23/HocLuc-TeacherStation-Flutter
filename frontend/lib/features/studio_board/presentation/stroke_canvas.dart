@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:perfect_freehand/perfect_freehand.dart';
+import '../domain/models/ink_path.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 
 class LaserPoint {
@@ -456,38 +456,10 @@ class ActiveStrokePainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
 
-    if (activePoints.length == 1) {
-      final p = Offset(
-        activePoints.first.dx * size.width,
-        activePoints.first.dy * size.height,
-      );
-      canvas.drawCircle(p, width / 2, paint);
-      return;
-    }
-
-    final pixelVectors = activePoints
-        .map((p) => PointVector(p.dx * size.width, p.dy * size.height))
+    final pixelPoints = activePoints
+        .map((p) => Offset(p.dx * size.width, p.dy * size.height))
         .toList();
-
-    final outline = getStroke(
-      pixelVectors,
-      options: StrokeOptions(
-        size: width,
-        thinning: isHighlight ? 0.0 : 0.35,
-        smoothing: 0.65,
-        streamline: 0.5,
-        isComplete: true,
-      ),
-    );
-
-    if (outline.isEmpty) return;
-
-    final path = Path()..moveTo(outline.first.dx, outline.first.dy);
-    for (int i = 1; i < outline.length; i++) {
-      path.lineTo(outline[i].dx, outline[i].dy);
-    }
-    path.close();
-
+    final path = buildInkPath(pixelPoints, width, highlight: isHighlight);
     canvas.drawPath(path, paint);
   }
 

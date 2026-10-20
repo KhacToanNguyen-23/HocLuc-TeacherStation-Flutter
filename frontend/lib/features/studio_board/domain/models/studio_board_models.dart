@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/painting.dart';
-import 'package:perfect_freehand/perfect_freehand.dart';
+import 'ink_path.dart';
 
 enum StudioViewportMode { fullBoard, fullPdf, split }
 
@@ -95,76 +95,15 @@ class BoardStroke {
       }
     }
 
-    if (size == null) {
-      if (_cachedPath != null && _cachedSize == null) return _cachedPath!;
-      if (points.isEmpty) return Path();
-      if (points.length == 1) {
-        _cachedSize = null;
-        _cachedPath = Path()
-          ..addOval(Rect.fromCircle(center: points.first, radius: width / 2));
-        return _cachedPath!;
-      }
-      final pointVectors = points.map((p) => PointVector(p.dx, p.dy)).toList();
-      final outline = getStroke(
-        pointVectors,
-        options: StrokeOptions(
-          size: width,
-          thinning: isHighlighter ? 0.0 : 0.35,
-          smoothing: 0.65,
-          streamline: 0.5,
-          isComplete: true,
-        ),
-      );
-      final path = Path();
-      if (outline.isNotEmpty) {
-        path.moveTo(outline.first.dx, outline.first.dy);
-        for (int i = 1; i < outline.length; i++) {
-          path.lineTo(outline[i].dx, outline[i].dy);
-        }
-        path.close();
-      }
-      _cachedSize = null;
-      _cachedPath = path;
-      return path;
-    }
-
     if (_cachedSize == size && _cachedPath != null) return _cachedPath!;
-    if (points.isEmpty) return Path();
-    if (points.length == 1) {
-      final p = Offset(
-        points.first.dx * size.width,
-        points.first.dy * size.height,
-      );
-      _cachedSize = size;
-      _cachedPath = Path()
-        ..addOval(Rect.fromCircle(center: p, radius: width / 2));
-      return _cachedPath!;
-    }
-
-    final pointVectors = points
-        .map((p) => PointVector(p.dx * size.width, p.dy * size.height))
-        .toList();
-    final outline = getStroke(
-      pointVectors,
-      options: StrokeOptions(
-        size: width,
-        thinning: isHighlighter ? 0.0 : 0.35,
-        smoothing: 0.65,
-        streamline: 0.5,
-        isComplete: true,
-      ),
-    );
-    final path = Path();
-    if (outline.isNotEmpty) {
-      path.moveTo(outline.first.dx, outline.first.dy);
-      for (int i = 1; i < outline.length; i++) {
-        path.lineTo(outline[i].dx, outline[i].dy);
-      }
-      path.close();
-    }
+    final pixelPoints = size == null
+        ? points
+        : points
+              .map((p) => Offset(p.dx * size.width, p.dy * size.height))
+              .toList();
+    _cachedPath = buildInkPath(pixelPoints, width, highlight: isHighlighter);
     _cachedSize = size;
-    _cachedPath = path;
-    return path;
+    return _cachedPath!;
   }
 
   void invalidatePath() {
