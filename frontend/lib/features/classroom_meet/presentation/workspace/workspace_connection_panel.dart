@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/core/ui/google_brand_icon.dart';
 
 class WorkspaceConnectionPanel extends StatelessWidget {
   const WorkspaceConnectionPanel({
@@ -32,7 +33,7 @@ class WorkspaceConnectionPanel extends StatelessWidget {
         connection['state'] == 'CONFIG_ERROR';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadii.panel),
@@ -41,96 +42,73 @@ class WorkspaceConnectionPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          Row(
             children: [
-              const Icon(
-                Icons.hub_outlined,
-                color: AppColors.primary,
-                size: 32,
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    connected
-                        ? 'Google đã kết nối'
-                        : needsConsent
-                        ? 'Google cần cấp quyền lại'
-                        : retryConnection
-                        ? 'Chưa kiểm tra được kết nối'
-                        : 'Kết nối Google',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
+              const GoogleBrandIcon(size: 30),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      connected
+                          ? 'Google đã kết nối'
+                          : needsConsent
+                          ? 'Cần cấp quyền Google'
+                          : retryConnection
+                          ? 'Kết nối chưa ổn định'
+                          : 'Kết nối Google',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  Text(
-                    email.isEmpty
-                        ? 'Chọn tài khoản Google để sử dụng HocLucStation.'
-                        : email,
-                  ),
-                ],
+                    if (email.isNotEmpty)
+                      Text(
+                        email,
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
+                  ],
+                ),
               ),
-              if (!polling)
+              if (!connected && !polling)
                 FilledButton.icon(
                   onPressed: disabled || connection['configured'] != true
                       ? null
                       : onConnect,
                   icon: const Icon(Icons.link),
                   label: Text(
-                    connected
-                        ? 'Kiểm tra kết nối'
-                        : needsConsent
+                    needsConsent
                         ? 'Cấp quyền lại'
                         : retryConnection
                         ? 'Thử lại'
-                        : 'Kết nối Google',
+                        : 'Kết nối',
                   ),
                 ),
-              if (!polling && connection['configured'] == true)
-                TextButton(
-                  onPressed: disabled ? null : onChangeAccount,
-                  child: const Text('Đổi tài khoản'),
-                ),
               if (connected && !polling)
-                TextButton(
-                  onPressed: disabled ? null : onConnect,
-                  child: const Text('Cấp quyền lại'),
+                PopupMenuButton<String>(
+                  enabled: !disabled,
+                  tooltip: 'Tài khoản Google',
+                  onSelected: (value) {
+                    if (value == 'account') onChangeAccount();
+                    if (value == 'access') onConnect();
+                    if (value == 'disconnect') onDisconnect();
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'account',
+                      child: Text('Đổi tài khoản'),
+                    ),
+                    PopupMenuItem(
+                      value: 'access',
+                      child: Text('Cấp quyền lại'),
+                    ),
+                    PopupMenuItem(
+                      value: 'disconnect',
+                      child: Text('Ngắt kết nối'),
+                    ),
+                  ],
                 ),
-              if (email.isNotEmpty &&
-                  connection['state'] != 'DISCONNECTED' &&
-                  connection['configured'] == true)
-                TextButton(
-                  onPressed: disabled ? null : onDisconnect,
-                  child: const Text('Ngắt kết nối'),
-                ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Đăng xuất HocLucStation giữ quyền đã cấp. Ngắt kết nối Google sẽ thu hồi quyền API của tài khoản này.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 12),
-          const Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              Chip(
-                avatar: Icon(Icons.school_outlined, size: 18),
-                label: Text('Classroom · Lớp và thành viên'),
-              ),
-              Chip(
-                avatar: Icon(Icons.videocam_outlined, size: 18),
-                label: Text('Meet · Phòng học'),
-              ),
-              Chip(
-                avatar: Icon(Icons.event_outlined, size: 18),
-                label: Text('Calendar · Lịch và lời mời'),
-              ),
             ],
           ),
           if (connection['configured'] == false)
@@ -173,14 +151,6 @@ class WorkspaceConnectionPanel extends StatelessWidget {
                   child: const Text('Hủy'),
                 ),
               ],
-            ),
-          if (!connected && !polling)
-            const Padding(
-              padding: EdgeInsets.only(top: 12),
-              child: Text(
-                '1. Chọn tài khoản Google   →   2. Đồng ý cấp quyền   →   3. Tạo lớp trong HocLucStation',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
             ),
         ],
       ),

@@ -116,14 +116,14 @@ class _StudioScreenState extends State<StudioScreen> {
       meet.showEmbeddedMeet = true;
       var url = await meet.generateAndJoinRealMeetRoom(
         existingUrl: target.meetingUrl,
-        autoJoin: target.isOneOff,
+        autoJoin: true,
       );
       if (url == null && meet.needsGoogleLogin && mounted) {
         final loginResult = await GoogleWebviewLoginDialog.show(context);
         if (loginResult != null && mounted) {
           url = await meet.generateAndJoinRealMeetRoom(
             existingUrl: target.meetingUrl,
-            autoJoin: target.isOneOff,
+            autoJoin: true,
           );
         }
       }

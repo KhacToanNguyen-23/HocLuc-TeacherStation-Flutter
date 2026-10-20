@@ -2,12 +2,13 @@ import 'package:teaching_companion/features/classroom_meet/presentation/meet_adm
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/core/platform/url_opener.dart';
+import 'package:teaching_companion/core/ui/google_brand_icon.dart';
+import 'package:teaching_companion/core/ui/hocluc_brand_mark.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/presentation/scoped_listenable_builder.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
-import 'package:teaching_companion/core/platform/url_opener.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/create_classroom_dialog.dart';
-import 'package:teaching_companion/core/ui/google_brand_icon.dart';
 
 class StudioTopBar extends StatelessWidget {
   const StudioTopBar({
@@ -236,25 +237,7 @@ class StudioTopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 1. Logo
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(AppRadii.control),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'H',
-                      style: TextStyle(
-                        fontFamily: 'Literata',
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
+                const HocLucBrandMark(size: 30),
                 const SizedBox(width: 8),
 
                 // 2. Tiêu đề bài giảng (Tự co giãn nếu chật, tối đa 240px)

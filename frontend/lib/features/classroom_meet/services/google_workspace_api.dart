@@ -37,6 +37,7 @@ class GoogleWorkspaceApi {
     String path, {
     Map<String, dynamic>? body,
     bool post = false,
+    String? method,
     bool retryLocalSession = true,
   }) async {
     if (_local.companionToken == null) await _local.connect();
@@ -48,15 +49,26 @@ class GoogleWorkspaceApi {
     };
     late http.Response response;
     try {
-      response =
-          await (post
-                  ? _local.client.post(
-                      uri,
-                      headers: headers,
-                      body: jsonEncode(body ?? {}),
-                    )
-                  : _local.client.get(uri, headers: headers))
-              .timeout(const Duration(minutes: 4));
+      if (method == null) {
+        response =
+            await (post
+                    ? _local.client.post(
+                        uri,
+                        headers: headers,
+                        body: jsonEncode(body ?? {}),
+                      )
+                    : _local.client.get(uri, headers: headers))
+                .timeout(const Duration(minutes: 4));
+      } else {
+        final request = http.Request(method, uri)..headers.addAll(headers);
+        if (body != null) request.body = jsonEncode(body);
+        final streamed = await _local.client
+            .send(request)
+            .timeout(const Duration(minutes: 4));
+        response = await http.Response.fromStream(
+          streamed,
+        ).timeout(const Duration(minutes: 4));
+      }
     } on TimeoutException {
       throw GoogleWorkspaceFailure(
         'GOOGLE_NETWORK',
@@ -80,7 +92,13 @@ class GoogleWorkspaceApi {
           retryLocalSession &&
           data['error'] == 'Local session required') {
         await _local.connect();
-        return call(path, body: body, post: post, retryLocalSession: false);
+        return call(
+          path,
+          body: body,
+          post: post,
+          method: method,
+          retryLocalSession: false,
+        );
       }
       throw GoogleWorkspaceFailure(
         data['code'] as String? ?? 'REQUEST_FAILED',

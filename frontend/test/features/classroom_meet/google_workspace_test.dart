@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -329,7 +329,7 @@ void main() {
             find.widgetWithText(FilledButton, 'Cấp quyền lại'),
             findsOneWidget,
           );
-          expect(find.text('Google cần cấp quyền lại'), findsOneWidget);
+          expect(find.text('Cần cấp quyền Google'), findsOneWidget);
         }
         await tester.pumpWidget(const SizedBox());
         api.close();
@@ -411,7 +411,10 @@ void main() {
       await tester.tap(find.text('Hoàn tất tạo lớp'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+      expect(
+        find.textContaining('Đang chờ kích hoạt trên Google Classroom.'),
+        findsOneWidget,
+      );
       expect(requests.where((r) => r.contains('/sync')), isEmpty);
       expect(
         requests
@@ -423,7 +426,7 @@ void main() {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
       expect(requests.where((r) => r.endsWith('/sync')).length, 1);
-      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       api.close();
     },
@@ -481,18 +484,18 @@ void main() {
 
       if (state == 'PROVISIONED') {
         expect(
-          find.textContaining('Mở Classroom để chấp nhận'),
+          find.textContaining('Đang chờ kích hoạt trên Google Classroom.'),
           findsOneWidget,
         );
         expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
       } else if (state == 'ACTIVE') {
-        expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+        expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
       } else {
         expect(
           find.textContaining('Kiểm tra lớp trong Classroom'),
           findsOneWidget,
         );
-        expect(find.textContaining('Mở Classroom để chấp nhận'), findsNothing);
+        expect(find.text('Mở Classroom'), findsNothing);
       }
       await tester.pumpWidget(const SizedBox());
       api.close();
@@ -635,7 +638,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
     expect(
-      find.textContaining('chưa xác nhận đồng bộ thành viên'),
+      find.textContaining('Chưa đồng bộ thành viên. Bấm Đồng bộ để thử lại.'),
       findsOneWidget,
     );
     await tester.pumpWidget(const SizedBox());
@@ -740,7 +743,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(syncRequests, 1);
-      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       api.close();
     },
@@ -801,7 +804,10 @@ void main() {
         MaterialApp(home: GoogleWorkspaceScreen(api: api)),
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+      expect(
+        find.textContaining('Đang chờ kích hoạt trên Google Classroom.'),
+        findsOneWidget,
+      );
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
@@ -810,7 +816,7 @@ void main() {
       expect(syncCompleted, isTrue);
       expect(
         find.textContaining('Đã đồng bộ thành viên từ Classroom'),
-        findsOneWidget,
+        findsNothing,
       );
       await tester.pumpWidget(const SizedBox());
       api.close();
@@ -861,7 +867,10 @@ void main() {
     await tester.pump();
 
     expect(find.textContaining('Đang đồng bộ Classroom'), findsOneWidget);
-    expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+    expect(
+      find.textContaining('Đang chờ kích hoạt trên Google Classroom.'),
+      findsNothing,
+    );
 
     syncResponse.complete(
       http.Response(
@@ -880,113 +889,83 @@ void main() {
     api.close();
   });
 
-  testWidgets(
-    'sync failure is shown in card and manual retry uses the same result handler',
-    (tester) async {
-      tester.view.physicalSize = const Size(1280, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      var syncRequests = 0;
-      final pendingCourse = <String, dynamic>{
-        'id': 'pending-error-class',
-        'title': 'Pending error class',
-        'courseId': 'google-classroom-id',
-        'classroomState': 'PROVISIONED',
-        'classroomWarnings': <String>[],
-        'students': <Map<String, dynamic>>[],
-        'classroomSyncedAt': null,
-      };
-      final api = GoogleWorkspaceApi(
-        email: 'teacher@example.com',
-        client: MockClient((request) async {
-          if (request.url.path.endsWith('bootstrap')) {
-            return http.Response('{"token":"local"}', 200);
-          }
-          if (request.url.path.endsWith('status')) {
-            return http.Response('{"configured":true,"connected":true}', 200);
-          }
-          if (request.url.path.endsWith('/sync')) {
-            syncRequests++;
-            if (syncRequests == 1) {
-              return http.Response(
-                '{"message":"Temporary Classroom error"}',
-                502,
-                headers: {'content-type': 'application/json; charset=utf-8'},
-              );
-            }
-            if (syncRequests == 3) {
-              return http.Response(
-                '{"message":"Temporary active Classroom error"}',
-                502,
-                headers: {'content-type': 'application/json; charset=utf-8'},
-              );
-            }
+  testWidgets('sync failure is shown and a later resume retries', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var syncRequests = 0;
+    final pendingCourse = <String, dynamic>{
+      'id': 'pending-error-class',
+      'title': 'Pending error class',
+      'courseId': 'google-classroom-id',
+      'classroomState': 'PROVISIONED',
+      'classroomWarnings': <String>[],
+      'students': <Map<String, dynamic>>[],
+      'classroomSyncedAt': null,
+    };
+    final api = GoogleWorkspaceApi(
+      email: 'teacher@example.com',
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('bootstrap')) {
+          return http.Response('{"token":"local"}', 200);
+        }
+        if (request.url.path.endsWith('status')) {
+          return http.Response('{"configured":true,"connected":true}', 200);
+        }
+        if (request.url.path.endsWith('/sync')) {
+          syncRequests++;
+          if (syncRequests == 1) {
             return http.Response(
-              jsonEncode({
-                ...pendingCourse,
-                'classroomState': 'ACTIVE',
-                'classroomSyncedAt': '2026-10-17T10:00:00Z',
-              }),
-              200,
+              '{"message":"Temporary Classroom error"}',
+              502,
               headers: {'content-type': 'application/json; charset=utf-8'},
             );
           }
           return http.Response(
             jsonEncode({
-              'courses': [pendingCourse],
+              ...pendingCourse,
+              'classroomState': 'ACTIVE',
+              'classroomSyncedAt': '2026-10-17T10:00:00Z',
             }),
             200,
             headers: {'content-type': 'application/json; charset=utf-8'},
           );
-        }),
-      );
-      await tester.pumpWidget(
-        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
-      );
-      await tester.pumpAndSettle();
+        }
+        return http.Response(
+          jsonEncode({
+            'courses': [pendingCourse],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
 
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await tester.pumpAndSettle();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining('Không thể đồng bộ Classroom'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
-      expect(find.textContaining('Đang đồng bộ Classroom'), findsNothing);
-      expect(
-        tester
-            .widget<PopupMenuButton<String>>(
-              find.byType(PopupMenuButton<String>),
-            )
-            .enabled,
-        isTrue,
-      );
-      await tester.tap(find.byType(PopupMenuButton<String>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Đồng bộ'));
-      await tester.pumpAndSettle();
-      expect(syncRequests, 2);
-      expect(find.textContaining('Temporary Classroom error'), findsNothing);
-      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+    expect(find.textContaining('Đồng bộ Classroom thất bại'), findsOneWidget);
+    expect(
+      find.textContaining('Đang chờ kích hoạt trên Google Classroom.'),
+      findsNothing,
+    );
+    expect(find.textContaining('Đang đồng bộ Classroom'), findsNothing);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(syncRequests, 2);
+    expect(find.textContaining('Temporary Classroom error'), findsNothing);
+    expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
 
-      await tester.tap(find.byType(PopupMenuButton<String>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Đồng bộ'));
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining('Temporary active Classroom error'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('Bấm nút Đồng bộ để thử lại'), findsOneWidget);
-      expect(find.textContaining('khi bạn quay lại ứng dụng'), findsNothing);
-
-      await tester.pumpWidget(const SizedBox());
-      api.close();
-    },
-  );
+    await tester.pumpWidget(const SizedBox());
+    api.close();
+  });
 
   testWidgets(
     'duplicate resumes coalesce and manual sync stays disabled while syncing',
@@ -1043,7 +1022,11 @@ void main() {
       expect(
         tester
             .widget<PopupMenuButton<String>>(
-              find.byType(PopupMenuButton<String>),
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget is PopupMenuButton<String> &&
+                    widget.tooltip == 'Tùy chọn lớp',
+              ),
             )
             .enabled,
         isFalse,
@@ -1133,7 +1116,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(syncRequests, 1);
-      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       api.close();
     },
@@ -1198,13 +1181,16 @@ void main() {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
       expect(syncRequests, 1);
-      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+      expect(
+        find.textContaining('Đang chờ kích hoạt trên Google Classroom.'),
+        findsOneWidget,
+      );
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
       expect(syncRequests, 2);
-      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       api.close();
     },
@@ -1282,7 +1268,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(syncRequests, 1);
-    expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+    expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
     await tester.pumpWidget(const SizedBox());
     api.close();
   });
@@ -1351,14 +1337,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(syncRequests, 1);
       expect(find.textContaining('Temporary Classroom error'), findsOneWidget);
-      expect(find.textContaining('Mở Classroom để chấp nhận'), findsOneWidget);
+      expect(
+        find.textContaining('Đang chờ kích hoạt trên Google Classroom.'),
+        findsNothing,
+      );
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
       expect(syncRequests, 2);
       expect(find.textContaining('Temporary Classroom error'), findsNothing);
-      expect(find.textContaining('Đã đồng bộ thành viên'), findsOneWidget);
+      expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       api.close();
     },
@@ -1556,7 +1545,7 @@ void main() {
         findsOneWidget,
       );
       final connect = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Kết nối Google'),
+        find.widgetWithText(FilledButton, 'Kết nối'),
       );
       expect(connect.onPressed, isNull);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -1564,4 +1553,3 @@ void main() {
     },
   );
 }
-

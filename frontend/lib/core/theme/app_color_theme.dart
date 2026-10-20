@@ -64,11 +64,11 @@ class AppColorTheme extends ThemeExtension<AppColorTheme> {
   factory AppColorTheme.light() {
     return const AppColorTheme(
       slatePrimary: AppPalette.textPrimary,
-      slateSurface: AppPalette.surfaceMuted,
+      slateSurface: AppPalette.surfaceSoft,
       slateBorder: AppPalette.border,
-      slateMuted: AppPalette.textMuted,
-      skyAccent: AppPalette.primary,
-      skyLight: AppPalette.primary,
+      slateMuted: AppPalette.textFaint,
+      skyAccent: AppPalette.sky,
+      skyLight: AppPalette.sky,
       skySurface: AppPalette.selected,
       skyHover: AppPalette.primaryHover,
       background: AppPalette.background,

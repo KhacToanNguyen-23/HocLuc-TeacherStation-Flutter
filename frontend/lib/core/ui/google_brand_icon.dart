@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// Google brand icon widget displaying the recognizable Google 'G'.
 class GoogleBrandIcon extends StatelessWidget {
@@ -7,19 +8,15 @@ class GoogleBrandIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      alignment: Alignment.center,
-      child: Text(
-        'G',
-        style: TextStyle(
-          color: const Color(0xFF4285F4),
-          fontSize: size * 0.9,
-          fontWeight: FontWeight.w900,
-          fontFamily: 'sans-serif',
-          height: 1.0,
-        ),
+      child: SvgPicture.asset(
+        'assets/images/google-g.svg',
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        semanticsLabel: 'Google',
       ),
     );
   }

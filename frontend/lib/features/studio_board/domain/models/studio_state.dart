@@ -198,7 +198,7 @@ class StudioState extends ChangeNotifier {
       return;
     }
     final w = tool == 'highlight' ? highlighterWidth : strokeWidth;
-    final stroke = BoardStroke(ink, w, [point]);
+    final stroke = BoardStroke(ink, w, [point], isHighlighter: tool == 'highlight');
     list.add(stroke);
     if (target != null) {
       coordinator.recordPdfAction(list);

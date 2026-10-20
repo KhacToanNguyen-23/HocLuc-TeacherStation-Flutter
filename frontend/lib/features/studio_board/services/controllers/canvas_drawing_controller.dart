@@ -35,7 +35,6 @@ class CanvasDrawingController extends ChangeNotifier {
   final Map<int, List<BoardSticker>> pageStickers = {};
   final Map<int, List<SmartChalkAnnotation>> pageChalkAnnotations = {};
 
-  final Map<int, List<BoardStroke>> _undoStacks = {};
   final Map<int, List<BoardStroke>> _redoStacks = {};
 
   String _tool = 'pen';
@@ -75,8 +74,8 @@ class CanvasDrawingController extends ChangeNotifier {
   String get currentPageNote =>
       (_page >= 0 && _page < pageNotes.length) ? pageNotes[_page] : '';
 
-  bool get canUndo => (_undoStacks[_page]?.isNotEmpty ?? false);
-  bool get canRedo => (_redoStacks[_page]?.isNotEmpty ?? false);
+  bool get canUndo => currentStrokes.isNotEmpty;
+  bool get canRedo => currentRedoStack.isNotEmpty;
 
   double get currentToolSize {
     if (tool == 'highlight') return highlighterWidth;
@@ -176,26 +175,21 @@ class CanvasDrawingController extends ChangeNotifier {
       pageNotes.add('');
     }
     pages[_page].add(stroke);
-    _undoStacks.putIfAbsent(_page, () => []).add(stroke);
     _redoStacks[_page]?.clear();
     notifyListeners();
   }
 
   void undo() {
-    final undoStack = _undoStacks[_page];
-    if (undoStack == null || undoStack.isEmpty) return;
-    final lastStroke = undoStack.removeLast();
-    pages[_page].remove(lastStroke);
-    _redoStacks.putIfAbsent(_page, () => []).add(lastStroke);
+    if (currentStrokes.isEmpty) return;
+    final lastStroke = currentStrokes.removeLast();
+    currentRedoStack.add(lastStroke);
     notifyListeners();
   }
 
   void redo() {
-    final redoStack = _redoStacks[_page];
-    if (redoStack == null || redoStack.isEmpty) return;
-    final strokeToRestore = redoStack.removeLast();
-    pages[_page].add(strokeToRestore);
-    _undoStacks.putIfAbsent(_page, () => []).add(strokeToRestore);
+    if (currentRedoStack.isEmpty) return;
+    final strokeToRestore = currentRedoStack.removeLast();
+    currentStrokes.add(strokeToRestore);
     notifyListeners();
   }
 
@@ -203,7 +197,6 @@ class CanvasDrawingController extends ChangeNotifier {
     final p = targetPage ?? _page;
     if (p < pages.length) {
       pages[p].clear();
-      _undoStacks[p]?.clear();
       _redoStacks[p]?.clear();
       pageStickers[p]?.clear();
       pageChalkAnnotations[p]?.clear();
@@ -260,7 +253,6 @@ class CanvasDrawingController extends ChangeNotifier {
     final p = targetPage ?? _page;
     if (p < pages.length) {
       pages[p].clear();
-      _undoStacks[p]?.clear();
       _redoStacks[p]?.clear();
       notifyListeners();
     }

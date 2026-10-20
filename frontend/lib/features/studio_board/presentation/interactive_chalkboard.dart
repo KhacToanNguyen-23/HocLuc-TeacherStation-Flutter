@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'board_sticker_card.dart';
@@ -31,12 +31,33 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
     super.dispose();
   }
 
+  void _zoom(double factor) {
+    final matrix = _transformController.value;
+    final scale = matrix.getMaxScaleOnAxis();
+    final nextScale = (scale * factor).clamp(0.5, 3.0);
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final center = box.size.center(Offset.zero);
+    final sceneCenter = _transformController.toScene(center);
+    _transformController.value = Matrix4.identity()
+      ..setEntry(0, 0, nextScale)
+      ..setEntry(1, 1, nextScale)
+      ..setEntry(0, 3, center.dx - sceneCenter.dx * nextScale)
+      ..setEntry(1, 3, center.dy - sceneCenter.dy * nextScale);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isPanMode = _isSpacePressed || widget.studio.tool == 'pan';
 
     return Focus(
       autofocus: true,
+      onFocusChange: (focused) {
+        if (!focused && _isSpacePressed) {
+          setState(() => _isSpacePressed = false);
+          widget.studio.setSpacePressed(false);
+        }
+      },
       onKeyEvent: (node, event) {
         if (event.logicalKey == LogicalKeyboardKey.space) {
           final isDown = event is KeyDownEvent || event is KeyRepeatEvent;
@@ -117,9 +138,43 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
               ],
             ),
           ),
+          if (widget.interactive)
+            Positioned(
+              right: 16,
+              top: 16,
+              child: Material(
+                color: Theme.of(context).colorScheme.surface,
+                elevation: 2,
+                borderRadius: BorderRadius.circular(12),
+                child: ValueListenableBuilder<Matrix4>(
+                  valueListenable: _transformController,
+                  builder: (context, matrix, _) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'Thu nhỏ bảng',
+                        onPressed: () => _zoom(1 / 1.2),
+                        icon: const Icon(Icons.remove, size: 18),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            _transformController.value = Matrix4.identity(),
+                        child: Text(
+                          '${(matrix.getMaxScaleOnAxis() * 100).round()}%',
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Phóng to bảng',
+                        onPressed: () => _zoom(1.2),
+                        icon: const Icon(Icons.add, size: 18),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
-

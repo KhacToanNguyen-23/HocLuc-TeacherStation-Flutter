@@ -34,6 +34,20 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
     super.dispose();
   }
 
+  Future<void> _muteAllParticipants() async {
+    final muted = await widget.meetService.muteAllParticipants();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          muted
+              ? 'Đã gửi yêu cầu tắt tiếng mic cả lớp đến Google Meet.'
+              : 'Không tìm thấy nút tắt tiếng trong Google Meet. Hãy kiểm tra quyền chủ trì.',
+        ),
+      ),
+    );
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_chatScrollController.hasClients) return;
@@ -386,7 +400,9 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                         borderRadius: BorderRadius.circular(AppRadii.control),
                       ),
                     ),
-                    onPressed: () => meetService.muteAllParticipants(),
+                    onPressed: meetService.isHostJoined
+                        ? _muteAllParticipants
+                        : null,
                     icon: const Icon(Icons.mic_off_outlined, size: 14),
                     label: const Text(
                       'Tắt tiếng cả lớp',

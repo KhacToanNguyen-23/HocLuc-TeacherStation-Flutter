@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+import java.util.regex.Pattern;
 import static vn.teaching.integrations.GoogleConnectionService.*;
 
 /** Orchestrates independent providers. Classroom courses are mapped to app-created Meet spaces. */
@@ -12,6 +13,9 @@ import static vn.teaching.integrations.GoogleConnectionService.*;
 public class GoogleClassService {
     private static final String CLASSROOM="https://classroom.googleapis.com/v1/";
     private static final String MEET="https://meet.googleapis.com/v2/";
+    private static final Pattern COURSE_TITLE_WHITESPACE = Pattern.compile(
+        "[\\x{0009}-\\x{000D}\\x{0020}\\x{0085}\\x{00A0}\\x{1680}\\x{2000}-\\x{200A}\\x{2028}\\x{2029}\\x{202F}\\x{205F}\\x{3000}\\x{FEFF}]+"
+    );
     private final GoogleConnectionService connections;
     private final GoogleGateway google;
     private final GoogleStore store;
@@ -28,6 +32,14 @@ public class GoogleClassService {
             throw new GoogleFailure(400,"INVALID_CLASS","Tên lớp từ 1–200 ký tự, mô tả tối đa 2000 ký tự.");
         var normalized=emails(emails); String subject=connections.subject(email);
         Map<String,Object> course=store.courses(subject).stream().filter(c -> requestId.equals(c.get("id"))).findFirst().orElse(null);
+        if (course == null) {
+            String titleKey = normalizedTitle(title);
+            boolean duplicate = store.courses(subject).stream()
+                .anyMatch(existing -> titleKey.equals(normalizedTitle(existing.get("title"))));
+            if (duplicate) {
+                throw new GoogleFailure(409,"DUPLICATE_CLASS_TITLE","Tên lớp này đã tồn tại trong HocLuc. Hãy chọn lớp hiện có hoặc đổi tên.");
+            }
+        }
         if(course==null) {
             course=new LinkedHashMap<>(); course.put("id",requestId); course.put("title",title); course.put("description",description==null?"":description);
             course.put("admissionMode","CALENDAR");
@@ -74,6 +86,39 @@ public class GoogleClassService {
     public synchronized Map<String,Object> invite(String email,String id,List<String> requested) {
         var course=store.course(connections.subject(email),id);
         return inviteAndSync(email,course,emails(requested));
+    }
+    public synchronized Map<String,Object> update(String email,String id,String title,String description) {
+        title=title==null?"":title.trim();
+        description=description==null?"":description;
+        if(title.isEmpty() || title.length()>200 || description.length()>2000)
+            throw new GoogleFailure(400,"INVALID_CLASS","Tên lớp cần từ 1–200 ký tự; mô tả tối đa 2000 ký tự.");
+        String subject=connections.subject(email);
+        var course=store.course(subject,id);
+        String key=normalizedTitle(title);
+        boolean titleChanged=!key.equals(normalizedTitle(course.get("title")));
+        boolean duplicate=titleChanged && store.courses(subject).stream().anyMatch(other -> !id.equals(other.get("id")) && key.equals(normalizedTitle(other.get("title"))));
+        if(duplicate) throw new GoogleFailure(409,"DUPLICATE_CLASS_TITLE","Tên lớp này đã tồn tại trong HocLuc.");
+        if(!string(course,"courseId").isBlank()) {
+            var changed=google.call("PATCH",CLASSROOM+"courses/"+encode(string(course,"courseId"))+"?updateMask=name,description",connections.access(email),Map.of("name",title,"description",description));
+            course.put("classroomState",changed.getOrDefault("courseState",course.get("classroomState")));
+            if(changed.get("alternateLink") instanceof String url) course.put("classroomUrl",url);
+        }
+        course.put("title",title); course.put("description",description); store.saveCourse(subject,course);
+        return course;
+    }
+    public synchronized void delete(String email,String id) {
+        String subject=connections.subject(email);
+        var course=store.course(subject,id);
+        String googleCourseId=string(course,"courseId");
+        if(!googleCourseId.isBlank()) {
+            try {
+                google.call("DELETE",CLASSROOM+"courses/"+encode(googleCourseId),connections.access(email),null);
+            } catch(GoogleFailure failure) {
+                // A lost response can leave Classroom already deleted; let retry finish local cleanup.
+                if(!"GOOGLE_404".equals(failure.code)) throw failure;
+            }
+        }
+        store.deleteCourse(subject,id);
     }
     private Map<String,Object> inviteAndSync(String email,Map<String,Object> course,List<String> requested) {
         String subject=connections.subject(email);
@@ -265,6 +310,10 @@ public class GoogleClassService {
     private static void requireId(String id) {
         if(id==null || !id.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"))
             throw new GoogleFailure(400,"INVALID_REQUEST","Mã thao tác không hợp lệ.");
+    }
+    private static String normalizedTitle(Object value) {
+        if (!(value instanceof String title)) return "";
+        return COURSE_TITLE_WHITESPACE.matcher(title).replaceAll(" ").trim().toLowerCase(Locale.ROOT);
     }
     private static String encode(String text) { return URLEncoder.encode(text,StandardCharsets.UTF_8); }
     private static boolean sameTime(Instant expected,Map<String,Object> time) {

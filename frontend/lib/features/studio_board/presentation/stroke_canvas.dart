@@ -142,6 +142,8 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
             onPointerCancel: (event) {
               _smartPointerDowns.remove(event.pointer);
               _smartPointerMovedBeyondTapSlop = false;
+              _activePoints.clear();
+              _activeStrokeNotifier.value = null;
             },
             child: GestureDetector(
               onPanStart: widget.interactive
@@ -203,6 +205,7 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                           widget.studio.ink,
                           width,
                           List.of(_activePoints),
+                          isHighlighter: isHighlighter,
                         );
                         stroke.getPath(size); // Precompute and cache path
                         widget.studio.addStroke(
@@ -215,8 +218,17 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                       _smartPointerMovedBeyondTapSlop = false;
                     }
                   : null,
-              onTapDown: widget.interactive && !widget.deferTapToOverlay
+              onTapUp:
+                  widget.interactive &&
+                      (!widget.deferTapToOverlay ||
+                          (widget.smartSnapEnabled &&
+                              widget.onSmartTap != null))
                   ? (e) {
+                      if (widget.smartSnapEnabled &&
+                          widget.onSmartTap != null) {
+                        widget.onSmartTap!(normalized(e.localPosition));
+                        return;
+                      }
                       // Smart mode waits for Flutter's tap recognizer to win so
                       // a tap dot is never committed before answer classification.
                       if (widget.deferTapToOverlay ||
@@ -241,7 +253,7 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                             : widget.studio.strokeWidth;
                         final stroke = BoardStroke(widget.studio.ink, width, [
                           norm,
-                        ]);
+                        ], isHighlighter: isHighlighter);
                         stroke.getPath(size);
                         widget.studio.addStroke(
                           stroke,
@@ -250,11 +262,12 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                       }
                     }
                   : null,
-              onTapUp:
-                  widget.interactive &&
-                      widget.smartSnapEnabled &&
-                      widget.onSmartTap != null
-                  ? (e) => widget.onSmartTap!(normalized(e.localPosition))
+              onPanCancel: widget.interactive
+                  ? () {
+                      _activePoints.clear();
+                      _activeStrokeNotifier.value = null;
+                      _smartPointerMovedBeyondTapSlop = false;
+                    }
                   : null,
               child: Stack(
                 fit: StackFit.expand,
@@ -355,7 +368,7 @@ class CommittedStrokesPainter extends CustomPainter {
       if (stroke.isSmartPenOval) continue;
       if (stroke.points.isEmpty && stroke.rect == null) continue;
 
-      final isHighlight = stroke.width > 6 || stroke.rect != null;
+      final isHighlight = stroke.isHighlighter || stroke.rect != null;
       final paint = Paint()
         ..color = stroke.isHollow
             ? stroke.color.withValues(alpha: 0.95)
@@ -574,4 +587,3 @@ class LaserTrailPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant LaserTrailPainter oldDelegate) => true;
 }
-

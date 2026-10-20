@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/core/utils/course_title.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 
 class WorkspaceInviteDialog extends StatefulWidget {
@@ -7,24 +8,31 @@ class WorkspaceInviteDialog extends StatefulWidget {
     super.key,
     required this.api,
     this.course,
+    this.existingCourses = const [],
     required this.onSuccess,
   });
 
   final GoogleWorkspaceApi api;
   final Map<String, dynamic>? course;
+  final List<Map<String, dynamic>> existingCourses;
   final void Function(Map<String, dynamic> result) onSuccess;
 
   static Future<void> show(
     BuildContext context, {
     required GoogleWorkspaceApi api,
     Map<String, dynamic>? course,
+    List<Map<String, dynamic>> existingCourses = const [],
     required void Function(Map<String, dynamic> result) onSuccess,
   }) async {
     final dialogRoute = DialogRoute<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) =>
-          WorkspaceInviteDialog(api: api, course: course, onSuccess: onSuccess),
+      builder: (ctx) => WorkspaceInviteDialog(
+        api: api,
+        course: course,
+        existingCourses: existingCourses,
+        onSuccess: onSuccess,
+      ),
     );
     await Navigator.of(context).push(dialogRoute);
     await dialogRoute.completed;
@@ -54,6 +62,14 @@ class _WorkspaceInviteDialogState extends State<WorkspaceInviteDialog> {
   static String _message(Object e) => e is FormatException
       ? e.message
       : e.toString().replaceFirst('Bad state: ', '');
+
+  bool _hasDuplicateTitle(String value) {
+    final normalizedTitle = normalizeCourseTitle(value);
+    return widget.existingCourses.any((course) {
+      return normalizedTitle ==
+          normalizeCourseTitle(course['title'] as String? ?? '');
+    });
+  }
 
   Future<void> _submit() async {
     if (!_form.currentState!.validate()) return;
@@ -96,7 +112,7 @@ class _WorkspaceInviteDialogState extends State<WorkspaceInviteDialog> {
       child: AlertDialog(
         title: Text(course == null ? 'Tạo lớp học' : 'Mời học sinh'),
         content: SizedBox(
-          width: 560,
+          width: 480,
           child: SingleChildScrollView(
             child: Form(
               key: _form,
@@ -109,28 +125,54 @@ class _WorkspaceInviteDialogState extends State<WorkspaceInviteDialog> {
                       controller: _title,
                       enabled: !_saving,
                       maxLength: 200,
+                      buildCounter:
+                          (
+                            context, {
+                            required currentLength,
+                            required isFocused,
+                            maxLength,
+                          }) => Text('${_title.text.length}/200'),
                       decoration: const InputDecoration(labelText: 'Tên lớp'),
-                      validator: (v) => v == null || v.trim().isEmpty
-                          ? 'Nhập tên lớp.'
-                          : null,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Nhập tên lớp.';
+                        }
+                        if (v.length > 200) {
+                          return 'Tên lớp tối đa 200 ký tự.';
+                        }
+                        if (widget.course == null && _hasDuplicateTitle(v)) {
+                          return 'Tên lớp này đã tồn tại. Hãy chọn lớp đó hoặc nhập tên khác.';
+                        }
+                        return null;
+                      },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _description,
                       enabled: !_saving,
                       maxLength: 2000,
                       maxLines: 2,
+                      buildCounter:
+                          (
+                            context, {
+                            required currentLength,
+                            required isFocused,
+                            maxLength,
+                          }) => Text('${_description.text.length}/2000'),
                       decoration: const InputDecoration(
                         labelText: 'Mô tả lớp (không bắt buộc)',
                       ),
+                      validator: (value) => (value?.length ?? 0) > 2000
+                          ? 'Mô tả tối đa 2000 ký tự.'
+                          : null,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                   ],
                   TextFormField(
                     controller: _emails,
                     enabled: !_saving,
-                    minLines: 4,
-                    maxLines: 8,
+                    minLines: 3,
+                    maxLines: 6,
                     decoration: const InputDecoration(
                       labelText: 'Email học sinh',
                       hintText: 'Mỗi dòng một email, tối đa 50 email',
@@ -145,14 +187,6 @@ class _WorkspaceInviteDialogState extends State<WorkspaceInviteDialog> {
                         return _message(e);
                       }
                     },
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Thêm email vào danh sách lớp. Chuẩn bị phòng Calendar để gửi lời mời Meet; không cần học sinh chấp nhận Classroom.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
                   ),
                   if (_error != null)
                     Padding(

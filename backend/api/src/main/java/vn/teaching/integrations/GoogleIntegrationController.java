@@ -53,6 +53,17 @@ public class GoogleIntegrationController {
         return classes.create(email(req), body.requestId(), body.title(), body.description(), body.emails());
     }
 
+    @PutMapping("/courses/{id}")
+    public Object updateCourse(HttpServletRequest req, @PathVariable String id, @RequestBody GoogleUpdateCourseRequest body) {
+        return classes.update(email(req), id, body.title(), body.description());
+    }
+
+    @DeleteMapping("/courses/{id}")
+    public Object deleteCourse(HttpServletRequest req, @PathVariable String id) {
+        classes.delete(email(req), id);
+        return Map.of("deleted", true);
+    }
+
     @PostMapping("/courses/{id}/invite")
     public Object invite(HttpServletRequest req, @PathVariable String id, @RequestBody GoogleInviteRequest body) {
         return classes.invite(email(req), id, body.emails());
