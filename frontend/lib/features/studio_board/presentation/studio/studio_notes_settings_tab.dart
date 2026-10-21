@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'audio_translation_studio_button.dart';
+import '../../services/audience_output_service.dart';
 
 class StudioNotesSettingsTab extends StatelessWidget {
   const StudioNotesSettingsTab({
@@ -99,15 +100,58 @@ class StudioNotesSettingsTab extends StatelessWidget {
         _statusLine(
           Icons.videocam_outlined,
           'Camera bảng vẽ',
-          '1080p WGC Sẵn sàng',
+          'Theo nguồn chia sẻ thực',
+        ),
+        ListenableBuilder(
+          listenable: AudienceOutputService.instance,
+          builder: (context, _) {
+            final audience = AudienceOutputService.instance;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                OutlinedButton.icon(
+                  icon: Icon(
+                    audience.running
+                        ? Icons.stop_screen_share
+                        : Icons.open_in_new,
+                  ),
+                  label: Text(
+                    audience.running
+                        ? 'Đóng cửa sổ trình chiếu'
+                        : 'Mở cửa sổ trình chiếu riêng',
+                  ),
+                  onPressed: () async {
+                    if (audience.running) {
+                      await audience.stop();
+                    } else {
+                      await audience.open();
+                    }
+                  },
+                ),
+                if (audience.error != null)
+                  Text(
+                    audience.error!,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.error,
+                    ),
+                  ),
+                if (audience.running)
+                  const Text(
+                    'Trong bộ chọn Meet, chọn cửa sổ HocLuc Audience. Ghi chú chỉ mở khi nguồn chia sẻ được xác minh.',
+                    style: TextStyle(fontSize: 11),
+                  ),
+              ],
+            );
+          },
         ),
         _statusLine(Icons.mic_none_outlined, 'Micro thu âm', 'Theo thiết bị'),
         const SizedBox(height: 16),
         const Divider(color: line),
         const SizedBox(height: 12),
-        _sectionLabel('DỊCH GIỌNG NÓI & TRỢ NĂNG'),
+        _sectionLabel('CÔNG CỤ SOẠN BÀI'),
         const SizedBox(height: 8),
-        AudioTranslationStudioButton(studio: studio),
+        AudioTranslationStudioButton(studio: studio, preparationOnly: true),
         const SizedBox(height: 16),
         const Divider(color: line),
         const SizedBox(height: 12),
@@ -125,7 +169,7 @@ class StudioNotesSettingsTab extends StatelessWidget {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Bảo mật buổi dạy: Học sinh trên Meet chỉ nhìn thấy khung bảng vẽ. Toàn bộ thanh công cụ, ghi chú diễn giả và màn hình điều khiển này hoàn toàn riêng tư.',
+                  'Chia sẻ toàn màn hình/cửa sổ giáo viên có thể làm lộ nội dung riêng. Dùng cửa sổ trình chiếu riêng; khi chưa xác minh nguồn, ứng dụng ẩn ghi chú.',
                   style: TextStyle(
                     fontSize: 11,
                     height: 1.4,
@@ -140,4 +184,3 @@ class StudioNotesSettingsTab extends StatelessWidget {
     );
   }
 }
-

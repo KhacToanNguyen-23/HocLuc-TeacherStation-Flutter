@@ -1,5 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/board_sticker.dart';
+import 'lesson_section_card.dart';
+import 'package:teaching_companion/features/lesson_preparation/presentation/widgets/preparation_asset_image.dart';
 
 class BoardStickerCard extends StatelessWidget {
   const BoardStickerCard({
@@ -30,6 +32,12 @@ class BoardStickerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (sticker.type == 'lesson_image' && sticker.imageAssetId != null) {
+      return PreparationAssetImage(assetId: sticker.imageAssetId!);
+    }
+    if (sticker.type == 'lesson_section') {
+      return LessonSectionCard(text: sticker.rawText);
+    }
     return GestureDetector(
       onPanUpdate: (details) {
         if (parentSize == null ||
@@ -225,4 +233,3 @@ class BoardStickerCard extends StatelessWidget {
     );
   }
 }
-

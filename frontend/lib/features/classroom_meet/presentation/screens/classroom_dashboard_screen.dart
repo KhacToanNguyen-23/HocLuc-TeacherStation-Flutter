@@ -1,5 +1,7 @@
 import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
 import 'package:flutter/material.dart';
+import 'package:teaching_companion/features/lesson_preparation/services/preparation_api.dart';
+import 'package:teaching_companion/features/lesson_preparation/presentation/screens/preparation_workspace_screen.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
@@ -27,11 +29,13 @@ import 'package:teaching_companion/features/classroom_meet/presentation/dashboar
 import 'package:teaching_companion/core/ui/google_brand_icon.dart';
 
 part 'classroom_dashboard_rooms_and_history.dart';
+part 'classroom_dashboard_preparation.dart';
 
 /// Classroom Dashboard Screen styled to match the layout in Image 2 with Educational Green theme.
 class ClassroomDashboardScreen extends StatefulWidget {
-  const ClassroomDashboardScreen({super.key, this.examApi});
+  const ClassroomDashboardScreen({super.key, this.examApi, this.localService});
   final ExamApi? examApi;
+  final LocalService? localService;
 
   @override
   State<ClassroomDashboardScreen> createState() =>
@@ -40,13 +44,24 @@ class ClassroomDashboardScreen extends StatefulWidget {
 
 class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   final _authService = GoogleMeetAuthService();
-  final _localService = LocalService();
+  late final LocalService _localService;
   String _selectedRoomFilter = 'Tất cả';
 
-  int _selectedTabIndex = 0; // 0: Phòng học, 1: Kế hoạch bài giảng, 2: Lịch sử
+  int _selectedTabIndex = 0; // Phòng học / Kế hoạch / Soạn bài / Lịch sử
   List<PlanningMeta> _plannings = [];
   bool _loadingPlannings = false;
   String _selectedSubjectFilter = 'Tất cả';
+  String _preparationSubjectFilter = 'Tất cả';
+
+  void _changePlanningSubject(String value, {required bool preparation}) {
+    setState(() {
+      if (preparation) {
+        _preparationSubjectFilter = value;
+      } else {
+        _selectedSubjectFilter = value;
+      }
+    });
+  }
   final List<String> _subjectOptions = [
     'Tất cả',
     'Tiếng Anh',
@@ -66,6 +81,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _localService = widget.localService ?? LocalService();
     _loadRoomsAndHistory();
     _loadPlannings();
   }
@@ -84,6 +100,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   }
 
   Future<void> _loadPlannings() async {
+    if (!mounted) return;
     setState(() => _loadingPlannings = true);
     final list = await _localService.getPlannings();
     if (mounted) {
@@ -94,9 +111,9 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     }
   }
 
-  Future<void> _handleCreateNewPlanning() async {
+  Future<void> _handleCreateNewPlanning({bool preparation = false}) async {
     final titleController = TextEditingController(
-      text: 'Kế hoạch bài giảng mới',
+      text: preparation ? 'Bài soạn mới' : 'Kế hoạch giảng dạy mới',
     );
     String selectedSub = 'Tiếng Anh';
 
@@ -107,17 +124,20 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.panel),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.edit_calendar_rounded,
                 size: 20,
                 color: AppColors.primary,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Soạn kế hoạch bài giảng mới',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                preparation ? 'Tạo bài soạn mới' : 'Tạo kế hoạch giảng dạy',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -206,19 +226,36 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
 
     final title = titleController.text.trim().isNotEmpty
         ? titleController.text.trim()
-        : 'Kế hoạch bài giảng mới';
+        : preparation
+        ? 'Bài soạn mới'
+        : 'Kế hoạch giảng dạy mới';
     final newPlan = await _localService.createPlanning(
       title: title,
       subject: selectedSub,
     );
 
     if (!mounted) return;
+    if (newPlan == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chưa tạo được bài soạn. Hãy thử lại.')),
+      );
+      return;
+    }
+    if (!preparation) {
+      await _openPlanningBoard(newPlan);
+      await _loadPlannings();
+      return;
+    }
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) => StudioScreen(
-          isPlanningMode: true,
-          planningId: newPlan?.id,
-          lessonTitle: title,
+        builder: (_) => PreparationWorkspaceScreen(
+          planningId: newPlan.id,
+          title: title,
+          subject: selectedSub,
+          chooseSourceOnOpen: true,
+          onOpenBoard: () => _openPlanningBoard(newPlan),
+          onTeach: () => _handleLaunchFromPlanning(newPlan),
+          onOpenVariant: _openVariantById,
         ),
       ),
     );
@@ -228,6 +265,22 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
   Future<void> _handleEditPlanning(PlanningMeta plan) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
+        builder: (_) => PreparationWorkspaceScreen(
+          planningId: plan.id,
+          title: plan.title,
+          subject: plan.subject,
+          onOpenBoard: () => _openPlanningBoard(plan),
+          onTeach: () => _handleLaunchFromPlanning(plan),
+          onOpenVariant: _openVariantById,
+        ),
+      ),
+    );
+    _loadPlannings();
+  }
+
+  Future<void> _openPlanningBoard(PlanningMeta plan) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
         builder: (_) => StudioScreen(
           isPlanningMode: true,
           planningId: plan.id,
@@ -235,11 +288,10 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
         ),
       ),
     );
-    _loadPlannings();
   }
 
   Future<void> _handleLaunchFromPlanning(PlanningMeta plan) async {
-    await SelectClassroomDialog.show(context, plan: plan);
+    await _launchBoundPlanning(plan);
     if (mounted) {
       await _loadRoomsAndHistory();
       await _loadPlannings();
@@ -297,7 +349,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     return InkWell(
       onTap: () {
         setState(() => _selectedTabIndex = index);
-        if (index == 1) {
+        if (index == 1 || index == 2) {
           _loadPlannings();
         } else {
           _loadRoomsAndHistory();
@@ -753,38 +805,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                         ),
                         const SizedBox(height: AppSpacing.xxl),
 
-                        // Tab Bar: 3 Horizontal Tabs
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _buildTabButton(
-                                index: 0,
-                                title: 'Phòng học',
-                                icon: Icons.meeting_room_outlined,
-                                badgeCount: _activeRoom != null ? 1 : null,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              _buildTabButton(
-                                index: 1,
-                                title: 'Kế hoạch bài giảng',
-                                icon: Icons.menu_book_outlined,
-                                badgeCount: _plannings.isNotEmpty
-                                    ? _plannings.length
-                                    : null,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              _buildTabButton(
-                                index: 2,
-                                title: 'Lịch sử',
-                                icon: Icons.history_rounded,
-                                badgeCount: _historyList.isNotEmpty
-                                    ? _historyList.length
-                                    : null,
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildDashboardTabs(),
                         const SizedBox(height: 25.4),
 
                         // Tab Content View
@@ -818,27 +839,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                             },
                             child: KeyedSubtree(
                               key: ValueKey(_selectedTabIndex),
-                              child: _selectedTabIndex == 0
-                                  ? _buildRoomListCard()
-                                  : _selectedTabIndex == 1
-                                  ? PlanningListCard(
-                                      plannings: _plannings,
-                                      isLoading: _loadingPlannings,
-                                      selectedSubject: _selectedSubjectFilter,
-                                      subjectOptions: _subjectOptions,
-                                      onSubjectChanged: (val) {
-                                        if (val != null) {
-                                          setState(
-                                            () => _selectedSubjectFilter = val,
-                                          );
-                                        }
-                                      },
-                                      onCreateNew: _handleCreateNewPlanning,
-                                      onEdit: _handleEditPlanning,
-                                      onLaunch: _handleLaunchFromPlanning,
-                                      onDelete: _handleDeletePlanning,
-                                    )
-                                  : _buildHistoryCard(),
+                              child: _buildDashboardTabContent(),
                             ),
                           ),
                         ),
@@ -854,5 +855,3 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     );
   }
 }
-
-

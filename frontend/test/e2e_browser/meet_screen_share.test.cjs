@@ -6,11 +6,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const script = fs.readFileSync(path.join(__dirname, '../../lib/features/classroom_meet/services/meet_screen_share_script.dart'), 'utf8').match(/r'''([\s\S]*?)'''/)[1];
 
-function fixture({ reject = false, deferred = false, origin = 'https://meet.google.com' } = {}) {
+function fixture({ reject = false, deferred = false, acknowledge = true, origin = 'https://meet.google.com' } = {}) {
   const messages = [];
   const calls = [];
   const tracks = ['video', 'audio'].map(kind => ({
-    kind, readyState: 'live', listeners: {},
+    kind, readyState: 'live', enabled:true, label:kind==='video' ? 'HocLuc Audience session' : '', listeners: {},
+    getSettings() { return {displaySurface:'window'}; },
     stop() { this.readyState = 'ended'; },
     addEventListener(event, fn) { this.listeners[event] = fn; },
   }));
@@ -26,7 +27,11 @@ function fixture({ reject = false, deferred = false, origin = 'https://meet.goog
     location: { origin, href: `${origin}/abc-defg-hij` },
     navigator: { mediaDevices: devices },
     setInterval(fn) { poll = fn; },
-    chrome: { webview: { postMessage(msg) { messages.push(JSON.parse(msg)); } } },
+    setTimeout(fn, ms) { return setTimeout(fn, Math.min(ms,50)); }, clearTimeout, DOMException,
+    chrome: { webview: { postMessage(msg) {
+      const message=JSON.parse(msg); messages.push(message);
+      if (acknowledge && message.payload.selecting) queueMicrotask(()=>context.HocLucScreenShare.confirmPrivacyGuard(message.payload.generation));
+    } } },
   });
   context.window = context;
   context.top = context;
@@ -41,7 +46,7 @@ test('forwards user capture synchronously with unchanged options and real stream
   assert.equal(f.calls.length, 1);
   assert.equal(f.calls[0].receiver, f.devices);
   assert.equal(f.calls[0].options, options);
-  assert.equal(f.messages.length, 0);
+  assert.equal(f.messages[0].payload.selecting, true);
   assert.equal(await pending, f.stream);
   assert.equal(f.messages.at(-1).payload.active, true);
   assert.equal(f.messages.at(-1).url, 'https://meet.google.com/abc-defg-hij');
@@ -78,9 +83,27 @@ test('a picker approved after pause cannot start a new broadcast', async () => {
   const pending = f.devices.getDisplayMedia();
   f.context.HocLucScreenShare.stop();
   f.resolveCapture();
-  assert.equal(await pending, f.stream);
+  await assert.rejects(pending,/Privacy guard/);
   assert.equal(f.tracks.every(t => t.readyState === 'ended'), true);
   assert.equal(f.messages.some(m => m.payload.active), false);
+});
+
+test('withholds capture until native guard paints; timeout stops every real track', async()=>{
+  const f=fixture({acknowledge:false});
+  await assert.rejects(f.devices.getDisplayMedia(),/Privacy guard/);
+  assert.equal(f.tracks.every(t=>t.readyState==='ended'),true);
+  assert.equal(f.messages.some(m=>m.payload.active),false);
+});
+
+test('reports actual track surface and label, and invalidates on a new picker',async()=>{
+  const f=fixture();
+  await f.devices.getDisplayMedia();
+  const source=f.messages.at(-1).payload.sources[0];
+  assert.equal(source.surface,'window');
+  assert.equal(source.label,'HocLuc Audience session');
+  const next=f.devices.getDisplayMedia();
+  assert.equal(f.messages.at(-1).payload.selecting,true);
+  await next;
 });
 
 test('installation is idempotent and restricted to the top-level Meet origin', () => {

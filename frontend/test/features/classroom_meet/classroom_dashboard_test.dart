@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/main.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
@@ -45,7 +45,8 @@ void main() {
         // Verify tabs and default tab 0 (Phòng học)
         expect(find.text('Phòng học'), findsWidgets);
         expect(find.text('Chưa có phòng học'), findsOneWidget);
-        expect(find.text('Kế hoạch bài giảng'), findsOneWidget);
+        expect(find.text('Kế hoạch giảng dạy'), findsOneWidget);
+        expect(find.text('Soạn bài'), findsOneWidget);
         expect(find.text('Lịch sử'), findsOneWidget);
 
         // Switch to History tab (tab 2)
@@ -84,4 +85,3 @@ void main() {
     );
   });
 }
-

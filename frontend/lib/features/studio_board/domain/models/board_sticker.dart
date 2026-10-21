@@ -8,6 +8,7 @@ class BoardSticker {
     required this.rawText,
     this.tokens = const [],
     this.issues = const [],
+    this.imageAssetId,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class BoardSticker {
   final String rawText;
   final List<Map<String, dynamic>> tokens;
   final List<String> issues;
+  final String? imageAssetId;
 
   String get text => rawText;
   String? get grammarIssue => issues.isNotEmpty ? issues.first : null;
@@ -27,6 +29,7 @@ class BoardSticker {
     String? rawText,
     List<Map<String, dynamic>>? tokens,
     List<String>? issues,
+    String? imageAssetId,
   }) {
     return BoardSticker(
       id: id ?? this.id,
@@ -35,6 +38,7 @@ class BoardSticker {
       rawText: rawText ?? this.rawText,
       tokens: tokens ?? this.tokens,
       issues: issues ?? this.issues,
+      imageAssetId: imageAssetId ?? this.imageAssetId,
     );
   }
 
@@ -50,6 +54,7 @@ class BoardSticker {
     'rawText': rawText,
     'tokens': tokens,
     'issues': issues,
+    if (imageAssetId != null) 'imageAssetId': imageAssetId,
   };
 
   static BoardSticker fromJson(Map<String, dynamic> json) {
@@ -57,6 +62,7 @@ class BoardSticker {
     return BoardSticker(
       id: json['id'] as String,
       type: json['type'] as String? ?? 'generic_card',
+      imageAssetId: json['imageAssetId'] as String?,
       normalizedRect: Rect.fromLTWH(
         rectList[0].toDouble(),
         rectList[1].toDouble(),

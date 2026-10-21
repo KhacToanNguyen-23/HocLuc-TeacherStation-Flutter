@@ -1,4 +1,4 @@
-﻿import 'package:desktop_drop/desktop_drop.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +15,7 @@ import 'region_snipping_overlay.dart';
 import 'package:teaching_companion/features/plugin_engine/presentation/floating_plugin_window.dart';
 import 'package:teaching_companion/features/plugin_engine/presentation/plugin_host_drawer.dart';
 import '../services/pdf_annotation_exporter.dart';
+import '../services/audience_output_service.dart';
 
 class StageContainer extends StatelessWidget {
   const StageContainer({
@@ -115,6 +116,11 @@ class StageContainer extends StatelessWidget {
                                 // Viewport Mode Content
                                 Positioned.fill(
                                   child: PresentationSurface(
+                                    key: interactive
+                                        ? AudienceOutputService
+                                              .instance
+                                              .boundaryKey
+                                        : null,
                                     studio: studio,
                                     manageCamera: interactive,
                                     child: AnimatedSwitcher(
@@ -367,4 +373,3 @@ class ViewportModeSwitcher extends StatelessWidget {
     );
   }
 }
-

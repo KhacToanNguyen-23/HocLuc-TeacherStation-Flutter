@@ -64,7 +64,7 @@ extension StudioStatePdfExt on StudioState {
           .firstOrNull;
       final existing = exactPathMatch ?? nameMatch;
       if (existing == null) {
-        final id = DateTime.now().millisecondsSinceEpoch.toString();
+        final id = _newPageId();
         final doc = ImportedDocument(
           id: id,
           name: name,

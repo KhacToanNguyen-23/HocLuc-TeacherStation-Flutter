@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_speaker_notes_bar.dart';
@@ -22,12 +22,11 @@ void main() {
         );
 
         // Initially collapsed on page 1
-        expect(find.textContaining('Ghi chú Trang 1/2'), findsOneWidget);
+        expect(find.textContaining('Ghi chú · Bảng · Trang 1'), findsOneWidget);
         expect(find.textContaining('Giới thiệu định luật Ohm'), findsOneWidget);
 
-        // Tap header to expand
-        await tester.tap(find.textContaining('Ghi chú Trang 1/2'));
-        await tester.pumpAndSettle();
+        // Existing notes open automatically so the teacher sees them immediately.
+        expect(find.byType(TextField), findsOneWidget);
 
         // Should show the privacy badge and TextField
         expect(find.text('Chỉ giáo viên thấy'), findsOneWidget);
@@ -45,7 +44,7 @@ void main() {
         studio.setPage(1);
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Ghi chú Trang 2/2'), findsOneWidget);
+        expect(find.textContaining('Ghi chú · Bảng · Trang 2'), findsOneWidget);
         expect(
           find.text('Nhắc bài trang 2: Cho ví dụ thực tế mạch điện'),
           findsOneWidget,
@@ -100,4 +99,3 @@ void main() {
     );
   });
 }
-

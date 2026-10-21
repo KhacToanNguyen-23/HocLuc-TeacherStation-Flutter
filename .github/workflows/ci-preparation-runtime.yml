@@ -1,0 +1,33 @@
+name: Lesson Preparation Runtime CI
+
+on:
+  push:
+    branches: [ develop, main, master, feat/prepare-education ]
+    paths:
+      - 'backend/ai-runtime/preparation_*.py'
+      - 'backend/ai-runtime/tests/test_preparation*.py'
+      - '.github/workflows/ci-preparation-runtime.yml'
+  pull_request:
+    branches: [ develop, main, master ]
+    paths:
+      - 'backend/ai-runtime/preparation_*.py'
+      - 'backend/ai-runtime/tests/test_preparation*.py'
+      - '.github/workflows/ci-preparation-runtime.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  preparation-runtime:
+    name: Preparation contracts and media rendering
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: python -m pip install pytest==8.3.5 Pillow==11.3.0 imageio-ffmpeg==0.6.0
+      - name: Test preparation runtime without model weights
+        working-directory: backend/ai-runtime
+        run: python -m pytest tests/test_preparation*.py -q

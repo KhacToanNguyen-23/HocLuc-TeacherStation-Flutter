@@ -2,13 +2,102 @@
 part of 'studio_screen.dart';
 
 extension _StudioScreenActionsExt on _StudioScreenState {
+  Future<void> _openSavedPlanning() async {
+    if (_openingSavedPlanning ||
+        studio.loading ||
+        studio.saving ||
+        widget.isPlanningMode) {
+      return;
+    }
+    setState(() => _openingSavedPlanning = true);
+    try {
+      final plan = await showDialog<PlanningMeta>(
+        context: context,
+        builder: (_) =>
+            SavedPlanningPicker(load: studio.service.getAvailablePlannings),
+      );
+      if (plan == null || !mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('Mở “${plan.title}” trong lớp này?'),
+          content: Text(
+            studio.dirty
+                ? 'App sẽ lưu một bản sao bảng hiện tại vào Soạn bài trước, sau đó thay nội dung trình chiếu bằng bài đã chọn. Phòng Meet vẫn giữ nguyên.'
+                : 'Nội dung trình chiếu hiện tại sẽ được thay bằng bài đã chọn. Phòng Meet và bài soạn gốc vẫn giữ nguyên.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(studio.dirty ? 'Lưu và mở bài' : 'Mở bài'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      if (studio.dirty) {
+        final backup =
+            Map<String, dynamic>.from(
+                jsonDecode(jsonEncode(studio.exportLessonJson())) as Map,
+              )
+              ..remove('preparationProjection')
+              ..remove('teacherCueUpdates')
+              ..remove('expectedPreparationRevision');
+        backup['title'] = '${studio.title} — bản lưu trên lớp';
+        final saved = await studio.service.createPlanning(
+          title: '${studio.title} — bản lưu trên lớp',
+          subject: studio.subject,
+          content: backup,
+        );
+        if (!mounted) return;
+        if (saved == null) {
+          message(
+            'Chưa lưu được bảng hiện tại. Nội dung được giữ nguyên; chưa mở bài khác.',
+          );
+          return;
+        }
+      }
+      final content = await studio.service.openPlanningInClassroom(plan.id);
+      if (!mounted) return;
+      if (content == null) {
+        message(
+          'Chưa mở được bài đã soạn. Kiểm tra kết nối và quyền truy cập rồi thử lại.',
+        );
+        return;
+      }
+      content.putIfAbsent('title', () => plan.title);
+      content.putIfAbsent('subject', () => plan.subject);
+      studio.openLiveLesson(content);
+      notes.text = studio.notes;
+      question.text = studio.question;
+      message('Đã mở “${plan.title}” trong phòng hiện tại.');
+    } catch (e) {
+      if (mounted) {
+        message(
+          'Chưa mở được bài đã soạn. Nội dung hiện tại chưa được thay thế.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _openingSavedPlanning = false);
+    }
+  }
+
   Future<void> save() async {
+    if (_openingSavedPlanning) return;
     if (widget.isPlanningMode) {
       if (studio.saving) return;
       studio.change(() => studio.saving = true, persist: false);
       String? errorMessage;
       try {
-        final lessonSnapshot = studio.exportLessonJson();
+        final lessonSnapshot = Map<String, dynamic>.from(
+          jsonDecode(jsonEncode(studio.exportLessonJson())) as Map,
+        );
+        final savedRevision = studio.revision;
+        final savedFingerprint = studio.boardSaveFingerprint(lessonSnapshot);
         final targetId = _currentPlanningId ?? widget.planningId;
         FrontendLogger.write(
           '[StudioScreen] Starting save planning | target_id=$targetId page=${studio.pdfPage}',
@@ -24,7 +113,8 @@ extension _StudioScreenActionsExt on _StudioScreenState {
           );
           success = res != null;
           if (!success) {
-            errorMessage = 'Backend từ chối cập nhật bài giảng "$targetId"';
+            errorMessage =
+                studio.service.planningSaveError ?? 'Không lưu được bài giảng.';
           }
         } else {
           final res = await studio.service.createPlanning(
@@ -37,11 +127,19 @@ extension _StudioScreenActionsExt on _StudioScreenState {
             _currentPlanningId = res.id;
             FrontendLogger.write('[StudioScreen] Saved new planning');
           } else {
-            errorMessage = 'Backend từ chối tạo bài giảng mới';
+            errorMessage =
+                studio.service.planningSaveError ?? 'Không tạo được bài giảng.';
           }
         }
+        final unchanged =
+            studio.boardSaveFingerprint(studio.exportLessonJson()) ==
+            savedFingerprint;
+        if (success) {
+          studio.acknowledgeBoardSave(lessonSnapshot, unchanged: unchanged);
+        }
         studio.change(() {
-          studio.dirty = !success;
+          studio.dirty =
+              !success || !unchanged || studio.revision != savedRevision;
           if (success) {
             final now = DateTime.now();
             studio.savedAt =
@@ -383,4 +481,3 @@ extension _StudioScreenActionsExt on _StudioScreenState {
     return StageContainer(studio: studio, interactive: interactive);
   }
 }
-

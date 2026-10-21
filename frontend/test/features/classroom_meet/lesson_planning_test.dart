@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
@@ -61,10 +61,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Chưa có kế hoạch bài giảng'), findsOneWidget);
-      expect(find.text('Soạn bài mới'), findsOneWidget);
+      expect(find.text('Chưa có kế hoạch giảng dạy'), findsOneWidget);
+      expect(find.text('Tạo kế hoạch'), findsOneWidget);
 
-      await tester.tap(find.text('Soạn bài mới'));
+      await tester.tap(find.text('Tạo kế hoạch'));
       expect(createdNew, isTrue);
     });
 
@@ -126,8 +126,8 @@ void main() {
       expect(find.text('2 trang'), findsOneWidget);
       expect(find.text('4 trang'), findsOneWidget);
 
-      // Tap Soạn tiếp
-      await tester.tap(find.text('Soạn tiếp').first);
+      // Legacy planning opens the board editor.
+      await tester.tap(find.text('Chỉnh sửa').first);
       expect(editedPlan?.id, 'plan_01');
 
       // Tap Dạy ngay
@@ -267,4 +267,3 @@ void main() {
     );
   });
 }
-

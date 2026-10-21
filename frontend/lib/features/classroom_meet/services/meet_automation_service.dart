@@ -1,7 +1,8 @@
-﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:webview_windows/webview_windows.dart' as win;
 import 'meet_screen_share_script.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/meet_events.dart';
@@ -29,6 +30,11 @@ class MeetAutomationService extends ChangeNotifier {
   String? _meetingUrl;
   String? _errorMessage;
   bool _isScreenSharing = false;
+  bool _isSelectingShare = false;
+  List<Map<String, dynamic>> _screenShareSources = [];
+  bool get isSelectingShare => _isSelectingShare;
+  List<Map<String, dynamic>> get screenShareSources =>
+      List.unmodifiable(_screenShareSources);
   bool _needsGoogleLogin = false;
   bool _manualJoin = false;
   bool _hostJoined = false;
@@ -255,6 +261,8 @@ class MeetAutomationService extends ChangeNotifier {
         if (state == win.LoadingState.loading) {
           _resetAdmissions();
           _isScreenSharing = false;
+          _isSelectingShare = false;
+          _screenShareSources = [];
           notifyListeners();
         } else if (state == win.LoadingState.navigationCompleted) {
           _scheduleAutoJoin(controller);
@@ -544,9 +552,24 @@ class MeetAutomationService extends ChangeNotifier {
       } else if (type == 'MEET_SCREEN_SHARE_STATE' && payload is Map) {
         if (!_isCurrentMeetMessage(data)) return;
         final active = payload['active'] == true;
-        if (_isScreenSharing == active) return;
         _isScreenSharing = active;
+        _isSelectingShare = payload['selecting'] == true;
+        _screenShareSources = payload['sources'] is List
+            ? (payload['sources'] as List)
+                  .whereType<Map>()
+                  .map((s) => Map<String, dynamic>.from(s))
+                  .toList()
+            : [];
         notifyListeners();
+        final guard = payload['generation'];
+        if (_isSelectingShare && guard is int) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _controller?.executeScript(
+              'window.HocLucScreenShare && window.HocLucScreenShare.confirmPrivacyGuard($guard)',
+            );
+          });
+          WidgetsBinding.instance.scheduleFrame();
+        }
       } else if (type == 'MEET_BRIDGE_READY') {
         _isBridgeReady = true;
         notifyListeners();
@@ -609,4 +632,3 @@ class MeetAutomationService extends ChangeNotifier {
     super.dispose();
   }
 }
-

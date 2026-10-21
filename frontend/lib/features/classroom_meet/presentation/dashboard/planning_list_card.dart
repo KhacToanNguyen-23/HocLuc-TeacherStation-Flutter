@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 import 'dashboard_empty_card.dart';
 
-class PlanningListCard extends StatelessWidget {
+class PlanningListCard extends StatefulWidget {
   const PlanningListCard({
     super.key,
     required this.plannings,
@@ -15,6 +15,8 @@ class PlanningListCard extends StatelessWidget {
     required this.onEdit,
     required this.onLaunch,
     required this.onDelete,
+    this.onDuplicate,
+    this.preparationMode = false,
   });
 
   final List<PlanningMeta> plannings;
@@ -27,6 +29,25 @@ class PlanningListCard extends StatelessWidget {
   final ValueChanged<PlanningMeta> onLaunch;
   final ValueChanged<PlanningMeta> onDelete;
 
+  final ValueChanged<PlanningMeta>? onDuplicate;
+  final bool preparationMode;
+  @override
+  State<PlanningListCard> createState() => _PlanningListCardState();
+}
+
+class _PlanningListCardState extends State<PlanningListCard> {
+  String _search = '';
+  List<PlanningMeta> get plannings => widget.plannings;
+  bool get isLoading => widget.isLoading;
+  String get selectedSubject => widget.selectedSubject;
+  List<String> get subjectOptions => widget.subjectOptions;
+  ValueChanged<String?> get onSubjectChanged => widget.onSubjectChanged;
+  VoidCallback get onCreateNew => widget.onCreateNew;
+  ValueChanged<PlanningMeta> get onEdit => widget.onEdit;
+  ValueChanged<PlanningMeta> get onLaunch => widget.onLaunch;
+  ValueChanged<PlanningMeta> get onDelete => widget.onDelete;
+  bool get preparation => widget.preparationMode;
+  String get title => preparation ? 'Soạn bài' : 'Kế hoạch giảng dạy';
   Color _getSubjectColor(String subject) {
     final lower = subject.toLowerCase();
     if (lower.contains('anh') || lower.contains('english')) {
@@ -77,26 +98,34 @@ class PlanningListCard extends StatelessWidget {
       );
     }
 
-    final filtered = selectedSubject == 'Tất cả'
+    final candidates = selectedSubject == 'Tất cả'
         ? plannings
         : plannings.where((p) => p.subject == selectedSubject).toList();
 
-    if (filtered.isEmpty) {
+    final filtered = candidates
+        .where((p) => p.title.toLowerCase().contains(_search.toLowerCase()))
+        .toList();
+    if (plannings.isEmpty) {
       return DashboardEmptyCard(
-        title: 'Kế hoạch bài giảng',
+        title: title,
         dropdownValue: selectedSubject,
         dropdownItems: subjectOptions,
         onDropdownChanged: onSubjectChanged,
         illustrationType: 'planning',
-        emptyText: 'Chưa có kế hoạch bài giảng',
+        emptyText: preparation
+            ? 'Chưa có bài soạn'
+            : 'Chưa có kế hoạch giảng dạy',
         actionButton: SizedBox(
           height: 44,
           child: ElevatedButton.icon(
             onPressed: onCreateNew,
             icon: const Icon(Icons.add_rounded, size: 22),
-            label: const Text(
-              'Soạn bài mới',
-              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+            label: Text(
+              preparation ? 'Soạn bài mới' : 'Tạo kế hoạch',
+              style: const TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.white,
@@ -120,18 +149,40 @@ class PlanningListCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (preparation)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Text(
+                'Soạn nội dung, dùng AI, tạo video và xuất học liệu. Dùng chung kho bài với Kế hoạch giảng dạy.',
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: TextField(
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: preparation ? 'Tìm bài soạn' : 'Tìm kế hoạch',
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (value) => setState(() => _search = value),
+            ),
+          ),
           // Header Row
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 12,
               children: [
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Kế hoạch bài giảng',
-                      style: TextStyle(
+                    Text(
+                      title,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -190,9 +241,9 @@ class PlanningListCard extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: onCreateNew,
                         icon: const Icon(Icons.add_rounded, size: 20),
-                        label: const Text(
-                          'Soạn mới',
-                          style: TextStyle(
+                        label: Text(
+                          preparation ? 'Soạn mới' : 'Tạo kế hoạch',
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -239,198 +290,238 @@ class PlanningListCard extends StatelessWidget {
                     color: AppColors.surfaceMuted,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      // Subject icon or badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: subjectBg,
-                          borderRadius: BorderRadius.circular(AppRadii.control),
-                        ),
-                        child: Text(
-                          plan.subject,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: subjectColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Title & metadata
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              plan.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final details = Row(
+                        children: [
+                          // Subject icon or badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: subjectBg,
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.control,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Wrap(
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 10,
-                              runSpacing: 2,
+                            child: Text(
+                              plan.subject,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: subjectColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Title & metadata
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.layers_outlined,
-                                      size: 12,
-                                      color: AppColors.textMuted,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Flexible(
-                                      child: Text(
-                                        '${plan.pageCount} trang',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textMuted,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
+                                Text(
+                                  plan.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 10,
+                                  runSpacing: 2,
                                   children: [
-                                    const Icon(
-                                      Icons.access_time_rounded,
-                                      size: 12,
-                                      color: AppColors.textMuted,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Flexible(
-                                      child: Text(
-                                        plan.formattedUpdatedAt,
-                                        style: const TextStyle(
-                                          fontSize: 11,
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.layers_outlined,
+                                          size: 12,
                                           color: AppColors.textMuted,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                        const SizedBox(width: 3),
+                                        Flexible(
+                                          child: Text(
+                                            '${plan.pageCount} trang',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textMuted,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.access_time_rounded,
+                                          size: 12,
+                                          color: AppColors.textMuted,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Flexible(
+                                          child: Text(
+                                            plan.formattedUpdatedAt,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textMuted,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-
-                      // Actions
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            height: 40,
-                            child: OutlinedButton.icon(
-                              onPressed: () => onEdit(plan),
-                              icon: const Icon(
-                                Icons.edit_note_rounded,
-                                size: 20,
-                              ),
-                              label: const Text(
-                                'Soạn tiếp',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.slate700,
-                                backgroundColor: Colors.white,
-                                side: const BorderSide(
-                                  color: AppColors.inputBorder,
-                                  width: 1.2,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadii.control,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            height: 40,
-                            child: ElevatedButton.icon(
-                              onPressed: () => onLaunch(plan),
-                              icon: const Icon(
-                                Icons.videocam_rounded,
-                                size: 19,
-                              ),
-                              label: const Text(
-                                'Dạy ngay',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shadowColor: AppColors.primary.withValues(
-                                  alpha: 0.3,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                ),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadii.control,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline_rounded,
-                                size: 21,
-                                color: AppColors.textMuted,
-                              ),
-                              tooltip: 'Xóa kế hoạch bài giảng',
-                              padding: EdgeInsets.zero,
-                              hoverColor: AppColors.errorSurface,
-                              style: IconButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadii.control,
-                                  ),
-                                ),
-                              ),
-                              onPressed: () => onDelete(plan),
-                            ),
                           ),
                         ],
-                      ),
-                    ],
+                      );
+                      final actions = Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.onDuplicate != null)
+                            IconButton(
+                              tooltip: 'Nhân bản bài soạn',
+                              icon: const Icon(Icons.copy_outlined),
+                              onPressed: () => widget.onDuplicate!(plan),
+                            ),
+                          // Actions
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                height: 40,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => onEdit(plan),
+                                  icon: const Icon(
+                                    Icons.edit_note_rounded,
+                                    size: 20,
+                                  ),
+                                  label: Text(
+                                    preparation ? 'Soạn tiếp' : 'Chỉnh sửa',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.slate700,
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(
+                                      color: AppColors.inputBorder,
+                                      width: 1.2,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadii.control,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                height: 40,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => onLaunch(plan),
+                                  icon: const Icon(
+                                    Icons.videocam_rounded,
+                                    size: 19,
+                                  ),
+                                  label: const Text(
+                                    'Dạy ngay',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shadowColor: AppColors.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadii.control,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 21,
+                                    color: AppColors.textMuted,
+                                  ),
+                                  tooltip: preparation
+                                      ? 'Xóa bài soạn'
+                                      : 'Xóa kế hoạch giảng dạy',
+                                  padding: EdgeInsets.zero,
+                                  hoverColor: AppColors.errorSurface,
+                                  style: IconButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadii.control,
+                                      ),
+                                    ),
+                                  ),
+                                  onPressed: () => onDelete(plan),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                      if (constraints.maxWidth < 720) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            details,
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: actions,
+                            ),
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: details),
+                          const SizedBox(width: 12),
+                          actions,
+                        ],
+                      );
+                    },
                   ),
                 );
               },
@@ -441,4 +532,3 @@ class PlanningListCard extends StatelessWidget {
     );
   }
 }
-

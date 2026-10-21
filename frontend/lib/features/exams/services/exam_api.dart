@@ -24,6 +24,10 @@ class ExamApi {
   final ExamSessionService auth;
   Future<void>? _localSessionFuture;
 
+  /// Reuses the current app identity for other teacher-owned local features.
+  Future<void> ensureSession({String? rejectedToken}) =>
+      _ensureLocalSession(rejectedToken: rejectedToken);
+
   Future<void> _ensureLocalSession({String? rejectedToken}) async {
     await auth.restore();
     if (!auth.hasLocalGoogleProfile) return;
@@ -178,4 +182,3 @@ class ExamApi {
 
   void dispose() => client.close();
 }
-

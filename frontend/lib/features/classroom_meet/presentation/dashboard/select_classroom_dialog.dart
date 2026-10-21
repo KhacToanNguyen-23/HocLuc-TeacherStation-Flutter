@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
@@ -6,6 +6,8 @@ import 'package:teaching_companion/features/classroom_meet/domain/models/teachin
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teaching_launcher.dart';
+import '../widgets/preparation_class_confirmation.dart';
+part '../widgets/select_classroom_binding.dart';
 
 /// Dialog to select a class before launching teaching from a prepared lesson plan.
 class SelectClassroomDialog extends StatefulWidget {
@@ -14,11 +16,14 @@ class SelectClassroomDialog extends StatefulWidget {
     required this.plan,
     this.googleApi,
     this.onLaunch,
+    this.preferredCourseId,
+    this.preferredClassName,
   });
 
   final PlanningMeta plan;
   final GoogleWorkspaceApi? googleApi;
   final Future<void> Function(TeachingTarget)? onLaunch;
+  final String? preferredCourseId, preferredClassName;
 
   static final RegExp _meetCodeRegex = RegExp(
     r'(?:https?:\/\/)?(?:meet\.google\.com\/)?([a-z]{3}-[a-z]{4}-[a-z]{3})',
@@ -44,6 +49,8 @@ class SelectClassroomDialog extends StatefulWidget {
     required PlanningMeta plan,
     GoogleWorkspaceApi? googleApi,
     Future<void> Function(TeachingTarget)? onLaunch,
+    String? preferredCourseId,
+    String? preferredClassName,
   }) {
     return showDialog<void>(
       context: context,
@@ -52,6 +59,8 @@ class SelectClassroomDialog extends StatefulWidget {
         plan: plan,
         googleApi: googleApi,
         onLaunch: onLaunch,
+        preferredCourseId: preferredCourseId,
+        preferredClassName: preferredClassName,
       ),
     );
   }
@@ -89,6 +98,12 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
   @override
   void initState() {
     super.initState();
+    if (widget.preferredCourseId != null) {
+      _sourceType = _ClassSourceType.googleCourse;
+    } else if (widget.preferredClassName != null) {
+      _sourceType = _ClassSourceType.customClass;
+      _customClassController.text = widget.preferredClassName!;
+    }
     _loadGoogleCourses();
   }
 
@@ -115,7 +130,17 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
             .cast<Map<String, dynamic>>();
         setState(() {
           _googleCourses = list;
-          if (list.isNotEmpty) {
+          if (widget.preferredCourseId != null) {
+            final matches = list.where(
+              (course) => '${course['id']}' == widget.preferredCourseId,
+            );
+            _selectedGoogleCourse = matches.firstOrNull;
+            _sourceType = _ClassSourceType.googleCourse;
+            if (_selectedGoogleCourse == null) {
+              _errorMessage =
+                  'Chưa tìm thấy lớp đã gắn với biến thể. Kiểm tra kết nối hoặc chủ động chọn lớp khác.';
+            }
+          } else if (list.isNotEmpty && widget.preferredClassName == null) {
             _sourceType = _ClassSourceType.googleCourse;
             _selectedGoogleCourse = list.first;
           }
@@ -161,20 +186,27 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
     return AppColors.surfaceMuted;
   }
 
-  String _getTargetClassName() {
-    switch (_sourceType) {
-      case _ClassSourceType.googleCourse:
-        return _selectedGoogleCourse?['title'] as String? ?? 'Lớp Google Meet';
-      case _ClassSourceType.presetClass:
-        return 'Lớp $_selectedPreset';
-      case _ClassSourceType.customClass:
-        final text = _customClassController.text.trim();
-        return text.isNotEmpty ? text : 'Lớp học';
-    }
-  }
-
   Future<void> _handleConfirm() async {
     final className = _getTargetClassName();
+    if (_sourceType == _ClassSourceType.googleCourse &&
+        _selectedGoogleCourse == null) {
+      setState(
+        () => _errorMessage = 'Chọn lớp Google Classroom trước khi dạy.',
+      );
+      return;
+    }
+    if (!await confirmPreparationClass(
+          context,
+          preferredCourseId: widget.preferredCourseId,
+          preferredName: widget.preferredClassName,
+          selectedCourseId: _sourceType == _ClassSourceType.googleCourse
+              ? (_selectedGoogleCourse ?? {})['id']?.toString()
+              : null,
+          selectedName: className,
+        ) ||
+        !mounted) {
+      return;
+    }
     if (_sourceType == _ClassSourceType.customClass &&
         _customClassController.text.trim().isEmpty) {
       setState(() => _errorMessage = 'Vui lòng nhập tên lớp học.');
@@ -862,5 +894,3 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
     );
   }
 }
-
-

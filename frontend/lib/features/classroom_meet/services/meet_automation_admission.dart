@@ -285,6 +285,8 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
     _resetAdmissions();
     _hostJoined = false;
     _isScreenSharing = false;
+    _isSelectingShare = false;
+    _screenShareSources = [];
     _messages.clear();
     _raisedHands.clear();
     _participants.clear();
@@ -449,4 +451,3 @@ class _AdmissionAttempt {
   final Completer<bool> completer = Completer<bool>();
   Timer? timer;
 }
-

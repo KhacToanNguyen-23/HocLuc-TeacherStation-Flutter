@@ -15,6 +15,7 @@ public class GoogleConnectionService {
         final String verifier = random(), proof = random(), email;
         final long expires = System.currentTimeMillis() + 300_000;
         boolean used; String error, errorCode; boolean complete; String connectedEmail;
+        String scopes = SCOPES;
         Flow(String email) { this.email = email; }
     }
     private final Map<String,Flow> flows = new ConcurrentHashMap<>();
@@ -52,14 +53,19 @@ public class GoogleConnectionService {
         return start(email,false);
     }
     public Map<String,Object> start(String email, boolean forceConsent) {
+        return start(email,forceConsent,false);
+    }
+    public Map<String,Object> startPublishing(String email) { return start(email,true,true); }
+    private Map<String,Object> start(String email, boolean forceConsent, boolean publishing) {
         email = email == null || email.isBlank() ? "" : normalizeEmail(email);
         if (clientId.isBlank() || !store.configured()) throw new GoogleFailure(503,"GOOGLE_NOT_CONFIGURED","Ứng dụng chưa được cấu hình kết nối Google. Liên hệ người cài đặt HocLuc.");
         flows.entrySet().removeIf(e -> e.getValue().expires < System.currentTimeMillis());
         if (flows.size() >= 100) throw new GoogleFailure(429,"OAUTH_BUSY","Có quá nhiều phiên kết nối. Thử lại sau.");
         String state=random(); Flow flow=new Flow(email); flows.put(state,flow);
+        if(publishing) flow.scopes += " https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/classroom.courseworkmaterials";
         String url=UriComponentsBuilder.fromHttpUrl("https://accounts.google.com/o/oauth2/v2/auth")
             .queryParam("client_id",clientId).queryParam("redirect_uri",redirect).queryParam("response_type","code")
-            .queryParam("scope",SCOPES).queryParam("state",state).queryParam("code_challenge",hash(flow.verifier))
+            .queryParam("scope",flow.scopes).queryParam("include_granted_scopes","true").queryParam("state",state).queryParam("code_challenge",hash(flow.verifier))
             .queryParam("code_challenge_method","S256").queryParam("access_type","offline")
             .queryParam("prompt",forceConsent || email.isBlank() || store.subject(email).isEmpty() ? "consent" : "select_account")
             .queryParamIfPresent("login_hint",email.isBlank() ? Optional.empty() : Optional.of(email)).build().encode().toUriString();
@@ -84,7 +90,7 @@ public class GoogleConnectionService {
                 if (!Boolean.TRUE.equals(identity.get("email_verified")) || subject.isBlank())
                     throw new GoogleFailure(400,"IDENTITY_UNVERIFIED","Google chưa xác minh danh tính tài khoản. Vui lòng chọn tài khoản Google hợp lệ.");
                 Set<String> scopes=new HashSet<>(Arrays.asList(string(tokens,"scope").split(" ")));
-                for (String required:SCOPES.split(" ")) {
+                for (String required:flow.scopes.split(" ")) {
                     if (required.startsWith("https://") && !scopes.contains(required))
                         throw new GoogleFailure(400,"SCOPE_MISSING","Chưa cấp đủ quyền Classroom, Meet và Calendar. Kết nối lại và chọn các quyền cần thiết.");
                 }

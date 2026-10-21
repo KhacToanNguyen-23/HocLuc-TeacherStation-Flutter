@@ -1,4 +1,4 @@
-﻿import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/meet_admission_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
@@ -30,6 +30,7 @@ class StudioTopBar extends StatelessWidget {
     bool? isPlanning,
     this.onExitPlanning,
     this.onCreateClassroomFromPlanning,
+    this.onOpenSavedPlanning,
   }) : isPlanning = isPlanning ?? isPlanningMode;
 
   final StudioState studio;
@@ -51,6 +52,7 @@ class StudioTopBar extends StatelessWidget {
   final VoidCallback? onLeaveClassroom;
   final VoidCallback? onExitPlanning;
   final VoidCallback? onCreateClassroomFromPlanning;
+  final VoidCallback? onOpenSavedPlanning;
 
   Widget _buildSaveStatusBadge() {
     if (!studio.online) {
@@ -406,6 +408,23 @@ class StudioTopBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (studio.view != 'board') const MeetAdmissionButton(),
+              if (!isPlanningMode) ...[
+                Tooltip(
+                  message: 'Mở bài đã soạn trong phòng hiện tại',
+                  child: width > 1100
+                      ? TextButton.icon(
+                          onPressed: onOpenSavedPlanning,
+                          icon: const Icon(Icons.menu_book_outlined, size: 18),
+                          label: const Text('Mở bài đã soạn'),
+                        )
+                      : IconButton(
+                          tooltip: 'Mở bài đã soạn',
+                          onPressed: onOpenSavedPlanning,
+                          icon: const Icon(Icons.menu_book_outlined, size: 18),
+                        ),
+                ),
+                const SizedBox(width: 3),
+              ],
               ...[
                 IconButton(
                   tooltip: 'Bảng giảng',
@@ -844,5 +863,3 @@ class StudioTopBar extends StatelessWidget {
     );
   }
 }
-
-

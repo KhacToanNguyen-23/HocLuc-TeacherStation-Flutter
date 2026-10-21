@@ -22,4 +22,4 @@ if (!(Test-Path -LiteralPath $taskRequirements)) {$taskRequirements=Join-Path $t
 if ($LASTEXITCODE) { throw 'Không cài được dependency runtime.' }
 & $taskPython (Join-Path $taskRuntime 'scripts\preflight.py')
 if ($LASTEXITCODE) { throw 'Thiếu model/voice local.' }
-Write-Host 'AI runtime đã cài. Chọn English và bật toggle để bắt đầu; mở app không tự nạp model.'
+Write-Host 'AI runtime đã cài. Mở Soạn bài để chọn nguồn, dịch hoặc tạo giọng tiếng Anh; vào giảng dạy không tự nạp model.'

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
@@ -106,9 +106,7 @@ void main() {
           ),
         );
 
-        // Expand the bar
-        await tester.tap(find.textContaining('Ghi chú Trang 1/1'));
-        await tester.pumpAndSettle();
+        // A page with notes opens its private panel automatically.
 
         // Verify export button appears
         expect(
@@ -120,4 +118,3 @@ void main() {
     );
   });
 }
-

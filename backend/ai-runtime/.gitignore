@@ -4,3 +4,4 @@ __pycache__/
 .pytest_cache/
 reports/
 config/models.local.json
+config/preparation.local.json

@@ -1,5 +1,6 @@
 import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
@@ -24,6 +25,8 @@ import 'package:teaching_companion/features/classroom_meet/domain/models/teachin
 import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 import 'package:teaching_companion/features/auth/presentation/google_webview_login_dialog.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/select_classroom_dialog.dart';
+import '../../services/audience_output_service.dart';
+import '../studio/saved_planning_picker.dart';
 
 part 'studio_screen_actions.dart';
 
@@ -62,6 +65,7 @@ class _StudioScreenState extends State<StudioScreen> {
   bool showStudentsDrawer = false;
   bool showPluginsMarketplace = false;
   String? _currentPlanningId;
+  bool _openingSavedPlanning = false;
   bool _openingRoom = false,
       _recordingSession = false,
       _sessionRecorded = false;
@@ -351,7 +355,8 @@ class _StudioScreenState extends State<StudioScreen> {
       if (content != null) {
         studio.change(() {
           studio.restoreFromJson(content);
-          if (widget.lessonTitle != null &&
+          if ((content['title']?.toString().trim().isEmpty ?? true) &&
+              widget.lessonTitle != null &&
               widget.lessonTitle!.trim().isNotEmpty) {
             studio.title = widget.lessonTitle!.trim();
           }
@@ -379,6 +384,7 @@ class _StudioScreenState extends State<StudioScreen> {
 
   @override
   void dispose() {
+    unawaited(AudienceOutputService.instance.stop());
     MeetAutomationService().removeListener(_onMeetChanged);
     _sessionApi.dispose();
     if (widget.teachingTarget == null) {
@@ -404,9 +410,11 @@ class _StudioScreenState extends State<StudioScreen> {
     builder: (context, _) {
       return PopScope(
         canPop:
+            !_openingSavedPlanning &&
             widget.teachingTarget == null &&
             (!widget.isPlanningMode || !studio.dirty),
         onPopInvokedWithResult: (didPop, _) {
+          if (_openingSavedPlanning) return;
           if (!didPop && widget.isPlanningMode) {
             _handleExitPlanning();
           } else if (!didPop && widget.teachingTarget != null) {
@@ -424,150 +432,159 @@ class _StudioScreenState extends State<StudioScreen> {
           child: Focus(
             autofocus: true,
             child: Scaffold(
-              body: LayoutBuilder(
-                builder: (context, box) {
-                  final hasInspector = showInspector && box.maxWidth >= 1250;
-                  final panelVisible =
-                      hasInspector ||
-                      showStudentsDrawer ||
-                      showPluginsMarketplace;
-                  final panelKind = showPluginsMarketplace
-                      ? 'plugins'
-                      : showStudentsDrawer
-                      ? 'students'
-                      : 'inspector';
-                  final panelWidth = box.maxWidth < 440
-                      ? box.maxWidth - 64
-                      : widget.teachingTarget != null
-                      ? 380.0
-                      : 320.0;
-                  final Widget rightPanel = panelVisible
-                      ? Material(
-                          key: ValueKey('studio-panel-$panelKind'),
-                          elevation: 4,
-                          shadowColor: Colors.black.withValues(alpha: 0.12),
-                          child: Container(
-                            width: panelWidth,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+              body: AbsorbPointer(
+                absorbing: _openingSavedPlanning,
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    final hasInspector = showInspector && box.maxWidth >= 1250;
+                    final panelVisible =
+                        hasInspector ||
+                        showStudentsDrawer ||
+                        showPluginsMarketplace;
+                    final panelKind = showPluginsMarketplace
+                        ? 'plugins'
+                        : showStudentsDrawer
+                        ? 'students'
+                        : 'inspector';
+                    final panelWidth = box.maxWidth < 440
+                        ? box.maxWidth - 64
+                        : widget.teachingTarget != null
+                        ? 380.0
+                        : 320.0;
+                    final Widget rightPanel = panelVisible
+                        ? Material(
+                            key: ValueKey('studio-panel-$panelKind'),
+                            elevation: 4,
+                            shadowColor: Colors.black.withValues(alpha: 0.12),
+                            child: Container(
+                              width: panelWidth,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                              ),
+                              child: showPluginsMarketplace
+                                  ? StudioPluginsMarketplacePanel(
+                                      onClose: () => setState(
+                                        () => showPluginsMarketplace = false,
+                                      ),
+                                      onOpenPlugin: (plugin) {
+                                        if (plugin is InstalledPlugin) {
+                                          studio.openPlugin(
+                                            plugin,
+                                            openModal:
+                                                plugin.manifest.uiPlacement !=
+                                                'floating_window',
+                                          );
+                                          setState(
+                                            () =>
+                                                showPluginsMarketplace = false,
+                                          );
+                                        }
+                                      },
+                                    )
+                                  : showStudentsDrawer
+                                  ? StudioStudentsDrawer(
+                                      meetService: MeetAutomationService(),
+                                      onClose: () => setState(
+                                        () => showStudentsDrawer = false,
+                                      ),
+                                    )
+                                  : StudioInspectorPanel(
+                                      studio: studio,
+                                      notesController: notes,
+                                      questionController: question,
+                                      endpointController: endpoint,
+                                      onPreview: preview,
+                                    ),
                             ),
-                            child: showPluginsMarketplace
-                                ? StudioPluginsMarketplacePanel(
-                                    onClose: () => setState(
-                                      () => showPluginsMarketplace = false,
-                                    ),
-                                    onOpenPlugin: (plugin) {
-                                      if (plugin is InstalledPlugin) {
-                                        studio.openPlugin(
-                                          plugin,
-                                          openModal:
-                                              plugin.manifest.uiPlacement !=
-                                              'floating_window',
-                                        );
-                                        setState(
-                                          () => showPluginsMarketplace = false,
-                                        );
-                                      }
-                                    },
-                                  )
-                                : showStudentsDrawer
-                                ? StudioStudentsDrawer(
-                                    meetService: MeetAutomationService(),
-                                    onClose: () => setState(
-                                      () => showStudentsDrawer = false,
-                                    ),
-                                  )
-                                : StudioInspectorPanel(
-                                    studio: studio,
-                                    notesController: notes,
-                                    questionController: question,
-                                    endpointController: endpoint,
-                                    onPreview: preview,
-                                  ),
-                          ),
-                        )
-                      : const SizedBox.shrink(
-                          key: ValueKey('studio-panel-hidden'),
-                        );
+                          )
+                        : const SizedBox.shrink(
+                            key: ValueKey('studio-panel-hidden'),
+                          );
 
-                  return Column(
-                    children: [
-                      StudioTopBar(
-                        studio: studio,
-                        width: box.maxWidth,
+                    return Column(
+                      children: [
+                        StudioTopBar(
+                          studio: studio,
+                          width: box.maxWidth,
 
-                        hasInspector: hasInspector || showInspectorModal,
-                        hasStudents: showStudentsDrawer,
-                        hasPlugins: showPluginsMarketplace,
-                        isPlanningMode: widget.isPlanningMode,
-                        onExitPlanning: _handleExitPlanning,
-                        onCreateClassroomFromPlanning:
-                            _handleCreateClassroomFromPlanning,
-                        onToggleInspector: () {
-                          if (box.maxWidth < 1250) {
-                            openInspector();
-                          } else {
+                          hasInspector: hasInspector || showInspectorModal,
+                          hasStudents: showStudentsDrawer,
+                          hasPlugins: showPluginsMarketplace,
+                          isPlanningMode: widget.isPlanningMode,
+                          onOpenSavedPlanning:
+                              widget.isPlanningMode ||
+                                  studio.loading ||
+                                  studio.saving ||
+                                  _openingSavedPlanning
+                              ? null
+                              : _openSavedPlanning,
+                          onExitPlanning: _handleExitPlanning,
+                          onCreateClassroomFromPlanning:
+                              _handleCreateClassroomFromPlanning,
+                          onToggleInspector: () {
+                            if (box.maxWidth < 1250) {
+                              openInspector();
+                            } else {
+                              setState(() {
+                                showInspector = !showInspector;
+                                if (showInspector) {
+                                  showStudentsDrawer = false;
+                                  showPluginsMarketplace = false;
+                                }
+                              });
+                            }
+                          },
+                          onToggleStudents: () {
                             setState(() {
-                              showInspector = !showInspector;
-                              if (showInspector) {
-                                showStudentsDrawer = false;
+                              showStudentsDrawer = !showStudentsDrawer;
+                              if (showStudentsDrawer) {
+                                showInspector = false;
                                 showPluginsMarketplace = false;
                               }
                             });
-                          }
-                        },
-                        onToggleStudents: () {
-                          setState(() {
-                            showStudentsDrawer = !showStudentsDrawer;
-                            if (showStudentsDrawer) {
-                              showInspector = false;
-                              showPluginsMarketplace = false;
-                            }
-                          });
-                        },
-                        onTogglePlugins: () {
-                          setState(() {
-                            showPluginsMarketplace = !showPluginsMarketplace;
-                            if (showPluginsMarketplace) {
-                              showInspector = false;
-                              showStudentsDrawer = false;
-                            }
-                          });
-                        },
-                        onLeaveClassroom: widget.isPlanningMode
-                            ? null
-                            : _handleLeaveClassroom,
-                        onRename: rename,
-                        onPreview: preview,
-                        onSave: save,
-                        onRetryConnect: () {
-                          initializedControllers = false;
-                          studio.initialize();
-                        },
-                      ),
-                      if (widget.teachingTarget != null) _teachingStatus(),
-                      Expanded(
-                        child: Stack(
-                          children: [
-                            Row(
-                              children: [
-                                if (studio.view == 'board')
-                                  StudioDrawingToolbar(
-                                    studio: studio,
-                                    isVertical: true,
-                                  ),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      4,
-                                      4,
-                                      10,
-                                      4,
+                          },
+                          onTogglePlugins: () {
+                            setState(() {
+                              showPluginsMarketplace = !showPluginsMarketplace;
+                              if (showPluginsMarketplace) {
+                                showInspector = false;
+                                showStudentsDrawer = false;
+                              }
+                            });
+                          },
+                          onLeaveClassroom: widget.isPlanningMode
+                              ? null
+                              : _handleLeaveClassroom,
+                          onRename: rename,
+                          onPreview: preview,
+                          onSave: save,
+                          onRetryConnect: () {
+                            initializedControllers = false;
+                            studio.initialize();
+                          },
+                        ),
+                        if (widget.teachingTarget != null) _teachingStatus(),
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              Row(
+                                children: [
+                                  if (studio.view == 'board')
+                                    StudioDrawingToolbar(
+                                      studio: studio,
+                                      isVertical: true,
                                     ),
-                                    child: Stack(
-                                      children: [
-                                        Positioned.fill(child: fittedStage()),
-                                        if (studio.view == 'board')
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        4,
+                                        4,
+                                        10,
+                                        4,
+                                      ),
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(child: fittedStage()),
                                           Positioned(
                                             left: 0,
                                             right: 0,
@@ -576,60 +593,61 @@ class _StudioScreenState extends State<StudioScreen> {
                                               studio: studio,
                                             ),
                                           ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            Positioned(
-                              top: 0,
-                              bottom: 0,
-                              right: 0,
-                              child: AnimatedSwitcher(
-                                duration: AppMotion.duration(
-                                  context,
-                                  milliseconds: 220,
-                                ),
-                                switchInCurve: AppMotion.enterCurve,
-                                switchOutCurve: AppMotion.exitCurve,
-                                transitionBuilder: (child, animation) {
-                                  final slide =
-                                      Tween<Offset>(
-                                        begin: const Offset(0.06, 0),
-                                        end: Offset.zero,
-                                      ).animate(
-                                        CurvedAnimation(
-                                          parent: animation,
-                                          curve: AppMotion.enterCurve,
-                                        ),
-                                      );
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: SlideTransition(
-                                      position: slide,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                layoutBuilder:
-                                    (currentChild, previousChildren) => Stack(
-                                      alignment: Alignment.centerRight,
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        ...previousChildren,
-                                        ?currentChild,
-                                      ],
-                                    ),
-                                child: rightPanel,
+                                ],
                               ),
-                            ),
-                          ],
+                              Positioned(
+                                top: 0,
+                                bottom: 0,
+                                right: 0,
+                                child: AnimatedSwitcher(
+                                  duration: AppMotion.duration(
+                                    context,
+                                    milliseconds: 220,
+                                  ),
+                                  switchInCurve: AppMotion.enterCurve,
+                                  switchOutCurve: AppMotion.exitCurve,
+                                  transitionBuilder: (child, animation) {
+                                    final slide =
+                                        Tween<Offset>(
+                                          begin: const Offset(0.06, 0),
+                                          end: Offset.zero,
+                                        ).animate(
+                                          CurvedAnimation(
+                                            parent: animation,
+                                            curve: AppMotion.enterCurve,
+                                          ),
+                                        );
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: SlideTransition(
+                                        position: slide,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  layoutBuilder:
+                                      (currentChild, previousChildren) => Stack(
+                                        alignment: Alignment.centerRight,
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          ...previousChildren,
+                                          ?currentChild,
+                                        ],
+                                      ),
+                                  child: rightPanel,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -638,4 +656,3 @@ class _StudioScreenState extends State<StudioScreen> {
     },
   );
 }
-

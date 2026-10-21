@@ -20,8 +20,19 @@ New-Item -ItemType Directory -Path (Join-Path $taskOutput 'backend\api\target') 
 Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\api\target\companion-service-0.1.0.jar') -Destination (Join-Path $taskOutput 'backend\api\target')
 $taskEngine=Join-Path $taskOutput 'backend\ai-runtime'
 New-Item -ItemType Directory -Path $taskEngine -Force | Out-Null
-foreach($taskName in @('server.py','models.py','streaming.py','config','requirements.lock','requirements.resolved.txt','scripts')) {
+foreach($taskName in @('server.py','models.py','streaming.py','requirements.lock','requirements.resolved.txt','scripts')) {
     Copy-Item -LiteralPath (Join-Path $taskRuntime $taskName) -Destination $taskEngine -Recurse -Force
+}
+Get-ChildItem -LiteralPath $taskRuntime -Filter 'preparation_*.py' -File | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination $taskEngine -Force
+}
+$taskConfigOutput=Join-Path $taskEngine 'config'
+New-Item -ItemType Directory -Path $taskConfigOutput -Force | Out-Null
+Get-ChildItem -LiteralPath (Join-Path $taskRuntime 'config') -Filter '*.example.json' -File | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination $taskConfigOutput -Force
+}
+if (Test-Path -LiteralPath (Join-Path $taskRuntime 'PREPARATION.md')) {
+    Copy-Item -LiteralPath (Join-Path $taskRuntime 'PREPARATION.md') -Destination $taskEngine -Force
 }
 $taskEmbedded=Join-Path $taskRoot '.run\python-3.12.10-embed-amd64.zip'
 if (!(Test-Path -LiteralPath $taskEmbedded)) {Invoke-WebRequest 'https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip' -OutFile $taskEmbedded}

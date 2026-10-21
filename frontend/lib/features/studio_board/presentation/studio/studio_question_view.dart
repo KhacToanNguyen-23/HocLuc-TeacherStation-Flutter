@@ -1,9 +1,10 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import '../presentation_surface.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/floating_pip.dart';
+import '../../services/audience_output_service.dart';
 
 class StudioQuestionView extends StatelessWidget {
   const StudioQuestionView({
@@ -31,6 +32,9 @@ class StudioQuestionView extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 PresentationSurface(
+                  key: interactive
+                      ? AudienceOutputService.instance.boundaryKey
+                      : null,
                   studio: studio,
                   manageCamera: interactive,
                   child: ClipRRect(
@@ -123,4 +127,3 @@ class StudioQuestionView extends StatelessWidget {
     );
   }
 }
-

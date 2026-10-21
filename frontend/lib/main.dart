@@ -7,15 +7,40 @@ import 'features/classroom_meet/presentation/screens/classroom_dashboard_screen.
 import 'features/classroom_meet/presentation/meet_admission_shell.dart';
 import 'features/classroom_meet/services/meet_automation_service.dart';
 import 'features/classroom_meet/presentation/meet_webview.dart';
+import 'features/studio_board/presentation/screens/audience_screen.dart';
+import 'core/network/local_service.dart';
+import 'features/exams/services/exam_api.dart';
 
 export 'core/theme/theme.dart';
 export 'features/studio_board/presentation/screens/studio_screen.dart';
 export 'features/classroom_meet/presentation/screens/classroom_dashboard_screen.dart';
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (args.contains('--audience')) {
+    runApp(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'HocLuc Audience',
+        theme: AppTheme.light(),
+        home: const AudienceScreen(),
+      ),
+    );
+    return;
+  }
   await WebviewEnvironmentService.ensureInitialized();
   await GoogleMeetAuthService().init();
+  LocalService.appSessionProvider = ({required bool forceRefresh}) async {
+    final api = ExamApi();
+    try {
+      await api.ensureSession(
+        rejectedToken: forceRefresh ? api.auth.appSessionToken : null,
+      );
+      return api.auth.appSessionToken;
+    } finally {
+      api.client.close();
+    }
+  };
   runApp(const CompanionApp());
 }
 

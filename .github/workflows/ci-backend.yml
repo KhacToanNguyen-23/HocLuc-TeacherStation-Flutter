@@ -2,7 +2,7 @@ name: Backend CI (Spring Boot)
 
 on:
   push:
-    branches: [ develop, main, master ]
+    branches: [ develop, main, master, feat/prepare-education ]
     paths:
       - 'backend/api/**'
       - '.github/workflows/ci-backend.yml'

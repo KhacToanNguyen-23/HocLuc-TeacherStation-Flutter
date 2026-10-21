@@ -1,10 +1,13 @@
-﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 
 class LocalService {
+  /// Installed by the app composition root; standalone local clients need no UI.
+  static Future<String?> Function({required bool forceRefresh})?
+  appSessionProvider;
   static const int defaultCompanionPort = 47831;
   static const configuredBase = String.fromEnvironment('COMPANION_SERVICE');
 
@@ -23,6 +26,7 @@ class LocalService {
   final http.Client client;
   final String base;
   String? _token;
+  String? planningSaveError;
   String? get companionToken => _token;
 
   Future<void> connect() async {
@@ -344,10 +348,22 @@ class LocalService {
     if (_token != null) {
       headers['X-Companion-Token'] = _token!;
     }
+    // Claimed lesson plans share the existing teacher-owned app session.
+    final session = await appSessionProvider?.call(forceRefresh: forceRefresh);
+    if (session != null && session.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $session';
+    }
     return headers;
   }
 
-  Future<List<PlanningMeta>> getPlannings() async {
+  Future<List<PlanningMeta>> getPlannings() => _fetchPlannings();
+
+  Future<List<PlanningMeta>> getAvailablePlannings() =>
+      _fetchPlannings(throwOnError: true);
+
+  Future<List<PlanningMeta>> _fetchPlannings({
+    bool throwOnError = false,
+  }) async {
     for (int attempt = 0; attempt < 2; attempt++) {
       try {
         final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
@@ -382,6 +398,11 @@ class LocalService {
           continue;
         }
       }
+    }
+    if (throwOnError) {
+      throw StateError(
+        'Chưa tải được bài đã soạn. Kiểm tra kết nối và đăng nhập rồi thử lại.',
+      );
     }
     return [];
   }
@@ -487,10 +508,14 @@ class LocalService {
     String? subject,
     Map<String, dynamic>? content,
   }) async {
+    planningSaveError = null;
     final payload = <String, dynamic>{};
     if (title != null) payload['title'] = title;
     if (subject != null) payload['subject'] = subject;
     if (content != null) payload['content'] = content;
+    if (content?['boardRevision'] is num) {
+      payload['expectedRevision'] = content!['boardRevision'];
+    }
     final body = jsonEncode(payload);
 
     FrontendLogger.write('[LocalService] updatePlanning started');
@@ -517,6 +542,9 @@ class LocalService {
           final decoded =
               jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
           FrontendLogger.write('[LocalService] updatePlanning succeeded');
+          if (content != null && decoded['boardRevision'] is num) {
+            content['boardRevision'] = decoded['boardRevision'];
+          }
           return PlanningMeta.fromJson(decoded);
         }
 
@@ -528,11 +556,16 @@ class LocalService {
           continue;
         }
 
+        planningSaveError = res.statusCode == 409
+            ? 'Bài đã thay đổi ở nơi khác. Giữ bản đang sửa và mở lại bản mới trước khi lưu.'
+            : 'Không lưu được bài (${res.statusCode}). Hãy kiểm tra kết nối hoặc phiên đăng nhập.';
         FrontendLogger.write(
           '[LocalService] updatePlanning failed | status=${res.statusCode}',
         );
         break;
       } catch (e) {
+        planningSaveError =
+            'Không kết nối được máy chủ để lưu bài. Bản đang sửa vẫn được giữ.';
         FrontendLogger.write(
           '[LocalService] updatePlanning exception | attempt=${attempt + 1} cause=${e.runtimeType}',
         );
@@ -574,7 +607,10 @@ class LocalService {
     return false;
   }
 
-  Future<bool> clonePlanningToClassroom(String id) async {
+  Future<bool> clonePlanningToClassroom(String id) async =>
+      await openPlanningInClassroom(id) != null;
+
+  Future<Map<String, dynamic>?> openPlanningInClassroom(String id) async {
     for (int attempt = 0; attempt < 2; attempt++) {
       try {
         final headers = await _getAuthHeaders(forceRefresh: attempt > 0);
@@ -587,7 +623,10 @@ class LocalService {
             .timeout(const Duration(seconds: 8));
         if (res.statusCode == 200) {
           final decoded = jsonDecode(utf8.decode(res.bodyBytes));
-          return decoded['success'] == true;
+          if (decoded['success'] == true && decoded['content'] is Map) {
+            return Map<String, dynamic>.from(decoded['content'] as Map);
+          }
+          return null;
         }
         if (res.statusCode == 401 && attempt == 0) {
           _token = null;
@@ -604,7 +643,7 @@ class LocalService {
         }
       }
     }
-    return false;
+    return null;
   }
 
   void dispose() => client.close();

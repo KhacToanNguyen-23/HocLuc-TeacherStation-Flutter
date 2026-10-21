@@ -1,0 +1,301 @@
+﻿ID,Nhóm,Chức năng,Điều kiện trước,Dữ liệu kiểm thử,Các bước,Kết quả mong đợi,Ưu tiên,Automatable,Auto Type,Tags,Trạng thái
+HOCLUC_PREP_TC_001,A. Điều hướng và quản lý bài,Hai nút Kế hoạch giảng dạy và Soạn bài tách biệt,Đã đăng nhập tài khoản giáo viên; có bài QA Vòng tuần hoàn nước.,Bài QA Vòng tuần hoàn nước.,"1. Quan sát thanh điều hướng dashboard.
+2. Mở bài QA Vòng tuần hoàn nước từ Kế hoạch giảng dạy; quay lại dashboard.
+3. Mở cùng bài từ Soạn bài.","1. Soạn bài nằm ngay sau Kế hoạch giảng dạy.
+2. Nhánh Kế hoạch giảng dạy mở Studio như luồng cũ.
+3. Nhánh Soạn bài mở workspace có Nội dung bài, Bảng & tài liệu, Video, Nguồn và Tác vụ / Học liệu.",High,Yes,UI,@Smoke @CriticalPath @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_002,A. Điều hướng và quản lý bài,Tạo bài mới trong Soạn bài,Dashboard đang ở Soạn bài.,Tên: QA Vòng tuần hoàn nước; môn Sinh học; thời lượng 15 phút.,"1. Chọn Soạn bài mới nếu danh sách trống, hoặc Soạn mới nếu đã có bài; nhập tên/chọn môn Sinh học tại Tạo bài soạn mới và chọn Bắt đầu soạn.
+2. Workspace mở phần chọn nguồn; mở Nội dung bài, mở Thời lượng bài và nhập15 tại Thời lượng dự kiến của bài (phút, tùy chọn), rồi Lưu bài.
+3. Quay về Soạn bài rồi chọn Soạn tiếp ở bài vừa tạo.","1. Form tạo bài mở đúng luồng Soạn bài.
+2. Bài được tạo và mở workspace.
+3. Tên bài và dữ liệu đã lưu được giữ.",High,Yes,UI,@Smoke @CriticalPath @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_003,A. Điều hướng và quản lý bài,Tìm và mở bài đã lưu,Đã có bài TC002.,Từ khóa: QA Vòng tuần hoàn nước.,"1. Mở danh sách Soạn bài.
+2. Nhập từ khóa tìm kiếm.
+3. Mở bài trong kết quả.","1. Danh sách bài tải được.
+2. Có bài khớp tên đã nhập.
+3. Workspace mở đúng bài và nội dung đã lưu.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_004,A. Điều hướng và quản lý bài,Dùng chung bài hiện hữu giữa hai nhánh,Đã có bài TC002; ghi lại ID bài từ dữ liệu kiểm tra của backend nếu cần.,Đổi tên thành QA Vòng tuần hoàn nước 15 phút.,"1. Mở bài trong Soạn bài, đổi tên rồi lưu.
+2. Quay lại Kế hoạch giảng dạy và tìm bài vừa đổi tên.
+3. Mở lại từ Soạn bài.","1. Lưu thành công trên bài hiện hữu.
+2. Cùng bài đã đổi tên xuất hiện; không tự sinh một bài thứ hai do đổi nhánh.
+3. Nội dung và ID vẫn thuộc cùng bài.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_005,A. Điều hướng và quản lý bài,Nhân bản bài thông thường,Bài TC002 đã có phần nội dung và notes.,Bản sao: QA Water Cycle Copy; sửa nội dung bản sao thành Copy only.,"1. Tại danh sách Soạn bài chọn biểu tượng Nhân bản bài soạn trên bài gốc.
+2. Chọn Soạn tiếp ở bản sao, đổi tên thành QA Water Cycle Copy, sửa nội dung thành Copy only và lưu.
+3. Mở lại bài gốc.","1. Có bài sao riêng trong danh sách.
+2. Bản sao lưu được chỉnh sửa.
+3. Nội dung bài gốc giữ nguyên.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_006,B. Nguồn và bản thu,Upload PDF,Bài TC002 đang mở. Tạo PDF một trang từ fixture Việt bằng Print to PDF.,water-cycle.pdf; PDF một trang có chữ chọn được; mỗi file dưới 20 MB để dùng preview trong app.,"1. Mở Nguồn → Thêm PDF / video / audio; chọn file trên.
+2. Chờ upload hoàn tất rồi lưu bài.
+3. Mở lại bài và xem nguồn vừa thêm.","1. App nhận file đã chọn.
+2. Nguồn có tên/loại file trong danh sách.
+3. Nguồn vẫn tồn tại; mở preview hoặc tải về đọc được nội dung gốc.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_007,B. Nguồn và bản thu,Upload ảnh,Bài TC002 đang mở. Chuẩn bị ảnh PNG 1280×720 có chữ WATER CYCLE.,water-cycle.png; PNG sơ đồ nước; mỗi file dưới 20 MB để dùng preview trong app.,"1. Mở Nguồn → Thêm PDF / video / audio; chọn file trên.
+2. Chờ upload hoàn tất rồi lưu bài.
+3. Mở lại bài và xem nguồn vừa thêm.","1. App nhận file đã chọn.
+2. Nguồn có tên/loại file trong danh sách.
+3. Nguồn vẫn tồn tại; mở preview hoặc tải về đọc được nội dung gốc.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_008,B. Nguồn và bản thu,Upload video,"Bài TC002 đang mở. Chuẩn bị video 60 giây, có tiếng Việt đọc fixture; mỗi đoạn 20 giây.",water-cycle-vi.mp4; MP4 H.264/AAC 60 giây; mỗi file dưới 20 MB để dùng preview trong app.,"1. Mở Nguồn → Thêm PDF / video / audio; chọn file trên.
+2. Chờ upload hoàn tất rồi lưu bài.
+3. Mở lại bài và xem nguồn vừa thêm.","1. App nhận file đã chọn.
+2. Nguồn có tên/loại file trong danh sách.
+3. Nguồn vẫn tồn tại; mở preview hoặc tải về đọc được nội dung gốc.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_009,B. Nguồn và bản thu,Upload audio,Bài TC002 đang mở. Chuẩn bị WAV đọc cùng fixture Việt trong 60 giây.,water-cycle-vi.wav; WAV PCM 60 giây; mỗi file dưới 20 MB để dùng preview trong app.,"1. Mở Nguồn → Thêm PDF / video / audio; chọn file trên.
+2. Chờ upload hoàn tất rồi lưu bài.
+3. Mở lại bài và xem nguồn vừa thêm.","1. App nhận file đã chọn.
+2. Nguồn có tên/loại file trong danh sách.
+3. Nguồn vẫn tồn tại; mở preview hoặc tải về đọc được nội dung gốc.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_010,B. Nguồn và bản thu,Upload script UTF-8,Bài TC002 đang mở. Dùng fixture Việt đi kèm tài liệu.,water-cycle-vi.txt; text/plain UTF-8; mỗi file dưới 20 MB để dùng preview trong app.,"1. Mở Nguồn → Thêm PDF / video / audio; chọn file trên.
+2. Chờ upload hoàn tất rồi lưu bài.
+3. Mở lại bài và xem nguồn vừa thêm.","1. App nhận file đã chọn.
+2. Nguồn có tên/loại file trong danh sách.
+3. Nguồn vẫn tồn tại; mở preview hoặc tải về đọc được nội dung gốc.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_011,B. Nguồn và bản thu,Xem trước nguồn và xóa nguồn chưa dùng,Upload thêm water-cycle-unused.png; chưa gắn vào phần/cảnh/lịch sử đã lưu.,water-cycle-unused.png có chữ UNUSED.,"1. Mở preview ảnh UNUSED rồi đóng.
+2. Chọn Xóa nguồn chưa dùng và xác nhận Xóa nguồn.
+3. Tải lại danh sách nguồn.","1. Ảnh hiển thị đúng.
+2. App xác nhận xóa nguồn.
+3. Ảnh UNUSED không còn trong nguồn; những nguồn khác vẫn còn.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_012,B. Nguồn và bản thu,Ghi microphone thành nguồn audio,Windows; FFmpeg được cấu hình; đã cấp quyền micro và chọn thiết bị.,Đọc hai câu đầu fixture Việt trong 15 giây.,"1. Trong Nguồn chọn Ghi microphone / màn hình, chọn ghi micro và Bắt đầu ghi.
+2. Đọc script, chọn Đang ghi — Dừng và lưu nguồn.
+3. Preview nguồn audio vừa tạo.","1. Trạng thái ghi xuất hiện.
+2. Bản thu được thêm vào nguồn.
+3. Nghe được hai câu vừa đọc.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_013,B. Nguồn và bản thu,Ghi toàn màn hình kèm microphone,Windows; FFmpeg hỗ trợ capture; micro đã cấp quyền; chỉ mở dữ liệu QA.,Hiển thị slide WATER CYCLE và đọc fixture Việt trong 15 giây.,"1. Chọn ghi màn hình → Toàn màn hình, bật Ghi kèm microphone và bắt đầu.
+2. Hiển thị slide/đọc script rồi dừng và lưu.
+3. Preview video nguồn.","1. Ghi bắt đầu với nguồn đã chọn.
+2. Có nguồn video mới.
+3. Video thấy slide và nghe được giọng đọc.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_014,B. Nguồn và bản thu,Ghi riêng cửa sổ,Windows; FFmpeg hỗ trợ hwnd; cửa sổ trình chiếu QA mở và không thu nhỏ.,Cửa sổ QA Water Cycle; hiển thị WATER CYCLE trong 15 giây.,"1. Chọn Ghi màn hình / cửa sổ và chọn đúng cửa sổ QA Water Cycle.
+2. Xác nhận cửa sổ, bắt đầu ghi; thao tác trong cửa sổ rồi dừng.
+3. Preview nguồn mới.","1. App hiển thị tiêu đề cửa sổ đã chọn.
+2. Nguồn video được lưu.
+3. Khung hình ghi đúng cửa sổ QA.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_015,B. Nguồn và bản thu,Khôi phục bản thu chưa lưu qua restart,Windows; bản thu QA đang ghi ít nhất 10 giây và dữ liệu đã flush; có người vận hành backend QA.,Bản thu micro đọc đoạn ngưng tụ.,"1. Để bản thu chưa lưu, đóng phiên test và restart backend QA rồi mở lại cùng bài.
+2. Chọn Khôi phục và lưu bản ghi trước.
+3. Preview nguồn phục hồi.","1. App thông báo có bản thu từ phiên trước.
+2. Bản thu có thể phục hồi được thêm vào nguồn.
+3. Phần đã ghi trước restart nghe/xem được. Không dùng kết quả này để kết luận mọi crash đều cứu được.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_016,C. Chép lời và bằng chứng nguồn,Chép lời toàn bộ audio tiếng Việt,STT_READY; audio WAV TC009 đã upload.,"water-cycle-vi.wav, 60 giây.","1. Chọn Chép lời tiếng Việt / trích nội dung trên WAV và chọn toàn bộ nguồn.
+2. Chạy tác vụ; mở Tác vụ / Học liệu khi hoàn tất.
+3. Duyệt kết quả transcript.","1. Tác vụ chép lời được tạo.
+2. Tác vụ hoàn tất và có transcript/mốc.
+3. Có nội dung tiếng Việt về bốc hơi, ngưng tụ, mưa để giáo viên rà soát. Không đòi khớp tuyệt đối từng từ.",High,Partial,UI,@Smoke @Model @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_017,C. Chép lời và bằng chứng nguồn,Chép lời đoạn video đã chọn,STT_READY; video TC008 có nội dung ngưng tụ tại giây20–40.,"water-cycle-vi.mp4; bắt đầu20, kết thúc40 giây.","1. Mở chép lời trên video và đặt khoảng20–40.
+2. Preview từ mốc đã chọn rồi chạy chép lời.
+3. Duyệt transcript kết quả.","1. Khoảng chọn được hiển thị.
+2. Preview bắt đầu ở khoảng20 và tác vụ dùng đoạn đã chọn.
+3. Transcript thuộc đoạn ngưng tụ, có mốc tương ứng nguồn.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_018,C. Chép lời và bằng chứng nguồn,"Sửa transcript, seek và thêm vào bài",TC017 hoàn tất; transcript có các đoạn.,Đổi một câu thành Hơi nước ngưng tụ thành mây.,"1. Trong transcript bấm mốc thời gian của đoạn.
+2. Sửa câu theo dữ liệu và lưu nội dung đã duyệt.
+3. Chọn Thêm transcript đã sửa vào bài rồi lưu.","1. Nguồn mở tại mốc đoạn.
+2. Transcript hiển thị câu đã sửa.
+3. Phần bài nhận đúng transcript đã duyệt.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_019,C. Chép lời và bằng chứng nguồn,Mở PDF nguồn lên bảng soạn trong app,PDF chữ TC006 đã upload; bài đã lưu.,water-cycle.pdf có ba đoạn bốc hơi/ngưng tụ/mưa.,"1. Trong Nguồn, tại PDF chọn biểu tượng Chép lời tiếng Việt / trích nội dung.
+2. Trong Studio vừa mở, chọn tài liệu PDF đã nhập và xem trang.
+3. Quay lại workspace và mở lại bảng của bài.","1. PDF được nhập vào bảng và Studio của cùng bài mở trong app.
+2. Có thể đọc tài liệu trên bảng; thao tác này không chạy trích văn bản/OCR.
+3. PDF vẫn thuộc bảng cùng bài sau khi quay lại.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_020,C. Chép lời và bằng chứng nguồn,Gắn nguồn và mốc cho phần/cảnh,Đã upload MP460 giây và có phần Ngưng tụ.,Nguồn water-cycle-vi.mp4; khoảng20–40 giây.,"1. Ở phần Ngưng tụ chọn Gắn nguồn đã kiểm chứng.
+2. Chọn video, nhập20–40 và Gắn nguồn; lưu.
+3. Bấm tham chiếu vừa gắn.","1. Hộp Liên kết đoạn nguồn mở.
+2. Tham chiếu giữ nguồn/revision và khoảng đã chọn.
+3. Nguồn mở tại giây20.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_021,C. Chép lời và bằng chứng nguồn,Trích khung hình video thành nguồn ảnh,FFmpeg và FFprobe sẵn sàng; video TC008 đã upload.,"water-cycle-vi.mp4 tại giây25, khung hình đám mây.","1. Ở video chọn Trích ảnh tại mốc video.
+2. Nhập25 và xác nhận trích ảnh.
+3. Mở ảnh mới trong Nguồn.","1. Hộp nhập mốc mở.
+2. Tác vụ tạo nguồn ảnh.
+3. Ảnh là khung hình video tại mốc25.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_022,D. Nội dung và AI authoring,Tạo nội dung trực tiếp từ script,Mở Nguồn của bài trống; không cần API/model speech.,Toàn bộ fixture water-cycle-vi.txt.,"1. Dán fixture vào Script hoặc mô tả bài muốn tạo.
+2. Chọn Dùng script làm nội dung.
+3. Mở Nội dung bài, sửa tên phần thành Vòng tuần hoàn và lưu.","1. Script hiển thị đủ dấu và xuống dòng.
+2. Có phần bài từ script, không gắn nhãn AI.
+3. Tên/nội dung được lưu.",High,Yes,UI,@Smoke @CriticalPath @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_023,D. Nội dung và AI authoring,Chia script thành nhiều cảnh local,Không cần API/model speech; Python/runtime worker đã cấu hình và mở bài QA video.,Fixture water-cycle-en.txt có ba đoạn sau tiêu đề.,"1. Dán fixture Anh ở Nguồn.
+2. Chọn Chia script thành cảnh, đợi job và Duyệt / áp dụng kết quả.
+3. Mở Video và kiểm tra các cảnh rồi lưu.","1. Script được nhập.
+2. Các đoạn tạo thành nhiều cảnh qua worker local sau khi duyệt.
+3. Thứ tự/nội dung cảnh đúng script, có thể sửa từng cảnh.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_024,D. Nội dung và AI authoring,API từ mô tả thành bản nháp có duyệt,API_READY; provider/model/key do backend quản lý; người test đồng ý gửi dữ liệu QA.,Prompt: Create a 15-minute lesson about the water cycle for grade 5. Include three stages and one classroom activity.,"1. Chọn AI đề xuất bài / storyboard; đọc API, model và toàn bộ Nội dung sẽ gửi.
+2. Chọn Gửi và tạo bản nháp; đợi job hoàn tất và mở Duyệt / áp dụng.
+3. Đọc kết quả rồi chọn Thêm kết quả vào bài.","1. Hộp xác nhận hiển thị đúng đích và prompt.
+2. Có bản nháp để duyệt; bài chưa tự bị thay trước khi áp dụng.
+3. Kết quả được thêm vào bài với nhãn AI/chưa kiểm chứng nguồn.",High,Partial,UI,@CriticalPath @ExternalAPI @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_025,D. Nội dung và AI authoring,API từ transcript thành giáo án/storyboard,API_READY; transcript TC018 đã duyệt; người test đồng ý gửi QA.,Transcript đã sửa: Hơi nước ngưng tụ thành mây.,"1. Dùng transcript đã duyệt làm đầu vào AI; đọc lại nội dung gửi trong hộp xác nhận.
+2. Xác nhận gửi yêu cầu mới và đợi kết quả.
+3. Duyệt rồi áp dụng bản nháp.","1. Đầu vào có đúng transcript đã sửa; có xác nhận riêng cho job này.
+2. Kết quả có nội dung bài/storyboard về transcript.
+3. Bài nhận kết quả sau thao tác duyệt của giáo viên.",High,Partial,UI,@ExternalAPI @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_026,D. Nội dung và AI authoring,"Biên tập mục tiêu, nội dung và thời lượng",Bài có phần Ngưng tụ.,Mục tiêu: Giải thích sự hình thành mây; phần5phút; tổng15phút.,"1. Mở phần Ngưng tụ và điền mục tiêu/nội dung/thời lượng5.
+2. Đặt thời lượng bài15 phút; lưu.
+3. Đóng và mở lại bài.","1. Các trường nhận đúng giá trị.
+2. Dữ liệu được lưu, tổng thời lượng hiển thị theo bài.
+3. Mục tiêu/nội dung/5phút được giữ.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_027,D. Nội dung và AI authoring,Thêm hoạt động gắn mục tiêu,TC026 có mục tiêu phần.,Hoạt động Quan sát hơi nước; GV: đưa cốc nước ấm; HS: mô tả hơi nước;3phút.,"1. Chọn Thêm hoạt động tại phần Ngưng tụ.
+2. Điền dữ liệu, bật Liên kết mục tiêu của phần này và Lưu hoạt động.
+3. Lưu bài rồi mở lại hoạt động.","1. Form hoạt động mở.
+2. Hoạt động có việc GV/HS,3phút và liên kết mục tiêu.
+3. Dữ liệu hoạt động được giữ đúng.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_028,D. Nội dung và AI authoring,Ghi notes và thẻ riêng giáo viên,Bài có phần Ngưng tụ.,Notes TEACHER_ONLY_WATER; thẻ Hiểu sai: Clouds are smoke.,"1. Nhập TEACHER_ONLY_WATER vào Lời nhắc, đáp án riêng.
+2. Thêm thẻ hỗ trợ loại hiểu sai, nhập nội dung riêng, giữ riêng tư mặc định.
+3. Lưu và mở lại phần.","1. Notes có giá trị đã nhập.
+2. Thẻ được lưu ở phần riêng giáo viên.
+3. Notes và thẻ vẫn hiện đúng trong workspace giáo viên.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_029,D. Nội dung và AI authoring,Duyệt nội dung công khai của thẻ hỗ trợ,Đã có thẻ riêng TC028.,Public text: Clouds contain tiny water droplets; private hint: TEACHER_HINT_01.,"1. Sửa thẻ, giữ hint riêng và nhập public text trên.
+2. Duyệt phần công khai hiện tại rồi lưu thẻ/bài.
+3. Xuất PDF học sinh và xem.","1. Thẻ có hai phần riêng/công khai.
+2. Nội dung công khai có trạng thái đã duyệt.
+3. PDF có public text đã duyệt; hint riêng không có trong bản học sinh.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_030,"E. Kho câu hỏi, lớp và tái sử dụng",Chèn nhóm câu hỏi đã duyệt có hình và đáp án riêng,"QUESTION_READY: nguồn active APPROVED gồm nhóm Water Cycle Q1/Q2, context, ảnh câu hỏi và hình lời giải.",Nhóm QA Water Cycle;Q1 evaporation;Q2 condensation;answer PRIVATE_ANSWER_WATER.,"1. Mở Xuất và sử dụng → Chèn câu hỏi đã duyệt, tìm QA Water Cycle.
+2. Chọn nhóm/câu trong nhóm và xác nhận chèn.
+3. Xem phần mới rồi tạo PDF học sinh/giáo viên.","1. Kết quả tìm là nguồn đã duyệt.
+2. Chèn trọn nhóm dùng chung context, có ảnh công khai và nguồn snapshot.
+3. Giáo viên thấy đáp án/hình lời giải; PDF học sinh chỉ có context/câu/ảnh công khai, PDF giáo viên có đáp án.",High,Partial,UI,@CriticalPath @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_031,"E. Kho câu hỏi, lớp và tái sử dụng",Tạo biến thể theo lớp nội bộ,LOCAL_CLASS_READY; bài gốc đã lưu và có PDF/video.,Lớp QA 5A; tên QA Water Cycle 5A; ghi chú Tăng hoạt động nhóm.,"1. Chọn Biến thể bài theo lớp; chọn QA 5A và điền dữ liệu.
+2. Chọn Tạo và mở biến thể, sửa một phần rồi lưu.
+3. Mở bài gốc và kiểm bản xuất trong biến thể.","1. Lớp/tên/ghi chú được chọn.
+2. Có bài biến thể độc lập với nhãn lớp và nguồn bài gốc.
+3. Bài gốc không đổi; bản xuất được sao chép cần tạo lại cho biến thể.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_032,"E. Kho câu hỏi, lớp và tái sử dụng",Tạo biến thể theo lớp Google,GOOGLE_READY; giáo viên có quyền dạy lớp QA HocLuc Sandbox.,Lớp Google QA HocLuc Sandbox; tên QA Water Cycle Google.,"1. Trong Biến thể bài theo lớp chọn Tải lớp Google Classroom.
+2. Chọn QA HocLuc Sandbox rồi Tạo và mở biến thể.
+3. Chọn Dạy từ bài này và xem lớp được ưu tiên.","1. Danh sách lớp giáo viên tải được.
+2. Biến thể mang đúng lớp Google đã chọn.
+3. Hộp chọn lớp ưu tiên chính xác QA HocLuc Sandbox; chưa tự đăng học liệu.",High,Partial,UI,@Google @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_033,"E. Kho câu hỏi, lớp và tái sử dụng",Lưu phần vào thư viện và chèn sang bài khác,Phần câu hỏi TC030 đã lưu cùng ảnh/nguồn; có bài QA Reuse trống.,Phần QA Water Cycle trong thư viện cá nhân.,"1. Mở Lịch sử & công cụ bài → Thư viện phần bài tại máy; chọn Lưu phần.
+2. Mở QA Reuse và chọn Chèn tại phần vừa lưu.
+3. Lưu, mở lại phần chèn và xem ảnh/notes/tham chiếu.","1. Có phần trong thư viện.
+2. Bài đích nhận bản sao phần.
+3. Nội dung, tài sản và tham chiếu đi cùng; nội dung riêng vẫn thuộc giáo viên.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_034,"E. Kho câu hỏi, lớp và tái sử dụng",Khôi phục phiên bản thành bản lưu mới,Bài có bản lưu nội dung A rồi bản lưu nội dung B.,A: Ngưng tụ tạo mây;B: Ngưng tụ tạo giọt nước nhỏ.,"1. Mở Lịch sử & công cụ bài → Lịch sử phiên bản.
+2. Chọn Khôi phục phiên bản A và xác nhận.
+3. Lưu/tải lại rồi xem nội dung và lịch sử.","1. Có cả các bản đã lưu.
+2. Nội dung A được khôi phục.
+3. Có revision mới mang nội dung A; lịch sử B vẫn còn.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_035,"E. Kho câu hỏi, lớp và tái sử dụng",Checklist và nhận xét sau buổi,Bài QA đã lưu.,Nhận xét: HS cần ví dụ ngưng tụ gần gũi; việc: Thêm ví dụ cốc nước lạnh.,"1. Mở Lịch sử & công cụ bài, ghi nhận xét sau buổi.
+2. Chọn Đưa vào việc cần sửa rồi đánh dấu hoàn thành việc đã xử lý.
+3. Lưu và mở lại công cụ bài.","1. Nhận xét được tạo.
+2. Có việc cần sửa với trạng thái hoàn thành đã chọn.
+3. Nhận xét/checklist/trạng thái được giữ.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_036,"E. Kho câu hỏi, lớp và tái sử dụng",Tạo bản sửa độc lập từ nhận xét,TC035 có nhận xét đã lưu.,Tên bản sửa QA Water Cycle revision; thêm ví dụ cốc nước lạnh.,"1. Tại nhận xét chọn Tạo bản sửa độc lập.
+2. Mở bản nháp và sửa phần Ngưng tụ theo nhận xét; lưu.
+3. Mở lại bài gốc.","1. Có bản sao/bản sửa riêng mang việc cần sửa.
+2. Bản sửa lưu được nội dung mới.
+3. Bài gốc giữ nội dung cũ.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_037,"F. Cảnh, dịch, giọng và phụ đề",Biên tập và sắp xếp cảnh animation,Có các cảnh từ TC023.,Cảnh1 Evaporation:Chữ và chuyển cảnh;2 Condensation:Sơ đồ đơn giản;3 Rain:Chữ nhấn mạnh.,"1. Mở Video, sửa Tên cảnh, Nội dung hiển thị / phụ đề, Script lời đọc tiếng Anh và chọn Cách trình bày theo dữ liệu.
+2. Dùng Đưa lên/Đưa xuống để đổi thứ tự rồi trả về1–2–3.
+3. Lưu và mở lại Video.","1. Mỗi cảnh có nội dung/template riêng.
+2. Thứ tự đổi đúng thao tác.
+3. Ba cảnh giữ đúng dữ liệu và thứ tự.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_038,"F. Cảnh, dịch, giọng và phụ đề",Dịch Việt sang Anh cho cảnh,TRANSLATE_READY; cảnh chưa khóa.,Text: Hơi nước nguội đi và ngưng tụ thành mây.,"1. Nhập câu Việt vào nội dung cảnh rồi chọn dịch Việt → Anh.
+2. Chờ tác vụ và mở Duyệt / áp dụng.
+3. Duyệt và áp dụng kết quả.","1. Tác vụ dùng đầu vào Việt hiện tại.
+2. Có bản dịch Anh để đọc lại.
+3. Lời đọc/nội dung được áp dụng theo kết quả đã duyệt, giáo viên có thể sửa tiếp.",High,Partial,UI,@Model @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_039,"F. Cảnh, dịch, giọng và phụ đề",Nghe giọng Anh và đổi voice,TTS_READY; cảnh có narration Anh.,Narration: Water vapor cools and forms clouds; voice af_heart rồi chọn một voice khác có sẵn.,"1. Chọn af_heart và tạo/nghe lời đọc cảnh.
+2. Chọn voice khác trong danh sách và tạo lại lời đọc.
+3. Preview audio mới.","1. Có audio giọng Anh cho narration.
+2. App dùng voice mới, yêu cầu duyệt lại phụ đề liên quan.
+3. Nghe được lời đọc mới, đúng câu đã nhập.",High,Partial,UI,@Model @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_040,"F. Cảnh, dịch, giọng và phụ đề",Glossary phát âm và tái tạo chọn lọc,"TTS_READY; có hai cảnh đã tạo audio, chỉ cảnh1 chứa H2O.",Thuật ngữ H2O → water;cảnh2 không chứa H2O.,"1. Trong Lịch sử & công cụ bài thêm cách đọc H2O → water và lưu.
+2. Xem trạng thái phụ đề/audio của hai cảnh.
+3. Tạo lại lời đọc/dựng bài và kiểm thông tin job/cache khi có.","1. Glossary được lưu.
+2. Cảnh bị ảnh hưởng cần duyệt/tạo lại; cảnh không đổi không bị đánh dấu lại vô cớ.
+3. Narration cảnh1 dùng water; cảnh không đổi được tái sử dụng khi cache đáp ứng điều kiện.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_041,"F. Cảnh, dịch, giọng và phụ đề",Khóa rồi mở khóa cảnh đã duyệt,Cảnh có nội dung đã lưu.,Cảnh Condensation.,"1. Bật Khóa nội dung cảnh đã duyệt và lưu.
+2. Chọn cảnh khác rồi quay lại; xem trạng thái khóa.
+3. Mở khóa, lưu rồi sửa tiêu đề thành Condensation reviewed.","1. Cảnh được khóa.
+2. Nội dung đã duyệt được giữ; vẫn dùng được công cụ phụ đề/dựng cho cảnh.
+3. Có thể sửa lại sau khi mở khóa và lưu.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_042,"F. Cảnh, dịch, giọng và phụ đề",Sửa và duyệt cue phụ đề tiếng Anh,Cảnh có audio dài hơn6giây; narration đã chốt.,Cue1 0–3: Water evaporates.;cue2 3–6: Clouds form.,"1. Mở Phụ đề và diễn tập cảnh; nhập hai cue trên và bật xuất phụ đề.
+2. Chọn Lưu và duyệt phụ đề rồi lưu bài.
+3. Mở lại cảnh.","1. Cue hiển thị đúng văn bản/mốc.
+2. Phụ đề được duyệt cho narration hiện tại.
+3. Hai cue và trạng thái duyệt còn giữ.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_043,"F. Cảnh, dịch, giọng và phụ đề",Phụ đề song ngữ và khung điện thoại,TC042 đã có hai cue.,Bản dịch cue1: Nước bốc hơi.;cue2: Mây hình thành.,"1. Chọn Song ngữ, nhập bản dịch thứ hai cho từng cue.
+2. Xem thử chiều rộng điện thoại.
+3. Lưu và duyệt phụ đề.","1. Cả Anh/Việt hiển thị theo cue.
+2. Preview cho thấy hai ngôn ngữ theo chiều rộng điện thoại.
+3. Bản dịch thủ công đã duyệt được lưu; không đòi dịch Anh→Việt tự động.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_044,"F. Cảnh, dịch, giọng và phụ đề",Diễn tập cảnh với lời nhắc riêng,Cảnh có phụ đề và notes TEACHER_REHEARSAL.,Hai cue TC042;notes TEACHER_REHEARSAL.,"1. Mở Phụ đề và diễn tập cảnh, bắt đầu đồng hồ diễn tập.
+2. Theo dõi cue và nhắc riêng giáo viên khi thời gian chạy.
+3. Dừng/đặt lại theo điều khiển đang có.","1. Đồng hồ bắt đầu chạy.
+2. Cue theo mốc và notes riêng hiện cho giáo viên.
+3. Có thể dừng/đặt lại để diễn tập tiếp.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_045,"F. Cảnh, dịch, giọng và phụ đề",Dựng video animation có giọng và SRT,RENDER_READY; ba cảnh có narration Anh; cue đã duyệt khớp thời lượng audio.,"Ba cảnh Water Cycle, tổng khoảng15–30giây,1280×720.","1. Lưu bài và chọn Dựng video animation.
+2. Theo dõi tiến độ ở Tác vụ / Học liệu cho đến hoàn tất.
+3. Preview MP4 và SRT.","1. Job dựng tạo với revision hiện tại.
+2. Có MP4 và phụ đề/timeline của job.
+3. Video có chữ/hình theo cảnh, giọng đọc và thứ tự đúng; SRT có cue đã duyệt.",High,Partial,UI,@CriticalPath @Model @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_046,"F. Cảnh, dịch, giọng và phụ đề",Bật/tắt CC khi preview MP4,TC045 hoàn tất; job có MP4 và SRT.,MP4 Water Cycle và SRT cùng job.,"1. Mở preview MP4 trong app.
+2. Bật CC và phát qua cue.
+3. Tắt CC và tiếp tục phát.","1. Video phát được.
+2. Track phụ đề xuất hiện theo mốc.
+3. Track phụ đề ẩn khi tắt; phần chữ thuộc hình video vẫn có thể còn.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_047,"F. Cảnh, dịch, giọng và phụ đề",Dựng lại bản mới và tái sử dụng cảnh không đổi,RENDER_READY; TC045 có cache; chỉ thay cảnh2.,Sửa chữ cảnh2 thành Clouds contain water droplets.,"1. Sửa cảnh2 và lưu bài.
+2. Tạo lại video; xem thông tin job/cache nếu hiển thị.
+3. Preview bản mới và xem danh sách bản xuất.","1. Bài có revision mới, video cũ được nhận diện là cũ.
+2. Cảnh thay đổi được xử lý lại; cảnh không đổi có thể dùng cache đã kiểm.
+3. Bản mới có chữ mới và revision hiện tại, chọn được để xuất.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_048,G. Mẫu xuất và học liệu,Ánh xạ mẫu trường/khoa và preview PDF,Bài có mục tiêu/nội dung/notes.,Trường QA HocLuc;Khoa Khoa học; mẫu QA Faculty; thứ tự Tên bài→Lớp→Mục tiêu→Nội dung;custom Học kỳ I.,"1. Mở Mẫu trường/khoa & preview PDF, nhập trường/khoa và các trường ánh xạ trên.
+2. Thêm custom Học kỳ I, chọn bản học sinh rồi Lưu mẫu.
+3. Tạo preview PDF trong hộp mẫu.","1. Form nhận trường và thứ tự ánh xạ.
+2. Cấu hình mẫu lưu được.
+3. PDF thật có header/nội dung theo ánh xạ và thứ tự; không tự coi là biểu mẫu chính thức của trường.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_049,G. Mẫu xuất và học liệu,Quản lý mẫu xuất cá nhân,TC048 đã cấu hình mẫu; cùng tài khoản giáo viên.,Mẫu QA Faculty; bản mới QA Faculty v2.,"1. Lưu thành mẫu mới QA Faculty rồi tải lại mẫu đã lưu.
+2. Thay giá trị custom thành Học kỳ II, cập nhật; lưu thành mẫu mới QA Faculty v2.
+3. Tải v2 kiểm giá trị rồi xóa riêng v2.","1. Mẫu cá nhân được liệt kê và tải lại.
+2. Mẫu cập nhật và bản mới lưu riêng.
+3. v2 có giá trị mới rồi được xóa; mẫu QA Faculty vẫn còn.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_050,G. Mẫu xuất và học liệu,Xuất PDF học sinh và tải về,"Bài có notes TEACHER_ONLY_WATER, đáp án PRIVATE_ANSWER_WATER, thẻ công khai đã duyệt.",Tên bài QA Vòng tuần hoàn nước; notes/answer như trên.,"1. Lưu bài, chọn Tạo PDF học sinh và đợi hoàn tất.
+2. Preview PDF rồi Lưu về máy.
+3. Mở PDF tải về và đọc từng trang.","1. Có artifact PDF học sinh ở revision hiện tại.
+2. File lưu được và mở được.
+3. Có bài/câu hỏi/hình công khai; không có notes/đáp án/hình riêng giáo viên.",High,Yes,UI,@Smoke @CriticalPath @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_051,G. Mẫu xuất và học liệu,Xuất PDF giáo viên có notes/đáp án,Cùng bài/dữ liệu TC050.,TEACHER_ONLY_WATER;PRIVATE_ANSWER_WATER;hình lời giải.,"1. Chọn Tạo PDF giáo viên (riêng tư).
+2. Preview rồi tải PDF về.
+3. Mở từng trang và đối chiếu nội dung riêng.","1. Có artifact riêng giáo viên.
+2. PDF có nhãn BẢN GIÁO VIÊN — CÓ NỘI DUNG RIÊNG trên các trang.
+3. Có notes, đáp án/lời giải và ảnh riêng; bố cục chữ/ảnh đọc được.",High,Yes,UI,@CriticalPath @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_052,G. Mẫu xuất và học liệu,Xem/tải và dọn bản xuất chưa dùng,Có bản PDF học sinh phụ chưa publication và không cần giữ trong lịch sử job đang dùng.,Bản xuất phụ QA-unused.pdf tạo ở bài QA riêng.,"1. Trong Xuất / Đăng Classroom mở tùy chọn Xem trước trên bản phụ.
+2. Lưu về máy rồi đóng preview.
+3. Chọn Xóa bản xuất chưa dùng và xác nhận.","1. PDF preview đọc được.
+2. File tải về mở được.
+3. Bản xuất được phép dọn không còn trong danh sách; bản khác giữ nguyên.",High,Yes,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_053,H. Classroom và mang bài đi dạy,Đăng học liệu học sinh lên lớp Google thử nghiệm,GOOGLE_READY; bài đã lưu; PDF/MP4 mới; người test cho phép đăng duy nhất lớp sandbox.,Lớp QA HocLuc Sandbox;tiêu đề QA Water Cycle Material;mô tả For manual QA only.,"1. Mở Xuất / Đăng Classroom; chọn PDF học sinh và MP4 mới, chọn lớp sandbox.
+2. Nhập dữ liệu, duyệt gói và xác nhận quyền Google nếu app yêu cầu rồi đăng.
+3. Theo dõi tiến độ và bấm Mở học liệu Classroom khi hoàn tất.","1. Chỉ học liệu học sinh xuất hiện để chọn, PDF giáo viên không thuộc gói.
+2. Yêu cầu đăng sử dụng đúng lớp/file đã xác nhận.
+3. Có material/link kết quả; tài khoản học sinh thử nghiệm mở được đúng file.",High,Partial,UI,@CriticalPath @Google @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_054,H. Classroom và mang bài đi dạy,Mở lại nhật ký đăng và đối soát yêu cầu gốc,GOOGLE_READY; đã có publication QA từ TC053.,Material QA Water Cycle Material và request đã tạo.,"1. Đóng hộp đăng rồi mở lại bài/hộp Xuất / Đăng Classroom.
+2. Xem tiến trình/nhật ký publication; dùng Tiếp tục / đối soát khi trạng thái cung cấp thao tác này.
+3. Mở link kết quả và xem lớp sandbox.","1. Publication trước vẫn được liệt kê cùng tiến độ/trạng thái.
+2. Trạng thái được tải/đối soát theo request gốc.
+3. Link trỏ cùng material; không tạo thêm material do chỉ xem/đối soát.",High,Partial,UI,@Google @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_055,H. Classroom và mang bài đi dạy,Dạy từ bài đã soạn và xem notes theo trang,Bài có phần/câu/ảnh công khai và notes riêng; lớp QA được chọn.,Phần Ngưng tụ;notes TEACHER_ONLY_WATER.,"1. Trong Soạn bài chọn Dạy từ bài này; xác nhận lớp QA.
+2. Mở Studio và chuyển các trang nội dung/câu hỏi.
+3. Mở khu vực notes giáo viên cho từng trang.","1. Bài được lưu và luồng Dạy mở đúng bài/lớp.
+2. Nội dung công khai và ảnh câu hỏi hiện đúng thứ tự.
+3. Notes/đáp án đúng phần/trang hiện trong điều khiển giáo viên.",High,Partial,UI,@CriticalPath @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_056,H. Classroom và mang bài đi dạy,Chia sẻ Audience qua Meet và đối chiếu máy học sinh,MEET_READY; máy học sinh QA tham gia cùng Meet; cả hai bên đồng ý buổi thử.,Slide công khai WATER CYCLE;notes TEACHER_ONLY_WATER;answer PRIVATE_ANSWER_WATER.,"1. Mở Audience riêng từ Studio và chia sẻ đúng cửa sổ Audience trong Meet.
+2. Giáo viên chuyển trang và xem notes khi nguồn chia sẻ Audience đã được app xác định.
+3. Đối chiếu màn hình máy học sinh qua nhiều trang, câu hỏi và ảnh.","1. Audience hiển thị nội dung bài.
+2. Giáo viên dùng notes trong điều kiện app cho phép; Audience cập nhật trang.
+3. Học sinh thấy nội dung công khai, không thấy notes/đáp án/điều khiển. Chỉ đánh dấu đạt khi quan sát đầu nhận thật.",High,Partial,UI,@Meet @CriticalPath @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_057,I. Thành phần local và tác vụ,Cài gói offline và kiểm tra thành phần,OFFLINE_PACKAGE_READY; Windows; có ZIP theo manifest hỗ trợ và SHA-256; không dùng weights chưa được cung cấp.,"Gói QA do đội triển khai cung cấp gồm runtime,FFmpeg,ba model speech; chọn đúng phiên bản manifest.","1. Mở Kiểm tra thành phần → Thành phần local và chọn gói ZIP offline.
+2. Theo dõi tiến độ cài đặt đến hoàn tất.
+3. Chọn Lưu và kiểm tra rồi xem kết quả thành phần.","1. App nhận gói và hiển thị thông tin.
+2. Cài thành công và có lịch sử; không tải model authoring/Ollama.
+3. Runtime/FFmpeg/STT/dịch/TTS đạt trạng thái sẵn sàng theo gói đã cài.",High,Partial,UI,@Offline @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_058,I. Thành phần local và tác vụ,Chọn đường dẫn model/runtime đã có,STT/TRANSLATE/TTS model và runtime được cung cấp ngoài source; FFmpeg/FFprobe có sẵn.,"Thư mục chuẩn do đội dev cấp: runtime Python,FFmpeg,model root chứa PhoWhisper/VinAI/Kokoro.","1. Mở Kiểm tra thành phần và chọn các đường dẫn hiện có bằng trình chọn trong app.
+2. Chọn Lưu và kiểm tra.
+3. Mở lại hộp cài đặt và xem trạng thái.","1. Các đường dẫn đã chọn xuất hiện.
+2. App kiểm tra khả năng chạy thành phần.
+3. Cấu hình được giữ và thành phần đủ điều kiện hiện sẵn sàng.",High,Partial,UI,@Offline @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_059,I. Thành phần local và tác vụ,Tiếp tục biên tập trong khi tác vụ chạy,STT_READY; có audio60giây và một phần bài sẵn.,Job chép lời WAV;đổi mục tiêu thành Describe the three water-cycle stages.,"1. Chạy job chép lời từ WAV.
+2. Trong lúc job chạy, mở Nội dung bài, sửa mục tiêu và lưu.
+3. Quay về Tác vụ / Học liệu và xem kết quả.","1. Job xuất hiện và có trạng thái/tiến độ.
+2. Có thể tiếp tục soạn, mục tiêu được lưu.
+3. Job hoàn tất; kết quả chỉ vào bài sau khi giáo viên duyệt, không tự ghi đè mục tiêu vừa sửa.",High,Partial,UI,@Regression @HappyPath,Chưa chạy
+HOCLUC_PREP_TC_060,I. Thành phần local và tác vụ,Mở bảng soạn và giữ tài liệu khi quay lại workspace,Bài đã lưu; có ảnh sơ đồ/PDF nguồn.,Bảng WATER CYCLE;vẽ mũi tên từ ocean đến cloud.,"1. Mở Bảng & tài liệu → Mở bảng soạn bài.
+2. Đưa tài liệu lên bảng theo công cụ hiện có, vẽ mũi tên rồi lưu bảng.
+3. Quay lại workspace và mở bảng của cùng bài.","1. Studio/bảng của đúng bài mở.
+2. Nội dung bảng được lưu.
+3. Bảng/tài liệu vừa soạn còn ở đúng bài, không tạo bài trùng.",High,Partial,UI,@Regression @HappyPath,Chưa chạy

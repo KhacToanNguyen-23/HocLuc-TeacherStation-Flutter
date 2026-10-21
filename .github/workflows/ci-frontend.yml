@@ -2,7 +2,7 @@ name: Frontend CI (Flutter)
 
 on:
   push:
-    branches: [ develop, main, master ]
+    branches: [ develop, main, master, feat/prepare-education ]
     paths:
       - 'frontend/**'
       - 'plugins/**'
