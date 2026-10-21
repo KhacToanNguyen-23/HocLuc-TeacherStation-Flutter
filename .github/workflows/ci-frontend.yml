@@ -6,13 +6,13 @@ on:
     paths:
       - 'frontend/**'
       - 'plugins/**'
-      - '.github/workflows/ci-frontend.yml'
+      - '.github/workflows/**'
   pull_request:
     branches: [ develop, main, master ]
     paths:
       - 'frontend/**'
       - 'plugins/**'
-      - '.github/workflows/ci-frontend.yml'
+      - '.github/workflows/**'
 
 concurrency:
   group: frontend-${{ github.ref }}

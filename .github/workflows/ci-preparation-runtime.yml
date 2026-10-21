@@ -6,13 +6,13 @@ on:
     paths:
       - 'backend/ai-runtime/preparation_*.py'
       - 'backend/ai-runtime/tests/test_preparation*.py'
-      - '.github/workflows/ci-preparation-runtime.yml'
+      - '.github/workflows/**'
   pull_request:
     branches: [ develop, main, master ]
     paths:
       - 'backend/ai-runtime/preparation_*.py'
       - 'backend/ai-runtime/tests/test_preparation*.py'
-      - '.github/workflows/ci-preparation-runtime.yml'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
