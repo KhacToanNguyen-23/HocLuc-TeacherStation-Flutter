@@ -1,10 +1,13 @@
 import 'package:desktop_drop/desktop_drop.dart';
+import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
+import 'package:teaching_companion/features/classroom_meet/services/classroom_settings_service.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_event_hub.dart';
 import 'grid_painter.dart';
 import 'stroke_canvas.dart';
 import 'smart_chalk_overlay.dart';
@@ -12,6 +15,7 @@ import 'pdf_dgnl_passage_overlay.dart';
 import '../services/smart_pen_answer_index.dart';
 
 part 'pdf_stage_viewer.dart';
+part 'pdf_stage_plugin_bridge.dart';
 
 const _showSmartPenDebugBounds = bool.fromEnvironment('SMART_PEN_DEBUG');
 
@@ -54,6 +58,9 @@ class _PdfStageState extends State<PdfStage> {
   final SmartPenPageIndexStore _smartIndexStore = SmartPenPageIndexStore();
   final SmartPenTapQueue _smartTapQueue = SmartPenTapQueue(maxLength: 32);
   final Map<int, Rect> _smartPageRects = {};
+  final Map<int, ({Size pageSize, List<SmartPenTextFragment> fragments})>
+  _pdfTextPages = {};
+  final Set<int> _pluginPdfPagesReady = {};
   final Map<int, _SmartPenPointerDown> _smartPointerDowns = {};
   final ValueNotifier<int> _smartIndexRevision = ValueNotifier(0);
   final SmartPenPdfTextExtractor _smartTextExtractor =
@@ -62,7 +69,12 @@ class _PdfStageState extends State<PdfStage> {
   SmartPenPageIndexScheduler? _smartIndexScheduler;
   PdfDocument? _smartIndexDocument;
   int _smartDocumentGeneration = 0;
+  int _pdfTextCacheContentGeneration = -1;
   bool _lastSmartSnapEnabled = false;
+  String? _lastPdfDispatchTarget;
+  String? _lastPluginToolStateKey;
+  String? _pluginRegionSubscriptionKey;
+  StreamSubscription<PluginHostMessage>? _pluginRegionSubscription;
 
   @override
   void initState() {
@@ -73,7 +85,10 @@ class _PdfStageState extends State<PdfStage> {
     _lastPage = widget.studio.pdfPage;
     _lastZoomAction = widget.studio.pdfZoomAction;
     _lastSmartSnapEnabled = widget.studio.smartSnapEnabled;
+    _syncPluginRegionSubscription();
     widget.studio.addListener(_onStudioChanged);
+    ClassroomSettingsService.instance.addListener(_onClassroomSettingsChanged);
+    unawaited(ClassroomSettingsService.instance.load());
   }
 
   @override
@@ -88,6 +103,14 @@ class _PdfStageState extends State<PdfStage> {
       _smartIndexScheduler = null;
       _smartAnswerGroups = null;
       _smartPageRects.clear();
+      _pdfTextPages.clear();
+      _pdfTextCacheContentGeneration = -1;
+      _lastPdfDispatchTarget = null;
+      _pluginPdfPagesReady.clear();
+      unawaited(_pluginRegionSubscription?.cancel());
+      _pluginRegionSubscription = null;
+      _pluginRegionSubscriptionKey = null;
+      _syncPluginRegionSubscription();
       _smartPointerDowns.clear();
       _lastSmartSnapEnabled = widget.studio.smartSnapEnabled;
       widget.studio.pdfViewerController = _pdfController;
@@ -102,8 +125,15 @@ class _PdfStageState extends State<PdfStage> {
     _smartIndexScheduler = null;
     _smartIndexDocument = null;
     _smartPageRects.clear();
+    _pdfTextPages.clear();
+    _pdfTextCacheContentGeneration = -1;
+    _pluginPdfPagesReady.clear();
+    unawaited(_pluginRegionSubscription?.cancel());
     _smartPointerDowns.clear();
     _smartIndexRevision.dispose();
+    ClassroomSettingsService.instance.removeListener(
+      _onClassroomSettingsChanged,
+    );
     if (widget.studio.pdfViewerController == _pdfController) {
       widget.studio.pdfViewerController = null;
       widget.studio.pdfViewerKey = null;
@@ -113,11 +143,14 @@ class _PdfStageState extends State<PdfStage> {
   }
 
   void _onStudioChanged() {
+    _syncPluginRegionSubscription();
+    _dispatchActivePluginToolState();
+    _dispatchCachedPdfTextToActivePlugin();
     if (_lastSmartSnapEnabled != widget.studio.smartSnapEnabled) {
       _lastSmartSnapEnabled = widget.studio.smartSnapEnabled;
       if (!_lastSmartSnapEnabled) {
-        _smartTapQueue.clear();
         _smartPointerDowns.clear();
+        _flushQueuedPluginTapsToOrdinaryInk();
       }
     }
     if (!_pdfController.isReady) return;
@@ -151,12 +184,25 @@ class _PdfStageState extends State<PdfStage> {
     }
   }
 
+  void _onClassroomSettingsChanged() {
+    if (!mounted) return;
+    setState(() {
+      _cachedPdfViewer = null;
+      _cachedPdfPath = null;
+    });
+  }
+
   void _beginSmartIndexing(PdfDocument document) {
     if (identical(_smartIndexDocument, document)) return;
     _smartIndexDocument = document;
     _smartAnswerGroups = null;
+    _pdfTextPages.clear();
+    _pdfTextCacheContentGeneration = widget.studio.pdfContentGeneration;
+    _lastPdfDispatchTarget = null;
+    _pluginPdfPagesReady.clear();
     _smartPointerDowns.clear();
     final generation = ++_smartDocumentGeneration;
+    _syncPluginRegionSubscription();
     _smartTapQueue.clear();
     _smartIndexStore.beginGeneration(generation);
     if (_showSmartPenDebugBounds) _smartIndexRevision.value++;
@@ -185,19 +231,25 @@ class _PdfStageState extends State<PdfStage> {
       final page = await document.pages[pageNumber - 1].ensureLoaded();
       final fragments = await _smartTextExtractor.extract(page);
       if (generation != _smartDocumentGeneration) return;
+      final pageSize = SmartPenPdfTextExtractor.canonicalPageSize(page);
+      _pdfTextPages[pageNumber] = (pageSize: pageSize, fragments: fragments);
       if (fragments.isEmpty) {
         _smartIndexStore.markTextless(pageNumber);
       } else {
+        // Keep the established host classifier as the source of question
+        // grouping for plugins too. Plugins may draw their own annotation, but
+        // must not reimplement PDF question segmentation independently.
         final index = SmartPenPageIndex.build(
           documentGeneration: generation,
           pageNumber: pageNumber,
-          pageSize: SmartPenPdfTextExtractor.canonicalPageSize(page),
+          pageSize: pageSize,
           fragments: fragments,
           includeDebugData: _showSmartPenDebugBounds,
         );
         _smartIndexStore.completePage(index);
         _refreshSmartAnswerGroups(generation, pageNumber);
       }
+      _dispatchPdfTextFragments(pageNumber, generation, pageSize, fragments);
       if (_showSmartPenDebugBounds && mounted) {
         _smartIndexRevision.value++;
       }
@@ -298,6 +350,36 @@ class _PdfStageState extends State<PdfStage> {
       return;
     }
 
+    if (_activePluginOwnsPdfTool &&
+        !_pluginPdfPagesReady.contains(pageNumber)) {
+      final pageSize =
+          _pdfTextPages[pageNumber]?.pageSize ??
+          SmartPenPdfTextExtractor.canonicalPageSize(page);
+      final tap = SmartPenPendingTap(
+        pageNumber: pageNumber,
+        documentGeneration: generation,
+        pagePoint: Offset(
+          normalizedPoint.dx * pageSize.width,
+          normalizedPoint.dy * pageSize.height,
+        ),
+      );
+      if (!_smartTapQueue.enqueue(tap)) {
+        _addOrdinaryPdfTap(normalizedPoint, targetStrokes);
+        return;
+      }
+      Future<void>.delayed(const Duration(milliseconds: 1800), () {
+        if (generation == _smartDocumentGeneration &&
+            !_pluginPdfPagesReady.contains(pageNumber)) {
+          _resolvePendingPluginTaps(
+            pageNumber,
+            generation,
+            forceOrdinaryTap: true,
+          );
+        }
+      });
+      return;
+    }
+
     _resolveSmartTap(
       pageNumber: pageNumber,
       generation: generation,
@@ -313,6 +395,7 @@ class _PdfStageState extends State<PdfStage> {
         generation != _smartDocumentGeneration) {
       return;
     }
+    if (_activePluginOwnsPdfTool) return;
     final index = _smartIndexStore.indexFor(pageNumber);
     final pageSize = index?.pageSize;
     if (pageSize == null) {
@@ -382,6 +465,16 @@ class _PdfStageState extends State<PdfStage> {
       normalizedPoint.dy * index.pageSize.height,
     );
     final zoomScale = pageRect.width / index.pageSize.width;
+    if (_activePluginOwnsPdfTool) {
+      _dispatchPdfTapToActivePlugin(
+        pageNumber,
+        Offset(
+          normalizedPoint.dx * index.pageSize.width,
+          normalizedPoint.dy * index.pageSize.height,
+        ),
+      );
+      return;
+    }
     final candidate = index.hitTest(
       pagePoint,
       logicalPixelTolerance: 10,

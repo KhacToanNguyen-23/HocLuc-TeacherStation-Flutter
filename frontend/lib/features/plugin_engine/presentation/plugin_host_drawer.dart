@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
@@ -6,6 +6,8 @@ import 'package:teaching_companion/features/studio_board/domain/models/studio_st
 import '../services/plugin_manager.dart';
 import '../services/plugin_web_server.dart';
 import '../services/process_supervisor.dart';
+import '../services/plugin_event_hub.dart';
+import '../services/host_bridge.dart';
 import 'flat_host.dart';
 
 class PluginHostDrawer extends StatelessWidget {
@@ -107,7 +109,7 @@ class PluginHostDrawer extends StatelessWidget {
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(14),
                     ),
-                    child: _buildPluginContent(plugin),
+                    child: _buildPluginContent(plugin, visible: isOpen),
                   ),
                 ),
               ],
@@ -118,7 +120,7 @@ class PluginHostDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildPluginContent(dynamic plugin) {
+  Widget _buildPluginContent(dynamic plugin, {required bool visible}) {
     if (plugin == null) return const SizedBox.shrink();
     final entry = plugin.manifest.uiEntry as String;
     String targetUrl =
@@ -140,19 +142,34 @@ class PluginHostDrawer extends StatelessWidget {
           : '$targetUrl?port=$port';
     }
 
-    void Function(String)? executeJs;
     return FlatHost(
       url: targetUrl,
-      onMessage: (msg) => studio.handlePluginMessage(msg, executeJs: executeJs),
+      visible: visible,
+      transparentBackground: plugin.manifest.transparentBackground,
+      glassPreset: studio.glassPreset,
+      onPluginMessage: (message) => studio.handlePluginMessage(
+        message.data,
+        executeJs: message.executeJs,
+        manifest: plugin.manifest,
+        viewToken: message.viewToken,
+        navigationGeneration: message.navigationGeneration,
+        webViewBounds: message.webViewBounds,
+      ),
       onControllerReady: (sendJs) {
-        executeJs = sendJs;
+        HostBridge.instance.registerPluginView(
+          pluginId: plugin.manifest.id,
+          preset: studio.glassPreset,
+          sender: sendJs,
+        );
         studio.onSnippetCapturedForPlugin = (text, target) {
           sendJs(
             "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)});",
           );
         };
       },
+      onControllerDisposed: (sender) {
+        PluginEventHub.instance.unregister(plugin.manifest.id, sender);
+      },
     );
   }
 }
-

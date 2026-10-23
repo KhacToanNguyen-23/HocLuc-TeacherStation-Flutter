@@ -1,24 +1,27 @@
 {
-  "$schema": "https://hocluc.com/schemas/plugin.v2.json",
+  "$schema": "https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json",
   "id": "com.hocluc.plugin.casio",
   "name": "Máy Tính Khoa Học Casio",
-  "version": "1.1.1",
+  "version": "1.1.3",
   "author": "Học Lực Math Team",
-  "description": "Mô phỏng máy tính khoa học Casio FX-580 / FX-880 hỗ trợ giải toán và tính toán trên bảng phấn.",
+  "description": "Mô phỏng máy tính khoa học Casio FX-580 / FX-880 trên bảng phấn.",
   "category": "math",
-  "main": "ui/index.html",
   "icon": "icon.png",
-  "placement": "floating_window",
-  "default_width": 336,
-  "default_height": 624,
-  "resizable": false,
-  "frameless": true,
-  "inject_sdk": true,
+  "ui": {
+    "entry": "ui/index.html",
+    "placement": "floating_window",
+    "default_width": 336,
+    "default_height": 624,
+    "resizable": false,
+    "frameless": true,
+    "inject_sdk": true
+  },
   "backend": null,
   "contributes": {
     "tools": []
   },
   "permissions": [
-    "board:insert_annotation"
+    "board:insert_annotation",
+    "storage"
   ]
 }

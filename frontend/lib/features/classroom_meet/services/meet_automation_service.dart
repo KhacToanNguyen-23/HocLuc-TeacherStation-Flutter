@@ -8,6 +8,7 @@ import 'package:teaching_companion/features/classroom_meet/domain/models/meet_ev
 import 'google_meet_auth_service.dart';
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'meet_bridge_script.dart';
+import 'classroom_settings_service.dart';
 import 'meet_admission_bridge_script.dart';
 import 'meet_focus_style_script.dart';
 import 'webview_environment_service.dart';
@@ -222,6 +223,8 @@ class MeetAutomationService extends ChangeNotifier {
 
     try {
       await WebviewEnvironmentService.ensureInitialized();
+      final classroomSettings = ClassroomSettingsService.instance;
+      await classroomSettings.load();
 
       if (_controller != null) {
         try {
@@ -241,6 +244,9 @@ class MeetAutomationService extends ChangeNotifier {
       }
       _controller = win.WebviewController();
       await _controller!.initialize();
+      await _controller!.addScriptToExecuteOnDocumentCreated(
+        _mediaConstraintsScript(classroomSettings.noiseSuppression),
+      );
       await _controller!.addScriptToExecuteOnDocumentCreated(
         MeetScreenShareScript.script,
       );
@@ -440,6 +446,24 @@ class MeetAutomationService extends ChangeNotifier {
       return null;
     }
   }
+
+  String _mediaConstraintsScript(bool noiseSuppression) => '''
+(function() {
+  var media = navigator.mediaDevices;
+  if (!media || !media.getUserMedia || media.__hoclucNoiseSettingApplied) return;
+  var getUserMedia = media.getUserMedia.bind(media);
+  media.getUserMedia = function(constraints) {
+    if (constraints && constraints.audio) {
+      var audio = constraints.audio === true ? {} : Object.assign({}, constraints.audio);
+      audio.noiseSuppression = { ideal: $noiseSuppression };
+      audio.echoCancellation = { ideal: $noiseSuppression };
+      constraints = Object.assign({}, constraints, { audio: audio });
+    }
+    return getUserMedia(constraints);
+  };
+  media.__hoclucNoiseSettingApplied = true;
+})();
+''';
 
   /// Xử lý message nhận từ script tiêm trong WebView2 (hỗ trợ gọi trong test)
   @visibleForTesting

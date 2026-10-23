@@ -21,7 +21,7 @@ try:
     import uvicorn
 except ImportError:
     print("FastAPI or dependencies not found. Please install fastapi and uvicorn.")
-    sys.exit(0)
+    sys.exit(1)
 
 # Load Pillow
 try:
@@ -77,15 +77,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/health")
-def health_check():
-    return {
-        "status": "ok",
-        "plugin": "com.hocluc.plugin.english",
-        "version": "2.0.0",
-        "spacy_loaded": nlp is not None,
-    }
 
 import re
 
@@ -303,12 +294,15 @@ def _parse_with_spacy(text: str) -> AnalyzeResponse:
 
     return AnalyzeResponse(original_text=clean_text, tokens=tokens, grammar_issue="Cú pháp S-V-O-A chuẩn xác.")
 
+runtime_port = None
+
 @app.get("/health")
 def health_check():
     return {
         "status": "ok",
         "service": "english_assistant_engine",
-        "port": 18888,
+        "port": runtime_port,
+        "version": "2.0.2",
         "spacy_loaded": nlp is not None,
         "ocr_available": (rapid_ocr is not None) or (has_pytesseract and has_pil),
         "rapid_ocr": rapid_ocr is not None,
@@ -745,9 +739,21 @@ if __name__ == "__main__":
     parser.add_argument(
         "--port",
         type=int,
-        default=int(os.environ.get("HOCLUC_PLUGIN_PORT", 18888)),
+        default=None,
         help="Port to bind"
     )
     args = parser.parse_args()
-    print(f"[EnglishAssistantEngine] Starting on 127.0.0.1:{args.port}...")
-    uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="info")
+    port = args.port
+    if port is None:
+        port_value = os.environ.get("HOCLUC_PLUGIN_PORT")
+        if not port_value:
+            parser.error("provide --port or set HOCLUC_PLUGIN_PORT")
+        try:
+            port = int(port_value)
+        except ValueError:
+            parser.error("HOCLUC_PLUGIN_PORT must be an integer")
+    if not 1 <= port <= 65535:
+        parser.error("port must be between 1 and 65535")
+    runtime_port = port
+    print(f"[EnglishAssistantEngine] Starting on 127.0.0.1:{port}...")
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")

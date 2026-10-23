@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/core/platform/url_opener.dart';
@@ -12,6 +12,7 @@ class WorkspaceCourseDetail extends StatelessWidget {
     super.key,
     required this.course,
     required this.disabled,
+    this.googleActionsDisabled = false,
     required this.startingCourseId,
     required this.hasStartRequest,
     required this.onCompleteClass,
@@ -21,13 +22,17 @@ class WorkspaceCourseDetail extends StatelessWidget {
     required this.onSchedule,
     required this.onEdit,
     required this.onDelete,
+    required this.onArchive,
+    required this.onRestore,
     required this.onSetMeetAccess,
+    this.isArchived = false,
     this.classroomSyncing = false,
     this.classroomSyncError,
   });
 
   final Map<String, dynamic> course;
   final bool disabled;
+  final bool googleActionsDisabled;
   final String? startingCourseId;
   final bool hasStartRequest;
   final VoidCallback onCompleteClass;
@@ -37,6 +42,9 @@ class WorkspaceCourseDetail extends StatelessWidget {
   final VoidCallback onSchedule;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onArchive;
+  final VoidCallback onRestore;
+  final bool isArchived;
   final void Function(Map<String, dynamic> course, Map<String, dynamic> student)
   onSetMeetAccess;
   final bool classroomSyncing;
@@ -109,6 +117,48 @@ class WorkspaceCourseDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final courseId = course['courseId'];
+    final isRemote = courseId is String && courseId.isNotEmpty;
+    final state = course['classroomState'];
+    final canArchive = isRemote && state == 'ACTIVE';
+    final canDeleteLocally = !isRemote;
+    final actionDisabled = disabled || googleActionsDisabled;
+    if (isArchived) {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.surfaceBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              course['title'] as String,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            _notice('Lớp đã lưu trữ. Khôi phục lớp để tiếp tục sử dụng.'),
+            Wrap(
+              spacing: 10,
+              children: [
+                FilledButton.icon(
+                  onPressed: actionDisabled ? null : onRestore,
+                  icon: const Icon(Icons.unarchive_outlined),
+                  label: const Text('Khôi phục lớp'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: actionDisabled ? null : onDelete,
+                  icon: const Icon(Icons.delete_forever_outlined),
+                  label: const Text('Xóa vĩnh viễn'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
     final students = (course['students'] as List? ?? [])
         .cast<Map<String, dynamic>>();
     final joined = students
@@ -155,19 +205,26 @@ class WorkspaceCourseDetail extends StatelessWidget {
                       ),
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    enabled: !disabled,
-                    tooltip: 'Tùy chọn lớp',
-                    onSelected: (action) =>
-                        action == 'edit' ? onEdit() : onDelete(),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Sửa thông tin'),
-                      ),
-                      PopupMenuItem(value: 'delete', child: Text('Xóa lớp')),
-                    ],
-                  ),
+                  if (!isRemote || !googleActionsDisabled)
+                    PopupMenuButton<String>(
+                      enabled: !disabled,
+                      tooltip: 'Tùy chọn lớp',
+                      onSelected: (action) {
+                        if (action == 'edit') onEdit();
+                        if (action == 'delete') onDelete();
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Sửa thông tin'),
+                        ),
+                        if (canDeleteLocally)
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Xóa lớp'),
+                          ),
+                      ],
+                    ),
                 ],
               ),
               const SizedBox(height: 4),
@@ -179,14 +236,16 @@ class WorkspaceCourseDetail extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  if (course['courseId'] == null)
+                  if (!isRemote)
                     FilledButton.icon(
-                      onPressed: disabled ? null : onCompleteClass,
+                      onPressed: actionDisabled ? null : onCompleteClass,
                       icon: const Icon(Icons.refresh),
                       label: const Text('Hoàn tất tạo lớp'),
                     ),
                   FilledButton.icon(
-                    onPressed: disabled ? null : onStartClass,
+                    onPressed: actionDisabled || (isRemote && state != 'ACTIVE')
+                        ? null
+                        : onStartClass,
                     icon: const Icon(Icons.play_arrow),
                     label: Text(
                       isStarting
@@ -199,12 +258,16 @@ class WorkspaceCourseDetail extends StatelessWidget {
                     ),
                   ),
                   OutlinedButton.icon(
-                    onPressed: disabled ? null : onAddStudents,
+                    onPressed: actionDisabled || (isRemote && state != 'ACTIVE')
+                        ? null
+                        : onAddStudents,
                     icon: const Icon(Icons.person_add_outlined),
                     label: const Text('Thêm email học sinh'),
                   ),
                   OutlinedButton.icon(
-                    onPressed: disabled ? null : onSchedule,
+                    onPressed: actionDisabled || (isRemote && state != 'ACTIVE')
+                        ? null
+                        : onSchedule,
                     icon: const Icon(Icons.event_outlined),
                     label: const Text('Lên lịch học'),
                   ),
@@ -213,6 +276,12 @@ class WorkspaceCourseDetail extends StatelessWidget {
                     TextButton(
                       onPressed: () => openExternalUrl(url),
                       child: const Text('Mở Classroom'),
+                    ),
+                  if (canArchive)
+                    OutlinedButton.icon(
+                      onPressed: actionDisabled ? null : onArchive,
+                      icon: const Icon(Icons.archive_outlined),
+                      label: const Text('Lưu trữ lớp'),
                     ),
                   if (course['meetingUrl'] case final String url
                       when url.isNotEmpty)
@@ -236,6 +305,10 @@ class WorkspaceCourseDetail extends StatelessWidget {
                 const SizedBox(height: 8),
                 _notice(classroomStatus.message, error: classroomStatus.error),
               ],
+              if (state == 'PROVISIONED')
+                _notice(
+                  'Mở Google Classroom và kích hoạt lớp trước khi lưu trữ.',
+                ),
             ],
           ),
         ),
@@ -246,7 +319,7 @@ class WorkspaceCourseDetail extends StatelessWidget {
         WorkspaceRosterTable(
           course: course,
           students: students,
-          disabled: disabled,
+          disabled: actionDisabled,
           onSetMeetAccess: onSetMeetAccess,
         ),
         if (events.isNotEmpty) ...[
@@ -257,5 +330,3 @@ class WorkspaceCourseDetail extends StatelessWidget {
     );
   }
 }
-
-

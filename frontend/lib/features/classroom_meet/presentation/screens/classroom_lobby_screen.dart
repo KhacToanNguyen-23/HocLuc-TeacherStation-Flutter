@@ -9,6 +9,7 @@ import 'package:teaching_companion/core/network/local_service.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/classroom_settings_service.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/lobby/lobby_header.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/lobby/lobby_media_preview.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/lobby/lobby_meet_room_card.dart';
@@ -87,8 +88,14 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
       _currentMeetingUrl = null;
     }
 
-    _mediaService.initMedia();
+    unawaited(_initializeConfiguredMedia());
     _startSimulatedMicMeter();
+  }
+
+  Future<void> _initializeConfiguredMedia() async {
+    final settings = ClassroomSettingsService.instance;
+    await settings.load();
+    if (settings.autoCamera) await _mediaService.initMedia();
   }
 
   @override

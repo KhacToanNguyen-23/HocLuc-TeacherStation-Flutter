@@ -1,0 +1,142 @@
+/* HocLuc liquid glass SDK stylesheet v1.0.0. */
+:root {
+  --glass-bg-opacity: 0.28;
+  --glass-blur: 20px;
+  --glass-bg: rgb(24 38 32 / var(--glass-bg-opacity));
+  --glass-border: rgb(238 248 242 / 0.38);
+  --glass-specular: rgb(255 255 255 / 0.58);
+  --glass-shadow: 0 8px 28px rgb(0 0 0 / 0.28);
+  --glass-radius-pill: 9999px;
+  --glass-radius-card: 18px;
+  --glass-subject-color: #38bdf8;
+  --glass-verb-color: #f472b6;
+  --glass-object-color: #fb923c;
+}
+
+:root[data-glass-preset='clear'] {
+  --glass-bg-opacity: 0.15;
+  --glass-blur: 10px;
+}
+
+:root[data-glass-preset='frosted'] {
+  --glass-bg-opacity: 0.28;
+  --glass-blur: 20px;
+}
+
+:root[data-glass-preset='solid'] {
+  --glass-bg-opacity: 0.85;
+  --glass-blur: 28px;
+}
+
+/* Matches the host AppColors.slate900 edge and pairs with white for varied boards. */
+.liquid-card {
+  border: 1px solid #0b2348;
+  outline: 1px solid #ffffff;
+  border-radius: var(--glass-radius-card);
+  background: #182620;
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+.liquid-card > .legend,
+.liquid-card > .tokens-container,
+.liquid-card > .grammar-alert {
+  border-color: currentColor;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.liquid-pill-btn {
+  border: 1px solid #0b2348;
+  outline: 1px solid #ffffff;
+  border-radius: var(--glass-radius-pill);
+  background-color: var(--glass-bg);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.22) 0%, rgb(255 255 255 / 0.05) 50%, rgb(255 255 255 / 0) 100%);
+  box-shadow: inset 0 1.5px 1px 0 rgb(255 255 255 / 0.45), inset 0 -1px 1px 0 rgb(0 0 0 / 0.18), var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+}
+
+.liquid-pill-btn:active {
+  transform: scale(0.965);
+  filter: brightness(0.92);
+  transition: transform 100ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 100ms ease;
+}
+
+.liquid-pill-btn:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .liquid-pill-btn {
+    transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), border-color 160ms ease,
+      box-shadow 160ms ease, filter 160ms ease;
+  }
+
+  .liquid-pill-btn:hover {
+    box-shadow: var(--glass-shadow), inset 0 1.5px 1.5px 0 rgb(255 255 255 / 0.65), 0 4px 16px rgb(0 0 0 / 0.25);
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+}
+
+.liquid-gem-token {
+  border-radius: var(--glass-radius-pill);
+  background-color: var(--glass-bg);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+.token-pill.liquid-gem-token {
+  background-color: var(--glass-bg);
+}
+
+.liquid-gem-token.role-subject {
+  border-color: var(--glass-subject-color);
+  border-style: solid;
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--glass-subject-color) 16%, transparent), transparent 75%);
+}
+
+.liquid-gem-token.role-verb {
+  border-color: var(--glass-verb-color);
+  border-style: dashed;
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--glass-verb-color) 16%, transparent), transparent 75%);
+}
+
+.liquid-gem-token.role-object {
+  border: 3px double var(--glass-object-color);
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--glass-object-color) 17%, transparent), transparent 75%);
+}
+
+.liquid-gem-token.role-subject .role-tag { color: var(--glass-subject-color); }
+.liquid-gem-token.role-verb .role-tag { color: var(--glass-verb-color); }
+.liquid-gem-token.role-object .role-tag { color: var(--glass-object-color); }
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .liquid-card,
+  .liquid-pill-btn,
+  .liquid-gem-token {
+    background-color: #182620;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-pill-btn {
+    transition: none;
+  }
+
+  .liquid-pill-btn:hover,
+  .liquid-pill-btn:focus-visible {
+    transform: none;
+    box-shadow: none;
+  }
+}

@@ -58,6 +58,16 @@ public class GoogleIntegrationController {
         return classes.update(email(req), id, body.title(), body.description());
     }
 
+    @PostMapping("/courses/{id}/archive")
+    public Object archiveCourse(HttpServletRequest req, @PathVariable String id) {
+        return classes.archive(email(req), id);
+    }
+
+    @PostMapping("/courses/{id}/restore")
+    public Object restoreCourse(HttpServletRequest req, @PathVariable String id) {
+        return classes.restore(email(req), id);
+    }
+
     @DeleteMapping("/courses/{id}")
     public Object deleteCourse(HttpServletRequest req, @PathVariable String id) {
         classes.delete(email(req), id);

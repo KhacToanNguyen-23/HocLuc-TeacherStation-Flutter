@@ -1,4 +1,4 @@
-﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -154,7 +154,7 @@ class PdfAnnotationExporter {
         for (var i = 1; i < points.length; i++) {
           page.graphics.drawLine(pen, points[i - 1], points[i]);
         }
-        if (stroke.isSmartPenOval) {
+        if (stroke.isGroupedPdfAnnotation) {
           page.graphics.drawLine(pen, points.last, points.first);
         }
       }

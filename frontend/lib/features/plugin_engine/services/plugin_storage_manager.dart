@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
@@ -6,13 +6,32 @@ import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_m
 
 /// Manages physical storage, extraction, on-disk caching and uninstallation of plugins.
 class PluginStorageManager {
-  static final PluginStorageManager _instance = PluginStorageManager._internal();
+  static final PluginStorageManager _instance =
+      PluginStorageManager._internal();
   factory PluginStorageManager() => _instance;
   PluginStorageManager._internal();
 
   static PluginStorageManager get instance => _instance;
 
   Directory? _customBaseDirectory;
+
+  File getPluginDataFile(String pluginId, String filename) {
+    if (pluginId.contains('..') ||
+        pluginId.contains('/') ||
+        pluginId.contains('\\')) {
+      throw const FormatException('Plugin ID không hợp lệ.');
+    }
+    if (filename.contains('..') ||
+        filename.contains('/') ||
+        filename.contains('\\')) {
+      throw const FormatException('Tên tệp plugin không hợp lệ.');
+    }
+    final directory = Directory(
+      '${getPluginsRootDirectory().path}/$pluginId/data',
+    );
+    if (!directory.existsSync()) directory.createSync(recursive: true);
+    return File('${directory.path}/$filename');
+  }
 
   @visibleForTesting
   void setBaseDirectoryForTesting(Directory dir) {
@@ -29,7 +48,8 @@ class PluginStorageManager {
 
     String basePath;
     if (Platform.isWindows) {
-      final localAppData = Platform.environment['LOCALAPPDATA'] ??
+      final localAppData =
+          Platform.environment['LOCALAPPDATA'] ??
           Platform.environment['APPDATA'] ??
           '${Platform.environment['USERPROFILE']}\\AppData\\Local';
       basePath = '$localAppData\\HocLuc\\plugins';
@@ -83,7 +103,8 @@ class PluginStorageManager {
     for (final rootDir in devRoots) {
       if (!rootDir.existsSync()) continue;
       final direct = Directory('${rootDir.path}/$pluginId');
-      if (direct.existsSync() && File('${direct.path}/manifest.json').existsSync()) {
+      if (direct.existsSync() &&
+          File('${direct.path}/manifest.json').existsSync()) {
         return direct;
       }
       try {
@@ -100,7 +121,10 @@ class PluginStorageManager {
   }
 
   /// Install or update a plugin by unpacking zip/hlep bytes into AppData.
-  Future<Directory> installFromZip(List<int> bytes, {String? customFilename}) async {
+  Future<Directory> installFromZip(
+    List<int> bytes, {
+    String? customFilename,
+  }) async {
     final archive = ZipDecoder().decodeBytes(bytes);
     ArchiveFile? manifestFile;
 
@@ -113,7 +137,8 @@ class PluginStorageManager {
         );
       }
       if (file.isFile) {
-        if (normPath == 'manifest.json' || normPath.endsWith('/manifest.json')) {
+        if (normPath == 'manifest.json' ||
+            normPath.endsWith('/manifest.json')) {
           manifestFile = file;
         }
       }
@@ -126,12 +151,18 @@ class PluginStorageManager {
     final manifestStr = utf8.decode(manifestFile.content as List<int>);
     final manifestJson = jsonDecode(manifestStr) as Map<String, dynamic>;
     final manifest = PluginManifest.fromJson(manifestJson);
-    if (manifest.id.contains('..') || manifest.id.contains('/') || manifest.id.contains('\\')) {
-      throw const FormatException('ID của plugin trong manifest.json không hợp lệ.');
+    if (manifest.id.contains('..') ||
+        manifest.id.contains('/') ||
+        manifest.id.contains('\\')) {
+      throw const FormatException(
+        'ID của plugin trong manifest.json không hợp lệ.',
+      );
     }
 
     final root = getPluginsRootDirectory();
-    final targetDir = Directory('${root.path}/${manifest.id}/v${manifest.version}');
+    final targetDir = Directory(
+      '${root.path}/${manifest.id}/v${manifest.version}',
+    );
 
     if (!targetDir.existsSync()) {
       targetDir.createSync(recursive: true);
@@ -158,7 +189,9 @@ class PluginStorageManager {
       }
     }
 
-    debugPrint('[PluginStorageManager] Extracted ${manifest.id} v${manifest.version} to ${targetDir.path}');
+    debugPrint(
+      '[PluginStorageManager] Extracted ${manifest.id} v${manifest.version} to ${targetDir.path}',
+    );
     return targetDir;
   }
 
@@ -168,7 +201,9 @@ class PluginStorageManager {
     final pluginFolder = Directory('${root.path}/$pluginId');
     if (pluginFolder.existsSync()) {
       await pluginFolder.delete(recursive: true);
-      debugPrint('[PluginStorageManager] Deleted plugin directory: ${pluginFolder.path}');
+      debugPrint(
+        '[PluginStorageManager] Deleted plugin directory: ${pluginFolder.path}',
+      );
     }
   }
 
@@ -181,7 +216,9 @@ class PluginStorageManager {
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
       return PluginManifest.fromJson(map);
     } catch (e) {
-      debugPrint('[PluginStorageManager] Error reading manifest from ${dir.path}: $e');
+      debugPrint(
+        '[PluginStorageManager] Error reading manifest from ${dir.path}: $e',
+      );
       return null;
     }
   }
@@ -193,9 +230,11 @@ class PluginStorageManager {
       for (final file in archive) {
         if (file.isFile) {
           final normPath = file.name.replaceAll('\\', '/');
-          if (normPath == 'manifest.json' || normPath.endsWith('/manifest.json')) {
+          if (normPath == 'manifest.json' ||
+              normPath.endsWith('/manifest.json')) {
             final manifestStr = utf8.decode(file.content as List<int>);
-            final manifestJson = jsonDecode(manifestStr) as Map<String, dynamic>;
+            final manifestJson =
+                jsonDecode(manifestStr) as Map<String, dynamic>;
             return PluginManifest.fromJson(manifestJson);
           }
         }
@@ -206,4 +245,3 @@ class PluginStorageManager {
     return null;
   }
 }
-

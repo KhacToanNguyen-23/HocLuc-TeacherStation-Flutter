@@ -6,12 +6,18 @@ on:
     paths:
       - 'frontend/**'
       - 'plugins/**'
+      - 'scripts/**'
+      - 'docs/architecture/**'
+      - '.agents/rules/plugin_development_rules.md'
       - '.github/workflows/ci-frontend.yml'
   pull_request:
     branches: [ develop, main, master ]
     paths:
       - 'frontend/**'
       - 'plugins/**'
+      - 'scripts/**'
+      - 'docs/architecture/**'
+      - '.agents/rules/plugin_development_rules.md'
       - '.github/workflows/ci-frontend.yml'
 
 concurrency:
@@ -40,6 +46,12 @@ jobs:
         run: |
           echo "🔍 [Early Gate] Kiểm tra nhanh tính toàn vẹn Plugin và độ tươi của gói .hlep..."
           node ../scripts/validate_plugins.mjs
+
+      - name: Validate Plugin UI Contract
+        run: |
+          node --test test/e2e_browser/plugin_contract.test.cjs
+          node --check ../plugins/english_assistant/ui/app.js
+          node --check ../plugins/smart_pen/ui/app.js
 
       - name: Run Browser Bridge Scripts E2E Test (Node.js)
         run: |
@@ -74,8 +86,8 @@ jobs:
   build-windows-check:
     name: Windows Native Desktop Build Verification
     runs-on: windows-latest
-    # Tối ưu Action minutes: Chạy khi merge/push vào develop/main hoặc PR có thay đổi native/pubspec/ci
-    if: github.event_name == 'push' || contains(github.ref, 'develop') || contains(github.ref, 'main')
+    # Include pull requests so Windows compilation errors are caught before merge.
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
 
     defaults:
       run:

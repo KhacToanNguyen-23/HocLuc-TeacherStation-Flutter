@@ -1,4 +1,4 @@
-﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -42,7 +42,7 @@ class ProcessSupervisor {
       FrontendLogger.write(
         '[ProcessSupervisor] Error binding ephemeral port: $e',
       );
-      return 20000 + (DateTime.now().millisecond % 10000);
+      throw StateError('Unable to allocate an operating-system port.');
     }
   }
 
@@ -82,7 +82,15 @@ class ProcessSupervisor {
       await stopSidecar(pluginId);
     }
 
-    final port = await findAvailablePort();
+    final int port;
+    try {
+      port = await findAvailablePort();
+    } catch (e) {
+      FrontendLogger.write(
+        '[ProcessSupervisor] Could not allocate a port for $pluginId',
+      );
+      return null;
+    }
     final entryRel =
         backend?.entry ?? manifest.backendExecutable ?? 'engine/service.py';
 
@@ -132,7 +140,9 @@ class ProcessSupervisor {
       process.stdout.transform(utf8.decoder).listen((_) {});
       process.stderr.transform(utf8.decoder).listen((_) {});
 
+      var processExited = false;
       process.exitCode.then((code) {
+        processExited = true;
         FrontendLogger.write(
           '[ProcessSupervisor] Process $pluginId exited with code $code',
         );
@@ -145,10 +155,19 @@ class ProcessSupervisor {
         backend?.healthEndpoint,
         timeoutMs: 6000,
       );
-      if (!healthy) {
+      if (!healthy || processExited) {
         FrontendLogger.write(
           '[ProcessSupervisor] Health check failed for $pluginId on port $port',
         );
+        if (!processExited) {
+          process.kill(ProcessSignal.sigterm);
+          await Future.any<void>([
+            process.exitCode.then<void>((_) {}),
+            Future<void>.delayed(const Duration(milliseconds: 800)),
+          ]);
+          if (!processExited) process.kill(ProcessSignal.sigkill);
+        }
+        return null;
       }
 
       final instance = ProcessInstance(
@@ -231,4 +250,3 @@ class ProcessSupervisor {
     }
   }
 }
-
