@@ -63,6 +63,168 @@ class GoogleIntegrationTest {
         saved.put("students",new ArrayList<>(List.of(new LinkedHashMap<>(Map.of("email",address,"meetAllowed",true,"classroomStatus","INVITED")))));
         store.saveCourse(SUBJECT,saved);
     }
+    @Test void listReconcilesOnlyHocLucCoursesAgainstPagedClassroomStates() {
+        var saved=course(); saved.put("classroomState","ACTIVE"); store.saveCourse(SUBJECT,saved);
+        when(google.call(eq("GET"),eq(C+"courses?teacherId=me"),anyString(),isNull()))
+            .thenReturn(Map.of("courses",List.of(Map.of("id","google-course","courseState","ARCHIVED")),"nextPageToken","next"));
+        when(google.call(eq("GET"),eq(C+"courses?teacherId=me&pageToken=next"),anyString(),isNull()))
+            .thenReturn(Map.of("courses",List.of(Map.of("id","unrelated-course","courseState","ACTIVE"))));
+
+        var result=classes.list(EMAIL);
+
+        assertEquals("ARCHIVED",result.get(0).get("classroomState"));
+        assertFalse(result.get(0).containsKey("classroomStateSyncError"));
+        verify(google).call(eq("GET"),eq(C+"courses?teacherId=me&pageToken=next"),anyString(),isNull());
+        assertEquals("ARCHIVED",store.course(SUBJECT,COURSE).get("classroomState"));
+    }
+    @Test void listKeepsLastConfirmedStateAndMarksRowsWhenReconciliationFails() {
+        var saved=course(); saved.put("classroomState","ACTIVE"); store.saveCourse(SUBJECT,saved);
+        when(google.call(eq("GET"),eq(C+"courses?teacherId=me"),anyString(),isNull()))
+            .thenThrow(new GoogleFailure(503,"GOOGLE_NETWORK","Unavailable"));
+
+        var result=classes.list(EMAIL);
+
+        assertEquals("ACTIVE",result.get(0).get("classroomState"));
+        assertTrue(result.get(0).get("classroomStateSyncError").toString().contains("Unavailable"));
+        assertEquals("ACTIVE",store.course(SUBJECT,COURSE).get("classroomState"));
+    }
+    @Test void listRemovesLocalCourseWhenClassroomConfirmsCourseIdIsGone() {
+        course();
+        when(google.call(eq("GET"),eq(C+"courses?teacherId=me"),anyString(),isNull()))
+            .thenReturn(Map.of("courses",List.of()));
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenThrow(new GoogleFailure(404,"GOOGLE_404","Not found"));
+
+        var result=classes.list(EMAIL);
+
+        assertTrue(result.isEmpty());
+        assertThrows(GoogleFailure.class,()->store.course(SUBJECT,COURSE));
+    }
+    @Test void listKeepsMissingCourseWhenDirectClassroomCheckFailsForOtherReason() {
+        var saved=course(); saved.put("classroomState","ARCHIVED"); store.saveCourse(SUBJECT,saved);
+        when(google.call(eq("GET"),eq(C+"courses?teacherId=me"),anyString(),isNull()))
+            .thenReturn(Map.of("courses",List.of()));
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenThrow(new GoogleFailure(403,"GOOGLE_403","Permission denied"));
+
+        var result=classes.list(EMAIL);
+
+        assertEquals(1,result.size());
+        assertEquals("ARCHIVED",result.get(0).get("classroomState"));
+        assertTrue(result.get(0).get("classroomStateSyncError").toString().contains("Permission denied"));
+        assertNotNull(store.course(SUBJECT,COURSE));
+    }
+    @Test void archiveReadsBackGoogleStateBeforeUpdatingHocLuc() {
+        course();
+        when(google.call(eq("PATCH"),eq(C+"courses/google-course?updateMask=courseState"),anyString(),eq(Map.of("courseState","ARCHIVED"))))
+            .thenReturn(Map.of("courseState","ARCHIVED"));
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenReturn(Map.of("id","google-course","courseState","ARCHIVED"));
+
+        var result=classes.archive(EMAIL,COURSE);
+
+        assertEquals("ARCHIVED",result.get("classroomState"));
+        assertEquals("ARCHIVED",store.course(SUBJECT,COURSE).get("classroomState"));
+    }
+    @Test void archiveDoesNotChangeConfirmedStateWhenReadbackFails() {
+        var saved=course(); saved.put("classroomState","ACTIVE"); store.saveCourse(SUBJECT,saved);
+        when(google.call(eq("PATCH"),eq(C+"courses/google-course?updateMask=courseState"),anyString(),eq(Map.of("courseState","ARCHIVED"))))
+            .thenReturn(Map.of("courseState","ARCHIVED"));
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenThrow(new GoogleFailure(503,"GOOGLE_NETWORK","Readback unavailable"));
+
+        assertThrows(GoogleFailure.class,()->classes.archive(EMAIL,COURSE));
+
+        assertEquals("ACTIVE",store.course(SUBJECT,COURSE).get("classroomState"));
+    }
+    @Test void provisionedCourseCannotBeArchivedUntilActivated() {
+        var saved=course(); saved.put("classroomState","ACTIVE"); store.saveCourse(SUBJECT,saved);
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenReturn(Map.of("id","google-course","courseState","PROVISIONED"));
+
+        var failure=assertThrows(GoogleFailure.class,()->classes.archive(EMAIL,COURSE));
+
+        assertEquals("CLASSROOM_NOT_ACTIVE",failure.code);
+        assertEquals("PROVISIONED",store.course(SUBJECT,COURSE).get("classroomState"));
+        verify(google,never()).call(eq("PATCH"),anyString(),anyString(),any());
+    }
+    @Test void restoreReadsBackGoogleStateBeforeUpdatingHocLuc() {
+        var saved=course(); saved.put("classroomState","ARCHIVED"); store.saveCourse(SUBJECT,saved);
+        when(google.call(eq("PATCH"),eq(C+"courses/google-course?updateMask=courseState"),anyString(),eq(Map.of("courseState","ACTIVE"))))
+            .thenReturn(Map.of("courseState","ACTIVE"));
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenReturn(Map.of("id","google-course","courseState","ACTIVE"));
+
+        var result=classes.restore(EMAIL,COURSE);
+
+        assertEquals("ACTIVE",result.get("classroomState"));
+        assertEquals("ACTIVE",store.course(SUBJECT,COURSE).get("classroomState"));
+    }
+    @Test void remoteDeleteRequiresLiveArchivedState() {
+        course();
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenReturn(Map.of("id","google-course","courseState","ACTIVE"));
+
+        var failure=assertThrows(GoogleFailure.class,()->classes.delete(EMAIL,COURSE));
+
+        assertEquals("CLASSROOM_NOT_ARCHIVED",failure.code);
+        assertNotNull(store.course(SUBJECT,COURSE));
+        verify(google,never()).call(eq("DELETE"),eq(C+"courses/google-course"),anyString(),isNull());
+    }
+    @Test void remoteDeleteRemovesHocLucRowOnlyAfterGoogleConfirmsOrReturnsNotFound() {
+        var saved=course(); saved.put("classroomState","ARCHIVED"); store.saveCourse(SUBJECT,saved);
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenReturn(Map.of("id","google-course","courseState","ARCHIVED"));
+        when(google.call(eq("DELETE"),eq(C+"courses/google-course"),anyString(),isNull())).thenReturn(Map.of());
+
+        classes.delete(EMAIL,COURSE);
+
+        assertThrows(GoogleFailure.class,()->store.course(SUBJECT,COURSE));
+    }
+    @Test void remoteDeletePermissionFailurePreservesHocLucRow() {
+        var saved=course(); saved.put("classroomState","ARCHIVED"); store.saveCourse(SUBJECT,saved);
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenReturn(Map.of("id","google-course","courseState","ARCHIVED"));
+        when(google.call(eq("DELETE"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenThrow(new GoogleFailure(403,"GOOGLE_403","Permission denied"));
+
+        assertThrows(GoogleFailure.class,()->classes.delete(EMAIL,COURSE));
+
+        assertNotNull(store.course(SUBJECT,COURSE));
+        assertEquals("ARCHIVED",store.course(SUBJECT,COURSE).get("classroomState"));
+        assertTrue(store.course(SUBJECT,COURSE).containsKey("classroomStateSyncError"));
+    }
+    @Test void remoteDeleteCompletesLocalCleanupWhenGoogleCourseIsAlreadyGone() {
+        course();
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenThrow(new GoogleFailure(404,"GOOGLE_404","Not found"));
+
+        classes.delete(EMAIL,COURSE);
+
+        assertThrows(GoogleFailure.class,()->store.course(SUBJECT,COURSE));
+        verify(google,never()).call(eq("DELETE"),eq(C+"courses/google-course"),anyString(),isNull());
+    }
+    @Test void localOnlyDeleteDoesNotCallGoogle() {
+        var saved=course(); saved.remove("courseId"); store.saveCourse(SUBJECT,saved);
+
+        classes.delete(EMAIL,COURSE);
+
+        assertThrows(GoogleFailure.class,()->store.course(SUBJECT,COURSE));
+        verify(google,never()).call(anyString(),anyString(),anyString(),any());
+    }
+    @Test void archiveEndpointUsesConnectedTeacherAndReturnsConfirmedCourse() throws Exception {
+        course();
+        when(google.call(eq("GET"),eq(C+"courses/google-course"),anyString(),isNull()))
+            .thenReturn(Map.of("id","google-course","courseState","ACTIVE"),Map.of("id","google-course","courseState","ARCHIVED"));
+        when(google.call(eq("PATCH"),eq(C+"courses/google-course?updateMask=courseState"),anyString(),eq(Map.of("courseState","ARCHIVED"))))
+            .thenReturn(Map.of("id","google-course","courseState","ARCHIVED"));
+
+        mvc.perform(post("/api/integrations/google/courses/"+COURSE+"/archive")
+                .header("X-Companion-Token",companionToken)
+                .header("X-Google-Teacher-Email",EMAIL))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.classroomState").value("ARCHIVED"));
+    }
     @Test void pendingClassroomInvitationDoesNotBlockReadyMeetAndSyncIsIdempotent() {
         course(); roster(List.of()); allowStudent("pending@example.com");
         var result=classes.prepare(EMAIL,COURSE);

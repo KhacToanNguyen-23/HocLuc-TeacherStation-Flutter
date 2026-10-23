@@ -56,6 +56,9 @@ class BoardStroke {
     this.isHollow = false,
     this.smartPenGroupId,
     this.smartPenLabel,
+    this.annotationOwnerId,
+    this.annotationGroupId,
+    this.annotationItemId,
   }) : isHighlighter = isHighlighter ?? (width > 6 || rect != null);
   final bool isHighlighter;
   final Color color;
@@ -66,6 +69,15 @@ class BoardStroke {
   final bool isHollow;
   final String? smartPenGroupId;
   final String? smartPenLabel;
+  final String? annotationOwnerId;
+  final String? annotationGroupId;
+  final String? annotationItemId;
+  String? get groupedAnnotationGroupId => annotationGroupId ?? smartPenGroupId;
+  String? get groupedAnnotationItemId => annotationItemId ?? smartPenLabel;
+  bool get isGroupedPdfAnnotation =>
+      groupedAnnotationGroupId != null &&
+      groupedAnnotationItemId != null &&
+      points.length >= 3;
   bool get isSmartPenOval =>
       smartPenGroupId != null && smartPenLabel != null && points.length >= 3;
   Path? _cachedPath;
@@ -121,6 +133,9 @@ class BoardStroke {
     isHollow: isHollow,
     smartPenGroupId: smartPenGroupId,
     smartPenLabel: smartPenLabel,
+    annotationOwnerId: annotationOwnerId,
+    annotationGroupId: annotationGroupId,
+    annotationItemId: annotationItemId,
   );
 
   Map<String, dynamic> toJson() => {
@@ -134,6 +149,9 @@ class BoardStroke {
     if (isHollow) 'isHollow': true,
     if (smartPenGroupId != null) 'smartPenGroupId': smartPenGroupId,
     if (smartPenLabel != null) 'smartPenLabel': smartPenLabel,
+    if (annotationOwnerId != null) 'annotationOwnerId': annotationOwnerId,
+    if (annotationGroupId != null) 'annotationGroupId': annotationGroupId,
+    if (annotationItemId != null) 'annotationItemId': annotationItemId,
   };
 
   static BoardStroke fromJson(Map<String, dynamic> json) {
@@ -163,6 +181,9 @@ class BoardStroke {
       isHollow: json['isHollow'] == true,
       smartPenGroupId: json['smartPenGroupId'] as String?,
       smartPenLabel: json['smartPenLabel'] as String?,
+      annotationOwnerId: json['annotationOwnerId'] as String?,
+      annotationGroupId: json['annotationGroupId'] as String?,
+      annotationItemId: json['annotationItemId'] as String?,
     );
   }
 }

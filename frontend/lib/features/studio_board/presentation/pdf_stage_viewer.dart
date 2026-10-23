@@ -15,7 +15,9 @@ extension _PdfStageViewer on _PdfStageState {
 
     final params = PdfViewerParams(
       backgroundColor: chalkboardBg,
-      panAxis: PanAxis.free,
+      panAxis: ClassroomSettingsService.instance.boardOptimization
+          ? PanAxis.free
+          : PanAxis.aligned,
       scrollByMouseWheel: 1.0,
       boundaryMargin: const EdgeInsets.symmetric(
         horizontal: 16.0,
@@ -91,7 +93,7 @@ extension _PdfStageViewer on _PdfStageState {
                           studio.tool != 'pen' ||
                           isPanMode ||
                           !widget.interactive ||
-                          studio.activeSubjectTool == 'svo' ||
+                          studio.activeToolCapturesBoardInput ||
                           event.buttons & kPrimaryButton == 0) {
                         return;
                       }
@@ -109,7 +111,7 @@ extension _PdfStageViewer on _PdfStageState {
                           studio.tool != 'pen' ||
                           isPanMode ||
                           !widget.interactive ||
-                          studio.activeSubjectTool == 'svo' ||
+                          studio.activeToolCapturesBoardInput ||
                           event.timeStamp - down.timestamp >=
                               kLongPressTimeout ||
                           (event.localPosition - down.localPosition).distance >
@@ -167,13 +169,13 @@ extension _PdfStageViewer on _PdfStageState {
                             interactive:
                                 widget.interactive &&
                                 !isPanMode &&
-                                studio.activeSubjectTool != 'svo',
+                                !studio.activeToolCapturesBoardInput,
                             deferTapToOverlay:
                                 studio.smartSnapEnabled &&
                                 studio.tool == 'pen' &&
                                 widget.interactive &&
                                 !isPanMode &&
-                                studio.activeSubjectTool != 'svo',
+                                !studio.activeToolCapturesBoardInput,
                           ),
                           if (_showSmartPenDebugBounds)
                             Positioned.fill(
@@ -256,7 +258,7 @@ extension _PdfStageViewer on _PdfStageState {
                                 ),
                               ),
                             ),
-                          if (studio.activeSubjectTool == 'svo')
+                          if (studio.activeToolCapturesBoardInput)
                             Positioned.fill(
                               child: MouseRegion(
                                 cursor: SystemMouseCursors.click,
@@ -364,4 +366,3 @@ extension _PdfStageViewer on _PdfStageState {
     return _cachedPdfViewer!;
   }
 }
-

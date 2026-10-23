@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/core/ui/google_brand_icon.dart';
@@ -8,6 +8,7 @@ import 'package:teaching_companion/features/classroom_meet/domain/models/teachin
 import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_class_edit_dialog.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_connection_panel.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_course_detail.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_course_lifecycle_dialogs.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_invite_dialog.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/workspace/workspace_schedule_dialog.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
@@ -38,6 +39,9 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
   List<Map<String, dynamic>> _courses = [];
   String? _selected, _error;
   bool _busy = true, _polling = false;
+  bool _showArchived = false;
+  bool _initialTabResolved = false;
+  bool _courseStateRefreshFailed = false;
   final Map<String, String> _startRequests = {};
   final Set<String> _syncingClassrooms = {};
   final Map<String, String> _classroomSyncErrors = {};
@@ -86,10 +90,18 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
       setState(() {
         _connection = connection;
         _courses = courses;
-        _error = connection['message'] as String?;
-        if (!courses.any((c) => c['id'] == _selected)) {
-          _selected = courses.isEmpty ? null : courses.first['id'] as String;
+        if (!_initialTabResolved && connection['connected'] == true) {
+          _showArchived = _activeCourses.isEmpty && _archivedCourses.isNotEmpty;
+          _initialTabResolved = true;
         }
+        _courseStateRefreshFailed = courses.any(
+          (course) =>
+              _hasClassroomCourse(course) &&
+              course['classroomStateSyncError'] is String &&
+              (course['classroomStateSyncError'] as String).isNotEmpty,
+        );
+        _error = connection['message'] as String?;
+        _keepSelectionVisible();
       });
       final trackedPendingCourse = _courseById(_pendingClassroomCourseId);
       if (trackedPendingCourse == null ||
@@ -101,6 +113,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
         _rememberPendingCourse(selectedCourse);
       }
     } catch (e) {
+      if (mounted) setState(() => _courseStateRefreshFailed = true);
       _handleError(e);
     } finally {
       if (manageBusy && mounted) {
@@ -140,9 +153,42 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
         for (final c in _courses)
           if (c['id'] == course['id']) course else c,
       ];
+      _courseStateRefreshFailed = _courses.any(
+        (item) =>
+            _hasClassroomCourse(item) &&
+            item['classroomStateSyncError'] is String &&
+            (item['classroomStateSyncError'] as String).isNotEmpty,
+      );
+      _showArchived = course['classroomState'] == 'ARCHIVED';
       _selected = course['id'] as String;
       _error = null;
     });
+  }
+
+  bool _hasClassroomCourse(Map<String, dynamic> course) {
+    final id = course['courseId'];
+    return id is String && id.isNotEmpty;
+  }
+
+  List<Map<String, dynamic>> get _activeCourses => _courses
+      .where((course) => course['classroomState'] != 'ARCHIVED')
+      .toList();
+
+  List<Map<String, dynamic>> get _archivedCourses => _courses
+      .where((course) => course['classroomState'] == 'ARCHIVED')
+      .toList();
+
+  List<Map<String, dynamic>> get _visibleCourses =>
+      _showArchived ? _archivedCourses : _activeCourses;
+
+  Map<String, dynamic>? get _selectedCourse =>
+      _courses.where((course) => course['id'] == _selected).firstOrNull;
+
+  void _keepSelectionVisible() {
+    final visible = _visibleCourses;
+    if (!visible.any((course) => course['id'] == _selected)) {
+      _selected = visible.isEmpty ? null : visible.first['id'] as String;
+    }
   }
 
   Map<String, dynamic>? _courseById(String? id) {
@@ -221,6 +267,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
   }
 
   Future<void> _syncClassroomCourse(String courseId) async {
+    if (_courseStateRefreshFailed) return;
     if (!_syncingClassrooms.add(courseId)) return;
     if (mounted) {
       setState(() => _classroomSyncErrors.remove(courseId));
@@ -286,7 +333,8 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
           isActive: () => mounted && generation == _connectGeneration,
         );
         if (!mounted || generation != _connectGeneration) return;
-        if (email.toLowerCase() != _api.email.toLowerCase()) {
+        final accountChanged = email.toLowerCase() != _api.email.toLowerCase();
+        if (accountChanged) {
           await TeachingLauncher.requireIdleForAccountChange();
           if (!mounted || generation != _connectGeneration) return;
           await MeetAutomationService().leaveClassroom();
@@ -305,6 +353,10 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
           };
           _courses = [];
           _selected = null;
+          if (accountChanged) {
+            _showArchived = false;
+            _initialTabResolved = false;
+          }
         } finally {
           if (mounted) _auth.addListener(_accountChanged);
         }
@@ -401,42 +453,73 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
   }
 
   Future<void> _deleteClass(Map<String, dynamic> course) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xóa lớp học?'),
-        content: Text(
-          course['courseId'] is String &&
-                  (course['courseId'] as String).isNotEmpty
-              ? '“${course['title']}” sẽ bị xóa khỏi HocLucStation và Google Classroom. Không thể hoàn tác.'
-              : '“${course['title']}” sẽ bị xóa khỏi HocLucStation.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
-          ),
-          FilledButton.tonal(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xóa'),
-          ),
-        ],
-      ),
+    final archived = course['classroomState'] == 'ARCHIVED';
+    final remote = _hasClassroomCourse(course);
+    final confirmed = await WorkspaceCourseLifecycleDialogs.confirmDelete(
+      context,
+      title: course['title'] as String,
+      remote: remote,
+      archived: archived,
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     await _run(() async {
       final id = course['id'] as String;
       await _api.call('courses/$id', method: 'DELETE');
       if (!mounted) return;
       setState(() {
         _courses.removeWhere((item) => item['id'] == id);
-        _selected = _courses.isEmpty ? null : _courses.first['id'] as String;
+        _keepSelectionVisible();
         _startRequests.remove(id);
         _syncingClassrooms.remove(id);
         _classroomSyncErrors.remove(id);
         if (_pendingClassroomCourseId == id) _pendingClassroomCourseId = null;
         _error = null;
       });
+    });
+  }
+
+  Future<void> _archiveClass(Map<String, dynamic> course) async {
+    if (_courseStateRefreshFailed || course['classroomState'] != 'ACTIVE') {
+      return;
+    }
+    final confirmed = await WorkspaceCourseLifecycleDialogs.confirmArchive(
+      context,
+      title: course['title'] as String,
+    );
+    if (!confirmed || !mounted) return;
+    await _run(() async {
+      try {
+        final result = await _api.call(
+          'courses/${course['id']}/archive',
+          post: true,
+        );
+        if (!mounted) return;
+        _replace(result);
+        setState(() => _showArchived = true);
+      } catch (_) {
+        if (mounted) setState(() => _courseStateRefreshFailed = true);
+        rethrow;
+      }
+    });
+  }
+
+  Future<void> _restoreClass(Map<String, dynamic> course) async {
+    if (_courseStateRefreshFailed || course['classroomState'] != 'ARCHIVED') {
+      return;
+    }
+    await _run(() async {
+      try {
+        final result = await _api.call(
+          'courses/${course['id']}/restore',
+          post: true,
+        );
+        if (!mounted) return;
+        _replace(result);
+        setState(() => _showArchived = false);
+      } catch (_) {
+        if (mounted) setState(() => _courseStateRefreshFailed = true);
+        rethrow;
+      }
     });
   }
 
@@ -593,7 +676,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
   Widget build(BuildContext context) {
     final connected = _connection['connected'] == true;
     final disabled = _busy || _polling;
-    final selected = _courses.where((c) => c['id'] == _selected).firstOrNull;
+    final selected = _selectedCourse;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -640,7 +723,7 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                     WorkspaceConnectionPanel(
                       connection: _connection,
                       email: _api.email,
-                      disabled: disabled,
+                      disabled: disabled || _courseStateRefreshFailed,
                       polling: _polling,
                       onConnect: () {
                         final retry =
@@ -663,6 +746,11 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                     ),
                     if (connected) ...[
                       const SizedBox(height: 16),
+                      if (_courseStateRefreshFailed)
+                        _notice(
+                          'Không xác minh được trạng thái Classroom; đang hiển thị dữ liệu gần nhất. Các thao tác với Google đang khóa. Hãy tải lại để thử lại.',
+                          error: true,
+                        ),
                       Wrap(
                         spacing: 16,
                         runSpacing: 12,
@@ -676,23 +764,53 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                             ),
                           ),
                           FilledButton.icon(
-                            onPressed: disabled ? null : _editClass,
+                            onPressed: disabled || _courseStateRefreshFailed
+                                ? null
+                                : _editClass,
                             icon: const Icon(Icons.add),
                             label: const Text('Tạo lớp học'),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      if (_courses.isEmpty)
+                      SegmentedButton<bool>(
+                        segments: [
+                          ButtonSegment(
+                            value: false,
+                            label: Text(
+                              'Đang hoạt động (${_activeCourses.length})',
+                            ),
+                            icon: const Icon(Icons.school_outlined),
+                          ),
+                          ButtonSegment(
+                            value: true,
+                            label: Text(
+                              'Đã lưu trữ (${_archivedCourses.length})',
+                            ),
+                            icon: const Icon(Icons.archive_outlined),
+                          ),
+                        ],
+                        selected: {_showArchived},
+                        onSelectionChanged: disabled
+                            ? null
+                            : (selection) => setState(() {
+                                _showArchived = selection.first;
+                                _keepSelectionVisible();
+                              }),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_visibleCourses.isEmpty)
                         _panel(
-                          child: const Text(
-                            'Chưa có lớp liên kết. Tạo lớp để mời học sinh và chuẩn bị phòng học.',
+                          child: Text(
+                            _showArchived
+                                ? 'Chưa có lớp nào được lưu trữ.'
+                                : 'Chưa có lớp liên kết. Tạo lớp để mời học sinh và chuẩn bị phòng học.',
                           ),
                         ),
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
-                        children: _courses
+                        children: _visibleCourses
                             .map(
                               (course) => ChoiceChip(
                                 selected: _selected == course['id'],
@@ -726,6 +844,10 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
                           classroomSyncError:
                               _classroomSyncErrors[selected['id']],
                           disabled: disabled,
+                          googleActionsDisabled: _courseStateRefreshFailed,
+                          isArchived: _showArchived,
+                          onArchive: () => _archiveClass(selected),
+                          onRestore: () => _restoreClass(selected),
                           startingCourseId: _startingCourse,
                           hasStartRequest: _startRequests.containsKey(
                             selected['id'],
@@ -766,4 +888,3 @@ class _GoogleWorkspaceScreenState extends State<GoogleWorkspaceScreen>
     );
   }
 }
-

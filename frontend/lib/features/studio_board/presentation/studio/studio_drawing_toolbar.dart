@@ -178,6 +178,44 @@ class StudioDrawingToolbar extends StatelessWidget {
                   color: pine,
                 ),
               ),
+              IconButton(
+                tooltip: studio.showSpeakerNotes
+                    ? 'Đóng ghi chú nhắc bài'
+                    : 'Mở ghi chú nhắc bài',
+                onPressed: studio.toggleSpeakerNotes,
+                style: IconButton.styleFrom(
+                  backgroundColor: studio.showSpeakerNotes
+                      ? AppColors.selected
+                      : Colors.transparent,
+                  minimumSize: const Size(36, 36),
+                  padding: EdgeInsets.zero,
+                ),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      studio.showSpeakerNotes
+                          ? Icons.sticky_note_2
+                          : Icons.sticky_note_2_outlined,
+                      size: 18,
+                      color: studio.showSpeakerNotes ? AppColors.primary : pine,
+                    ),
+                    if (studio.currentPageNote.trim().isNotEmpty)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -313,6 +351,42 @@ class StudioDrawingToolbar extends StatelessWidget {
                   Icons.collections_bookmark_outlined,
                   size: 19,
                   color: pine,
+                ),
+              ),
+              IconButton(
+                tooltip: studio.showSpeakerNotes
+                    ? 'Đóng ghi chú nhắc bài'
+                    : 'Mở ghi chú nhắc bài',
+                onPressed: studio.toggleSpeakerNotes,
+                style: IconButton.styleFrom(
+                  backgroundColor: studio.showSpeakerNotes
+                      ? AppColors.selected
+                      : Colors.transparent,
+                ),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      studio.showSpeakerNotes
+                          ? Icons.sticky_note_2
+                          : Icons.sticky_note_2_outlined,
+                      size: 19,
+                      color: studio.showSpeakerNotes ? AppColors.primary : pine,
+                    ),
+                    if (studio.currentPageNote.trim().isNotEmpty)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],

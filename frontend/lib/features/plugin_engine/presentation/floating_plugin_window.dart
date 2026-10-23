@@ -1,10 +1,12 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import '../services/plugin_web_server.dart';
 import '../services/process_supervisor.dart';
+import '../services/plugin_event_hub.dart';
+import '../services/host_bridge.dart';
 import 'flat_host.dart';
 
 class FloatingPluginWindow extends StatelessWidget {
@@ -46,21 +48,32 @@ class FloatingPluginWindow extends StatelessWidget {
                   : '$targetUrl?port=$port';
             }
 
-            void Function(String)? executeJs;
             return FlatHost(
               url: targetUrl,
-              onMessage: (msg) => studio.handlePluginMessage(
-                msg,
-                executeJs: executeJs,
+              transparentBackground: plugin.manifest.transparentBackground,
+              glassPreset: studio.glassPreset,
+              onPluginMessage: (message) => studio.handlePluginMessage(
+                message.data,
+                executeJs: message.executeJs,
                 manifest: plugin.manifest,
+                viewToken: message.viewToken,
+                navigationGeneration: message.navigationGeneration,
+                webViewBounds: message.webViewBounds,
               ),
               onControllerReady: (sendJs) {
-                executeJs = sendJs;
+                HostBridge.instance.registerPluginView(
+                  pluginId: plugin.manifest.id,
+                  preset: studio.glassPreset,
+                  sender: sendJs,
+                );
                 studio.onSnippetCapturedForPlugin = (text, target) {
                   sendJs(
                     "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)});",
                   );
                 };
+              },
+              onControllerDisposed: (sender) {
+                PluginEventHub.instance.unregister(plugin.manifest.id, sender);
               },
             );
           },
@@ -134,7 +147,9 @@ class FloatingPluginWindow extends StatelessWidget {
                                 color: Colors.black.withValues(alpha: 0.25),
                                 shape: const CircleBorder(),
                                 child: InkWell(
-                                  key: const Key('frameless_plugin_close_button'),
+                                  key: const Key(
+                                    'frameless_plugin_close_button',
+                                  ),
                                   customBorder: const CircleBorder(),
                                   onTap: studio.closeFloatingPlugin,
                                   child: const SizedBox(
@@ -207,11 +222,7 @@ class FloatingPluginWindow extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            plugin.icon,
-                            size: 16,
-                            color: plugin.color,
-                          ),
+                          Icon(plugin.icon, size: 16, color: plugin.color),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -263,4 +274,3 @@ class FloatingPluginWindow extends StatelessWidget {
     );
   }
 }
-

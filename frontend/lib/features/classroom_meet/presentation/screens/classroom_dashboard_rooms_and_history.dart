@@ -575,100 +575,113 @@ extension _ClassroomDashboardRoomsAndHistoryExt
     );
   }
 
-  void _showSettingsDialog(BuildContext context) {
-    showDialog<void>(
+  Future<void> _showSettingsDialog(BuildContext context) async {
+    final settings = ClassroomSettingsService.instance;
+    await settings.load();
+    if (!context.mounted) return;
+    await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.panel),
-          side: const BorderSide(color: AppColors.border),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.settings_outlined, size: 20, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text(
-              'Cài đặt',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 380,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.panel),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          title: const Row(
             children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(
-                  Icons.videocam_outlined,
-                  color: AppColors.primary,
-                ),
-                title: const Text(
-                  'Tự động bật camera khi vào lớp',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                trailing: Switch(
-                  value: true,
-                  activeThumbColor: AppColors.primary,
-                  onChanged: (_) {},
-                ),
-              ),
-              const Divider(height: 1, color: AppColors.border),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(
-                  Icons.mic_none_rounded,
-                  color: AppColors.primary,
-                ),
-                title: const Text(
-                  'Khử tiếng ồn micro thông minh',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                trailing: Switch(
-                  value: true,
-                  activeThumbColor: AppColors.primary,
-                  onChanged: (_) {},
-                ),
-              ),
-              const Divider(height: 1, color: AppColors.border),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(
-                  Icons.draw_outlined,
-                  color: AppColors.primary,
-                ),
-                title: const Text(
-                  'Tối ưu hóa bút vẽ & cảm ứng',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                trailing: Switch(
-                  value: true,
-                  activeThumbColor: AppColors.primary,
-                  onChanged: (_) {},
+              Icon(Icons.settings_outlined, size: 20, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text(
+                'Cài đặt',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(
-              'Đóng',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w700,
-              ),
+          content: SizedBox(
+            width: 380,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(
+                    Icons.videocam_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: const Text(
+                    'Tự động bật camera khi vào lớp',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  trailing: Switch(
+                    value: settings.autoCamera,
+                    activeThumbColor: AppColors.primary,
+                    onChanged: (value) async {
+                      await settings.setAutoCamera(value);
+                      setDialogState(() {});
+                    },
+                  ),
+                ),
+                const Divider(height: 1, color: AppColors.border),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(
+                    Icons.mic_none_rounded,
+                    color: AppColors.primary,
+                  ),
+                  title: const Text(
+                    'Khử tiếng ồn micro thông minh',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  trailing: Switch(
+                    value: settings.noiseSuppression,
+                    activeThumbColor: AppColors.primary,
+                    onChanged: (value) async {
+                      await settings.setNoiseSuppression(value);
+                      setDialogState(() {});
+                    },
+                  ),
+                ),
+                const Divider(height: 1, color: AppColors.border),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(
+                    Icons.draw_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: const Text(
+                    'Tối ưu hóa bút vẽ & cảm ứng',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  trailing: Switch(
+                    value: settings.boardOptimization,
+                    activeThumbColor: AppColors.primary,
+                    onChanged: (value) async {
+                      await settings.setBoardOptimization(value);
+                      setDialogState(() {});
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text(
+                'Đóng',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-

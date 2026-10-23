@@ -13,6 +13,7 @@ import 'package:teaching_companion/features/classroom_meet/services/teaching_lau
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/teaching_target.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
+import 'package:teaching_companion/features/classroom_meet/services/classroom_settings_service.dart';
 import 'package:teaching_companion/features/auth/presentation/screens/login_screen.dart';
 import 'package:teaching_companion/features/studio_board/presentation/screens/studio_screen.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';

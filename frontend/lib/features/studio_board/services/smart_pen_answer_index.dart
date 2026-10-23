@@ -378,6 +378,14 @@ class SmartPenTapQueue {
     return List.unmodifiable(matching);
   }
 
+  List<SmartPenPendingTap> takeForGeneration(int generation) {
+    final matching = _taps
+        .where((tap) => tap.documentGeneration == generation)
+        .toList(growable: false);
+    _taps.removeWhere((tap) => tap.documentGeneration == generation);
+    return List.unmodifiable(matching);
+  }
+
   void clear() => _taps.clear();
 }
 

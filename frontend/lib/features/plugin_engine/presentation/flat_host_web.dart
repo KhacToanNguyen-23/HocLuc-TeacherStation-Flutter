@@ -1,17 +1,29 @@
 import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/glass_preset.dart';
 import 'package:web/web.dart' as web;
+import 'flat_host_message.dart';
 
 class FlatHost extends StatefulWidget {
   const FlatHost({
     super.key,
     required this.url,
+    this.visible = true,
+    this.transparentBackground = false,
     this.onMessage,
+    this.onPluginMessage,
     this.onControllerReady,
+    this.onControllerDisposed,
+    this.glassPreset = GlassPreset.frosted,
   });
   final String url;
+  final bool visible;
+  final bool transparentBackground;
   final ValueChanged<dynamic>? onMessage;
+  final ValueChanged<FlatHostMessage>? onPluginMessage;
   final ValueChanged<void Function(String js)>? onControllerReady;
+  final ValueChanged<void Function(String js)>? onControllerDisposed;
+  final GlassPreset glassPreset;
   @override
   State<FlatHost> createState() => _FlatHostState();
 }
@@ -35,5 +47,10 @@ class _FlatHostState extends State<FlatHost> {
 
   @override
   Widget build(BuildContext context) => HtmlElementView(viewType: type);
-}
 
+  @override
+  void dispose() {
+    widget.onControllerDisposed?.call((_) {});
+    super.dispose();
+  }
+}

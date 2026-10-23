@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trợ giảng Tiếng Anh & Luyện thi ĐGNL</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/__hocluc_sdk__/liquid-glass.css">
 </head>
 <body>
   <div class="header">
@@ -18,13 +19,13 @@
   <!-- S-V-O SYNTAX ANALYZER -->
   <div id="tabContentSvo" class="content-container">
     <div class="quick-samples">
-      <button class="sample-chip" data-sample="The smart student reads a book eagerly in the classroom.">Student reads a book</button>
-      <button class="sample-chip" data-sample="She plays the piano beautifully every evening.">Plays piano</button>
-      <button class="sample-chip" data-sample="The teacher explained the difficult lesson clearly.">Explained lesson</button>
+      <button class="sample-chip liquid-pill-btn" data-sample="The smart student reads a book eagerly in the classroom.">Student reads a book</button>
+      <button class="sample-chip liquid-pill-btn" data-sample="She plays the piano beautifully every evening.">Plays piano</button>
+      <button class="sample-chip liquid-pill-btn" data-sample="The teacher explained the difficult lesson clearly.">Explained lesson</button>
     </div>
 
     <div class="snip-banner">
-      <button id="btnSnipSvo" class="btn-snip" title="Kéo khoanh vùng câu trên đề PDF hoặc bảng như PrtSc">
+      <button id="btnSnipSvo" class="btn-snip liquid-pill-btn" title="Kéo khoanh vùng câu trên đề PDF hoặc bảng như PrtSc">
         <svg class="snip-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <span>Kéo chụp câu trên đề (PrtSc)</span>
       </button>
@@ -33,12 +34,12 @@
 
     <textarea id="inputSentence" class="input-box" placeholder="Nhập câu tiếng Anh cần phân tích cú pháp..."></textarea>
 
-    <button id="btnAnalyze" class="btn-primary">
+    <button id="btnAnalyze" class="btn-primary liquid-pill-btn">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       <span>Phân tích cú pháp S-V-O</span>
     </button>
 
-    <div id="resultsCard" class="results-card" style="display: none;">
+    <div id="resultsCard" class="results-card liquid-card" style="display: none;">
       <div class="legend">
         <div class="legend-item"><span class="dot dot-subject"></span> S (Chủ ngữ)</div>
         <div class="legend-item"><span class="dot dot-verb"></span> V (Động từ)</div>
@@ -53,13 +54,12 @@
       </div>
     </div>
 
-    <button id="btnPinToBoard" class="btn-pin" style="display: none;">
+    <button id="btnPinToBoard" class="btn-pin liquid-pill-btn" style="display: none;">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
       <span>Ghim lên bảng phấn</span>
     </button>
   </div>
 
-  <script src="sdk.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

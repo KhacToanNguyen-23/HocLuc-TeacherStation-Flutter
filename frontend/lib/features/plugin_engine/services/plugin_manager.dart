@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -120,8 +120,9 @@ class PluginManager extends ChangeNotifier {
 
   List<SubjectPlugin> get availablePlugins => _registry.values.toList();
 
-  List<SubjectPlugin> get installedPlugins =>
-      _registry.values.where((p) => _installedPluginIds.contains(p.id)).toList();
+  List<SubjectPlugin> get installedPlugins => _registry.values
+      .where((p) => _installedPluginIds.contains(p.id))
+      .toList();
 
   InstalledPlugin? getPlugin(String id) => _installedPackages[id];
   PluginCatalogItem? getCatalogItem(String id) => _remoteCatalog[id];
@@ -149,7 +150,9 @@ class PluginManager extends ChangeNotifier {
       for (final id in savedIds) {
         final dir = PluginStorageManager.instance.getInstalledDirectory(id);
         if (dir != null) {
-          final manifest = PluginStorageManager.instance.loadManifestFromDir(dir);
+          final manifest = PluginStorageManager.instance.loadManifestFromDir(
+            dir,
+          );
           if (manifest != null) {
             final installed = InstalledPlugin(
               manifest: manifest,
@@ -241,10 +244,9 @@ class PluginManager extends ChangeNotifier {
 
       // Scan packaged .hlep archives
       try {
-        final hlepFiles = dir
-            .listSync()
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.hlep'));
+        final hlepFiles = dir.listSync().whereType<File>().where(
+          (f) => f.path.endsWith('.hlep'),
+        );
 
         for (final hlep in hlepFiles) {
           try {
@@ -289,7 +291,9 @@ class PluginManager extends ChangeNotifier {
               }
             }
           } catch (e) {
-            debugPrint('[PluginManager] Error inspecting hlep package ${hlep.path}: $e');
+            debugPrint(
+              '[PluginManager] Error inspecting hlep package ${hlep.path}: $e',
+            );
           }
         }
       } catch (e) {
@@ -301,11 +305,19 @@ class PluginManager extends ChangeNotifier {
         final subDirs = dir.listSync().whereType<Directory>();
         for (final subDir in subDirs) {
           try {
-            final manifest = PluginStorageManager.instance.loadManifestFromDir(subDir);
+            final manifest = PluginStorageManager.instance.loadManifestFromDir(
+              subDir,
+            );
             if (manifest != null && !_registry.containsKey(manifest.id)) {
-              final segments = subDir.uri.pathSegments.where((s) => s.isNotEmpty).toList();
+              final segments = subDir.uri.pathSegments
+                  .where((s) => s.isNotEmpty)
+                  .toList();
               final dirname = segments.isNotEmpty ? segments.last : 'plugin';
-              final installedDir = PluginStorageManager.instance.getInstalledDirectory(manifest.id) ?? subDir;
+              final installedDir =
+                  PluginStorageManager.instance.getInstalledDirectory(
+                    manifest.id,
+                  ) ??
+                  subDir;
               final plugin = InstalledPlugin(
                 manifest: manifest,
                 installDirectory: installedDir,
@@ -317,11 +329,15 @@ class PluginManager extends ChangeNotifier {
               }
             }
           } catch (e) {
-            debugPrint('[PluginManager] Error inspecting directory ${subDir.path}: $e');
+            debugPrint(
+              '[PluginManager] Error inspecting directory ${subDir.path}: $e',
+            );
           }
         }
       } catch (e) {
-        debugPrint('[PluginManager] Error scanning directories in ${dir.path}: $e');
+        debugPrint(
+          '[PluginManager] Error scanning directories in ${dir.path}: $e',
+        );
       }
     }
   }
@@ -344,7 +360,9 @@ class PluginManager extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (plugin is InstalledPlugin && plugin.sourceFile != null && !forceUpdate) {
+      if (plugin is InstalledPlugin &&
+          plugin.sourceFile != null &&
+          !forceUpdate) {
         try {
           final targetDir = await PluginStorageManager.instance.installFromZip(
             plugin.sourceFile!.readAsBytesSync(),
@@ -360,7 +378,9 @@ class PluginManager extends ChangeNotifier {
           _installedPackages[id] = installed;
           _registry[id] = installed;
         } catch (e) {
-          debugPrint('[PluginManager] Error extracting package on install for $id: $e');
+          debugPrint(
+            '[PluginManager] Error extracting package on install for $id: $e',
+          );
         }
       } else if (remoteItem != null &&
           (forceUpdate ||
@@ -412,15 +432,6 @@ class PluginManager extends ChangeNotifier {
   /// Open/Launch a plugin to be active in the studio, starting sidecar if needed.
   void openPlugin(SubjectPlugin plugin) {
     _activePlugin = plugin;
-
-    if (plugin is InstalledPlugin && plugin.installDirectory != null) {
-      if (plugin.manifest.hasSidecar) {
-        ProcessSupervisor.instance.startSidecar(
-          manifest: plugin.manifest,
-          pluginDirectory: plugin.installDirectory!.path,
-        );
-      }
-    }
     notifyListeners();
   }
 
@@ -444,9 +455,13 @@ class PluginManager extends ChangeNotifier {
       customFilename: filename,
     );
 
-    final manifest = PluginStorageManager.instance.loadManifestFromDir(targetDir);
+    final manifest = PluginStorageManager.instance.loadManifestFromDir(
+      targetDir,
+    );
     if (manifest == null) {
-      throw const FormatException('Không thể đọc tệp manifest.json sau khi giải nén.');
+      throw const FormatException(
+        'Không thể đọc tệp manifest.json sau khi giải nén.',
+      );
     }
 
     final installed = InstalledPlugin(
@@ -497,7 +512,9 @@ class PluginManager extends ChangeNotifier {
 
         if (hlepFiles.isNotEmpty) {
           final target = hlepFiles.first;
-          final filename = target.uri.pathSegments.where((s) => s.isNotEmpty).last;
+          final filename = target.uri.pathSegments
+              .where((s) => s.isNotEmpty)
+              .last;
           return installPluginFromBytes(target.readAsBytesSync(), filename);
         }
 
@@ -505,10 +522,14 @@ class PluginManager extends ChangeNotifier {
         for (final d in subDirs) {
           final manifest = PluginStorageManager.instance.loadManifestFromDir(d);
           if (manifest != null) {
-            if (targetCategory != null && manifest.category.toLowerCase() != targetCategory.toLowerCase()) {
+            if (targetCategory != null &&
+                manifest.category.toLowerCase() !=
+                    targetCategory.toLowerCase()) {
               continue;
             }
-            final segments = d.uri.pathSegments.where((s) => s.isNotEmpty).toList();
+            final segments = d.uri.pathSegments
+                .where((s) => s.isNotEmpty)
+                .toList();
             final dirname = segments.isNotEmpty ? segments.last : 'plugin';
             final installed = InstalledPlugin(
               manifest: manifest,
@@ -582,10 +603,12 @@ class PluginManager extends ChangeNotifier {
   Future<void> _persistInstalledIds() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(_kInstalledPluginsKey, _installedPluginIds.toList());
+      await prefs.setStringList(
+        _kInstalledPluginsKey,
+        _installedPluginIds.toList(),
+      );
     } catch (e) {
       debugPrint('[PluginManager] Error persisting installed plugins: $e');
     }
   }
 }
-

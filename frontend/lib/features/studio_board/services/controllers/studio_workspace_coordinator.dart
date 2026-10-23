@@ -18,11 +18,11 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
     PdfSmartPenController? pdf,
     AudioSyncController? audio,
     StudioPluginBridgeController? plugins,
-  })  : service = service ?? LocalService(),
-        canvas = canvas ?? CanvasDrawingController(),
-        pdf = pdf ?? PdfSmartPenController(),
-        audio = audio ?? AudioSyncController(service: service),
-        plugins = plugins ?? StudioPluginBridgeController() {
+  }) : service = service ?? LocalService(),
+       canvas = canvas ?? CanvasDrawingController(),
+       pdf = pdf ?? PdfSmartPenController(),
+       audio = audio ?? AudioSyncController(service: service),
+       plugins = plugins ?? StudioPluginBridgeController() {
     this.canvas.addListener(_onChildChanged);
     this.pdf.addListener(_onChildChanged);
     this.plugins.addListener(_onChildChanged);
@@ -39,7 +39,9 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
       if (p == null || this.plugins.activeSubjectTool == null) return false;
       return p.manifest.contributesTools.any(
         (t) =>
-            t.pdfTapMode && (t.target ?? t.id) == this.plugins.activeSubjectTool,
+            t.action == 'toggle_tool' &&
+            t.pdfTapMode &&
+            (t.target ?? t.id) == this.plugins.activeSubjectTool,
       );
     };
   }
@@ -99,14 +101,18 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
 
     final rawTokens = cardData['tokens'] as List? ?? [];
     final tokens = rawTokens
-        .map((t) => t is Map ? Map<String, dynamic>.from(t) : {'text': t.toString()})
+        .map(
+          (t) =>
+              t is Map ? Map<String, dynamic>.from(t) : {'text': t.toString()},
+        )
         .toList();
 
     final rawIssues = cardData['issues'] as List? ?? [];
     final issues = rawIssues.map((e) => e.toString()).toList();
 
     final sticker = BoardSticker(
-      id: cardData['id']?.toString() ??
+      id:
+          cardData['id']?.toString() ??
           'sticker-${DateTime.now().millisecondsSinceEpoch}',
       type: cardData['type']?.toString() ?? 'generic_sticker',
       normalizedRect: rect,
@@ -130,6 +136,30 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
   bool get canRedo =>
       (pdf.smartPenManager.smartPenRedo[pdf.historyKey]?.isNotEmpty ?? false) ||
       canvas.canRedo;
+
+  int get undoSequence {
+    final pdfHistory = pdf.smartPenManager.smartPenUndo[pdf.historyKey];
+    final pdfSequence = pdfHistory == null || pdfHistory.isEmpty
+        ? -1
+        : pdfHistory.last.sequence;
+    final currentStrokes = canvas.currentStrokes;
+    final boardSequence = currentStrokes.isEmpty
+        ? -1
+        : (_boardUndoSequence[currentStrokes.last] ?? 0);
+    return pdfSequence > boardSequence ? pdfSequence : boardSequence;
+  }
+
+  int get redoSequence {
+    final pdfHistory = pdf.smartPenManager.smartPenRedo[pdf.historyKey];
+    final pdfSequence = pdfHistory == null || pdfHistory.isEmpty
+        ? -1
+        : pdfHistory.last.redoSequence;
+    final currentRedo = canvas.currentRedoStack;
+    final boardSequence = currentRedo.isEmpty
+        ? -1
+        : (_boardRedoSequence[currentRedo.last] ?? 0);
+    return pdfSequence > boardSequence ? pdfSequence : boardSequence;
+  }
 
   void undo() {
     final pdfHistory = pdf.smartPenManager.smartPenUndo[pdf.historyKey];
@@ -187,13 +217,12 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
   Map<String, dynamic> exportLessonJson() {
     Map<String, dynamic> serializeAnnotations(
       Map<int, List<BoardStroke>> annotations,
-    ) =>
-        annotations.map(
-          (page, strokes) => MapEntry(
-            page.toString(),
-            strokes.map((stroke) => stroke.toJson()).toList(),
-          ),
-        );
+    ) => annotations.map(
+      (page, strokes) => MapEntry(
+        page.toString(),
+        strokes.map((stroke) => stroke.toJson()).toList(),
+      ),
+    );
 
     return {
       'title': title,
@@ -201,7 +230,9 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
       'notes': notes,
       'question': question,
       'page': canvas.page,
-      'pages': canvas.pages.map((p) => p.map((s) => s.toJson()).toList()).toList(),
+      'pages': canvas.pages
+          .map((p) => p.map((s) => s.toJson()).toList())
+          .toList(),
       'pageTitles': canvas.pageTitles,
       'pageNotes': canvas.pageNotes,
       'stickers': canvas.pageStickers.map(
@@ -215,15 +246,17 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
       ),
       'pdfAnnotations': serializeAnnotations(pdf.pdfAnnotations),
       'importedPdfDocuments': pdf.importedDocs.map((doc) {
-        final annotations =
-            doc.id == pdf.activeDocId ? pdf.pdfAnnotations : doc.annotations;
+        final annotations = doc.id == pdf.activeDocId
+            ? pdf.pdfAnnotations
+            : doc.annotations;
         return {
           'id': doc.id,
           'name': doc.name,
           'path': doc.path,
           'contentFingerprint': doc.contentFingerprint,
-          'totalPages':
-              doc.id == pdf.activeDocId ? pdf.pdfTotalPages : doc.totalPages,
+          'totalPages': doc.id == pdf.activeDocId
+              ? pdf.pdfTotalPages
+              : doc.totalPages,
           'annotations': serializeAnnotations(annotations),
         };
       }).toList(),
@@ -249,7 +282,8 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
         final name = documentJson['name'] as String?;
         if (name == null || name.isEmpty) continue;
         final document = ImportedDocument(
-          id: documentJson['id'] as String? ??
+          id:
+              documentJson['id'] as String? ??
               DateTime.now().microsecondsSinceEpoch.toString(),
           name: name,
           path: documentJson['path'] as String?,
@@ -285,9 +319,11 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
     }
 
     if (json.containsKey('title')) title = json['title'] as String? ?? title;
-    if (json.containsKey('subject')) subject = json['subject'] as String? ?? subject;
+    if (json.containsKey('subject'))
+      subject = json['subject'] as String? ?? subject;
     if (json.containsKey('notes')) notes = json['notes'] as String? ?? notes;
-    if (json.containsKey('question')) question = json['question'] as String? ?? question;
+    if (json.containsKey('question'))
+      question = json['question'] as String? ?? question;
 
     if (json.containsKey('pageTitles') && json['pageTitles'] is List) {
       canvas.pageTitles
@@ -322,7 +358,8 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
         if (v is List) {
           canvas.pageStickers[pageIdx] = v
               .map(
-                (s) => BoardSticker.fromJson(Map<String, dynamic>.from(s as Map)),
+                (s) =>
+                    BoardSticker.fromJson(Map<String, dynamic>.from(s as Map)),
               )
               .toList();
         }
@@ -419,4 +456,3 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
     super.dispose();
   }
 }
-

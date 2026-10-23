@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart' as pdfrx;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
@@ -19,6 +20,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late Directory pdfrxCacheDirectory;
   setUpAll(() {
+    SharedPreferences.setMockInitialValues({});
     pdfrxCacheDirectory = Directory.systemTemp.createTempSync(
       'smart_pen_gesture_test_',
     );
