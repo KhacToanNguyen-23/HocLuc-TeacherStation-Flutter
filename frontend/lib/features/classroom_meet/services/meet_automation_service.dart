@@ -29,6 +29,7 @@ class MeetAutomationService extends ChangeNotifier {
   String? _meetingUrl;
   String? _errorMessage;
   bool _isScreenSharing = false;
+  bool _sharingPanelVisible = false;
   bool _needsGoogleLogin = false;
   bool _manualJoin = false;
   bool _hostJoined = false;
@@ -227,7 +228,9 @@ class MeetAutomationService extends ChangeNotifier {
         try {
           _controller!.dispose();
         } catch (e) {
-          FrontendLogger.write('[MeetAutomationService] Error disposing controller: $e');
+          FrontendLogger.write(
+            '[MeetAutomationService] Error disposing controller: $e',
+          );
         }
         _controller = null;
       }
@@ -260,6 +263,7 @@ class MeetAutomationService extends ChangeNotifier {
           _isScreenSharing = false;
           notifyListeners();
         } else if (state == win.LoadingState.navigationCompleted) {
+          unawaited(showSharingPanel(_sharingPanelVisible));
           _scheduleAutoJoin(controller);
         }
       });
@@ -413,7 +417,9 @@ class MeetAutomationService extends ChangeNotifier {
             }
           }
         } catch (e) {
-          FrontendLogger.write('[MeetAutomationService] Auto-click tick error: $e');
+          FrontendLogger.write(
+            '[MeetAutomationService] Auto-click tick error: $e',
+          );
         }
       });
 

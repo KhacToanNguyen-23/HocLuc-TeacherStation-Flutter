@@ -119,6 +119,20 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
     _pendingAdmitCount = 0;
   }
 
+  Future<void> showSharingPanel(bool visible) async {
+    _sharingPanelVisible = visible;
+    if (_controller == null && _testExecuteScript == null) return;
+    try {
+      await _executeAdmissionScript(
+        'window.HocLucScreenShare && window.HocLucScreenShare.showPanel($visible);',
+      );
+    } catch (error) {
+      FrontendLogger.write(
+        '[MeetAutomation] Could not switch sharing panel: $error',
+      );
+    }
+  }
+
   /// Stop only streams returned by Meet's real screen/window picker.
   Future<void> stopScreenSharing() async {
     if (_controller == null && _testExecuteScript == null) return;
@@ -453,4 +467,3 @@ class _AdmissionAttempt {
   final Completer<bool> completer = Completer<bool>();
   Timer? timer;
 }
-
