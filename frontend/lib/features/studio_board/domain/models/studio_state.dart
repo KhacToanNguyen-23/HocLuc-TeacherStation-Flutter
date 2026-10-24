@@ -28,6 +28,7 @@ export 'smart_pen_answer_selection.dart';
 export 'smart_pen_oval_annotation.dart';
 export 'studio_board_models.dart';
 
+part 'studio_state_board_pages.dart';
 part 'studio_state_plugin_annotations.dart';
 part 'studio_state_plugin_facade.dart';
 
@@ -42,6 +43,10 @@ class StudioState extends ChangeNotifier {
   late final StudioWorkspaceCoordinator coordinator;
 
   void _onCoordinatorChanged() {
+    // Controllers mutate shared stroke lists in place. Advance the paint token
+    // before forwarding the change so cached ink is invalidated this frame.
+    // Do not mark dirty here: temporary PDF annotations also use this path.
+    _revision++;
     notifyListeners();
   }
 
@@ -306,17 +311,10 @@ class StudioState extends ChangeNotifier {
   bool get canRedo =>
       (_pdfAnnotationRedo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false) ||
       coordinator.canRedo;
-  void clearBoard([int? p]) => canvas.clearPage(p);
-  void clearPageStrokes([int? p]) => canvas.clearPageStrokes(p);
 
-  void addPage([String? title]) => canvas.addPage(title);
-  void deletePage(int index) => canvas.deletePage(index);
-  void renamePage(int index, String newTitle) =>
-      canvas.renamePage(index, newTitle);
   void nextPage() => canvas.nextPage();
   void prevPage() => canvas.prevPage();
   void setPage(int p) => canvas.setPage(p);
-  void clearPage() => canvas.clearPage();
 
   // --- Sticker & Chalk Annotations ---
   List<BoardSticker> get currentStickers => canvas.currentStickers;
@@ -326,7 +324,7 @@ class StudioState extends ChangeNotifier {
       canvas.updateStickerRect(id, newRect);
 
   String get currentPageNote => canvas.currentPageNote;
-  void setPageNote(int index, String note) => canvas.setPageNote(index, note);
+
   bool showSpeakerNotes = false;
 
   void setSpeakerNotesOpen(bool open) {
