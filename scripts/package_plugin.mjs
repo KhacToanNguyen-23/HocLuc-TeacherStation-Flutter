@@ -46,6 +46,21 @@ function createZip(sourceDir, outputFile) {
     fs.writeFileSync(iconPath, Buffer.from(pngBase64, 'base64'));
   }
 
+  const TEXT_EXTENSIONS = new Set([
+    '.json', '.js', '.mjs', '.cjs', '.html', '.css',
+    '.py', '.txt', '.md', '.yaml', '.yml', '.svg'
+  ]);
+
+  function readPackageFile(fullPath, relPath) {
+    const ext = path.extname(relPath).toLowerCase();
+    const raw = fs.readFileSync(fullPath);
+    if (TEXT_EXTENSIONS.has(ext)) {
+      // Normalize CRLF to canonical LF for deterministic packages across OSes
+      return Buffer.from(raw.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+    }
+    return raw;
+  }
+
   const files = [];
   function collectFiles(dir, relative = '') {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -62,7 +77,7 @@ function createZip(sourceDir, outputFile) {
         }
         collectFiles(fullPath, relPath);
       } else {
-        files.push({ relPath, data: fs.readFileSync(fullPath) });
+        files.push({ relPath, data: readPackageFile(fullPath, relPath) });
       }
     }
   }
