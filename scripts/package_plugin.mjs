@@ -56,6 +56,10 @@ function createZip(sourceDir, outputFile) {
         if (entry.name === '__pycache__' || entry.name === '.venv' || entry.name === 'node_modules') {
           continue;
         }
+        if (relPath === 'engine/tests' || relPath.startsWith('engine/tests/') ||
+            relPath === 'engine/benchmarks' || relPath.startsWith('engine/benchmarks/')) {
+          continue;
+        }
         collectFiles(fullPath, relPath);
       } else {
         files.push({ relPath, data: fs.readFileSync(fullPath) });

@@ -31,18 +31,31 @@ class HostBridge {
     });
   }
 
+  /// Broadcasts workspace mode (normal or pdf) to all live views for a plugin.
+  void notifyWorkspaceMode({
+    required String pluginId,
+    required bool isPdfMode,
+  }) {
+    PluginEventHub.instance.dispatch(pluginId, 'WORKSPACE_MODE_CHANGE', {
+      'workspace_mode': isPdfMode ? 'pdf' : 'normal',
+      'dispatched_at_epoch_ms': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
   /// Registers a mounted plugin view and applies the host's current preset to
   /// that view after its page has completed navigation.
   void registerPluginView({
     required String pluginId,
     required GlassPreset preset,
     required void Function(String) sender,
+    bool isPdfMode = false,
   }) {
     PluginEventHub.instance.register(
       pluginId,
       sender,
       initialGlassPresetPayload: {
         'preset': preset.name,
+        'workspace_mode': isPdfMode ? 'pdf' : 'normal',
         'dispatched_at_epoch_ms': DateTime.now().millisecondsSinceEpoch,
       },
     );

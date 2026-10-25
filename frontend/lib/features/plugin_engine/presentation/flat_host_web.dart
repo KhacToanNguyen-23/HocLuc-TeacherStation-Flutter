@@ -15,6 +15,7 @@ class FlatHost extends StatefulWidget {
     this.onControllerReady,
     this.onControllerDisposed,
     this.glassPreset = GlassPreset.frosted,
+    this.isPdfMode = false,
   });
   final String url;
   final bool visible;
@@ -24,6 +25,7 @@ class FlatHost extends StatefulWidget {
   final ValueChanged<void Function(String js)>? onControllerReady;
   final ValueChanged<void Function(String js)>? onControllerDisposed;
   final GlassPreset glassPreset;
+  final bool isPdfMode;
   @override
   State<FlatHost> createState() => _FlatHostState();
 }

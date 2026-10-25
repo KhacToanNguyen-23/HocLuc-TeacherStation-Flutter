@@ -18,6 +18,8 @@ class LiquidGlassContainer extends StatefulWidget {
     this.padding = EdgeInsets.zero,
     this.borderRadius = const BorderRadius.all(Radius.circular(16)),
     this.borderColor,
+    this.backgroundColor,
+    this.boxShadow,
     this.shaderFilterSupported,
   });
 
@@ -26,6 +28,8 @@ class LiquidGlassContainer extends StatefulWidget {
   final EdgeInsetsGeometry padding;
   final BorderRadius borderRadius;
   final Color? borderColor;
+  final Color? backgroundColor;
+  final List<BoxShadow>? boxShadow;
 
   /// Runtime capability override used by renderer tests and embedding hosts.
   /// When omitted, Flutter's renderer capability is checked directly.
@@ -107,25 +111,29 @@ class _LiquidGlassContainerState extends State<LiquidGlassContainer> {
       }
     }
 
-    final background = Color.fromRGBO(248, 251, 255, preset.opacity);
-    final highlight = Color.fromRGBO(255, 255, 255, preset.opacity);
+    final background = widget.backgroundColor ??
+        Color.fromRGBO(248, 251, 255, preset.opacity);
+    final highlight = widget.backgroundColor != null
+        ? widget.backgroundColor!.withValues(alpha: 0.95)
+        : Color.fromRGBO(255, 255, 255, preset.opacity);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: widget.borderRadius,
         border: Border.all(color: const Color(0xff0b2348), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x330B2348),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
+        boxShadow: widget.boxShadow ??
+            const [
+              BoxShadow(
+                color: Color(0x330B2348),
+                blurRadius: 18,
+                offset: Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
       ),
       child: ClipRRect(
         borderRadius: widget.borderRadius,
@@ -141,16 +149,20 @@ class _LiquidGlassContainerState extends State<LiquidGlassContainer> {
             child: Container(
               padding: widget.padding,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    highlight.withValues(alpha: 0.35),
-                    background,
-                    Color.fromRGBO(224, 235, 249, preset.opacity * 0.7),
-                  ],
-                  stops: const [0, 0.45, 1],
-                ),
+                borderRadius: widget.borderRadius,
+                color: widget.backgroundColor,
+                gradient: widget.backgroundColor != null
+                    ? null
+                    : LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          highlight.withValues(alpha: 0.35),
+                          background,
+                          Color.fromRGBO(224, 235, 249, preset.opacity * 0.7),
+                        ],
+                        stops: const [0, 0.45, 1],
+                      ),
                 border: Border.all(
                   color: widget.borderColor ?? const Color(0x73FFFFFF),
                   width: 1,

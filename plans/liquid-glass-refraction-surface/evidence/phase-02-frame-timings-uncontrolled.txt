@@ -1,0 +1,3 @@
+Timer-driven dock sweep (synthetic): 10002ms; 331 intervals; interval p95 33.33ms; UI p95 2.07ms; raster p95 10.38ms; sparse scene; device="Windows 10 Home" 10.0 (Build 26200); view=1426x844 logical px; scale=1.25x (120 DPI); renderer=Impeller/OpenGLES
+Timer-driven dock sweep (synthetic): 10002ms; 561 intervals; interval p95 29.06ms; UI p95 1.67ms; raster p95 6.07ms; dense scene; device="Windows 10 Home" 10.0 (Build 26200); view=1426x844 logical px; scale=1.25x (120 DPI); renderer=Impeller/OpenGLES
+Timer-driven dock sweep (synthetic): 11203ms; 548 intervals; interval p95 16.67ms; UI p95 1.79ms; raster p95 7.29ms; dense scene; device="Windows 10 Home" 10.0 (Build 26200); view=1426x844 logical px; scale=1.25x (120 DPI); renderer=Impeller/OpenGLES

@@ -123,7 +123,8 @@ public class ClassroomService {
                 long now = System.currentTimeMillis();
                 target.setEndedAt(now);
                 long start = target.getStartedAt() > 0 ? target.getStartedAt() : target.getCreatedAt();
-                int duration = (int) Math.max(1, (now - start) / 60000);
+                long elapsedMs = Math.max(0, now - start);
+                int duration = (int) Math.round((double) elapsedMs / 60000.0);
                 target.setDurationMinutes(duration);
 
                 if (content != null) {
@@ -175,7 +176,8 @@ public class ClassroomService {
                         if (c.getEndedAt() == null || c.getEndedAt() <= 0) {
                             c.setEndedAt(System.currentTimeMillis());
                             long start = c.getStartedAt() > 0 ? c.getStartedAt() : c.getCreatedAt();
-                            c.setDurationMinutes((int) Math.max(1, (c.getEndedAt() - start) / 60000));
+                            long elapsedMs = Math.max(0, c.getEndedAt() - start);
+                            c.setDurationMinutes((int) Math.round((double) elapsedMs / 60000.0));
                         }
                         c.setHasContent(repository.getClassroomContent(c.getId()) != null);
                         updated = true;

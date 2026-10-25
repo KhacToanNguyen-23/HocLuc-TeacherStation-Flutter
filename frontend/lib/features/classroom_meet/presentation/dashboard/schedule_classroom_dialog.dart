@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 
 /// Dialog to schedule an upcoming classroom session.
@@ -6,7 +6,7 @@ class ScheduleClassroomDialog extends StatefulWidget {
   const ScheduleClassroomDialog({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showDialog<void>(
+    return showAppModalDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (_) => const ScheduleClassroomDialog(),

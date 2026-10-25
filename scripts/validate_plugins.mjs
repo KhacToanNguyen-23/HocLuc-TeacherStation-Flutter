@@ -46,6 +46,8 @@ function getFilesRecursively(dir, relative = '') {
     const relPath = path.join(relative, entry.name).replace(/\\/g, '/');
 
     if (entry.isDirectory()) {
+      if (relPath === 'engine/tests' || relPath.startsWith('engine/tests/') ||
+          relPath === 'engine/benchmarks' || relPath.startsWith('engine/benchmarks/')) continue;
       result.push(...getFilesRecursively(fullPath, relPath));
     } else {
       const stat = fs.statSync(fullPath);

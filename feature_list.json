@@ -1206,5 +1206,225 @@
         "verification_command": "flutter test test/features/studio_board/controllers/coordinator_test.dart",
         "notes": "Covers stories: P2 (Lifecycle Disposal)",
         "priority": "P2"
+    },
+    {
+        "id": "archive-google-classroom-course",
+        "title": "Archive an active Google Classroom course",
+        "user_visible_behavior": "so that it leaves the active list while preserving its posts and student work.",
+        "verification_command": "A successful archive updates Google courseState to ARCHIVED, keeps the HocLuc row, and shows it in Archived after reload.",
+        "status": "passing",
+        "evidence": "Backend and widget tests pass: archive is read before/after PATCH and moves to Archived only after confirmation. Live primary-teacher check on 12AA returned ARCHIVED and remained ARCHIVED after reload.",
+        "notes": "Live primary-teacher API round-trip and user-confirmed Archived-tab state in Flutter verified on 12AA. Live permanent deletion was skipped per user instruction.",
+        "priority": "P1"
+    },
+    {
+        "id": "view-archived-google-classroom-courses",
+        "title": "Manage courses in a separate Archived area",
+        "user_visible_behavior": "so that active and archived classes remain distinct.",
+        "verification_command": "Active and archived courses appear in separate lists based on reconciled classroomState; archived courses have no teaching, sync, edit, or invite actions.",
+        "status": "passing",
+        "evidence": "43 Google Workspace widget tests pass, including separate groups, switching to empty tabs, archived actions, refresh failure gating, and PROVISIONED guidance. Backend reconciliation removes a locally cached course only after a direct Classroom 404.",
+        "notes": "User confirmed after refresh that 12AA appears under Archived. Live permanent deletion was skipped; no co-teacher account was available for live permission verification.",
+        "priority": "P1"
+    },
+    {
+        "id": "restore-google-classroom-course",
+        "title": "Restore an archived Google Classroom course",
+        "user_visible_behavior": "so that the class can be used again.",
+        "verification_command": "A successful restore updates Google courseState to ACTIVE and returns the class to Active after reload.",
+        "status": "passing",
+        "evidence": "Backend and widget tests pass: restore reads back ACTIVE before returning the class to Active. Live primary-teacher check on 12AA returned ACTIVE and remained ACTIVE after reload.",
+        "notes": "Live primary-teacher API round-trip verified on 12AA; the final Archived-tab state was confirmed in Flutter after refresh. Live permanent deletion was skipped per user instruction.",
+        "priority": "P1"
+    },
+    {
+        "id": "delete-archived-google-classroom-course",
+        "title": "Permanently delete an archived course",
+        "user_visible_behavior": "so that posts and comments are removed when the class is no longer needed.",
+        "verification_command": "Delete is offered only in Archived; HocLuc deletes its row only after Google success or NOT_FOUND, and preserves it on other failures.",
+        "status": "passing",
+        "evidence": "Backend and widget tests pass: remote delete requires live ARCHIVED state, Google success/NOT_FOUND cleanup, permission failure retains row, and local-only deletion remains local.",
+        "notes": "Automated mock verification. Live permanent deletion was skipped because no disposable course was available; no secondary account was supplied for co-teacher verification.",
+        "priority": "P1"
+    },
+    {
+        "id": "report-google-classroom-lifecycle-errors",
+        "title": "Report Classroom lifecycle permission and API errors",
+        "user_visible_behavior": "so that teachers know when Google rejected an archive or delete.",
+        "verification_command": "Google permission or API failure leaves the course row and last confirmed state visible with a retryable error.",
+        "status": "passing",
+        "evidence": "Backend and widget tests pass: refresh/read-back errors preserve confirmed state, show cached data, and lock Google actions with retry; Google delete denial retains the row.",
+        "notes": "Automated mock verification; live co-teacher permission behavior remains unverified because no secondary account was available.",
+        "priority": "P1"
+    },
+    {
+        "id": "liquid-glass-board-dock",
+        "title": "Liquid glass subject tool dock",
+        "user_visible_behavior": "so that teachers can see chalk and PDF content beneath the dock",
+        "verification_command": "Accepted when the reusable glass dock visibly composites over board/PDF content on the supported Windows target and drag meets the recorded performance gate or approved fallback",
+        "status": "not_started",
+        "evidence": "",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "synchronized-glass-presets",
+        "title": "Synchronized three-state glass presets",
+        "user_visible_behavior": "so that teachers can adjust readability in one tap across the dock and extension view",
+        "verification_command": "Accepted when clear → frosted → solid → clear cycles exactly, host and mounted plugin views converge within 50 ms, and late-mounted views receive current state",
+        "status": "not_started",
+        "evidence": "",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "glass-analysis-results",
+        "title": "Glass S-V-O analysis results",
+        "user_visible_behavior": "so that students can distinguish subject, verb, and object tokens in the extension results",
+        "verification_command": "Accepted when result cards and S/V/O tokens use the glass treatment and defined text/backing combinations pass WCAG AA with an opaque fallback",
+        "status": "not_started",
+        "evidence": "",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "modular-glass-ui-kit",
+        "title": "Reusable modular glass UI kit",
+        "user_visible_behavior": "so that plugin interfaces can reuse the glass system without hardcoded plugin identities in the Flutter host",
+        "verification_command": "Accepted when the shared host/CSS tokens follow plugin boundaries, no plugin IDs or direct plugin imports are added to frontend/lib/, and the architecture gate passes all 12 invariants",
+        "status": "not_started",
+        "evidence": "",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "refractive-glass-dock",
+        "title": "Board-aware refractive tool dock",
+        "user_visible_behavior": "so that teachers can see chalk and PDF content refract beneath the floating dock",
+        "verification_command": "Accepted when the Windows dock shader samples and visibly distorts the Flutter scene within clipped bounds, Clear/Frosted/Solid presets apply, and sparse/dense 10-second drag p95 frame intervals are at most 18.2 ms",
+        "status": "not_started",
+        "evidence": "",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "refractive-plugin-result-card",
+        "title": "Board-aware refractive plugin result card",
+        "user_visible_behavior": "so that teachers can see the actual board or PDF refract behind plugin results",
+        "verification_command": "Accepted when a transparent native WebView displays plugin text above a host shader that samples Flutter board/PDF pixels and aligns within 2 logical pixels across the defined lifecycle cases",
+        "status": "not_started",
+        "evidence": "",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "generic-glass-region-sdk",
+        "title": "Generic plugin glass-region SDK contract",
+        "user_visible_behavior": "so that compliant plugins can request host-rendered refractive surfaces without host code naming specific plugins",
+        "verification_command": "Accepted when HocLuc register/update/unregister APIs validate and map region bounds, coalesce updates, isolate WebView instances, and clear stale regions on hide/navigation/disposal",
+        "status": "not_started",
+        "evidence": "",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "accessible-refractive-surfaces",
+        "title": "Accessible refractive glass controls and surfaces",
+        "user_visible_behavior": "so that teachers can operate the dock and plugin controls with keyboard, focus, semantics, and reduced-motion settings",
+        "verification_command": "Accepted when keyboard activation, visible focus, semantics, pointer pass-through, reduced-motion, and the Solid preset work without duplicate semantics from shader overlays",
+        "status": "not_started",
+        "evidence": "",
+        "notes": "",
+        "priority": "P1"
+    },
+    {
+        "id": "ocr-small-blurry-auto-retry",
+        "verification_command": "python -m pytest plugins/english_assistant/engine/tests/test_ocr_recovery.py",
+        "title": "Automatic OCR retry for small or blurry passages",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Teachers scan small or blurry English passages and receive a local OCR retry without changing tools.",
+        "notes": "Covers P1 auto-retry story.",
+        "priority": "P1"
+    },
+    {
+        "id": "ocr-paragraph-candidate-selection",
+        "verification_command": "python -m pytest plugins/english_assistant/engine/tests/test_ocr_recovery.py",
+        "title": "Deterministic OCR candidate and paragraph ordering",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "The plugin chooses the most reliable OCR result while retaining paragraph reading order.",
+        "notes": "Covers P1 candidate-selection story.",
+        "priority": "P1"
+    },
+    {
+        "id": "ocr-confidence-gated-correction",
+        "verification_command": "python -m pytest plugins/english_assistant/engine/tests/test_ocr_recovery.py",
+        "title": "Confidence-gated English word correction",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "The plugin corrects OCR words only when confidence and dictionary evidence are strong; otherwise it keeps the recognized word.",
+        "notes": "Covers P1 conservative-correction story.",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-profiling-data-models-and-deterministic-engine",
+        "title": "Text Profiling Data Models & Deterministic Engine",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Typed data structures and deterministic token/syllable/sentence parsing for English text profiler.",
+        "verification_command": "flutter test test/features/studio_board/text_profiler_test.dart",
+        "notes": "Covers core profiling models and offline tokenizer.",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-02-cefr-vocabulary-profiler-and-coverage",
+        "title": "CEFR Vocabulary Profiler & K1-K3 Frequency Coverage",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "6-level CEFR word classification (A1-C2), proper noun/number/unknown isolation, K1-K3 frequency bands, and pre-teach vocabulary list.",
+        "verification_command": "flutter test test/features/studio_board/text_profiler_test.dart",
+        "notes": "Covers CEFR lexicon and frequency coverage.",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-03-readability-lexical-diversity-syntactic-complexity",
+        "title": "Readability (6 Metrics), Lexical Diversity & Syntactic Complexity",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Flesch, Flesch-Kincaid, Gunning Fog, SMOG, Coleman-Liau, ARI metrics, TTR/MATTR/MTLD lexical diversity, and sentence complexity breakdown.",
+        "verification_command": "flutter test test/features/studio_board/text_profiler_test.dart",
+        "notes": "Covers standard readability and syntactic analysis.",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-04-pedagogical-recommendations-and-vstep-profile",
+        "title": "Pedagogical Recommendations & VSTEP Exam Profiler",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Traceable teaching suggestions and VSTEP (B1/B2/C1) and THPT/ĐGNL exam benchmark alignment.",
+        "verification_command": "flutter test test/features/studio_board/text_profiler_test.dart",
+        "notes": "Covers teacher recommendations and exam profiling.",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-05-frontend-text-profiler-dashboard-and-pdf-overlay",
+        "title": "Frontend Text Profiler Dashboard & PDF Overlay Integration",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Teacher opens Text Profiler dashboard from scanned PDF passage, explores 6 CEFR color highlights, and inspects individual words.",
+        "verification_command": "flutter test test/architecture_test.dart",
+        "notes": "Covers interactive UI dialog and PDF overlay integration.",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-06-python-sidecar-sync-and-testing-ci-gate",
+        "title": "Python Sidecar Sync, Unit Tests & CI Gate Verification",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Python engine endpoints synchronized, plugin packaged to .hlep, unit tests passing, and architecture CI gates clean.",
+        "verification_command": "node scripts/validate_plugins.mjs && flutter test test/architecture_test.dart && flutter analyze --no-fatal-infos",
+        "notes": "Covers full plugin packaging and CI verification.",
+        "priority": "P1"
     }
 ]

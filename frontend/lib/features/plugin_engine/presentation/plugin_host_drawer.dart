@@ -147,6 +147,7 @@ class PluginHostDrawer extends StatelessWidget {
       visible: visible,
       transparentBackground: plugin.manifest.transparentBackground,
       glassPreset: studio.glassPreset,
+      isPdfMode: studio.isPdfMode,
       onPluginMessage: (message) => studio.handlePluginMessage(
         message.data,
         executeJs: message.executeJs,
@@ -159,6 +160,7 @@ class PluginHostDrawer extends StatelessWidget {
         HostBridge.instance.registerPluginView(
           pluginId: plugin.manifest.id,
           preset: studio.glassPreset,
+          isPdfMode: studio.isPdfMode,
           sender: sendJs,
         );
         studio.onSnippetCapturedForPlugin = (text, target) {

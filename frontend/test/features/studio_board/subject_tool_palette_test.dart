@@ -7,6 +7,7 @@ import 'package:teaching_companion/core/widgets/liquid_glass_container.dart';
 import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/core/theme/glass_preset.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/studio_board/presentation/subject_tool_palette.dart';
 
@@ -692,6 +693,140 @@ void main() {
         expect(buttonRect.width, equals(148.0));
       },
     );
+  });
+
+  group('Phase 02: PDF Mode Visual Theme and State Isolation', () {
+    test('isPdfMode activates dynamically based on viewport and active PDF', () {
+      expect(studio.isPdfMode, isFalse);
+
+      // PDF present but board-only viewport -> isPdfMode is false
+      studio.pdfFilePath = 'test.pdf';
+      studio.setViewportMode(StudioViewportMode.fullBoard);
+      expect(studio.isPdfMode, isFalse);
+
+      // PDF present and split viewport -> isPdfMode is true
+      studio.setViewportMode(StudioViewportMode.split);
+      expect(studio.isPdfMode, isTrue);
+
+      // PDF present and fullPdf viewport -> isPdfMode is true
+      studio.setViewportMode(StudioViewportMode.fullPdf);
+      expect(studio.isPdfMode, isTrue);
+
+      // Manual override forces PDF mode
+      studio.setPdfMode(false);
+      expect(studio.isPdfMode, isFalse);
+      studio.setPdfMode(true);
+      expect(studio.isPdfMode, isTrue);
+      studio.setPdfMode(null);
+      expect(studio.isPdfMode, isTrue);
+
+      // Closing PDF restores normal mode
+      studio.pdfFilePath = null;
+      studio.activeDocId = null;
+      expect(studio.isPdfMode, isFalse);
+    });
+
+    testWidgets('PDF mode applies high-contrast frosted glass surface and soft shadow', (
+      tester,
+    ) async {
+      studio.openPlugin(dummyPlugin);
+      studio.setPdfMode(true);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(children: [SubjectToolPalette(studio: studio)]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final topDock = tester.widget<LiquidGlassContainer>(
+        find.byKey(const Key('subject_tool_palette_surface')),
+      );
+      expect(topDock.backgroundColor, const Color(0xf2111a16));
+      expect(topDock.boxShadow, isNotNull);
+      expect(topDock.boxShadow!.isNotEmpty, isTrue);
+
+      // Inactive tool button inside PDF mode shares the high-contrast frosted glass surface and soft shadow
+      final toolGlass = tester.widget<LiquidGlassContainer>(
+        find.ancestor(
+          of: find.byKey(const Key('svo_tool_button')),
+          matching: find.byType(LiquidGlassContainer),
+        ).first,
+      );
+      expect(toolGlass.backgroundColor, const Color(0xf2111a16));
+      expect(toolGlass.boxShadow, isNotNull);
+      expect(toolGlass.boxShadow!.isNotEmpty, isTrue);
+
+      final toolDecoration =
+          tester
+                  .widget<AnimatedContainer>(
+                    find.descendant(
+                      of: find.byKey(const Key('svo_tool_button')),
+                      matching: find.byType(AnimatedContainer),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+      expect(toolDecoration.color, Colors.transparent);
+      expect(
+        toolDecoration.border!.top.color,
+        AppColors.overlayAccent.withValues(alpha: 0.45),
+      );
+      expect(
+        _contrastRatio(toolDecoration.border!.top.color, toolDecoration.color!),
+        greaterThanOrEqualTo(3),
+      );
+      _expectBoundaryAgainstFixtures(
+        toolDecoration.border!.top.color,
+        toolDecoration.color!,
+      );
+    });
+
+    testWidgets('Whiteboard mode preserves transparent surface without dark backdrop tint', (
+      tester,
+    ) async {
+      studio.openPlugin(dummyPlugin);
+      studio.setPdfMode(false);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(children: [SubjectToolPalette(studio: studio)]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final topDock = tester.widget<LiquidGlassContainer>(
+        find.byKey(const Key('subject_tool_palette_surface')),
+      );
+      expect(topDock.backgroundColor, isNull);
+      expect(topDock.boxShadow, isNull);
+
+      final toolGlass = tester.widget<LiquidGlassContainer>(
+        find.ancestor(
+          of: find.byKey(const Key('svo_tool_button')),
+          matching: find.byType(LiquidGlassContainer),
+        ).first,
+      );
+      expect(toolGlass.backgroundColor, isNull);
+      expect(toolGlass.boxShadow, isNull);
+
+      final toolDecoration =
+          tester
+                  .widget<AnimatedContainer>(
+                    find.descendant(
+                      of: find.byKey(const Key('svo_tool_button')),
+                      matching: find.byType(AnimatedContainer),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+      expect(toolDecoration.color, Colors.transparent);
+      expect(toolDecoration.border!.top.color, AppColors.overlayMuted);
+    });
   });
 }
 

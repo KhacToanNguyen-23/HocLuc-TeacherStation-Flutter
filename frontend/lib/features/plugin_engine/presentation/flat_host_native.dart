@@ -20,6 +20,7 @@ class FlatHost extends StatefulWidget {
     this.onControllerReady,
     this.onControllerDisposed,
     this.glassPreset = GlassPreset.frosted,
+    this.isPdfMode = false,
   });
   final String url;
   final bool visible;
@@ -29,6 +30,7 @@ class FlatHost extends StatefulWidget {
   final ValueChanged<void Function(String js)>? onControllerReady;
   final ValueChanged<void Function(String js)>? onControllerDisposed;
   final GlassPreset glassPreset;
+  final bool isPdfMode;
 
   @override
   State<FlatHost> createState() => _FlatHostState();
@@ -71,6 +73,11 @@ class _FlatHostState extends State<FlatHost> {
       } else {
         GlassRegionService.instance.clearViewRegions(_viewToken);
       }
+    }
+    if (oldWidget.isPdfMode != widget.isPdfMode && ready) {
+      _evalJs(
+        "document.documentElement.dataset.workspaceMode = '${widget.isPdfMode ? 'pdf' : 'normal'}';",
+      );
     }
     if ((oldWidget.url != widget.url ||
             oldWidget.transparentBackground != widget.transparentBackground) &&
@@ -235,6 +242,7 @@ class _FlatHostState extends State<FlatHost> {
     _evalJs(
       'document.documentElement.dataset.hoclucTransparentBackground = '
       "'${_transparentBackgroundApplied ? 'true' : 'false'}'; "
+      "document.documentElement.dataset.workspaceMode = '${widget.isPdfMode ? 'pdf' : 'normal'}'; "
       'window.__HocLucHostGeneration = $_navigationGeneration; $refreshRegions',
     );
     widget.onControllerReady?.call(_evalJs);
