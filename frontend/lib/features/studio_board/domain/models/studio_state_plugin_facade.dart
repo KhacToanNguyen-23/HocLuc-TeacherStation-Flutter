@@ -121,6 +121,68 @@ extension StudioStatePluginFacadeExt on StudioState {
     }
   }
 
+  /// Whether a PDF document is currently open and active in the workspace stage.
+  bool get hasActivePdf =>
+      activeDoc != null || pdfFilePath != null || pdfBytes != null;
+
+  /// Context-aware PDF Mode: activated when a PDF is open on stage (fullPdf or split),
+  /// or explicitly toggled. Restores automatically when switching back to fullBoard.
+  bool get isPdfMode =>
+      pdf.pdfModeOverride ??
+      ((viewportMode == StudioViewportMode.fullPdf ||
+              viewportMode == StudioViewportMode.split) &&
+          hasActivePdf);
+
+  void setPdfMode(bool? active) {
+    if (pdf.pdfModeOverride == active) return;
+    pdf.pdfModeOverride = active;
+    final pluginIds = {
+      if (activePlugin != null) activePlugin!.id,
+      if (floatingPlugin != null) floatingPlugin!.id,
+    };
+    for (final pluginId in pluginIds) {
+      HostBridge.instance.notifyWorkspaceMode(
+        pluginId: pluginId,
+        isPdfMode: isPdfMode,
+      );
+    }
+    change(() {}, persist: false);
+  }
+
+  /// Returns the current bounding box of the active PDF viewport in stage coordinates.
+  /// Returns `null` if no PDF is active or if the viewport mode is `fullBoard`.
+  Rect? getPdfViewportBounds({Size? stageSize}) {
+    if (!hasActivePdf || viewportMode == StudioViewportMode.fullBoard) {
+      return null;
+    }
+    final effectiveStage = stageSize ?? const Size(1280, 720);
+    if (viewportMode == StudioViewportMode.fullPdf || pdfWindowMaximized) {
+      return Rect.fromLTWH(0, 0, effectiveStage.width, effectiveStage.height);
+    }
+    // split mode: FloatingPdfWindow position and size
+    final pos = pdfWindowPosition;
+    final size = pdfWindowSize;
+    return Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
+  }
+
+  /// Calculates the geometric overlap ratio (0.0 to 1.0) of a component with the active PDF viewport.
+  double getPdfOverlapRatio(Rect componentBounds, {Size? stageSize}) {
+    final viewport = getPdfViewportBounds(stageSize: stageSize);
+    return computeGeometricOverlapRatio(componentBounds, viewport);
+  }
+
+  /// Evaluates whether a component bounds sufficiently overlaps the PDF viewport to use PDF Glass.
+  /// If [pdfModeOverride] is set, honors the manual override.
+  /// Otherwise, returns `true` if `overlapRatio >= threshold`.
+  bool isComponentOverlappingPdf(
+    Rect componentBounds, {
+    double threshold = 0.20,
+    Size? stageSize,
+  }) {
+    if (pdf.pdfModeOverride != null) return pdf.pdfModeOverride!;
+    return getPdfOverlapRatio(componentBounds, stageSize: stageSize) >= threshold;
+  }
+
   void insertPluginCard(Map<String, dynamic> cardData) =>
       coordinator.insertPluginCard(cardData);
 

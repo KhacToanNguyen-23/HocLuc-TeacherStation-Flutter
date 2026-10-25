@@ -504,6 +504,15 @@ class PdfSmartPenController extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool? _pdfModeOverride;
+  bool? get pdfModeOverride => _pdfModeOverride;
+  set pdfModeOverride(bool? val) {
+    if (_pdfModeOverride != val) {
+      _pdfModeOverride = val;
+      notifyListeners();
+    }
+  }
+
   final List<PdfDgnlPassage> pdfDgnlPassages = [];
   List<PdfDgnlPassage> getPdfDgnlPassagesForPage(int pageNumber) =>
       pdfDgnlPassages.where((p) => p.pageNumber == pageNumber).toList();

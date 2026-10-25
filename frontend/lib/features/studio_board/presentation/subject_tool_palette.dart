@@ -33,6 +33,35 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
   bool _glassPresetFocused = false;
   bool _isToolsExpanded = true;
   bool _isDragging = false;
+  final AdaptiveGlassmorphismController _adaptiveController =
+      AdaptiveGlassmorphismController(
+        enterPdfThreshold: 0.20,
+        exitPdfThreshold: 0.05,
+      );
+
+  Rect _calculatePaletteBounds() {
+    final offset = studio.subjectPaletteOffset;
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox != null && renderBox.hasSize) {
+      return offset & renderBox.size;
+    }
+    final tools = studio.activePlugin?.manifest.contributesTools ?? const [];
+    final toolsCount = tools.length +
+        (tools.any((t) => t.action == 'snip_region' && studio.pdfDgnlPassages.isNotEmpty) ? 1 : 0);
+    final rows = _isToolsExpanded ? (toolsCount + 1) ~/ 2 : 0;
+    final estimatedHeight = _isToolsExpanded ? (44.0 + 9.0 + (rows * 50.0)) : 44.0;
+    return offset & Size(_toolbarWidth, estimatedHeight);
+  }
+
+  bool _evaluateIsPdfGlass() {
+    if (studio.pdf.pdfModeOverride != null) {
+      return studio.pdf.pdfModeOverride!;
+    }
+    final bounds = _calculatePaletteBounds();
+    final overlap = studio.getPdfOverlapRatio(bounds);
+    _adaptiveController.updateOverlap(overlap);
+    return _adaptiveController.isPdfGlass;
+  }
 
   @override
   void initState() {
@@ -57,13 +86,13 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
     _expandController = controller;
     _expandAnimation = CurvedAnimation(
       parent: controller,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInOutCubic,
+      curve: AppMotion.easeOut,
+      reverseCurve: AppMotion.easeOut,
     );
     _fadeAnimation = CurvedAnimation(
       parent: controller,
-      curve: const Interval(0.12, 1.0, curve: Curves.easeOut),
-      reverseCurve: const Interval(0.0, 0.7, curve: Curves.easeIn),
+      curve: const Interval(0.12, 1.0, curve: AppMotion.easeOut),
+      reverseCurve: const Interval(0.0, 0.8, curve: AppMotion.easeOut),
     );
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, -0.06),
@@ -71,8 +100,8 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
     ).animate(
       CurvedAnimation(
         parent: controller,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInOutCubic,
+        curve: AppMotion.easeOut,
+        reverseCurve: AppMotion.easeOut,
       ),
     );
   }
@@ -129,6 +158,7 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
         final tools = plugin.manifest.contributesTools;
         final isEyeVisible = studio.chalkAnnotationsVisible;
         final hasActiveTool = studio.activeSubjectTool != null;
+        final isPdfMode = _evaluateIsPdfGlass();
 
         return Positioned(
           left: studio.subjectPaletteOffset.dx,
@@ -148,6 +178,11 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
                   newPos.dy.clamp(0.0, maxDy),
                 ),
               );
+              final wasPdf = _adaptiveController.isPdfGlass;
+              final nowPdf = _evaluateIsPdfGlass();
+              if (wasPdf != nowPdf) {
+                setState(() {});
+              }
             },
             onPanEnd: (_) {
               if (_isDragging) setState(() => _isDragging = false);
@@ -167,20 +202,32 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Top Dock: Plugin Badge (with expand/collapse) + Utility Controls
+                      // Top Dock: Plugin Badge (with expand/collapse) + Utility Controls (iPhone Dynamic Island style)
                       LiquidGlassContainer(
                         key: const Key('subject_tool_palette_surface'),
                         preset: studio.glassPreset,
+                        backgroundColor: isPdfMode ? const Color(0xf2111a16) : null,
+                        boxShadow: isPdfMode
+                            ? const [
+                                BoxShadow(
+                                  color: Color(0x66000000),
+                                  blurRadius: 16,
+                                  offset: Offset(0, 5),
+                                ),
+                              ]
+                            : null,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 5,
                         ),
-                        borderRadius: BorderRadius.circular(28),
-                        borderColor: _isDragging
-                            ? AppColors.overlayAccent
-                            : (hasActiveTool
+                        borderRadius: BorderRadius.circular(9999),
+                        borderColor: isPdfMode
+                            ? AppColors.overlayAccent.withValues(alpha: 0.45)
+                            : (_isDragging
                                 ? AppColors.overlayAccent
-                                : AppColors.overlayMuted),
+                                : (hasActiveTool
+                                    ? AppColors.overlayAccent
+                                    : AppColors.overlayMuted)),
                         child: Row(
                           children: [
                             Expanded(
@@ -221,13 +268,13 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
                           );
                         },
                         child: Padding(
-                          padding: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.only(top: 9),
                           child: SizedBox(
                             width: _toolbarWidth,
                             child: Wrap(
                               alignment: WrapAlignment.start,
                               spacing: _columnGap,
-                              runSpacing: 8.0,
+                              runSpacing: 9.0,
                               children: [
                                 for (int i = 0; i < tools.length; i++) ...[
                                   SizedBox(
@@ -235,6 +282,7 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
                                     child: _buildContributedToolButton(
                                       context,
                                       tools[i],
+                                      isPdfMode: isPdfMode,
                                     ),
                                   ),
                                   if (tools[i].action == 'snip_region' &&
@@ -243,6 +291,7 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
                                       width: _buttonWidth,
                                       child: _buildApplyPdfHighlightButton(
                                         context,
+                                        isPdfMode: isPdfMode,
                                       ),
                                     ),
                                   ],
@@ -278,8 +327,8 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
               : SystemMouseCursors.grab,
           child: Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: 4,
-              vertical: 3,
+              horizontal: 6,
+              vertical: 4,
             ),
             decoration: const BoxDecoration(
               color: Colors.transparent,
@@ -290,17 +339,17 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
               children: [
                 const Icon(
                   Icons.drag_indicator,
-                  size: 12,
+                  size: 13,
                   color: AppColors.overlayAccent,
                 ),
-                const SizedBox(width: 3),
+                const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     plugin.manifest.name as String,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                     style: const TextStyle(
-                      fontSize: 11.5,
+                      fontSize: 12.0,
                       fontWeight: FontWeight.w700,
                       color: AppColors.overlayAccent,
                       letterSpacing: -0.2,
@@ -317,7 +366,7 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
                   ),
                   child: const Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    size: 14,
+                    size: 15,
                     color: AppColors.overlayAccent,
                   ),
                 ),
@@ -430,13 +479,18 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
                   color: _glassPresetFocused
                       ? Colors.white
                       : AppColors.overlayMuted.withValues(alpha: 0.4),
-                  width: _glassPresetFocused ? 2 : 1,
+                  width: _glassPresetFocused ? 2 : 1.0,
                 ),
               ),
             ),
-            child: SizedBox.square(
-              dimension: 28,
-              child: Icon(icon, size: 14, color: AppColors.overlayAccent),
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: Icon(
+                icon,
+                size: 13,
+                color: AppColors.overlayMuted,
+              ),
             ),
           ),
         ),
@@ -446,8 +500,9 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
 
   Widget _buildContributedToolButton(
     BuildContext context,
-    PluginToolContribution tool,
-  ) {
+    PluginToolContribution tool, {
+    required bool isPdfMode,
+  }) {
     final targetId = tool.target ?? tool.id;
     final isToggle = tool.action == 'toggle_tool';
     final isSettingToggle = tool.action == 'toggle_setting';
@@ -463,14 +518,25 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
         : false;
     final buttonKey = Key(tool.widgetKey ?? '${tool.id}_tool_button');
 
-    return Tooltip(
-      message: tool.tooltip.isNotEmpty ? tool.tooltip : tool.label,
-      child: LiquidGlassContainer(
-        preset: studio.glassPreset,
-        borderRadius: BorderRadius.circular(9999),
-        borderColor: Colors.transparent,
+    return LiquidGlassContainer(
+      preset: studio.glassPreset,
+      borderRadius: BorderRadius.circular(9999),
+      borderColor: Colors.transparent,
+      backgroundColor: isPdfMode ? const Color(0xf2111a16) : null,
+      boxShadow: isPdfMode
+          ? const [
+              BoxShadow(
+                color: Color(0x40000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ]
+          : null,
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
           key: buttonKey,
+          borderRadius: BorderRadius.circular(9999),
           onTap: () {
             switch (tool.action) {
               case 'snip_region':
@@ -495,30 +561,31 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
                 studio.setActiveSubjectTool(isActive ? null : targetId);
             }
           },
-          borderRadius: BorderRadius.circular(9999),
           child: AnimatedContainer(
             duration: AppMotion.duration(context, milliseconds: 150),
             curve: AppMotion.stateCurve,
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10.0),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: isActive
-                  ? const Color(0x3338BDF8)
+                  ? AppColors.overlayAccent.withValues(alpha: 0.28)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(9999),
               border: Border.all(
                 color: isActive
                     ? AppColors.overlayAccent
-                    : AppColors.overlayMuted,
+                    : (isPdfMode
+                        ? AppColors.overlayAccent.withValues(alpha: 0.45)
+                        : AppColors.overlayMuted),
                 width: 1.0,
               ),
               boxShadow: isActive
                   ? const [
                       BoxShadow(
-                        color: Color(0x3338BDF8),
-                        blurRadius: 6,
-                        offset: Offset(0, 1),
+                        color: Color(0x3d38bdf8),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
                       ),
                     ]
                   : null,
@@ -558,50 +625,74 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
     );
   }
 
-  Widget _buildApplyPdfHighlightButton(BuildContext context) {
-    return Tooltip(
-      message:
-          'Áp lớp Highlight chuẩn trực tiếp vào file PDF đang mở (không cần lưu tệp mới)',
-      child: LiquidGlassContainer(
-        preset: studio.glassPreset,
-        borderRadius: BorderRadius.circular(9999),
-        borderColor: Colors.transparent,
-        child: InkWell(
-          key: const Key('btn_palette_save_pdf_highlight'),
-          onTap: () =>
-              PdfAnnotationExporter.applyHighlightDirectlyToPdf(context, studio),
-          borderRadius: BorderRadius.circular(9999),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(9999),
-              border: Border.all(
-                color: AppColors.border.withValues(alpha: 0.5),
-                width: 1.0,
+  Widget _buildApplyPdfHighlightButton(
+    BuildContext context, {
+    required bool isPdfMode,
+  }) {
+    return LiquidGlassContainer(
+      preset: studio.glassPreset,
+      borderRadius: BorderRadius.circular(9999),
+      borderColor: Colors.transparent,
+      backgroundColor: isPdfMode ? const Color(0xf2111a16) : null,
+      boxShadow: isPdfMode
+          ? const [
+              BoxShadow(
+                color: Color(0x40000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
               ),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.draw_rounded, size: 14, color: AppColors.border),
-                SizedBox(width: 5),
-                Flexible(
-                  child: Text(
-                    'Highlight lên file',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.border,
+            ]
+          : null,
+      child: Tooltip(
+        message:
+            'Áp lớp Highlight chuẩn trực tiếp vào file PDF đang mở (không cần lưu tệp mới)',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: const Key('btn_palette_save_pdf_highlight'),
+            onTap: () =>
+                PdfAnnotationExporter.applyHighlightDirectlyToPdf(context, studio),
+            borderRadius: BorderRadius.circular(9999),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10.0),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(9999),
+                border: Border.all(
+                  color: isPdfMode
+                      ? AppColors.overlayAccent.withValues(alpha: 0.45)
+                      : AppColors.border.withValues(alpha: 0.5),
+                  width: 1.0,
+                ),
+                boxShadow: null,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.draw_rounded,
+                    size: 14,
+                    color: isPdfMode ? AppColors.overlayAccent : AppColors.border,
+                  ),
+                  const SizedBox(width: 5),
+                  Flexible(
+                    child: Text(
+                      'Highlight lên file',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                        color: isPdfMode ? AppColors.overlayAccent : AppColors.border,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

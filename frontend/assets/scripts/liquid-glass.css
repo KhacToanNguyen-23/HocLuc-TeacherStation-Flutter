@@ -28,6 +28,13 @@
   --glass-blur: 28px;
 }
 
+:root[data-workspace-mode='pdf'] {
+  --glass-bg-opacity: 0.92;
+  --glass-blur: 24px;
+  --glass-bg: rgb(17 26 22 / var(--glass-bg-opacity));
+  --glass-shadow: 0 10px 32px rgb(0 0 0 / 0.55);
+}
+
 /* Matches the host AppColors.slate900 edge and pairs with white for varied boards. */
 .liquid-card {
   border: 1px solid #0b2348;

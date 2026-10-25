@@ -3,6 +3,8 @@ import 'app_palette.dart';
 export 'app_color_theme.dart';
 export 'app_palette.dart';
 export 'app_visuals.dart';
+export '../widgets/app_dialog.dart';
+export '../widgets/app_pressable.dart';
 
 /// Shared 4-point spacing scale for predictable product UI density.
 class AppSpacing {

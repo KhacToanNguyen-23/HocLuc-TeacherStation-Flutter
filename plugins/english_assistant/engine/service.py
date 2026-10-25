@@ -48,7 +48,12 @@ try:
     en_model_path = en_v4_path if os.path.exists(en_v4_path) else en_v3_path
     en_dict_path = os.path.join(model_dir, "en_dict.txt")
     if os.path.exists(en_model_path) and os.path.exists(en_dict_path):
-        rapid_ocr = RapidOCR(rec_model_path=en_model_path, rec_keys_path=en_dict_path, Det_box_thresh=0.25, Det_unclip_ratio=2.2)
+        rapid_ocr = RapidOCR(
+            rec_model_path=en_model_path,
+            rec_keys_path=en_dict_path,
+            Det_box_thresh=0.25,
+            Det_unclip_ratio=2.2,
+        )
         print(f"RapidOCR initialized with dedicated English model ({os.path.basename(en_model_path)}) & ASCII dict.")
     else:
         rapid_ocr = RapidOCR(Det_box_thresh=0.3, Det_unclip_ratio=2.0)
@@ -158,8 +163,10 @@ class AnalyzeResponse(BaseModel):
     tokens: List[TokenItem]
     grammar_issue: str = ""
 
-def _parse_with_spacy(text: str) -> AnalyzeResponse:
-    clean_text = _apply_optical_confusion_rules(text.strip())
+def _parse_with_spacy(text: str, *, apply_optical_rules: bool = True) -> AnalyzeResponse:
+    clean_text = text.strip()
+    if apply_optical_rules:
+        clean_text = _apply_optical_confusion_rules(clean_text)
     if not clean_text:
         return AnalyzeResponse(original_text="", tokens=[], grammar_issue="")
 
@@ -319,377 +326,54 @@ try:
 except Exception as e:
     print(f"Notice: Could not load english_vocab.txt: {e}")
 
-COMMON_TEACHING_VOCAB = [
-    "i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them",
-    "my", "your", "his", "her", "its", "our", "their",
-    "am", "is", "are", "was", "were", "be", "been", "being",
-    "have", "has", "had", "having",
-    "do", "does", "did", "doing", "done",
-    "go", "goes", "went", "gone", "going",
-    "study", "studies", "studied", "studying",
-    "learn", "learns", "learned", "learning",
-    "read", "reads", "reading",
-    "write", "writes", "wrote", "written", "writing",
-    "play", "plays", "played", "playing",
-    "teach", "teaches", "taught", "teaching",
-    "eat", "eats", "ate", "eaten", "eating",
-    "see", "sees", "saw", "seen", "seeing",
-    "like", "likes", "liked", "liking",
-    "love", "loves", "loved", "loving",
-    "hate", "hates", "hated",
-    "math", "maths", "english", "music", "history", "science", "physics", "chemistry",
-    "student", "students", "teacher", "teachers", "school", "schools", "classroom",
-    "book", "books", "pen", "pens", "desk", "desks", "pencil", "pencils",
-    "apple", "apples", "banana", "bananas", "cat", "cats", "dog", "dogs",
-    "ugly", "tired", "hungry", "angry", "happy", "sad", "smart", "good", "bad",
-    "hot", "cold", "warm", "cool", "tall", "short", "big", "small", "nice", "great",
-    "beautiful", "clean", "dirty", "fast", "slow", "rich", "poor", "busy", "ready",
-    "so", "very", "too", "quite", "really", "much", "well", "badly",
-    "yesterday", "today", "tomorrow", "now", "always", "often", "never", "usually",
-    "in", "on", "at", "to", "for", "with", "by", "from", "into", "about",
-    "a", "an", "the", "this", "that", "these", "those"
-]
-
-def _merge_broken_tokens(tokens: List[str]) -> List[str]:
-    if not tokens:
-        return []
-    import difflib
-
-    merged = []
-    i = 0
-    while i < len(tokens):
-        curr = tokens[i]
-        curr_clean = re.sub(r'[^a-zA-Z]', '', curr).lower()
-
-        # 1. Forward merge: single non-word letter curr (e.g. 's' in 's tudan' or 'm' in 'm ath')
-        if len(curr_clean) == 1 and curr_clean not in ('i', 'a'):
-            if i + 1 < len(tokens):
-                nxt = tokens[i + 1]
-                nxt_clean = re.sub(r'[^a-zA-Z]', '', nxt).lower()
-                combined_clean = curr_clean + nxt_clean
-                if combined_clean in OXFORD_FULL_VOCAB or difflib.get_close_matches(combined_clean, list(OXFORD_FULL_VOCAB), n=1, cutoff=0.65):
-                    merged.append(curr + nxt)
-                    i += 2
-                    continue
-
-            # If cannot merge forward, can it merge backward with merged[-1]?
-            if merged:
-                prev = merged[-1]
-                prev_clean = re.sub(r'[^a-zA-Z]', '', prev).lower()
-                if len(prev_clean) >= 3:
-                    comb_back = prev_clean + curr_clean
-                    if comb_back in OXFORD_FULL_VOCAB or difflib.get_close_matches(comb_back, list(OXFORD_FULL_VOCAB), n=1, cutoff=0.7):
-                        merged[-1] = prev + curr
-                        i += 1
-                        continue
-
-            # Single non-word letter is stray noise or detached stroke. Drop it!
-            i += 1
-            continue
-
-        # 2. Syllable fragments: curr + nxt
-        if i + 1 < len(tokens):
-            nxt = tokens[i + 1]
-            nxt_clean = re.sub(r'[^a-zA-Z]', '', nxt).lower()
-            combined_clean = curr_clean + nxt_clean
-
-            # Trailing detached letter (e.g. 'studen' + 't'): curr must be at least 3 letters
-            if len(nxt_clean) == 1 and nxt_clean not in ('i', 'a') and len(curr_clean) >= 3:
-                can_nxt_merge_fwd = False
-                if i + 2 < len(tokens):
-                    after_nxt = tokens[i + 2]
-                    after_clean = re.sub(r'[^a-zA-Z]', '', after_nxt).lower()
-                    cand_fwd = nxt_clean + after_clean
-                    if cand_fwd in OXFORD_FULL_VOCAB or difflib.get_close_matches(cand_fwd, list(OXFORD_FULL_VOCAB), n=1, cutoff=0.65):
-                        can_nxt_merge_fwd = True
-
-                if not can_nxt_merge_fwd:
-                    if combined_clean in OXFORD_FULL_VOCAB or difflib.get_close_matches(combined_clean, list(OXFORD_FULL_VOCAB), n=1, cutoff=0.7):
-                        merged.append(curr + nxt)
-                        i += 2
-                        continue
-
-            # Syllable splits in OCR (e.g. 'Stud' + 'ent', 'teach' + 'er')
-            if combined_clean in OXFORD_FULL_VOCAB and len(combined_clean) >= 4:
-                common_short_words = {'i', 'a', 'in', 'on', 'at', 'to', 'is', 'it', 'he', 'we', 'me', 'us', 'be', 'so', 'go', 'do', 'no', 'my', 'by', 'as', 'up'}
-                if curr_clean not in common_short_words or nxt_clean not in common_short_words:
-                    merged.append(curr + nxt)
-                    i += 2
-                    continue
-
-        merged.append(curr)
-        i += 1
-
-    return merged
-
-def _correct_ocr_tokens(raw_text: str) -> str:
-    if not raw_text or not raw_text.strip():
-        return raw_text
-
-    import difflib
-
-    normalized = _apply_optical_confusion_rules(raw_text.strip())
-
-    # 2. Tokenize and strip chalk drag / hyphen noise (- _ ~ = ^ * |)
-    raw_words = normalized.split()
-    cleaned_tokens = []
-    for w in raw_words:
-        w_clean = re.sub(r"^[\-_~=^|\\/]+|[\-_~=^|\\/]+$", "", w)
-        if w_clean:
-            cleaned_tokens.append(w_clean)
-
-    words = _merge_broken_tokens(cleaned_tokens)
-    corrected_words = []
-
-    for idx, w in enumerate(words):
-        prev_w = words[idx - 1].lower() if idx > 0 else ""
-        next_w = words[idx + 1].lower() if idx < len(words) - 1 else ""
-
-        prefix = ""
-        suffix = ""
-        core = w
-        while core and not core[0].isalnum():
-            prefix += core[0]
-            core = core[1:]
-        while core and not core[-1].isalnum():
-            # Only preserve true punctuation like . , ? ! ; :
-            if core[-1] in ".!?,;:":
-                suffix = core[-1] + suffix
-            core = core[:-1]
-
-        if not core:
-            corrected_words.append(w)
-            continue
-
-        low_core = core.lower()
-
-        # Contextual exceptions for identical-sound words
-        if low_core == "beer" and prev_w in ("has", "have", "had", "having"):
-            corrected_words.append(prefix + ("Been" if core[0].isupper() else "been") + suffix)
-            continue
-        if low_core in ("thars", "thar", "thors", "thor", "thay", "thagy", "thev"):
-            corrected_words.append(prefix + ("They" if core[0].isupper() else "they") + suffix)
-            continue
-
-        # Single letter protection: only 'I' and 'a' are valid English words
-        if len(core) == 1:
-            if low_core == "i":
-                corrected_words.append(prefix + "I" + suffix)
-            elif low_core == "a":
-                corrected_words.append(prefix + ("A" if core.isupper() else "a") + suffix)
-            continue
-
-        # Short 2-letter words protection & common handwriting OCR misreads
-        if len(core) == 2:
-            if low_core in ("av", "ov", "ci", "cl", "al", "ai"):
-                corrected_words.append(prefix + ("A" if core[0].isupper() else "a") + suffix)
-                continue
-            if low_core in ("ae", "ar"):
-                corrected_words.append(prefix + ("Are" if core[0].isupper() else "are") + suffix)
-                continue
-            if low_core in ("su", "sc", "sa"):
-                corrected_words.append(prefix + ("So" if core[0].isupper() else "so") + suffix)
-                continue
-            if low_core in ("ob", "fo", "eo", "ro"):
-                corrected_words.append(prefix + ("To" if core[0].isupper() else "to") + suffix)
-                continue
-            if low_core in OXFORD_FULL_VOCAB:
-                corrected_words.append(prefix + (low_core.capitalize() if core[0].isupper() else low_core) + suffix)
-            else:
-                corrected_words.append(w)
-            continue
-
-        # Tier 0: Direct match in Oxford 5000 English Dictionary
-        if low_core in OXFORD_FULL_VOCAB:
-            if core.isupper() and len(core) == 1:
-                corrected_words.append(prefix + core + suffix)
-            elif core[0].isupper():
-                corrected_words.append(prefix + low_core.capitalize() + suffix)
-            else:
-                corrected_words.append(prefix + low_core + suffix)
-            continue
-
-        # Tier 1: First letter preservation for 'th...' pronouns
-        if low_core.startswith("th"):
-            th_candidates = [cw for cw in COMMON_TEACHING_VOCAB if cw.startswith("th")]
-            matches = difflib.get_close_matches(low_core, th_candidates, n=1, cutoff=0.55)
-            if matches:
-                best = matches[0].capitalize() if core[0].isupper() else matches[0]
-                corrected_words.append(prefix + best + suffix)
-                continue
-
-        # Tier 2: Fuzzy search in Core Teaching Vocabulary (Oxford Elementary / Classroom)
-        core_candidates = [cw for cw in COMMON_TEACHING_VOCAB if abs(len(cw) - len(low_core)) <= 1 and len(cw) >= 3]
-        matches = difflib.get_close_matches(low_core, core_candidates, n=1, cutoff=0.60)
-        if matches:
-            best = matches[0].capitalize() if core[0].isupper() else matches[0]
-            corrected_words.append(prefix + best + suffix)
-            continue
-
-        # Tier 3: General Fuzzy search in Full Oxford 5000 Dictionary
-        if OXFORD_FULL_VOCAB and len(low_core) >= 4:
-            full_candidates = [ow for ow in OXFORD_FULL_VOCAB if abs(len(ow) - len(low_core)) <= 1 and len(ow) >= 4]
-            matches_all = difflib.get_close_matches(low_core, full_candidates, n=1, cutoff=0.72)
-            if matches_all:
-                best = matches_all[0].capitalize() if core[0].isupper() else matches_all[0]
-                corrected_words.append(prefix + best + suffix)
-                continue
-
-        corrected_words.append(w)
-
-    return " ".join(corrected_words)
-
 @app.post("/analyze-svo", response_model=AnalyzeResponse)
 async def analyze_svo(
     text: Optional[str] = Form(None),
     image: Optional[UploadFile] = File(None),
 ):
     extracted_text = (text or "").strip()
+    is_ocr_result = False
     
     # 1. OCR processing if image is uploaded
     if image and not extracted_text:
+        is_ocr_result = True
         try:
             image_bytes = await image.read()
             if has_pil:
                 img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
                 if rapid_ocr:
                     import numpy as np
-                    import cv2
                     img_np = np.array(img)
                     # Auto-invert dark background to crisp black-on-white for optimal OCR
                     if img_np.mean() < 128:
                         img_np = 255 - img_np
+                    from ocr_recovery import correct_ocr_detections, run_ocr_recovery
 
-                    # Apply morphological smoothing to connect subtle stroke breaks in cursive handwriting
-                    gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY) if len(img_np.shape) == 3 else img_np
-                    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-                    # On white background (255) with black strokes (0), erosion thickens black strokes
-                    closed_gray = cv2.erode(gray, kernel, iterations=1)
-                    prep_img = cv2.cvtColor(closed_gray, cv2.COLOR_GRAY2RGB)
-
-                    result, _ = rapid_ocr(prep_img)
-                    ordered_boxes = []
-                    if result:
-                        for item in result:
-                            box = item[0]
-                            text_str = item[1].strip() if len(item) > 1 else ""
-                            clean_str = re.sub(r"[^\x20-\x7E]", " ", text_str).strip()
-                            if not clean_str:
-                                continue
-                            x_min = min(p[0] for p in box)
-                            x_max = max(p[0] for p in box)
-                            y_min = min(p[1] for p in box)
-                            y_max = max(p[1] for p in box)
-                            height = max(1.0, y_max - y_min)
-                            y_center = (y_min + y_max) / 2.0
-                            ordered_boxes.append({
-                                'x_min': x_min,
-                                'x_max': x_max,
-                                'y_min': y_min,
-                                'y_max': y_max,
-                                'height': height,
-                                'y_center': y_center,
-                                'text': clean_str,
-                            })
-
-                    # Calculate vertical projection segments to identify physical word clusters
-                    black_cols = np.sum(gray < 140, axis=0)
-                    in_w = False
-                    segs = []
-                    st = 0
-                    for col, cnt in enumerate(black_cols):
-                        if cnt > 2 and not in_w:
-                            in_w = True
-                            st = col
-                        elif cnt <= 2 and in_w:
-                            in_w = False
-                            segs.append((st, col))
-                    if in_w:
-                        segs.append((st, len(black_cols)))
-
-                    word_segs = []
-                    curr = None
-                    for s, e in segs:
-                        if curr is None:
-                            curr = [s, e]
-                        else:
-                            if s - curr[1] < 32:
-                                curr[1] = e
-                            else:
-                                word_segs.append(tuple(curr))
-                                curr = [s, e]
-                    if curr:
-                        word_segs.append(tuple(curr))
-
-                    # Merge DBNet detections with Word Segments without duplicates:
-                    final_words = []
-                    used_box_ids = set()
-                    if word_segs:
-                        for ws, we in word_segs:
-                            matching_boxes = [
-                                (idx, b) for idx, b in enumerate(ordered_boxes)
-                                if idx not in used_box_ids and max(b['x_min'], ws) < min(b['x_max'], we) + 12
-                            ]
-                            if matching_boxes:
-                                matching_boxes.sort(key=lambda item: item[1]['x_min'])
-                                cluster_tokens = []
-                                last_box = None
-                                for idx, b in matching_boxes:
-                                    used_box_ids.add(idx)
-                                    b_txt = b['text'].strip()
-                                    if not b_txt:
-                                        continue
-                                    if cluster_tokens and last_box is not None:
-                                        gap = b['x_min'] - last_box['x_max']
-                                        if gap < 28 or len(cluster_tokens[-1]) <= 2 or len(b_txt) <= 2:
-                                            cluster_tokens[-1] = cluster_tokens[-1] + b_txt
-                                            last_box = b
-                                            continue
-                                    cluster_tokens.append(b_txt)
-                                    last_box = b
-                                final_words.extend(cluster_tokens)
-                            else:
-                                # DBNet completely missed this handwriting word! Run recognition on tight crop
-                                w_crop = gray[:, ws:we]
-                                b_rows = np.where(np.sum(w_crop < 140, axis=1) > 0)[0]
-                                if len(b_rows) > 0:
-                                    w_crop = w_crop[b_rows[0]:b_rows[-1]+1, :]
-                                padded = cv2.copyMakeBorder(w_crop, 16, 16, 24, 24, cv2.BORDER_CONSTANT, value=255)
-                                w_res, _ = rapid_ocr(padded, use_det=False)
-                                if w_res and len(w_res) > 0:
-                                    w_txt = re.sub(r"[^\x20-\x7E]", "", w_res[0][0]).strip()
-                                    if w_txt:
-                                        final_words.append(w_txt)
-                    else:
-                        ordered_boxes.sort(key=lambda b: b['x_min'])
-                        final_words = [b['text'] for b in ordered_boxes]
-
-                    # Deduplicate consecutive identical words (e.g. "They They" -> "They")
-                    deduped_words = []
-                    for w in final_words:
-                        if not deduped_words or deduped_words[-1].lower() != w.lower():
-                            deduped_words.append(w)
-                    ordered_texts = deduped_words
-
-                    if ordered_texts:
-                        raw_extracted = " ".join(ordered_texts)
-                        extracted_text = _correct_ocr_tokens(raw_extracted)
+                    normalized_image = Image.fromarray(img_np)
+                    candidate, candidates = run_ocr_recovery(normalized_image, rapid_ocr)
+                    if candidate.text:
+                        raw_extracted = candidate.text
+                        extracted_text = correct_ocr_detections(candidate.detections, OXFORD_FULL_VOCAB)
                         try:
-                            print(f"[OCR] Extracted: '{raw_extracted}' -> Corrected: '{extracted_text}'", flush=True)
+                            print(
+                                f"[OCR] Selected {candidate.variant} from {len(candidates)} candidate(s): "
+                                f"'{raw_extracted}' -> Corrected: '{extracted_text}'",
+                                flush=True,
+                            )
                         except Exception:
                             pass
                 elif has_pytesseract:
                     ocr_result = pytesseract.image_to_string(img, config="--psm 7")
                     if ocr_result.strip():
                         raw_line = re.sub(r"[^\x20-\x7E]", " ", ocr_result.strip()).strip()
-                        extracted_text = _correct_ocr_tokens(raw_line)
+                        extracted_text = raw_line
         except Exception as e:
             try:
                 print(f"OCR Error: {e}", flush=True)
             except Exception:
                 pass
 
-    return _parse_with_spacy(extracted_text)
+    return _parse_with_spacy(extracted_text, apply_optical_rules=not is_ocr_result)
 
 class LegacyAnalyzeRequest(BaseModel):
     text: str

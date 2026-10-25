@@ -27,6 +27,7 @@ dependencies:
   camera_platform_interface: ^2.14.0
   record: ^7.1.2
   syncfusion_flutter_pdf: ^35.1.40
+  flutter_bloc: ^9.1.1
 dev_dependencies:
   integration_test:
     sdk: flutter

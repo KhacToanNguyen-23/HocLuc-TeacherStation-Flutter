@@ -318,12 +318,18 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
       pdf.setPdfTotalPages((json['pdfTotalPages'] as num?)?.toInt() ?? 1);
     }
 
-    if (json.containsKey('title')) title = json['title'] as String? ?? title;
-    if (json.containsKey('subject'))
+    if (json.containsKey('title')) {
+      title = json['title'] as String? ?? title;
+    }
+    if (json.containsKey('subject')) {
       subject = json['subject'] as String? ?? subject;
-    if (json.containsKey('notes')) notes = json['notes'] as String? ?? notes;
-    if (json.containsKey('question'))
+    }
+    if (json.containsKey('notes')) {
+      notes = json['notes'] as String? ?? notes;
+    }
+    if (json.containsKey('question')) {
       question = json['question'] as String? ?? question;
+    }
 
     if (json.containsKey('pageTitles') && json['pageTitles'] is List) {
       canvas.pageTitles

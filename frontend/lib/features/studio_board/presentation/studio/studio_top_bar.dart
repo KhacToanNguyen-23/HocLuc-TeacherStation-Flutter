@@ -776,7 +776,7 @@ class StudioTopBar extends StatelessWidget {
                           height: 38,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              showDialog<void>(
+                              showAppModalDialog<void>(
                                 context: context,
                                 builder: (_) => const CreateClassroomDialog(),
                               );

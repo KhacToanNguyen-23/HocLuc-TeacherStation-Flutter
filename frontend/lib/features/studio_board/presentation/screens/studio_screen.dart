@@ -568,7 +568,7 @@ class _StudioScreenState extends State<StudioScreen> {
                           children: [
                             Row(
                               children: [
-                                if (studio.view == 'board')
+                                if (studio.view != 'question')
                                   StudioDrawingToolbar(
                                     studio: studio,
                                     isVertical: true,

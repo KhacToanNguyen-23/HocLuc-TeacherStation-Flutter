@@ -1,0 +1,3 @@
+Drag profile: 1482ms; 40 intervals; interval p95 66.66ms; UI p95 3.09ms; raster p95 10.48ms; sparse scene
+Drag profile: 18550ms; 896 intervals; interval p95 18.55ms; UI p95 3.18ms; raster p95 11.75ms; sparse scene
+Drag profile: 8679ms; 289 intervals; interval p95 66.66ms; UI p95 3.08ms; raster p95 12.32ms; sparse scene

@@ -2,13 +2,14 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/painting.dart';
 import 'ink_path.dart';
+import 'text_profile_models.dart';
 
 enum StudioViewportMode { fullBoard, fullPdf, split }
 
 class PdfDgnlHighlightSpan {
   final String text;
   final String category; // 'grammar', 'collocation', 'vocabulary'
-  final String level; // 'B2', 'C1', 'C2'
+  final String level; // 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Unknown'
   final String type;
   final String note;
   final List<Rect> normalizedRects;
@@ -32,6 +33,7 @@ class PdfDgnlPassage {
   final Map<String, dynamic> metrics;
   final List<Map<String, dynamic>> clozeQuestions;
   bool isVisible;
+  final TextProfileResult? textProfile;
 
   PdfDgnlPassage({
     required this.id,
@@ -42,6 +44,7 @@ class PdfDgnlPassage {
     required this.metrics,
     required this.clozeQuestions,
     this.isVisible = true,
+    this.textProfile,
   });
 }
 

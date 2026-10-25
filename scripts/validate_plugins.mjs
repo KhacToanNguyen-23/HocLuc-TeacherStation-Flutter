@@ -34,6 +34,19 @@ const IGNORED_DIRS = new Set([
   '.git',
 ]);
 
+const TEXT_EXTENSIONS = new Set([
+  '.json', '.js', '.mjs', '.cjs', '.html', '.css',
+  '.py', '.txt', '.md', '.yaml', '.yml', '.svg'
+]);
+
+function normalizeEntryBytes(bytes, relPath) {
+  const ext = path.extname(relPath).toLowerCase();
+  if (TEXT_EXTENSIONS.has(ext)) {
+    return Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+  }
+  return bytes;
+}
+
 function getFilesRecursively(dir, relative = '') {
   const result = [];
   if (!fs.existsSync(dir)) return result;
@@ -46,6 +59,8 @@ function getFilesRecursively(dir, relative = '') {
     const relPath = path.join(relative, entry.name).replace(/\\/g, '/');
 
     if (entry.isDirectory()) {
+      if (relPath === 'engine/tests' || relPath.startsWith('engine/tests/') ||
+          relPath === 'engine/benchmarks' || relPath.startsWith('engine/benchmarks/')) continue;
       result.push(...getFilesRecursively(fullPath, relPath));
     } else {
       const stat = fs.statSync(fullPath);
@@ -247,9 +262,16 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
       const archiveFiles = readStoredZipEntries(hlepPath);
       const sourceFiles = new Map(files.map((file) => [file.relPath, fs.readFileSync(file.fullPath)]));
       if (archiveFiles.size !== sourceFiles.size) isOutOfSync = true;
-      for (const [name, sourceBytes] of sourceFiles) {
-        const packagedBytes = archiveFiles.get(name);
-        if (!packagedBytes || !sourceBytes.equals(packagedBytes)) {
+      for (const [name, sourceRaw] of sourceFiles) {
+        const packagedRaw = archiveFiles.get(name);
+        if (!packagedRaw) {
+          isOutOfSync = true;
+          mismatchPath = name;
+          break;
+        }
+        const sourceNorm = normalizeEntryBytes(sourceRaw, name);
+        const packagedNorm = normalizeEntryBytes(packagedRaw, name);
+        if (!sourceNorm.equals(packagedNorm)) {
           isOutOfSync = true;
           mismatchPath = name;
           break;

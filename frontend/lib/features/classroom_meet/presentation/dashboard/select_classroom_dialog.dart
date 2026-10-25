@@ -45,7 +45,7 @@ class SelectClassroomDialog extends StatefulWidget {
     GoogleWorkspaceApi? googleApi,
     Future<void> Function(TeachingTarget)? onLaunch,
   }) {
-    return showDialog<void>(
+    return showAppModalDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (_) => SelectClassroomDialog(

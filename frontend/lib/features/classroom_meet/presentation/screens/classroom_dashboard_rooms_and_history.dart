@@ -13,7 +13,7 @@ extension _ClassroomDashboardRoomsAndHistoryExt
         dropdownValue: _selectedRoomFilter,
         dropdownItems: const ['Tất cả', 'Đang diễn ra', 'Đã lên lịch'],
         onDropdownChanged: (val) {
-          if (val != null) setState(() => _selectedRoomFilter = val);
+          if (val != null) _cubit.setRoomFilter(val);
         },
         illustrationType: 'rooms',
         emptyText: 'Chưa có phòng học',
@@ -265,7 +265,7 @@ extension _ClassroomDashboardRoomsAndHistoryExt
     final title = item['title']?.toString() ?? 'Buổi học';
     if (id == null) return;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
@@ -335,7 +335,7 @@ extension _ClassroomDashboardRoomsAndHistoryExt
   Future<void> _handleClearAllHistory() async {
     if (_historyList.isEmpty) return;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppModalDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
@@ -437,30 +437,33 @@ extension _ClassroomDashboardRoomsAndHistoryExt
                 ),
               ),
               const SizedBox(width: 10),
-              Tooltip(
-                message: 'Xóa toàn bộ lịch sử buổi học',
-                child: TextButton.icon(
-                  onPressed: _handleClearAllHistory,
-                  icon: const Icon(
-                    Icons.delete_sweep_outlined,
-                    size: 15,
-                    color: AppColors.error,
+              AppPressable(
+                tooltip: 'Xóa toàn bộ lịch sử buổi học',
+                onTap: _handleClearAllHistory,
+                borderRadius: BorderRadius.circular(AppRadii.control),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                  label: const Text(
-                    'Xóa tất cả',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.error,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.delete_sweep_outlined,
+                        size: 15,
+                        color: AppColors.error,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Xóa tất cả',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -476,7 +479,6 @@ extension _ClassroomDashboardRoomsAndHistoryExt
                 final item = _historyList[index] as Map<String, dynamic>;
                 final title =
                     item['title']?.toString() ?? 'Phòng học trực tuyến';
-                final duration = item['durationMinutes'] ?? 0;
                 final hasContent = item['hasContent'] == true;
 
                 return Padding(
@@ -514,54 +516,108 @@ extension _ClassroomDashboardRoomsAndHistoryExt
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              duration > 0
-                                  ? '$duration phút · Đã hoàn thành'
-                                  : 'Đã hoàn thành',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textMuted,
-                              ),
+                            Builder(
+                              builder: (context) {
+                                final start = _parseHistoryDateTime(
+                                  item['startedAt'] ?? item['createdAt'],
+                                );
+                                final end = _parseHistoryDateTime(
+                                  item['endedAt'],
+                                );
+                                final timeRange = _buildHistoryTimeRange(
+                                  start,
+                                  end,
+                                );
+                                final durStr = _buildHistoryDurationText(
+                                  item,
+                                  start,
+                                  end,
+                                );
+
+                                return Tooltip(
+                                  message: _buildHistoryTooltip(item),
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        if (timeRange.isNotEmpty) ...[
+                                          TextSpan(
+                                            text: timeRange,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          const TextSpan(text: ' · '),
+                                        ],
+                                        if (durStr.isNotEmpty) ...[
+                                          TextSpan(text: durStr),
+                                          const TextSpan(text: ' · '),
+                                        ],
+                                        const TextSpan(
+                                          text: 'Đã hoàn thành',
+                                          style: TextStyle(
+                                            color: AppColors.success,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(width: 8),
                       // Action 1: Tải Handout PDF (Slide kèm Ghi chú)
-                      Tooltip(
-                        message: 'Tải tài liệu Handout (Slide kèm Ghi chú) PDF',
-                        child: IconButton(
-                          icon: const Icon(
+                      AppPressable(
+                        tooltip: 'Tải tài liệu Handout (Slide kèm Ghi chú) PDF',
+                        onTap: () => _handleDownloadHistoryHandout(item),
+                        borderRadius: BorderRadius.circular(AppRadii.control),
+                        child: const Padding(
+                          padding: EdgeInsets.all(7),
+                          child: Icon(
                             Icons.picture_as_pdf_outlined,
                             size: 18,
                             color: AppColors.primary,
                           ),
-                          onPressed: () => _handleDownloadHistoryHandout(item),
                         ),
                       ),
+                      const SizedBox(width: 2),
                       // Action 2: Tải Slide PDF
-                      Tooltip(
-                        message: 'Tải Slide bảng dạng PDF',
-                        child: IconButton(
-                          icon: const Icon(
+                      AppPressable(
+                        tooltip: 'Tải Slide bảng dạng PDF',
+                        onTap: () => _handleDownloadHistorySlides(item),
+                        borderRadius: BorderRadius.circular(AppRadii.control),
+                        child: const Padding(
+                          padding: EdgeInsets.all(7),
+                          child: Icon(
                             Icons.slideshow_rounded,
                             size: 18,
                             color: AppColors.slate600,
                           ),
-                          onPressed: () => _handleDownloadHistorySlides(item),
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 2),
                       // Action 3: Xóa mục lịch sử
-                      Tooltip(
-                        message: 'Xóa buổi học này khỏi lịch sử',
-                        child: IconButton(
-                          icon: const Icon(
+                      AppPressable(
+                        tooltip: 'Xóa buổi học này khỏi lịch sử',
+                        onTap: () => _handleDeleteHistoryItem(item),
+                        borderRadius: BorderRadius.circular(AppRadii.control),
+                        child: const Padding(
+                          padding: EdgeInsets.all(7),
+                          child: Icon(
                             Icons.delete_outline_rounded,
                             size: 18,
                             color: AppColors.error,
                           ),
-                          onPressed: () => _handleDeleteHistoryItem(item),
                         ),
                       ),
                     ],
@@ -579,7 +635,7 @@ extension _ClassroomDashboardRoomsAndHistoryExt
     final settings = ClassroomSettingsService.instance;
     await settings.load();
     if (!context.mounted) return;
-    await showDialog<void>(
+    await showAppModalDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
@@ -683,5 +739,111 @@ extension _ClassroomDashboardRoomsAndHistoryExt
         ),
       ),
     );
+  }
+
+  DateTime? _parseHistoryDateTime(dynamic val) {
+    if (val == null) return null;
+    if (val is num && val > 0) {
+      return DateTime.fromMillisecondsSinceEpoch(val.toInt()).toLocal();
+    }
+    if (val is String) {
+      final ms = int.tryParse(val);
+      if (ms != null && ms > 0) {
+        return DateTime.fromMillisecondsSinceEpoch(ms).toLocal();
+      }
+      return DateTime.tryParse(val)?.toLocal();
+    }
+    return null;
+  }
+
+  String _formatHm(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  String _formatHms(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    final s = dt.second.toString().padLeft(2, '0');
+    return '$h:$m:$s';
+  }
+
+  String _formatDmy(DateTime dt) {
+    final d = dt.day.toString().padLeft(2, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    return '$d/$m/${dt.year}';
+  }
+
+  String _buildHistoryDurationText(
+    Map<String, dynamic> item,
+    DateTime? start,
+    DateTime? end,
+  ) {
+    if (start != null && end != null) {
+      final diff = end.difference(start);
+      if (diff.inHours >= 1) {
+        final rem = diff.inMinutes % 60;
+        return rem > 0
+            ? '${diff.inHours} giờ $rem phút'
+            : '${diff.inHours} giờ';
+      } else if (diff.inMinutes >= 1) {
+        return '${diff.inMinutes} phút';
+      } else if (diff.inSeconds > 0) {
+        return '${diff.inSeconds} giây';
+      } else {
+        return '< 1 phút';
+      }
+    }
+    final duration = item['durationMinutes'];
+    if (duration is num && duration > 0) {
+      return '${duration.toInt()} phút';
+    }
+    return '';
+  }
+
+  String _buildHistoryTimeRange(DateTime? start, DateTime? end) {
+    if (start != null && end != null) {
+      final startStr = _formatHm(start);
+      final endStr = _formatHm(end);
+      final isSameDay =
+          start.year == end.year &&
+          start.month == end.month &&
+          start.day == end.day;
+      if (isSameDay) {
+        return '$startStr – $endStr (${_formatDmy(start)})';
+      } else {
+        return '$startStr (${start.day}/${start.month}) – $endStr (${_formatDmy(end)})';
+      }
+    } else if (start != null) {
+      return 'Bắt đầu: ${_formatHm(start)} (${_formatDmy(start)})';
+    }
+    return '';
+  }
+
+  String _buildHistoryTooltip(Map<String, dynamic> item) {
+    final start = _parseHistoryDateTime(item['startedAt'] ?? item['createdAt']);
+    final end = _parseHistoryDateTime(item['endedAt']);
+    final duration = item['durationMinutes'];
+
+    final buffer = StringBuffer();
+    final title = item['title']?.toString();
+    if (title != null && title.isNotEmpty) {
+      buffer.writeln(title);
+    }
+    if (start != null) {
+      buffer.writeln('Bắt đầu: ${_formatHms(start)} ngày ${_formatDmy(start)}');
+    }
+    if (end != null) {
+      buffer.writeln('Kết thúc: ${_formatHms(end)} ngày ${_formatDmy(end)}');
+    }
+    final dur = _buildHistoryDurationText(item, start, end);
+    if (dur.isNotEmpty) {
+      buffer.writeln('Thời lượng: $dur');
+    } else if (duration is num && duration > 0) {
+      buffer.writeln('Thời lượng: ${duration.toInt()} phút');
+    }
+    buffer.write('Trạng thái: Đã hoàn thành');
+    return buffer.toString();
   }
 }

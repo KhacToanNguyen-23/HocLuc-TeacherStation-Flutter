@@ -270,8 +270,16 @@ class DgnlEngine:
                 elif level in ("C1", "C2"):
                     c1_c2_count += 1
 
-            if level in ("B1", "B2", "C1", "C2"):
-                color = "#38BDF8" if level == "B1" else ("#F59E0B" if level == "B2" else "#8B5CF6")
+            if level in ("A1", "A2", "B1", "B2", "C1", "C2"):
+                color_map = {
+                    "A1": "#22C55E",
+                    "A2": "#14B8A6",
+                    "B1": "#3B82F6",
+                    "B2": "#F59E0B",
+                    "C1": "#F97316",
+                    "C2": "#A855F7"
+                }
+                color = color_map.get(level, "#94A3B8")
                 highlights.append({
                     "start": token.idx,
                     "end": token.idx + len(token.text),

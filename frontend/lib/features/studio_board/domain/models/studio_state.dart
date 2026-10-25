@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/network/local_service.dart';
 import '../../../../core/platform/desktop_lifecycle.dart';
 import '../../../../core/theme/glass_preset.dart';
+import '../../../../core/utils/adaptive_glassmorphism.dart';
 import '../../../classroom_meet/services/audio_translation_service.dart';
 import '../../../plugin_engine/domain/models/plugin_manifest.dart';
 import '../../../plugin_engine/services/host_bridge.dart';
@@ -27,6 +28,7 @@ export 'smart_chalk_annotation.dart';
 export 'smart_pen_answer_selection.dart';
 export 'smart_pen_oval_annotation.dart';
 export 'studio_board_models.dart';
+export '../../../../core/utils/adaptive_glassmorphism.dart';
 
 part 'studio_state_plugin_annotations.dart';
 part 'studio_state_plugin_facade.dart';
