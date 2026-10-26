@@ -4,13 +4,11 @@ extension StudioStatePluginFacadeExt on StudioState {
   List<BoardSticker> get currentStickers => canvas.currentStickers;
   void addSticker(BoardSticker sticker) {
     canvas.addSticker(sticker);
-    _selectedStickerId = sticker.id;
-    notifyListeners();
+    change(() => _selectedStickerId = sticker.id);
   }
   void updateSticker(BoardSticker sticker) {
     canvas.updateSticker(sticker);
-    _selectedStickerId = sticker.id;
-    notifyListeners();
+    change(() => _selectedStickerId = sticker.id);
   }
   void removeSticker(String id) {
     if (_selectedStickerId == id) _selectedStickerId = null;
