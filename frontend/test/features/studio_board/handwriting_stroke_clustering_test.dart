@@ -1,5 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/stroke_clusterer.dart';
 import 'package:teaching_companion/features/studio_board/presentation/stroke_canvas.dart';
@@ -103,6 +105,21 @@ void main() {
         final studio = StudioState();
         final strokes = createSimulatedSentenceStrokes();
         studio.pages[studio.page].addAll(strokes);
+        studio.openPlugin(
+          InstalledPlugin(
+            manifest: PluginManifest(
+              id: 'test.handwriting',
+              name: 'Handwriting Test',
+              contributesTools: const [
+                PluginToolContribution(
+                  id: 'svo',
+                  label: 'S-V-O',
+                  capturesBoardInput: true,
+                ),
+              ],
+            ),
+          ),
+        );
         studio.setActiveSubjectTool('svo');
 
         final initialStrokeCount = studio.strokes.length;

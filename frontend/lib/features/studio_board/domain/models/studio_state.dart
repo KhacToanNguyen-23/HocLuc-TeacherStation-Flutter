@@ -6,10 +6,13 @@ import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import '../../../../core/network/local_service.dart';
 import '../../../../core/platform/desktop_lifecycle.dart';
+import '../../../../core/theme/glass_preset.dart';
+import '../../../../core/utils/adaptive_glassmorphism.dart';
 import '../../../classroom_meet/services/audio_translation_service.dart';
 import '../../../plugin_engine/domain/models/plugin_manifest.dart';
 import '../../../plugin_engine/services/host_bridge.dart';
 import '../../../plugin_engine/services/plugin_manager.dart';
+import '../../../plugin_engine/services/process_supervisor.dart';
 import '../../services/controllers/audio_sync_controller.dart';
 import '../../services/controllers/canvas_drawing_controller.dart';
 import '../../services/controllers/pdf_smart_pen_controller.dart';
@@ -25,6 +28,10 @@ export 'smart_chalk_annotation.dart';
 export 'smart_pen_answer_selection.dart';
 export 'smart_pen_oval_annotation.dart';
 export 'studio_board_models.dart';
+export '../../../../core/utils/adaptive_glassmorphism.dart';
+
+part 'studio_state_plugin_annotations.dart';
+part 'studio_state_plugin_facade.dart';
 
 /// Backward-compatible Facade coordinating all board sub-systems:
 /// Canvas Drawing, PDF & Smart Pen, WASAPI Audio, and Plugin Host Bridge.
@@ -72,6 +79,15 @@ class StudioState extends ChangeNotifier {
   set error(String? val) => coordinator.error = val;
 
   Map<String, dynamic> capabilities = {};
+  int pdfContentGeneration = 0;
+  final Map<String, List<_PdfAnnotationHistoryEntry>> _pdfAnnotationUndo = {};
+  final Map<String, List<_PdfAnnotationHistoryEntry>> _pdfAnnotationRedo = {};
+  final Map<String, Map<int, Map<String, BoardStroke?>>>
+  _temporaryPdfAnnotationOverrides = {};
+  final Map<BoardStroke, int> _boardUndoSequence = {};
+  final Map<BoardStroke, int> _boardRedoSequence = {};
+  Map<int, List<BoardStroke>>? _redoPages;
+  int _historySequence = 0;
   int _revision = 0;
   int get revision => _revision;
   void bumpRevision() {
@@ -147,6 +163,7 @@ class StudioState extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Color get ink => canvas.ink;
   set ink(Color val) => canvas.ink = val;
   double get strokeWidth => canvas.strokeWidth;
@@ -160,9 +177,15 @@ class StudioState extends ChangeNotifier {
   Color? get customColor => canvas.customColor;
   set customColor(Color? val) => canvas.customColor = val;
   List<Color> get recentColors => canvas.recentColors;
-  void setCustomColor(Color color) => canvas.setCustomColor(color);
+  void setCustomColor(Color color) {
+    canvas.setCustomColor(color);
+    dirty = true;
+    _revision++;
+  }
+
   Offset? get laserOffset => canvas.laserOffset;
   set laserOffset(Offset? val) => canvas.laserOffset = val;
+
   /// Live laser pointer position. Listen to this instead of the whole
   /// [StudioState] to repaint only the laser layer on pointer moves.
   ValueListenable<Offset?> get laserOffsetListenable =>
@@ -198,7 +221,9 @@ class StudioState extends ChangeNotifier {
       return;
     }
     final w = tool == 'highlight' ? highlighterWidth : strokeWidth;
-    final stroke = BoardStroke(ink, w, [point], isHighlighter: tool == 'highlight');
+    final stroke = BoardStroke(ink, w, [
+      point,
+    ], isHighlighter: tool == 'highlight');
     list.add(stroke);
     if (target != null) {
       coordinator.recordPdfAction(list);
@@ -235,16 +260,61 @@ class StudioState extends ChangeNotifier {
     _revision++;
   }
 
-  void undo() => coordinator.undo();
-  void redo() => coordinator.redo();
-  bool get canUndo => coordinator.canUndo;
-  bool get canRedo => coordinator.canRedo;
+  void undo() {
+    final history = _pdfAnnotationUndo[_pdfAnnotationHistoryKey];
+    if (history != null &&
+        history.isNotEmpty &&
+        history.last.sequence > coordinator.undoSequence) {
+      final entry = history.removeLast();
+      _applyPdfAnnotationHistory(entry, entry.before);
+      _historySequence = pdf.smartPenManager.historySequence;
+      entry.redoSequence = ++_historySequence;
+      pdf.smartPenManager.historySequence = _historySequence;
+      _pdfAnnotationRedo
+          .putIfAbsent(_pdfAnnotationHistoryKey, () => [])
+          .add(entry);
+      _revision++;
+      if (entry.persistedChanged) dirty = true;
+      notifyListeners();
+      return;
+    }
+    coordinator.undo();
+  }
+
+  void redo() {
+    final history = _pdfAnnotationRedo[_pdfAnnotationHistoryKey];
+    if (history != null &&
+        history.isNotEmpty &&
+        history.last.redoSequence > coordinator.redoSequence) {
+      final entry = history.removeLast();
+      _applyPdfAnnotationHistory(entry, entry.after);
+      _historySequence = pdf.smartPenManager.historySequence;
+      entry.sequence = ++_historySequence;
+      pdf.smartPenManager.historySequence = _historySequence;
+      _pdfAnnotationUndo
+          .putIfAbsent(_pdfAnnotationHistoryKey, () => [])
+          .add(entry);
+      _revision++;
+      if (entry.persistedChanged) dirty = true;
+      notifyListeners();
+      return;
+    }
+    coordinator.redo();
+  }
+
+  bool get canUndo =>
+      (_pdfAnnotationUndo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false) ||
+      coordinator.canUndo;
+  bool get canRedo =>
+      (_pdfAnnotationRedo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false) ||
+      coordinator.canRedo;
   void clearBoard([int? p]) => canvas.clearPage(p);
   void clearPageStrokes([int? p]) => canvas.clearPageStrokes(p);
 
   void addPage([String? title]) => canvas.addPage(title);
   void deletePage(int index) => canvas.deletePage(index);
-  void renamePage(int index, String newTitle) => canvas.renamePage(index, newTitle);
+  void renamePage(int index, String newTitle) =>
+      canvas.renamePage(index, newTitle);
   void nextPage() => canvas.nextPage();
   void prevPage() => canvas.prevPage();
   void setPage(int p) => canvas.setPage(p);
@@ -261,29 +331,19 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  List<BoardSticker> get currentStickers => canvas.currentStickers;
-  void addSticker(BoardSticker sticker) {
-    canvas.addSticker(sticker);
-    _selectedStickerId = sticker.id;
-    notifyListeners();
-  }
-  void updateSticker(BoardSticker sticker) {
-    canvas.updateSticker(sticker);
-    _selectedStickerId = sticker.id;
-    notifyListeners();
-  }
-  void removeSticker(String id) {
-    if (_selectedStickerId == id) _selectedStickerId = null;
-    canvas.removeSticker(id);
-  }
-  void updateStickerRect(String id, Rect newRect) =>
-      canvas.updateStickerRect(id, newRect);
-  void updateStickerRotation(String id, double rotation) =>
-      canvas.updateStickerRotation(id, rotation);
-  void duplicateSticker(String id) => canvas.duplicateSticker(id);
-
   String get currentPageNote => canvas.currentPageNote;
   void setPageNote(int index, String note) => canvas.setPageNote(index, note);
+  bool showSpeakerNotes = false;
+
+  void setSpeakerNotesOpen(bool open) {
+    showSpeakerNotes = open;
+    notifyListeners();
+  }
+
+  void toggleSpeakerNotes() {
+    showSpeakerNotes = !showSpeakerNotes;
+    notifyListeners();
+  }
 
   List<SmartChalkAnnotation> get currentChalkAnnotations =>
       canvas.currentChalkAnnotations;
@@ -305,6 +365,7 @@ class StudioState extends ChangeNotifier {
       _revision++;
     }
   }
+
   void clearChalkAnnotationsForPage(int pageIndex) =>
       canvas.clearChalkAnnotationsForPage(pageIndex);
   void clearBoardChalkAnnotations() => canvas.clearBoardChalkAnnotations();
@@ -395,15 +456,41 @@ class StudioState extends ChangeNotifier {
   Map<int, List<SmartChalkAnnotation>> get pdfChalkAnnotations =>
       pdf.pdfChalkAnnotations;
 
-  List<BoardStroke> pdfAnnotationsForPage(int pageNumber) =>
-      pdf.pdfAnnotationsForPage(pageNumber);
+  List<BoardStroke> pdfAnnotationsForPage(int pageNumber) {
+    final visible = List<BoardStroke>.of(pdf.pdfAnnotationsForPage(pageNumber));
+    final overrides =
+        _temporaryPdfAnnotationOverrides[_pdfAnnotationHistoryKey]?[pageNumber];
+    if (overrides == null || overrides.isEmpty) return visible;
+    visible.removeWhere(
+      (stroke) =>
+          stroke.isGroupedPdfAnnotation &&
+          overrides.containsKey(stroke.groupedAnnotationGroupId),
+    );
+    visible.addAll(overrides.values.whereType<BoardStroke>());
+    return visible;
+  }
+
+  String get _pdfAnnotationHistoryKey =>
+      activeDocId ?? pdfFilePath ?? 'current-pdf';
 
   List<BoardStroke> get currentPdfStrokes => pdf.currentPdfStrokes;
 
-  void setPdfFile(String? path, [Uint8List? bytes]) =>
-      pdf.setPdfFile(path, bytes);
+  void setPdfFile(String? path, [Uint8List? bytes]) {
+    final replacedDocumentId = _pdfAnnotationHistoryKey;
+    pdfContentGeneration++;
+    clearTemporarySmartPenAnswers(documentId: replacedDocumentId);
+    _clearPdfAnnotationHistory(documentId: replacedDocumentId);
+    pdf.setPdfFile(path, bytes);
+  }
 
-  void closePdf() => pdf.closePdf();
+  void closePdf() {
+    final replacedDocumentId = _pdfAnnotationHistoryKey;
+    pdfContentGeneration++;
+    clearTemporarySmartPenAnswers(documentId: replacedDocumentId);
+    _clearPdfAnnotationHistory(documentId: replacedDocumentId);
+    pdf.closePdf();
+  }
+
   void nextPdfPage() => pdf.nextPdfPage();
   void prevPdfPage() => pdf.prevPdfPage();
   void setPdfPage(int page) => pdf.setPdfPage(page);
@@ -449,12 +536,11 @@ class StudioState extends ChangeNotifier {
     SmartPenAnswerSelection selection,
     Size pageSize, {
     List<int>? affectedPages,
-  }) =>
-      pdf.toggleSmartPenAnswer(
-        selection,
-        pageSize,
-        affectedPages: affectedPages,
-      );
+  }) => pdf.toggleSmartPenAnswer(
+    selection,
+    pageSize,
+    affectedPages: affectedPages,
+  );
 
   void toggleTemporarySmartPenAnswer(
     SmartPenAnswerSelection selection,
@@ -469,8 +555,14 @@ class StudioState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clearTemporarySmartPenAnswers({String? documentId}) =>
-      pdf.clearTemporarySmartPenAnswers(documentId: documentId);
+  void clearTemporarySmartPenAnswers({String? documentId}) {
+    pdf.clearTemporarySmartPenAnswers(documentId: documentId);
+    if (documentId == null) {
+      _temporaryPdfAnnotationOverrides.clear();
+    } else {
+      _temporaryPdfAnnotationOverrides.remove(documentId);
+    }
+  }
 
   void clearTemporarySmartPenAnswer(int pageNumber, String groupId) =>
       pdf.clearTemporarySmartPenAnswers();
@@ -492,8 +584,7 @@ class StudioState extends ChangeNotifier {
   }
 
   // --- PDF Window & Split View ---
-  Offset get pdfWindowPosition =>
-      pdf.pdfWindowPosition ?? const Offset(0, 0);
+  Offset get pdfWindowPosition => pdf.pdfWindowPosition ?? const Offset(0, 0);
   set pdfWindowPosition(Offset pos) => pdf.pdfWindowPosition = pos;
   Size get pdfWindowSize => pdf.pdfWindowSize ?? const Size(540, 720);
   set pdfWindowSize(Size s) => pdf.pdfWindowSize = s;
@@ -550,7 +641,13 @@ class StudioState extends ChangeNotifier {
 
   void clearPdfPage() => pdf.clearPdfPage();
   void closeDocOnBoard() => setViewportMode(StudioViewportMode.fullBoard);
-  void updatePdfBytesInPlace(Uint8List newBytes) => pdf.updatePdfBytesInPlace(newBytes);
+  void updatePdfBytesInPlace(Uint8List newBytes) {
+    final replacedDocumentId = _pdfAnnotationHistoryKey;
+    pdfContentGeneration++;
+    clearTemporarySmartPenAnswers(documentId: replacedDocumentId);
+    _clearPdfAnnotationHistory(documentId: replacedDocumentId);
+    pdf.updatePdfBytesInPlace(newBytes);
+  }
 
   Future<void> importPdfDialog() async {
     try {
@@ -569,7 +666,8 @@ class StudioState extends ChangeNotifier {
   List<PdfDgnlPassage> get pdfDgnlPassages => pdf.pdfDgnlPassages;
   List<PdfDgnlPassage> getPdfDgnlPassagesForPage(int pageNumber) =>
       pdf.getPdfDgnlPassagesForPage(pageNumber);
-  void addPdfDgnlPassage(PdfDgnlPassage passage) => pdf.addPdfDgnlPassage(passage);
+  void addPdfDgnlPassage(PdfDgnlPassage passage) =>
+      pdf.addPdfDgnlPassage(passage);
   void removePdfDgnlPassage(String id) => pdf.removePdfDgnlPassage(id);
 
   // --- Document Snapshots ---
@@ -579,12 +677,16 @@ class StudioState extends ChangeNotifier {
   ImportedDocument? get activeDoc => pdf.activeDoc;
 
   void addImportedDoc(String name, String? path, Uint8List? bytes) {
+    pdfContentGeneration++;
     pdf.addImportedDoc(name, path, bytes);
     dirty = true;
     _revision++;
   }
 
   void selectDoc(String id, {StudioViewportMode? targetMode}) {
+    if (activeDocId != id && importedDocs.any((doc) => doc.id == id)) {
+      pdfContentGeneration++;
+    }
     pdf.selectDoc(id);
     if (targetMode != null) {
       setViewportMode(targetMode);
@@ -596,6 +698,9 @@ class StudioState extends ChangeNotifier {
   }
 
   void removeDoc(String id) {
+    clearTemporarySmartPenAnswers(documentId: id);
+    _clearPdfAnnotationHistory(documentId: id);
+    if (activeDocId == id) pdfContentGeneration++;
     pdf.removeDoc(id);
     if (importedDocs.isEmpty) {
       setViewportMode(StudioViewportMode.fullBoard);
@@ -605,98 +710,7 @@ class StudioState extends ChangeNotifier {
   }
 
   // --- Plugin Host Properties ---
-  InstalledPlugin? get activePlugin => pluginBridge.activePlugin;
-  set activePlugin(InstalledPlugin? p) => pluginBridge.activePlugin = p;
-  InstalledPlugin? get floatingPlugin => pluginBridge.floatingPlugin;
-  set floatingPlugin(InstalledPlugin? p) => pluginBridge.floatingPlugin = p;
-  bool get showPluginDrawer => pluginBridge.showPluginDrawer;
-  set showPluginDrawer(bool value) => pluginBridge.showPluginDrawer = value;
-  bool get pluginFloating => pluginBridge.pluginFloating;
-  set pluginFloating(bool val) => pluginBridge.pluginFloating = val;
-  Offset get pluginFloatingPosition => pluginBridge.pluginFloatingPosition;
-  Size get pluginFloatingSize => pluginBridge.pluginFloatingSize;
-  String? get activeSubjectTool => pluginBridge.activeSubjectTool;
-  set activeSubjectTool(String? val) =>
-      pluginBridge.activeSubjectTool = val;
-  void setActiveSubjectTool(String? t) =>
-      pluginBridge.setActiveSubjectTool(t);
-  bool get chalkAnnotationsVisible => pluginBridge.chalkAnnotationsVisible;
-  void toggleChalkAnnotationsVisibility() =>
-      pluginBridge.toggleChalkAnnotationsVisibility();
-  Offset get subjectPaletteOffset => pluginBridge.subjectPaletteOffset;
-  void setSubjectPaletteOffset(Offset offset) =>
-      pluginBridge.setSubjectPaletteOffset(offset);
-  BoardSticker? get editingSticker => pluginBridge.editingSticker;
-  void openPlugin(
-    InstalledPlugin plugin, {
-    bool openModal = false,
-    BoardSticker? editingSticker,
-  }) {
-    showQuestionsDrawer = false;
-    selectSticker(null);
-    pluginBridge.openPlugin(
-      plugin,
-      openModal: openModal,
-      editingSticker: editingSticker,
-    );
-  }
-  void closePlugin() => pluginBridge.closePlugin();
-  void setPluginFloatingPosition(Offset position) =>
-      pluginBridge.setPluginFloatingPosition(position);
-  void closeFloatingPlugin() => pluginBridge.closeFloatingPlugin();
-  void togglePluginFloating() => pluginBridge.togglePluginFloating();
-  bool get isSnippingActive => pluginBridge.isSnippingActive;
-  String get snipTarget => pluginBridge.snipTarget;
-  void startSnipping({String target = 'dgnl'}) =>
-      pluginBridge.startSnipping(target: target);
-  void endSnipping() => pluginBridge.endSnipping();
-  void stopSnipping() => pluginBridge.endSnipping();
-
-  void Function(String text, String target)?
-      get onSnippetCapturedForPlugin =>
-          pluginBridge.onSnippetCapturedForPlugin;
-  set onSnippetCapturedForPlugin(
-    void Function(String text, String target)? callback,
-  ) =>
-      pluginBridge.onSnippetCapturedForPlugin = callback;
-
-  VoidCallback? get onSaveHighlightedPdfRequested =>
-      pluginBridge.onSaveHighlightedPdfRequested;
-  set onSaveHighlightedPdfRequested(VoidCallback? cb) =>
-      pluginBridge.onSaveHighlightedPdfRequested = cb;
-
-  VoidCallback? get onApplyHighlightToPdfRequested =>
-      pluginBridge.onApplyHighlightToPdfRequested;
-  set onApplyHighlightToPdfRequested(VoidCallback? cb) =>
-      pluginBridge.onApplyHighlightToPdfRequested = cb;
-
-  void sendSnippetToPlugin(String text, {String? target}) {
-    final t = target ?? snipTarget;
-    stopSnipping();
-    final clean = text.trim();
-    if (clean.isNotEmpty) {
-      onSnippetCapturedForPlugin?.call(clean, t);
-      notifyListeners();
-    }
-  }
-
-  void insertPluginCard(Map<String, dynamic> cardData) =>
-      coordinator.insertPluginCard(cardData);
-
-  void handlePluginMessage(
-    dynamic message, {
-    void Function(String jsScript)? executeJs,
-    PluginManifest? manifest,
-  }) {
-    HostBridge.instance.handleMessage(
-      rawMessage: message,
-      studio: this,
-      manifest: manifest ??
-          activePlugin?.manifest ??
-          floatingPlugin?.manifest,
-      executeJs: executeJs,
-    );
-  }
+  GlassPreset glassPreset = GlassPreset.frosted;
 
   Future<void> highlightPdfPassageFromAnalysis(
     String rawText,

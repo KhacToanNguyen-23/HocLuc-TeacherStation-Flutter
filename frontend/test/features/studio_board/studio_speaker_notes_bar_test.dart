@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_speaker_notes_bar.dart';
@@ -63,6 +63,25 @@ void main() {
         studio.setPage(0);
         await tester.pumpAndSettle();
         expect(find.text('Đã cập nhật ghi chú trang 1'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'close button calls setSpeakerNotesOpen(false)',
+      (tester) async {
+        final studio = StudioState()..setSpeakerNotesOpen(true);
+        expect(studio.showSpeakerNotes, isTrue);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: StudioSpeakerNotesBar(studio: studio)),
+          ),
+        );
+
+        await tester.tap(find.byKey(const Key('btn_close_speaker_notes')));
+        await tester.pump();
+
+        expect(studio.showSpeakerNotes, isFalse);
       },
     );
 

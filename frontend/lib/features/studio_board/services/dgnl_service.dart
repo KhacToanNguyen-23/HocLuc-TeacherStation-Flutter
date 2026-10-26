@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:teaching_companion/features/plugin_engine/services/process_supervisor.dart';
+import '../domain/models/text_profile_models.dart';
+import 'profiler/dgnl_collocation_data.dart';
+import 'profiler/text_profiler_service.dart';
 
 class DgnlAnalysisResult {
   final int totalWords;
@@ -11,6 +14,7 @@ class DgnlAnalysisResult {
   final String evaluation;
   final String status;
   final List<Map<String, dynamic>> highlights;
+  final TextProfileResult? textProfile;
 
   const DgnlAnalysisResult({
     required this.totalWords,
@@ -20,9 +24,13 @@ class DgnlAnalysisResult {
     required this.evaluation,
     required this.status,
     required this.highlights,
+    this.textProfile,
   });
 
-  factory DgnlAnalysisResult.fromJson(Map<String, dynamic> json) {
+  factory DgnlAnalysisResult.fromJson(
+    Map<String, dynamic> json, {
+    TextProfileResult? profile,
+  }) {
     final m = (json['metrics'] as Map<String, dynamic>?) ?? {};
     final cp = (m['cefr_profile'] as Map<String, dynamic>?) ?? {};
     final rawHl = (json['highlights'] as List?) ?? [];
@@ -34,6 +42,7 @@ class DgnlAnalysisResult {
       evaluation: (m['evaluation'] as String?) ?? 'Đoạn văn đạt chuẩn ôn tập.',
       status: (m['status'] as String?) ?? 'optimal',
       highlights: rawHl.whereType<Map<String, dynamic>>().toList(),
+      textProfile: profile,
     );
   }
 }
@@ -63,36 +72,52 @@ class DgnlService {
             )
             .timeout(const Duration(seconds: 4));
 
-      if (res.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-        final onlineRes = DgnlAnalysisResult.fromJson(data);
-        final offlineRes = fallbackAnalyze(clean);
+        if (res.statusCode == 200) {
+          final data =
+              jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+          final onlineRes = DgnlAnalysisResult.fromJson(data);
+          final offlineRes = fallbackAnalyze(clean);
+          final profile =
+              offlineRes.textProfile ?? TextProfilerService.profile(clean);
 
-        // Merge online and offline highlights without duplicate spans
-        final mergedHl = <Map<String, dynamic>>[...onlineRes.highlights];
-        for (final oHl in offlineRes.highlights) {
-          final oText = oHl['text']?.toString().toLowerCase().trim() ?? '';
-          final alreadyPresent = mergedHl.any((m) {
-            final mText = m['text']?.toString().toLowerCase().trim() ?? '';
-            return mText == oText || mText.contains(oText) || oText.contains(mText);
-          });
-          if (!alreadyPresent) {
-            mergedHl.add(oHl);
+          // Merge online and offline highlights without duplicate spans
+          final mergedHl = <Map<String, dynamic>>[...onlineRes.highlights];
+          for (final oHl in offlineRes.highlights) {
+            final oText = oHl['text']?.toString().toLowerCase().trim() ?? '';
+            final alreadyPresent = mergedHl.any((m) {
+              final mText = m['text']?.toString().toLowerCase().trim() ?? '';
+              return mText == oText ||
+                  mText.contains(oText) ||
+                  oText.contains(mText);
+            });
+            if (!alreadyPresent) {
+              mergedHl.add(oHl);
+            }
           }
-        }
 
           return DgnlAnalysisResult(
-            totalWords: onlineRes.totalWords > 0 ? onlineRes.totalWords : offlineRes.totalWords,
-            contentWords: onlineRes.contentWords > 0 ? onlineRes.contentWords : offlineRes.contentWords,
-            lexicalDensity: onlineRes.lexicalDensity > 0 ? onlineRes.lexicalDensity : offlineRes.lexicalDensity,
-            cefrProfile: onlineRes.cefrProfile.isNotEmpty ? onlineRes.cefrProfile : offlineRes.cefrProfile,
+            totalWords: onlineRes.totalWords > 0
+                ? onlineRes.totalWords
+                : offlineRes.totalWords,
+            contentWords: onlineRes.contentWords > 0
+                ? onlineRes.contentWords
+                : offlineRes.contentWords,
+            lexicalDensity: onlineRes.lexicalDensity > 0
+                ? onlineRes.lexicalDensity
+                : offlineRes.lexicalDensity,
+            cefrProfile: onlineRes.cefrProfile.isNotEmpty
+                ? onlineRes.cefrProfile
+                : offlineRes.cefrProfile,
             evaluation: onlineRes.evaluation,
             status: onlineRes.status,
             highlights: mergedHl,
+            textProfile: profile,
           );
         }
       } catch (e) {
-        debugPrint('[DgnlService] Online analyze failed, using offline engine: $e');
+        debugPrint(
+          '[DgnlService] Online analyze failed, using offline engine: $e',
+        );
       }
     }
 
@@ -131,23 +156,31 @@ class DgnlService {
 
   /// Thuật toán Heuristic Offline nếu chưa khởi động Python sidecar
   static DgnlAnalysisResult fallbackAnalyze(String text) {
-    final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    final words = text
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
     final total = words.length;
     final contentWords = words.where((w) => w.length > 3).length;
     final ld = total > 0 ? ((contentWords / total) * 100).roundToDouble() : 0.0;
 
     final highlights = <Map<String, dynamic>>[];
-    final lower = text.toLowerCase();
 
     // 1. Grammar Patterns
     final grammarPatterns = [
       {
-        'pattern': RegExp(r'\b(It\s+(?:is|was)\s+[^.]+?\s+(?:that|who))\b', caseSensitive: false),
+        'pattern': RegExp(
+          r'\b(It\s+(?:is|was)\s+[^.]+?\s+(?:that|who))\b',
+          caseSensitive: false,
+        ),
         'type': 'Câu chẻ nhấn mạnh (Cleft Sentence)',
         'note': 'Dùng để nhấn mạnh chủ ngữ, tân ngữ hoặc trạng ngữ.',
       },
       {
-        'pattern': RegExp(r'\b(Hardly|Scarcely|No sooner|Seldom|Rarely|Not until)\b', caseSensitive: false),
+        'pattern': RegExp(
+          r'\b(Hardly|Scarcely|No sooner|Seldom|Rarely|Not until)\b',
+          caseSensitive: false,
+        ),
         'type': 'Đảo ngữ phủ định (Inversion)',
         'note': 'Trạng từ phủ định đứng đầu câu đòi hỏi đảo trợ động từ.',
       },
@@ -157,15 +190,30 @@ class DgnlService {
         'note': 'Thói quen trong quá khứ không còn ở hiện tại.',
       },
       {
+        // Câu bị động chuẩn: (be) + (adverb)* + [past participle (V3/ed)]
+        // Loại trừ triệt để các trạng từ kết thúc bằng -en (often, even, open, seven, sudden, etc.)
         'pattern': RegExp(
-          r'\b((?:is|are|am|was|were|been|being)\s+(?:going\s+to\s+be\s+[a-z]+|[a-z]+ed|[a-z]+en|[a-z]+wn|shown|asked|banned|built|made|held|written|known|given|taught|caught|found|bought|sold|brought|programmed))\b',
+          r'\b((?:is|are|am|was|were|been|being|be)\s+(?:(?:[a-z]+ly|often|already|always|never|recently|seldom|rarely|still|just|well|widely|commonly|frequently)\s+)*(?:(?!(?:naked|sacred|wicked|ragged|crooked|hundred|bed|red|often|even|open|seven|sudden|listen)\b)[a-z]{2,}ed|written|frozen|broken|chosen|driven|eaten|fallen|forgiven|forgotten|gotten|given|hidden|known|ridden|risen|seen|shaken|spoken|stolen|taken|woken|beaten|bitten|blown|drawn|flown|grown|shown|thrown|built|bought|caught|felt|found|held|kept|left|lost|made|meant|met|paid|read|said|sold|sent|spent|taught|told|thought|understood|won|worn|done|gone|become|run|cut|put|set|spread|hit|hurt|shut))\b',
           caseSensitive: false,
         ),
         'type': 'Câu bị động (Passive Voice)',
-        'note': 'Cấu trúc bị động phân hóa cao trong đề thi ĐGNL.',
+        'note':
+            'Cấu trúc bị động: Động từ "be" đi kèm quá khứ phân từ (V3/ed) biểu thị hành động tác động lên chủ ngữ.',
       },
       {
-        'pattern': RegExp(r'\b(Having\s+(?:been\s+)?[a-z]+(?:ed|en|wn))\b', caseSensitive: false),
+        'pattern': RegExp(
+          r'\b((?:can|could|will|would|should|may|might|must|going\s+to)\s+be\s+(?:(?:[a-z]+ly|often|already|always|never|recently)\s+)*(?:(?!(?:often|even|open|seven)\b)[a-z]{2,}ed|written|frozen|broken|chosen|built|made|held|given|shown|taken|done))\b',
+          caseSensitive: false,
+        ),
+        'type': 'Câu bị động khiếm khuyết/tương lai (Modal/Future Passive)',
+        'note':
+            'Cấu trúc bị động với trợ động từ khuyết thiếu hoặc tương lai gần.',
+      },
+      {
+        'pattern': RegExp(
+          r'\b(Having\s+(?:been\s+)?[a-z]+(?:ed|en|wn))\b',
+          caseSensitive: false,
+        ),
         'type': 'Mệnh đề phân từ hoàn thành',
         'note': 'Hành động xảy ra trước hành động chính.',
       },
@@ -175,7 +223,8 @@ class DgnlService {
           caseSensitive: false,
         ),
         'type': 'Danh động từ sau giới từ (Prep + V-ing)',
-        'note': 'Kiến thức ngữ pháp phân loại hay gặp trong các câu trắc nghiệm chia dạng từ.',
+        'note':
+            'Kiến thức ngữ pháp phân loại hay gặp trong các câu trắc nghiệm chia dạng từ.',
       },
       {
         'pattern': RegExp(
@@ -183,7 +232,35 @@ class DgnlService {
           caseSensitive: false,
         ),
         'type': 'Mệnh đề quan hệ (Relative Clause)',
-        'note': 'Cấu trúc câu phức phân hóa cao trong phần nối câu và tìm lỗi sai.',
+        'note':
+            'Cấu trúc câu phức phân hóa cao trong phần nối câu và tìm lỗi sai.',
+      },
+      {
+        'pattern': RegExp(
+          r'\b([a-zA-Z]+,\s+(?:known|considered|called|defined|described|named)\s+as\s+[a-zA-Z0-9\s-]+?)(?=,|\.|\b)',
+          caseSensitive: false,
+        ),
+        'type': 'Mệnh đề quan hệ rút gọn (Reduced Relative Clause)',
+        'note':
+            'Phân từ quá khứ (Past Participle) đứng giữa hai dấu phẩy rút gọn cho "who is/are known as".',
+      },
+      {
+        'pattern': RegExp(
+          r'\b(less|more)\s+(?:likely\s+than\s+[a-zA-Z]+(?:\s+to\s+[a-z]+)?|fond\s+of|sensitive\s+to|profitable|important)\b',
+          caseSensitive: false,
+        ),
+        'type': 'Cấu trúc so sánh (Comparative Structure)',
+        'note':
+            'Cấu trúc so sánh hơn/kém phân hóa cao trong câu diễn giải và đọc hiểu.',
+      },
+      {
+        'pattern': RegExp(
+          r'\b(because\s+[a-z]+(?:\s+[a-z]+){1,3})\b',
+          caseSensitive: false,
+        ),
+        'type':
+            'Mệnh đề trạng ngữ chỉ nguyên nhân (Adverbial Clause of Reason)',
+        'note': 'Liên từ chỉ nguyên nhân giải thích lý do cho mệnh đề chính.',
       },
       {
         'pattern': RegExp(
@@ -211,108 +288,230 @@ class DgnlService {
       }
     }
 
-    // 2. Academic Collocations
-    final collocs = [
-      {'phrase': 'passive smoking', 'note': 'Thuật ngữ học thuật: Hút thuốc thụ động.'},
-      {'phrase': 'heavy smoker', 'note': 'Cụm cố định: Người nghiện thuốc lá nặng.'},
-      {'phrase': 'heart disease', 'note': 'Collocation y khoa: Bệnh tim mạch.'},
-      {'phrase': 'lung cancer', 'note': 'Collocation y khoa: Ung thư phổi.'},
-      {'phrase': 'increased risk', 'note': 'Collocation chuẩn: Nguy cơ gia tăng.'},
-      {'phrase': 'smoky environments', 'note': 'Collocation: Môi trường khói thuốc.'},
-      {'phrase': 'medical studies', 'note': 'Thuật ngữ: Các nghiên cứu y khoa.'},
-      {'phrase': 'in fact', 'note': 'Liên từ học thuật: Thực tế là.'},
-      {'phrase': 'fed up with', 'note': 'Thành ngữ: Quá chán ngấy với điều gì.'},
-      {'phrase': 'as soon as', 'note': 'Liên từ thời gian: Ngay khi.'},
-      {'phrase': 'take into account', 'note': 'Cụm cố định: Cân nhắc, tính đến.'},
-      {'phrase': 'make a decision', 'note': 'Collocation chuẩn: Đưa ra quyết định.'},
-      {'phrase': 'play a vital role', 'note': 'Collocation chuẩn: Đóng vai trò thiết yếu.'},
-      {'phrase': 'at home', 'note': 'Cụm trạng từ: Tại nhà.'},
-      {'phrase': 'incapable of', 'note': 'Collocation tính từ + giới từ: Không có khả năng.'},
-      {'phrase': 'end in failure', 'note': 'Collocation học thuật: Kết thúc trong thất bại.'},
-      {'phrase': 'set out to', 'note': 'Cụm động từ: Bắt đầu dự định làm gì.'},
-      {'phrase': 'proved to be', 'note': 'Collocation: Chứng tỏ là.'},
-      {'phrase': 'different from', 'note': 'Tính từ đi kèm giới từ: Khác biệt với.'},
-      {'phrase': 'careful not to', 'note': 'Cấu trúc tính từ: Cẩn trọng không làm gì.'},
-      {'phrase': 'deliberately chosen', 'note': 'Collocation trạng từ + phân từ: Cố ý lựa chọn.'},
-      {'phrase': 'two-way communication', 'note': 'Thuật ngữ ngôn ngữ học: Giao tiếp hai chiều.'},
-      {'phrase': 'turn-taking pattern', 'note': 'Thuật ngữ ngôn ngữ: Quy tắc luân phiên lượt lời.'},
-      {'phrase': 'pay attention to', 'note': 'Collocation cố định: Chú ý đến.'},
-      {'phrase': 'draw attention to', 'note': 'Collocation cố định: Thu hút sự chú ý.'},
-      {'phrase': 'keep track of', 'note': 'Collocation cố định: Theo dõi, ghi nhớ.'},
-    ];
+    // 2. Structured Academic Collocations Lexicon
+    final collocationHighlights = DgnlCollocationLexicon.extractCollocations(
+      text,
+    );
+    highlights.addAll(collocationHighlights);
 
-    for (final c in collocs) {
-      final p = c['phrase']!;
-      int startIdx = 0;
-      while ((startIdx = lower.indexOf(p, startIdx)) != -1) {
-        highlights.add({
-          'start': startIdx,
-          'end': startIdx + p.length,
-          'text': text.substring(startIdx, startIdx + p.length),
-          'category': 'collocation',
-          'level': 'B2',
-          'type': 'Academic Collocation',
-          'color': '#86efac',
-          'note': c['note'],
-        });
-        startIdx += p.length;
+    // 3. Comprehensive CEFR Vocabulary Profiler integration (Selective Pedagogical Layer)
+    final profilerResult = TextProfilerService.profile(text);
+
+    // Bộ lọc từ chức năng (function words / grammatical markers) - Không gắn nhãn làm từ vựng mục tiêu
+    final functionWords = const {
+      'a',
+      'an',
+      'the',
+      'and',
+      'or',
+      'but',
+      'nor',
+      'so',
+      'for',
+      'yet',
+      'in',
+      'on',
+      'at',
+      'to',
+      'from',
+      'by',
+      'with',
+      'about',
+      'as',
+      'into',
+      'like',
+      'through',
+      'after',
+      'over',
+      'between',
+      'out',
+      'against',
+      'during',
+      'without',
+      'before',
+      'under',
+      'around',
+      'among',
+      'i',
+      'you',
+      'he',
+      'she',
+      'it',
+      'we',
+      'they',
+      'me',
+      'him',
+      'us',
+      'them',
+      'my',
+      'your',
+      'his',
+      'her',
+      'its',
+      'our',
+      'their',
+      'mine',
+      'yours',
+      'hers',
+      'ours',
+      'theirs',
+      'this',
+      'that',
+      'these',
+      'those',
+      'who',
+      'whom',
+      'whose',
+      'which',
+      'what',
+      'where',
+      'when',
+      'why',
+      'how',
+      'am',
+      'is',
+      'are',
+      'was',
+      'were',
+      'be',
+      'been',
+      'being',
+      'have',
+      'has',
+      'had',
+      'do',
+      'does',
+      'did',
+      'can',
+      'could',
+      'shall',
+      'should',
+      'will',
+      'would',
+      'may',
+      'might',
+      'must',
+      'there',
+      'here',
+      'not',
+      'no',
+      'than',
+      'then',
+      'too',
+      'very',
+      'just',
+      'more',
+      'most',
+      'some',
+      'any',
+      'each',
+      'all',
+      'both',
+      'half',
+      'either',
+      'neither',
+      'other',
+      'others',
+      'such',
+      'only',
+      'own',
+      'same',
+    };
+
+    final preTeachLemmas = profilerResult.vocabularyCoverage.preTeachWords
+        .map((w) => w.lemma)
+        .toSet();
+
+    for (final token in profilerResult.tokens) {
+      if (token.cefrLevel == 'Unknown' ||
+          token.isProperNoun ||
+          token.isNumber ||
+          token.clean.length <= 1) {
+        continue;
       }
+
+      final isFunctionWord = functionWords.contains(token.clean);
+      final isB1OrHigher =
+          token.cefrLevel == 'B1' ||
+          token.cefrLevel == 'B2' ||
+          token.cefrLevel == 'C1' ||
+          token.cefrLevel == 'C2';
+      final isAcademic = token.isAcademic;
+      final isPreTeach = preTeachLemmas.contains(token.lemma);
+
+      // Function words bị loại khỏi lớp từ vựng hiển thị mặc định
+      if (isFunctionWord && !isAcademic) {
+        continue;
+      }
+
+      final isPedagogical = isB1OrHigher || isAcademic || isPreTeach;
+
+      final colorHex = switch (token.cefrLevel) {
+        'A1' => '#22c55e',
+        'A2' => '#14b8a6',
+        'B1' => '#3b82f6',
+        'B2' => '#f59e0b',
+        'C1' => '#f97316',
+        'C2' => '#a855f7',
+        _ => '#94a3b8',
+      };
+
+      String typeLabel = 'CEFR ${token.cefrLevel}';
+      if (isAcademic) {
+        typeLabel = 'AWL (${token.cefrLevel})';
+      } else if (isPreTeach) {
+        typeLabel = 'Dạy trước (${token.cefrLevel})';
+      } else if (!isPedagogical) {
+        typeLabel = 'Cơ bản (${token.cefrLevel})';
+      }
+
+      highlights.add({
+        'start': token.startIndex,
+        'end': token.endIndex,
+        'text': token.surface,
+        'category': 'vocabulary',
+        'level': token.cefrLevel,
+        'type': typeLabel,
+        'color': colorHex,
+        'isPedagogical': isPedagogical,
+        'isAcademic': isAcademic,
+        'isPreTeach': isPreTeach,
+        'note': isAcademic
+            ? "Từ vựng học thuật AWL cấp độ ${token.cefrLevel} (Dải tần ${token.frequencyBand}, nguyên mẫu: '${token.lemma}')."
+            : (isPedagogical
+                  ? "Từ vựng trọng tâm cấp độ ${token.cefrLevel} (Dải tần ${token.frequencyBand}, nguyên mẫu: '${token.lemma}')."
+                  : "Từ vựng nền tảng cấp độ ${token.cefrLevel} (nguyên mẫu: '${token.lemma}')."),
+      });
     }
 
-    // 3. Vocabulary CEFR B2 / C1
-    final b2Words = [
-      'banned', 'majority', 'enclosed', 'polluting', 'passive', 'smoking', 'environments',
-      'environment', 'increased', 'risk', 'disease', 'cancer', 'medical', 'suffer', 'lungs',
-      'alternative', 'technological', 'breakthrough', 'preliminary', 'investigation', 'inconvenient',
-      'deliberately', 'incapable', 'imitate', 'communicate', 'communication', 'graduate', 'attempt',
-      'pupil', 'unusual', 'programmed', 'ability', 'disagree', 'researchers', 'failure', 'experiment',
-      'material', 'correctly', 'label', 'code', 'success', 'pattern', 'reason', 'creature', 'scientist',
-      'scientists', 'fellow', 'especially'
-    ];
-    for (final bw in b2Words) {
-      final reg = RegExp('\\b$bw\\b', caseSensitive: false);
-      for (final m in reg.allMatches(text)) {
-        highlights.add({
-          'start': m.start,
-          'end': m.end,
-          'text': m.group(0),
-          'category': 'vocabulary',
-          'level': 'B2',
-          'type': 'Từ vựng B2',
-          'color': '#f9e2af',
-          'note': "Từ vựng CEFR B2 cốt lõi đề thi ĐGNL: '$bw'.",
-        });
-      }
-    }
-
-    final c1Words = [
-      'unprecedented', 'feasible', 'profound', 'subsequent', 'scientific', 'detrimental',
-      'inevitable', 'exaggerate', 'deliberately', 'inconvenient', 'exaggerated', 'philosophical'
-    ];
-    for (final cw in c1Words) {
-      final reg = RegExp('\\b$cw\\b', caseSensitive: false);
-      for (final m in reg.allMatches(text)) {
-        highlights.add({
-          'start': m.start,
-          'end': m.end,
-          'text': m.group(0),
-          'category': 'vocabulary',
-          'level': 'C1',
-          'type': 'Từ vựng C1',
-          'color': '#cba6f7',
-          'note': "Từ vựng phân hóa cao CEFR C1: '$cw'.",
-        });
-      }
-    }
+    final b2Pct = profilerResult.cefrPercentages['B2'] ?? 0.0;
+    final c1C2Pct =
+        (profilerResult.cefrPercentages['C1'] ?? 0.0) +
+        (profilerResult.cefrPercentages['C2'] ?? 0.0);
+    final a1B1Pct =
+        (profilerResult.cefrPercentages['A1'] ?? 0.0) +
+        (profilerResult.cefrPercentages['A2'] ?? 0.0) +
+        (profilerResult.cefrPercentages['B1'] ?? 0.0);
+    final b2C1Total = b2Pct + c1C2Pct;
 
     return DgnlAnalysisResult(
-      totalWords: total,
+      totalWords: profilerResult.statistics.totalWords > 0
+          ? profilerResult.statistics.totalWords
+          : total,
       contentWords: contentWords,
       lexicalDensity: ld,
-      cefrProfile: {'A1_B1': 75.0, 'B2': 20.0, 'C1_C2': 5.0, 'B2_C1_total': 25.0},
-      evaluation: 'Đoạn văn đạt chuẩn phân hóa đề thi ĐGNL (B2–C1 chiếm 25%).',
+      cefrProfile: {
+        'A1_B1': a1B1Pct > 0 ? a1B1Pct : 75.0,
+        'B2': b2Pct > 0 ? b2Pct : 20.0,
+        'C1_C2': c1C2Pct > 0 ? c1C2Pct : 5.0,
+        'B2_C1_total': b2C1Total > 0 ? b2C1Total : 25.0,
+      },
+      evaluation: profilerResult.recommendations.isNotEmpty
+          ? profilerResult.recommendations.first.description
+          : 'Đoạn văn đạt chuẩn phân hóa đề thi ĐGNL (B2–C1 chiếm $b2C1Total%).',
       status: 'optimal',
       highlights: highlights,
+      textProfile: profilerResult,
     );
   }
 
@@ -327,7 +526,8 @@ class DgnlService {
         'masked_sentence': 'My husband is a [ _______ ] smoker.',
         'options': ['heavy', 'strong', 'deep', 'hard'],
         'correct_answer': 'heavy',
-        'explanation': "Collocation cố định: 'heavy smoker' (người nghiện thuốc nặng), không dùng 'strong/deep/hard'.",
+        'explanation':
+            "Collocation cố định: 'heavy smoker' (người nghiện thuốc nặng), không dùng 'strong/deep/hard'.",
       });
     }
     if (text.contains('fed up with')) {
@@ -339,10 +539,10 @@ class DgnlService {
         'masked_sentence': 'I am fed up [ _______ ] sitting in pubs.',
         'options': ['with', 'of', 'for', 'about'],
         'correct_answer': 'with',
-        'explanation': "Cụm thành ngữ: 'be fed up with' (chán ngấy với cái gì).",
+        'explanation':
+            "Cụm thành ngữ: 'be fed up with' (chán ngấy với cái gì).",
       });
     }
     return questions;
   }
 }
-

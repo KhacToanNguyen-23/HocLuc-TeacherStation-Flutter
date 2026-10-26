@@ -112,10 +112,10 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
             widget.targetStrokes ??
             widget.studio.strokes;
 
-        final isSvoMode = widget.studio.activeSubjectTool == 'svo';
+        final capturesBoardInput = widget.studio.activeToolCapturesBoardInput;
 
         return MouseRegion(
-          cursor: isSvoMode
+          cursor: capturesBoardInput
               ? SystemMouseCursors.click
               : widget.studio.tool == 'laser'
               ? SystemMouseCursors.none
@@ -148,7 +148,7 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
             child: GestureDetector(
               onPanStart: widget.interactive
                   ? (e) {
-                      if (isSvoMode) return;
+                      if (capturesBoardInput) return;
                       final norm = normalized(e.localPosition);
                       if (widget.studio.tool == 'laser') {
                         _addLaserPoint(norm);
@@ -164,7 +164,7 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                   : null,
               onPanUpdate: widget.interactive
                   ? (e) {
-                      if (isSvoMode) return;
+                      if (capturesBoardInput) return;
                       final norm = normalized(e.localPosition);
                       if (widget.studio.tool == 'laser') {
                         _addLaserPoint(norm);
@@ -179,7 +179,7 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                   : null,
               onPanEnd: widget.interactive
                   ? (_) {
-                      if (isSvoMode) return;
+                      if (capturesBoardInput) return;
                       if (widget.studio.tool == 'laser' ||
                           widget.studio.tool == 'erase') {
                         return;
@@ -237,7 +237,7 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                         return;
                       }
                       final norm = normalized(e.localPosition);
-                      if (isSvoMode) {
+                      if (capturesBoardInput) {
                         widget.studio.analyzeHandwritingAt(norm);
                         return;
                       }
@@ -282,16 +282,18 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                       ),
                     ),
                   ),
-                  for (final stroke in strokes.where((s) => s.isSmartPenOval))
+                  for (final stroke in strokes.where(
+                    (s) => s.isGroupedPdfAnnotation,
+                  ))
                     TweenAnimationBuilder<double>(
                       key: ValueKey(
-                        '${stroke.smartPenGroupId}:${stroke.smartPenLabel}',
+                        '${stroke.groupedAnnotationGroupId}:${stroke.groupedAnnotationItemId}',
                       ),
                       tween: Tween<double>(begin: 0, end: 1),
                       duration: const Duration(milliseconds: 260),
                       builder: (context, progress, _) => CustomPaint(
                         size: size,
-                        painter: SmartPenOvalPainter(
+                        painter: GroupedPdfPathPainter(
                           stroke: stroke,
                           progress: progress,
                         ),
@@ -365,7 +367,7 @@ class CommittedStrokesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final stroke in strokes) {
-      if (stroke.isSmartPenOval) continue;
+      if (stroke.isGroupedPdfAnnotation) continue;
       if (stroke.points.isEmpty && stroke.rect == null) continue;
 
       final isHighlight = stroke.isHighlighter || stroke.rect != null;
@@ -395,8 +397,8 @@ class CommittedStrokesPainter extends CustomPainter {
   }
 }
 
-class SmartPenOvalPainter extends CustomPainter {
-  const SmartPenOvalPainter({required this.stroke, required this.progress});
+class GroupedPdfPathPainter extends CustomPainter {
+  const GroupedPdfPathPainter({required this.stroke, required this.progress});
 
   final BoardStroke stroke;
   final double progress;
@@ -429,7 +431,7 @@ class SmartPenOvalPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant SmartPenOvalPainter oldDelegate) =>
+  bool shouldRepaint(covariant GroupedPdfPathPainter oldDelegate) =>
       oldDelegate.progress != progress ||
       !identical(oldDelegate.stroke, stroke);
 }

@@ -4,6 +4,7 @@ import 'package:teaching_companion/features/auth/services/google_meet_auth_servi
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'package:teaching_companion/features/auth/presentation/auth_form_card.dart';
 import 'package:teaching_companion/features/auth/presentation/auth_hero_panel.dart';
+import 'package:teaching_companion/features/classroom_meet/presentation/meet_webview.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/screens/classroom_dashboard_screen.dart';
 
 /// Full-page dedicated 50/50 Split Login & Registration screen for teachers.
@@ -20,10 +21,12 @@ class LoginScreen extends StatelessWidget {
   final GoogleMeetAuthService? authService;
 
   void _onLoginSuccess(BuildContext context) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const ClassroomDashboardScreen()),
-      (route) => false,
-    );
+    if (MeetPermissionPrompt.navigatorKey.currentState == null && context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const ClassroomDashboardScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override

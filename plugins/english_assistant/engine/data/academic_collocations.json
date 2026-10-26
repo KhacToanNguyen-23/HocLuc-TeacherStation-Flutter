@@ -1150,5 +1150,93 @@
       "more"
     ],
     "explanation": "Liên từ bổ sung: 'in addition to + Noun/V-ing' = bên cạnh, ngoài cái gì ra."
+  },
+  {
+    "phrase": "sensitive to",
+    "category": "adjective_preposition",
+    "explanation": "Tính từ đi kèm giới từ: sensitive to (nhạy cảm/mẫn cảm với).",
+    "target_word": "to",
+    "distractors": [
+      "with",
+      "for",
+      "about"
+    ]
+  },
+  {
+    "phrase": "fond of",
+    "category": "adjective_preposition",
+    "explanation": "Tính từ đi kèm giới từ: fond of (thích thú với).",
+    "target_word": "of",
+    "distractors": [
+      "with",
+      "in",
+      "at"
+    ]
+  },
+  {
+    "phrase": "tend to",
+    "category": "verb_infinitive",
+    "explanation": "Động từ chỉ xu hướng: tend to (có xu hướng làm gì).",
+    "target_word": "to",
+    "distractors": [
+      "for",
+      "with",
+      "in"
+    ]
+  },
+  {
+    "phrase": "seem to",
+    "category": "verb_infinitive",
+    "explanation": "Động từ bán trợ động từ: seem to (dường như/có vẻ như).",
+    "target_word": "to",
+    "distractors": [
+      "that",
+      "as",
+      "for"
+    ]
+  },
+  {
+    "phrase": "appear to",
+    "category": "verb_infinitive",
+    "explanation": "Động từ chỉ biểu hiện/xu hướng: appear to (dường như là).",
+    "target_word": "to",
+    "distractors": [
+      "as",
+      "in",
+      "for"
+    ]
+  },
+  {
+    "phrase": "taste buds",
+    "category": "compound_noun",
+    "explanation": "Từ ghép danh từ chuyên ngành: taste buds (các nụ vị giác).",
+    "target_word": "buds",
+    "distractors": [
+      "flowers",
+      "nodes",
+      "roots"
+    ]
+  },
+  {
+    "phrase": "as a result",
+    "category": "academic_discourse",
+    "explanation": "Liên từ chỉ kết quả: as a result (kết quả là/do đó).",
+    "target_word": "result",
+    "distractors": [
+      "cause",
+      "reason",
+      "effect"
+    ]
+  },
+  {
+    "phrase": "according to",
+    "category": "academic_discourse",
+    "explanation": "Giới từ phức hợp: according to (theo như nguồn tin/ai đó).",
+    "target_word": "to",
+    "distractors": [
+      "with",
+      "for",
+      "by"
+    ]
   }
 ]

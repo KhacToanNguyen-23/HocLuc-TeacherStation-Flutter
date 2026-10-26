@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
@@ -18,7 +18,7 @@ class SaveClassroomDialog extends StatelessWidget {
     required StudioState studio,
     required Future<bool> Function() onSaveSlide,
   }) {
-    return showDialog<void>(
+    return showAppModalDialog<void>(
       context: context,
       builder: (_) =>
           SaveClassroomDialog(studio: studio, onSaveSlide: onSaveSlide),
@@ -191,7 +191,8 @@ class SaveClassroomDialog extends StatelessWidget {
     required Color buttonColor,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return AppPressable(
+      scaleDown: 0.98,
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(

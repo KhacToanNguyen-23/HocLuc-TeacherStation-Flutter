@@ -7,6 +7,7 @@ import 'package:teaching_companion/core/ui/google_brand_icon.dart';
 import 'package:teaching_companion/core/ui/hocluc_brand_mark.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/presentation/scoped_listenable_builder.dart';
+import 'package:teaching_companion/features/studio_board/presentation/studio/studio_speaker_notes_toggle.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/create_classroom_dialog.dart';
 
@@ -473,6 +474,8 @@ class StudioTopBar extends StatelessWidget {
                   onPressed: onPreview,
                   icon: const Icon(Icons.slideshow_outlined, color: pine),
                 ),
+                const SizedBox(width: 3),
+                StudioSpeakerNotesToggle(studio: studio),
                 if (width > 800 && onTogglePlugins != null) ...[
                   const SizedBox(width: 3),
                   IconButton(
@@ -773,7 +776,7 @@ class StudioTopBar extends StatelessWidget {
                           height: 38,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              showDialog<void>(
+                              showAppModalDialog<void>(
                                 context: context,
                                 builder: (_) => const CreateClassroomDialog(),
                               );
@@ -857,5 +860,3 @@ class StudioTopBar extends StatelessWidget {
     );
   }
 }
-
-

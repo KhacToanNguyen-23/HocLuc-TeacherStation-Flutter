@@ -5,12 +5,42 @@ import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import '../services/plugin_web_server.dart';
 import '../services/process_supervisor.dart';
+import '../services/plugin_event_hub.dart';
+import '../services/host_bridge.dart';
 import 'flat_host.dart';
 
-class FloatingPluginWindow extends StatelessWidget {
+class FloatingPluginWindow extends StatefulWidget {
   const FloatingPluginWindow({super.key, required this.studio});
 
   final StudioState studio;
+
+  @override
+  State<FloatingPluginWindow> createState() => _FloatingPluginWindowState();
+}
+
+class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
+  StudioState get studio => widget.studio;
+
+  final AdaptiveGlassmorphismController _adaptiveController =
+      AdaptiveGlassmorphismController(
+        enterPdfThreshold: 0.20,
+        exitPdfThreshold: 0.05,
+      );
+
+  bool _evaluateIsPdfGlass() {
+    if (studio.pdf.pdfModeOverride != null) {
+      return studio.pdf.pdfModeOverride!;
+    }
+    final bounds = Rect.fromLTWH(
+      studio.pluginFloatingPosition.dx,
+      studio.pluginFloatingPosition.dy,
+      studio.pluginFloatingSize.width,
+      studio.pluginFloatingSize.height,
+    );
+    final overlap = studio.getPdfOverlapRatio(bounds);
+    _adaptiveController.updateOverlap(overlap);
+    return _adaptiveController.isPdfGlass;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +55,7 @@ class FloatingPluginWindow extends StatelessWidget {
         }
 
         final isFrameless = plugin.manifest.frameless;
+        final isPdfGlass = _evaluateIsPdfGlass();
         final webViewContent = Builder(
           builder: (context) {
             final entry = plugin.manifest.uiEntry;
@@ -69,17 +100,27 @@ class FloatingPluginWindow extends StatelessWidget {
                   : '$targetUrl?$queryParts';
             }
 
-            void Function(String)? executeJs;
             return FlatHost(
               key: ValueKey('flat_host_${plugin.manifest.id}_${studio.editingSticker?.id ?? "default"}'),
               url: targetUrl,
-              onMessage: (msg) => studio.handlePluginMessage(
-                msg,
-                executeJs: executeJs,
+              transparentBackground: plugin.manifest.transparentBackground,
+              glassPreset: studio.glassPreset,
+              isPdfMode: isPdfGlass,
+              onPluginMessage: (message) => studio.handlePluginMessage(
+                message.data,
+                executeJs: message.executeJs,
                 manifest: plugin.manifest,
+                viewToken: message.viewToken,
+                navigationGeneration: message.navigationGeneration,
+                webViewBounds: message.webViewBounds,
               ),
               onControllerReady: (sendJs) {
-                executeJs = sendJs;
+                HostBridge.instance.registerPluginView(
+                  pluginId: plugin.manifest.id,
+                  preset: studio.glassPreset,
+                  isPdfMode: isPdfGlass,
+                  sender: sendJs,
+                );
                 final curEditing = studio.editingSticker;
                 if (curEditing != null) {
                   final editData = {
@@ -101,6 +142,9 @@ class FloatingPluginWindow extends StatelessWidget {
                     "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)});",
                   );
                 };
+              },
+              onControllerDisposed: (sender) {
+                PluginEventHub.instance.unregister(plugin.manifest.id, sender);
               },
             );
           },
@@ -226,6 +270,11 @@ class FloatingPluginWindow extends StatelessWidget {
                           studio.setPluginFloatingPosition(
                             studio.pluginFloatingPosition + details.delta,
                           );
+                          final wasPdf = _adaptiveController.isPdfGlass;
+                          final nowPdf = _evaluateIsPdfGlass();
+                          if (wasPdf != nowPdf) {
+                            setState(() {});
+                          }
                         },
                         child: Row(
                           children: [
@@ -248,7 +297,9 @@ class FloatingPluginWindow extends StatelessWidget {
                                 color: Colors.black.withValues(alpha: 0.25),
                                 shape: const CircleBorder(),
                                 child: InkWell(
-                                  key: const Key('frameless_plugin_close_button'),
+                                  key: const Key(
+                                    'frameless_plugin_close_button',
+                                  ),
                                   customBorder: const CircleBorder(),
                                   onTap: studio.closeFloatingPlugin,
                                   child: const SizedBox(
@@ -282,18 +333,33 @@ class FloatingPluginWindow extends StatelessWidget {
           child: Material(
             elevation: 10,
             borderRadius: BorderRadius.circular(12),
-            color: AppColors.overlaySurface,
+            color: isPdfGlass
+                ? const Color(0xf2111a16)
+                : AppColors.overlaySurface,
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.overlayBorder, width: 1.2),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x77000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+                border: Border.all(
+                  color: isPdfGlass
+                      ? AppColors.overlayAccent.withValues(alpha: 0.45)
+                      : AppColors.overlayBorder,
+                  width: 1.2,
+                ),
+                boxShadow: isPdfGlass
+                    ? const [
+                        BoxShadow(
+                          color: Color(0x66000000),
+                          blurRadius: 16,
+                          offset: Offset(0, 5),
+                        ),
+                      ]
+                    : const [
+                        BoxShadow(
+                          color: Color(0x77000000),
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
               ),
               child: Column(
                 children: [
@@ -303,29 +369,36 @@ class FloatingPluginWindow extends StatelessWidget {
                       studio.setPluginFloatingPosition(
                         studio.pluginFloatingPosition + details.delta,
                       );
+                      final wasPdf = _adaptiveController.isPdfGlass;
+                      final nowPdf = _evaluateIsPdfGlass();
+                      if (wasPdf != nowPdf) {
+                        setState(() {});
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 8,
                       ),
-                      decoration: const BoxDecoration(
-                        color: AppColors.overlayRaised,
-                        borderRadius: BorderRadius.only(
+                      decoration: BoxDecoration(
+                        color: isPdfGlass
+                            ? const Color(0xeb182620)
+                            : AppColors.overlayRaised,
+                        borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(11),
                           topRight: Radius.circular(11),
                         ),
                         border: Border(
-                          bottom: BorderSide(color: AppColors.overlayBorder),
+                          bottom: BorderSide(
+                            color: isPdfGlass
+                                ? Colors.white.withValues(alpha: 0.28)
+                                : AppColors.overlayBorder,
+                          ),
                         ),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            plugin.icon,
-                            size: 16,
-                            color: plugin.color,
-                          ),
+                          Icon(plugin.icon, size: 16, color: plugin.color),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -377,4 +450,3 @@ class FloatingPluginWindow extends StatelessWidget {
     );
   }
 }
-

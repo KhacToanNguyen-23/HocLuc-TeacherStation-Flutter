@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
@@ -243,7 +243,7 @@ void main() {
         );
         expect(
           installed.getFileString('ui/app.js'),
-          contains('INSERT_ANNOTATION'),
+          contains('window.HocLuc.board.insertAnnotation'),
         );
         expect(
           installed.getFileString('engine/service.py'),
@@ -251,6 +251,119 @@ void main() {
         );
       },
     );
+
+    test(
+      'glass preset events flow through the SDK and update the plugin UI',
+      () async {
+        final sdkFile = File('assets/scripts/hocluc-plugin-sdk.js');
+        final appFile = File('../plugins/english_assistant/ui/app.js');
+        expect(sdkFile.existsSync(), isTrue);
+        expect(appFile.existsSync(), isTrue);
+
+        final sdkResult = await Process.run('node', [
+          '-e',
+          '''
+const HocLuc = require('./assets/scripts/hocluc-plugin-sdk.js');
+let received;
+HocLuc.onHostEvent('GLASS_PRESET_CHANGE', (payload) => { received = payload.preset; });
+HocLuc.__dispatchHostEvent({ event: 'GLASS_PRESET_CHANGE', payload: { preset: 'solid' } });
+if (received !== 'solid') process.exit(1);
+''',
+        ]);
+        expect(
+          sdkResult.exitCode,
+          0,
+          reason:
+              'The SDK must deliver host glass events to onHostEvent subscribers.',
+        );
+
+        final appResult = await Process.run('node', [
+          '-e',
+          r'''
+const fs = require('node:fs');
+const vm = require('node:vm');
+const rootStyle = new Map();
+const root = {
+  dataset: {},
+  style: { setProperty: (name, value) => rootStyle.set(name, value) },
+};
+let tick = 0;
+let glassHandler;
+let registeredRegion;
+const element = () => ({
+  addEventListener(name, handler) { this.handlers = this.handlers || {}; this.handlers[name] = handler; },
+  appendChild() {},
+  style: {},
+  value: '',
+});
+const elements = new Map();
+for (const id of ['inputSentence', 'btnAnalyze', 'resultsCard', 'tokensContainer', 'grammarAlert', 'grammarMessage', 'btnPinToBoard', 'backendBadge']) elements.set(id, element());
+global.performance = { timeOrigin: 1700000000000, now: () => ++tick };
+global.window = {
+  location: { search: '' },
+  addEventListener() {},
+  HocLuc: {
+    onHostEvent: (name, handler) => { glassHandler = handler; },
+    glass: {
+      registerRegion: (id, target) => { registeredRegion = { id, target }; return () => {}; },
+      updateRegion() {},
+      unregisterRegion() {},
+    },
+  },
+};
+global.document = {
+  documentElement: root,
+  getElementById: (id) => elements.get(id) || element(),
+  querySelectorAll: () => [],
+  createElement: () => element(),
+};
+vm.runInThisContext(fs.readFileSync('../plugins/english_assistant/ui/app.js', 'utf8'));
+if (root.dataset.glassPreset !== 'frosted') process.exit(1);
+const expected = {
+  clear: ['0.15', '10px'],
+  frosted: ['0.28', '20px'],
+  solid: ['0.85', '28px'],
+};
+for (let index = 0; index < 30; index++) {
+  const preset = ['clear', 'frosted', 'solid'][index % 3];
+  glassHandler({
+    preset,
+    dispatched_at_epoch_ms: 1700000000000 + tick + 1,
+  });
+  if (root.dataset.glassPreset !== preset) process.exit(2);
+  if (rootStyle.get('--glass-bg-opacity') !== expected[preset][0]) process.exit(3);
+  if (rootStyle.get('--glass-blur') !== expected[preset][1]) process.exit(4);
+}
+glassHandler({ preset: 'unknown', dispatched_at_epoch_ms: 1700000000000 });
+if (root.dataset.glassPreset !== 'solid') process.exit(5);
+const report = window.__glassPresetLatencyReport();
+if (report.count !== 30 || report.medianMs >= 50 || report.p95Ms >= 50 || report.maxMs >= 50) process.exit(6);
+const input = elements.get('inputSentence');
+input.value = 'The student reads a book';
+elements.get('btnAnalyze').handlers.click().then(() => {
+  if (!registeredRegion || registeredRegion.id !== 'analysis-result-card') process.exitCode = 7;
+  if (registeredRegion.target !== elements.get('resultsCard')) process.exitCode = 8;
+});
+''',
+        ]);
+        expect(
+          appResult.exitCode,
+          0,
+          reason:
+              'The app must validate preset events, update CSS variables, and measure 30 changes below 50 ms.',
+        );
+
+        final appJs = await appFile.readAsString();
+        expect(appJs, contains('onHostEvent'));
+        expect(appJs, contains('GLASS_PRESET_CHANGE'));
+        expect(appJs, contains('--glass-bg-opacity'));
+        expect(appJs, contains('--glass-blur'));
+        for (final preset in ['clear', 'frosted', 'solid']) {
+          expect(appJs, contains(preset));
+        }
+        expect(appJs, contains('registerRegion'));
+        expect(appJs, contains('analysis-result-card'));
+      },
+    );
   });
 }
-

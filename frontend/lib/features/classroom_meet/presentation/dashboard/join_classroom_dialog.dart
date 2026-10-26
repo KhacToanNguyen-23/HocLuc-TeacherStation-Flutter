@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/core/platform/url_opener.dart';
@@ -11,7 +11,7 @@ class JoinClassroomDialog extends StatefulWidget {
   final Future<void> Function(String)? onJoin;
 
   static Future<void> show(BuildContext context) {
-    return showDialog<void>(
+    return showAppModalDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (_) => JoinClassroomDialog(

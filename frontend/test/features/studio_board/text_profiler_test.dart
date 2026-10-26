@@ -1,0 +1,434 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/studio_board_models.dart';
+import 'package:teaching_companion/features/studio_board/domain/models/text_profile_models.dart';
+import 'package:teaching_companion/features/studio_board/presentation/widgets/text_profiler_dialog.dart';
+import 'package:teaching_companion/features/studio_board/services/profiler/cefr_profiler.dart';
+import 'package:teaching_companion/features/studio_board/services/profiler/lexical_diversity_calculator.dart';
+import 'package:teaching_companion/features/studio_board/services/profiler/readability_calculator.dart';
+import 'package:teaching_companion/features/studio_board/services/profiler/syllable_counter.dart';
+import 'package:teaching_companion/features/studio_board/services/profiler/syntactic_complexity_analyzer.dart';
+import 'package:teaching_companion/features/studio_board/services/profiler/text_profiler_service.dart';
+import 'package:teaching_companion/features/studio_board/services/profiler/text_tokenizer.dart';
+
+void main() {
+  group('SyllableCounter Tests', () {
+    test(
+      'counts syllables accurately for common words and inflectional endings',
+      () {
+        expect(SyllableCounter.countSyllables('cat'), equals(1));
+        expect(SyllableCounter.countSyllables('student'), equals(2));
+        expect(SyllableCounter.countSyllables('difficult'), equals(3));
+        expect(SyllableCounter.countSyllables('university'), equals(5));
+        expect(SyllableCounter.countSyllables('table'), equals(2));
+        expect(SyllableCounter.countSyllables('simple'), equals(2));
+        expect(
+          SyllableCounter.countSyllables('played'),
+          equals(1),
+        ); // -ed not after t/d
+        expect(
+          SyllableCounter.countSyllables('wanted'),
+          equals(2),
+        ); // -ed after t
+        expect(SyllableCounter.countSyllables('cats'), equals(1));
+        expect(SyllableCounter.countSyllables('watches'), equals(2));
+      },
+    );
+
+    test('identifies polysyllabic and complex words', () {
+      expect(SyllableCounter.isPolysyllabic('education'), isTrue);
+      expect(SyllableCounter.isPolysyllabic('book'), isFalse);
+      expect(SyllableCounter.isComplexWord('unprecedented'), isTrue);
+      expect(
+        SyllableCounter.isComplexWord('Mr. Smith', isProperNoun: true),
+        isFalse,
+      );
+    });
+  });
+
+  group('TextTokenizer Tests', () {
+    test(
+      'segments sentences without splitting on abbreviations or decimal points',
+      () {
+        const text =
+            'Dr. Smith visited the U.S. last year. The GDP grew by 3.5% in Q4! Is it sustainable? Yes, it is.';
+        final sentences = TextTokenizer.extractSentences(text);
+        expect(sentences.length, equals(4));
+        expect(sentences[0], equals('Dr. Smith visited the U.S. last year.'));
+        expect(sentences[1], equals('The GDP grew by 3.5% in Q4!'));
+        expect(sentences[2], equals('Is it sustainable?'));
+        expect(sentences[3], equals('Yes, it is.'));
+      },
+    );
+
+    test('extracts exact word token spans and positions', () {
+      const text = 'The smart student reads.';
+      final spans = TextTokenizer.extractWordSpans(text);
+      expect(spans.length, equals(4));
+      expect(spans[0].surface, equals('The'));
+      expect(spans[0].startIndex, equals(0));
+      expect(spans[0].endIndex, equals(3));
+      expect(spans[1].surface, equals('smart'));
+      expect(spans[2].surface, equals('student'));
+      expect(spans[3].surface, equals('reads'));
+    });
+
+    test('normalizes inflected words and irregular verbs to base lemmas', () {
+      expect(TextTokenizer.normalizeLemma('went'), equals('go'));
+      expect(TextTokenizer.normalizeLemma('studies'), equals('study'));
+      expect(TextTokenizer.normalizeLemma('running'), equals('run'));
+      expect(TextTokenizer.normalizeLemma('boxes'), equals('box'));
+      expect(TextTokenizer.normalizeLemma('children'), equals('child'));
+    });
+
+    test('distinguishes proper nouns from regular words', () {
+      expect(TextTokenizer.isProperNoun('London', 1, false), isTrue);
+      expect(TextTokenizer.isProperNoun('student', 1, false), isFalse);
+      expect(TextTokenizer.isProperNoun('The', 0, true), isFalse);
+    });
+  });
+
+  group('CefrProfiler & Lexical Coverage Tests', () {
+    test(
+      'classifies words into 6 CEFR levels accurately and isolates unknown tokens',
+      () {
+        const passage =
+            'A smart student reads a book. The government announced feasible and unprecedented economic measures.';
+        final spans = TextTokenizer.extractWordSpans(passage);
+        final result = CefrProfiler.profileTokens(passage, spans);
+
+        expect(result.counts['A1']! > 0, isTrue); // 'a', 'reads', 'book'
+        expect(result.counts['B1']! > 0, isTrue); // 'government', 'economic'
+        expect(result.counts['B2']! > 0, isTrue); // 'feasible'
+        expect(result.counts['C1']! > 0, isTrue); // 'unprecedented'
+
+        // Unknown words are NOT artificially elevated to C1/C2
+        final unknownSpans = TextTokenizer.extractWordSpans(
+          'Zorblaxian flumptrick',
+        );
+        final unknownResult = CefrProfiler.profileTokens(
+          'Zorblaxian flumptrick',
+          unknownSpans,
+        );
+        expect(unknownResult.counts['Unknown'], equals(2));
+        expect(unknownResult.counts['C1'], equals(0));
+        expect(unknownResult.counts['C2'], equals(0));
+      },
+    );
+
+    test(
+      'computes K1-K3 frequency coverage and extracts pre-teach vocabulary',
+      () {
+        const passage =
+            'The committee will evaluate whether this innovative strategy is feasible and inevitable.';
+        final spans = TextTokenizer.extractWordSpans(passage);
+        final result = CefrProfiler.profileTokens(passage, spans);
+
+        expect(result.coverage.k1Percent > 0, isTrue);
+        expect(result.coverage.coveredPercent >= 70.0, isTrue);
+
+        final preTeachSurfaces = result.coverage.preTeachWords
+            .map((w) => w.surface.toLowerCase())
+            .toList();
+        expect(
+          preTeachSurfaces.contains('feasible') ||
+              preTeachSurfaces.contains('inevitable'),
+          isTrue,
+        );
+      },
+    );
+  });
+
+  group('ReadabilityCalculator Benchmark Tests', () {
+    test('calculates Flesch Reading Ease and Grade Level mathematically', () {
+      // 100 words, 10 sentences, 150 syllables
+      const stats = TextStatistics(
+        totalCharacters: 500,
+        totalLetters: 450,
+        totalWords: 100,
+        totalSentences: 10,
+        totalSyllables: 150,
+        totalPolysyllables: 15,
+        totalComplexWords: 12,
+        avgWordLength: 4.5,
+        avgSentenceLength: 10.0,
+      );
+
+      final metrics = ReadabilityCalculator.calculateMetrics(stats);
+      final flesch = metrics.firstWhere((m) => m.id == 'flesch_reading_ease');
+      final fk = metrics.firstWhere((m) => m.id == 'flesch_kincaid_grade');
+      final fog = metrics.firstWhere((m) => m.id == 'gunning_fog');
+      final smog = metrics.firstWhere((m) => m.id == 'smog_index');
+      final cl = metrics.firstWhere((m) => m.id == 'coleman_liau');
+      final ari = metrics.firstWhere(
+        (m) => m.id == 'automated_readability_index',
+      );
+
+      // Flesch: 206.835 - (1.015 * 10) - (84.6 * 1.5) = 206.835 - 10.15 - 126.9 = 69.785 -> ~69.8
+      expect(flesch.score, closeTo(69.8, 0.2));
+      expect(flesch.interpretation.contains('Tiêu chuẩn'), isTrue);
+
+      // FK: (0.39 * 10) + (11.8 * 1.5) - 15.59 = 3.9 + 17.7 - 15.59 = 6.01 -> ~6.0
+      expect(fk.score, closeTo(6.0, 0.2));
+
+      // Fog: 0.4 * [ 10 + 100 * (12 / 100) ] = 0.4 * [10 + 12] = 8.8
+      expect(fog.score, closeTo(8.8, 0.2));
+
+      // Coleman-Liau: 0.0588 * 450 - 0.296 * 10 - 15.8 = 26.46 - 2.96 - 15.8 = 7.7
+      expect(cl.score, closeTo(7.7, 0.2));
+
+      // ARI: 4.71 * 4.5 + 0.5 * 10 - 21.43 = 21.195 + 5 - 21.43 = 4.765 -> ~4.8
+      expect(ari.score, closeTo(4.8, 0.2));
+      expect(smog.score > 0, isTrue);
+    });
+
+    test(
+      'handles very short text gracefully with explicit reliability disclaimer',
+      () {
+        const stats = TextStatistics(
+          totalCharacters: 15,
+          totalLetters: 12,
+          totalWords: 3,
+          totalSentences: 1,
+          totalSyllables: 3,
+          totalPolysyllables: 0,
+          totalComplexWords: 0,
+          avgWordLength: 4.0,
+          avgSentenceLength: 3.0,
+        );
+
+        final metrics = ReadabilityCalculator.calculateMetrics(stats);
+        for (final m in metrics) {
+          expect(m.isReliable, isFalse);
+          expect(m.reliabilityNote.isNotEmpty, isTrue);
+        }
+      },
+    );
+  });
+
+  group('LexicalDiversityCalculator Tests', () {
+    test('computes TTR, MATTR, and MTLD accurately', () {
+      const text =
+          'The teacher explained the lesson. The teacher was patient and the lesson was clear.';
+      final spans = TextTokenizer.extractWordSpans(text);
+      final profileOutput = CefrProfiler.profileTokens(text, spans);
+      final diversity = LexicalDiversityCalculator.calculate(
+        profileOutput.tokens,
+      );
+
+      expect(diversity.ttr > 0.0 && diversity.ttr <= 1.0, isTrue);
+      expect(diversity.mattr > 0.0, isTrue);
+      expect(diversity.mtld > 0.0, isTrue);
+      expect(
+        diversity.topRepeatedWords.any(
+          (e) => e.key == 'teacher' || e.key == 'lesson',
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('SyntacticComplexityAnalyzer Tests', () {
+    test(
+      'identifies compound, complex sentences, passive voice, and relative clauses',
+      () {
+        const text =
+            'The book was written by a scientist who lives in London, although many critics disagreed with the hypothesis.';
+        final sentences = TextTokenizer.extractSentences(text);
+        final syntax = SyntacticComplexityAnalyzer.analyze(text, sentences);
+
+        expect(syntax.sentenceCount, equals(1));
+        expect(syntax.passiveVoiceCount >= 1, isTrue); // "was written"
+        expect(syntax.relativeClauseCount >= 1, isTrue); // "who lives"
+        expect(syntax.subordinateClauseCount >= 1, isTrue); // "although"
+        expect(
+          syntax.complexSentenceCount + syntax.compoundComplexSentenceCount,
+          equals(1),
+        );
+      },
+    );
+  });
+
+  group('TextProfilerService Master Pipeline & Recommendations', () {
+    test('produces comprehensive deterministic profile offline', () {
+      const passage = '''
+Many environmental researchers agree that passive smoking poses an increased risk of heart disease and lung cancer.
+A preliminary investigation was conducted by the medical committee to evaluate alternative technological solutions.
+Although some critics deliberately questioned the feasibility of the report, the majority supported the conclusion.
+''';
+
+      final profile = TextProfilerService.profile(passage);
+
+      expect(profile.statistics.totalWords >= 40, isTrue);
+      expect(profile.dominantCefrLevel, equals('B2'));
+      expect(profile.readabilityMetrics.length, equals(6));
+      expect(profile.recommendations.isNotEmpty, isTrue);
+      expect(profile.examProfiles.any((e) => e.examName == 'VSTEP'), isTrue);
+      expect(profile.vocabularyCoverage.preTeachWords.isNotEmpty, isTrue);
+
+      // JSON serialization integrity
+      final json = profile.toJson();
+      expect(json['originalText'], isNotEmpty);
+      expect(json['statistics'], isNotNull);
+      expect(json['cefrCounts'], isNotNull);
+      expect(json['readabilityMetrics'], isNotEmpty);
+    });
+
+    test('handles empty and malformed input gracefully', () {
+      final emptyProfile = TextProfilerService.profile('');
+      expect(emptyProfile.statistics.totalWords, equals(0));
+      expect(emptyProfile.isShortText, isTrue);
+
+      final punctOnlyProfile = TextProfilerService.profile('... ??? !!! ---');
+      expect(punctOnlyProfile.statistics.totalWords, equals(0));
+    });
+
+    test('guarantees determinism on repeated runs', () {
+      const text =
+          'Education is the most powerful weapon which you can use to change the world.';
+      final run1 = TextProfilerService.profile(text);
+      final run2 = TextProfilerService.profile(text);
+
+      expect(run1.statistics.totalWords, equals(run2.statistics.totalWords));
+      expect(run1.dominantCefrLevel, equals(run2.dominantCefrLevel));
+      expect(
+        run1.readabilityMetrics[0].score,
+        equals(run2.readabilityMetrics[0].score),
+      );
+      expect(run1.lexicalDiversity.ttr, equals(run2.lexicalDiversity.ttr));
+    });
+  });
+
+  group('TextProfilerDialog Widget Tests', () {
+    testWidgets(
+      'renders all tabs and supports horizontal scrolling without overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(1024, 768);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        const passageText =
+            'A comprehensive test passage for English text profiler analysis.';
+        final passage = PdfDgnlPassage(
+          id: 'test-passage-1',
+          pageNumber: 1,
+          rawText: passageText,
+          normalizedBounds: const Rect.fromLTWH(0, 0, 100, 100),
+          spans: const [],
+          metrics: const {},
+          clozeQuestions: const [],
+        );
+        final profile = TextProfilerService.profile(passageText);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: TextProfilerDialog(passage: passage, profile: profile),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify header rendered
+        expect(find.text('Hồ sơ Độ khó Ngữ liệu Tiếng Anh'), findsOneWidget);
+
+        // Verify first tabs are visible
+        expect(find.text('Tổng quan'), findsOneWidget);
+        expect(find.text('Từ vựng CEFR'), findsOneWidget);
+
+        // Verify horizontal ListView is present
+        final listViewFinder = find.byType(ListView);
+        expect(listViewFinder, findsWidgets);
+
+        // Verify right scroll arrow is shown because content overflows
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+
+        // Tap right arrow to scroll
+        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.pumpAndSettle();
+
+        // Left arrow should now appear since we scrolled right
+        expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
+
+        // Drag tab bar left to reveal end tabs
+        await tester.drag(find.byType(ListView).first, const Offset(-800, 0));
+        await tester.pumpAndSettle();
+        expect(find.text('Chuẩn Đề thi'), findsOneWidget);
+
+        // Tap on 'Chuẩn Đề thi' tab
+        await tester.tap(find.text('Chuẩn Đề thi'));
+        await tester.pumpAndSettle();
+
+        // Check if exam profiles content is shown
+        expect(find.textContaining('VSTEP'), findsWidgets);
+      },
+    );
+  });
+
+  group('TextProfilerDialog Widget Tests', () {
+    testWidgets('renders all tabs and supports horizontal scrolling without overflow', (tester) async {
+      tester.view.physicalSize = const Size(1024, 768);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const passageText = 'A comprehensive test passage for English text profiler analysis.';
+      final passage = PdfDgnlPassage(
+        id: 'test-passage-1',
+        pageNumber: 1,
+        rawText: passageText,
+        normalizedBounds: const Rect.fromLTWH(0, 0, 100, 100),
+        spans: const [],
+        metrics: const {},
+        clozeQuestions: const [],
+      );
+      final profile = TextProfilerService.profile(passageText);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TextProfilerDialog(
+              passage: passage,
+              profile: profile,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify header rendered
+      expect(find.text('Hồ sơ Độ khó Ngữ liệu Tiếng Anh'), findsOneWidget);
+
+      // Verify first tabs are visible
+      expect(find.text('Tổng quan'), findsOneWidget);
+      expect(find.text('Từ vựng CEFR'), findsOneWidget);
+
+      // Verify horizontal ListView is present
+      final listViewFinder = find.byType(ListView);
+      expect(listViewFinder, findsWidgets);
+
+      // Verify right scroll arrow is shown because content overflows
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+
+      // Tap right arrow to scroll
+      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+      await tester.pumpAndSettle();
+
+      // Left arrow should now appear since we scrolled right
+      expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
+
+      // Drag tab bar left to reveal end tabs
+      await tester.drag(find.byType(ListView).first, const Offset(-800, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('Chuẩn Đề thi'), findsOneWidget);
+
+      // Tap on 'Chuẩn Đề thi' tab
+      await tester.tap(find.text('Chuẩn Đề thi'));
+      await tester.pumpAndSettle();
+
+      // Check if exam profiles content is shown
+      expect(find.textContaining('VSTEP'), findsWidgets);
+    });
+  });
+}

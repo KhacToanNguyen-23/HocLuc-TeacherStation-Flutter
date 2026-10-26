@@ -33,6 +33,7 @@ class PluginToolContribution {
     this.target,
     this.widgetKey,
     this.pdfTapMode = false,
+    this.capturesBoardInput = false,
     this.settingKey,
     this.defaultValue = false,
   });
@@ -41,11 +42,14 @@ class PluginToolContribution {
   final String label;
   final String icon;
   final String tooltip;
-  final String action; // 'snip_region' | 'toggle_tool' | 'quick_input' | 'rpc_event'
+  final String
+  action; // 'snip_region' | 'toggle_tool' | 'quick_input' | 'rpc_event'
   final String? target;
   final String? widgetKey;
+
   /// Declares that this contributed tool owns PDF tap gestures while active.
   final bool pdfTapMode;
+  final bool capturesBoardInput;
   final String? settingKey;
   final bool defaultValue;
 
@@ -59,6 +63,7 @@ class PluginToolContribution {
       target: json['target']?.toString(),
       widgetKey: json['key']?.toString(),
       pdfTapMode: json['pdf_tap_mode'] == true,
+      capturesBoardInput: json['captures_board_input'] == true,
       settingKey: json['setting_key']?.toString(),
       defaultValue: json['default_value'] == true,
     );
@@ -73,6 +78,7 @@ class PluginToolContribution {
     if (target != null) 'target': target,
     if (widgetKey != null) 'key': widgetKey,
     if (pdfTapMode) 'pdf_tap_mode': true,
+    if (capturesBoardInput) 'captures_board_input': true,
     if (settingKey != null) 'setting_key': settingKey,
     if (settingKey != null) 'default_value': defaultValue,
   };
@@ -95,47 +101,14 @@ class PluginManifest {
     this.frameless = false,
     this.movable = true,
     this.injectSdk = true,
+    this.transparentBackground = false,
     this.hasSidecar = false,
     this.backendExecutable,
     this.backendPort,
     this.backend,
     this.permissions = const [],
     List<PluginToolContribution>? contributesTools,
-  }) : contributesTools =
-           contributesTools ??
-           (uiPlacement == 'floating_window'
-               ? const []
-               : defaultLessonTools);
-
-  static const List<PluginToolContribution> defaultLessonTools = [
-    PluginToolContribution(
-      id: 'snip_passage',
-      label: 'Quét đoạn văn',
-      icon: 'crop_free',
-      tooltip:
-          'Kéo chụp đoạn văn trên đề để highlight Ngữ pháp & Từ vựng trực tiếp trên file (PrtSc)',
-      action: 'snip_region',
-      target: 'dgnl',
-      widgetKey: 'quick_snip_dgnl_button',
-    ),
-    PluginToolContribution(
-      id: 'svo',
-      label: 'Công cụ S-V-O',
-      icon: 'auto_awesome',
-      tooltip: 'Bật công cụ bóc tách S-V-O',
-      action: 'toggle_tool',
-      target: 'svo',
-      widgetKey: 'svo_tool_button',
-    ),
-    PluginToolContribution(
-      id: 'quick_sentence',
-      label: 'Nhập câu',
-      icon: 'edit_note',
-      tooltip: 'Nhập hoặc chọn câu để phân tích',
-      action: 'quick_input',
-      widgetKey: 'quick_sentence_button',
-    ),
-  ];
+  }) : contributesTools = contributesTools ?? const [];
 
   final String id;
   final String name;
@@ -152,6 +125,7 @@ class PluginManifest {
   final bool frameless;
   final bool movable;
   final bool injectSdk;
+  final bool transparentBackground;
   final bool hasSidecar;
   final String? backendExecutable;
   final int? backendPort;
@@ -189,6 +163,7 @@ class PluginManifest {
         json['movable'] as bool? ?? ui['movable'] as bool? ?? true;
     final injectSdk =
         json['inject_sdk'] as bool? ?? ui['inject_sdk'] as bool? ?? true;
+    final transparentBackground = ui['transparent_background'] == true;
     final iconPath =
         json['icon'] as String? ?? ui['icon'] as String? ?? 'icon.png';
 
@@ -207,7 +182,10 @@ class PluginManifest {
     if (contributesMap != null && contributesMap['tools'] is List) {
       parsedTools = (contributesMap['tools'] as List)
           .whereType<Map>()
-          .map((e) => PluginToolContribution.fromJson(Map<String, dynamic>.from(e)))
+          .map(
+            (e) =>
+                PluginToolContribution.fromJson(Map<String, dynamic>.from(e)),
+          )
           .toList();
     }
 
@@ -227,6 +205,7 @@ class PluginManifest {
       frameless: frameless,
       movable: movable,
       injectSdk: injectSdk,
+      transparentBackground: transparentBackground,
       hasSidecar: hasSidecar,
       backendExecutable: backendExecutable,
       backendPort: backendPort,
@@ -257,10 +236,9 @@ class PluginManifest {
       'resizable': resizable,
       'frameless': frameless,
       'movable': movable,
+      'transparent_background': transparentBackground,
     },
-    'contributes': {
-      'tools': contributesTools.map((t) => t.toJson()).toList(),
-    },
+    'contributes': {'tools': contributesTools.map((t) => t.toJson()).toList()},
     'backend': {
       'has_sidecar': hasSidecar,
       'executable': backendExecutable,

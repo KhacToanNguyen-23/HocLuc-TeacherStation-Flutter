@@ -8,6 +8,369 @@ import 'package:teaching_companion/features/classroom_meet/presentation/screens/
 import 'package:teaching_companion/features/classroom_meet/services/google_workspace_api.dart';
 
 void main() {
+  GoogleWorkspaceApi makeWorkspaceApi(
+    Future<http.Response> Function(http.Request) handler,
+  ) => GoogleWorkspaceApi(
+    email: 'teacher@example.com',
+    client: MockClient((request) async {
+      if (request.url.path == '/api/bootstrap') {
+        return http.Response('{"token":"local"}', 200);
+      }
+      if (request.url.path.endsWith('/status')) {
+        return http.Response('{"configured":true,"connected":true}', 200);
+      }
+      return handler(request);
+    }),
+  );
+
+  http.Response jsonResponse(Object data, {int status = 200}) => http.Response(
+    jsonEncode(data),
+    status,
+    headers: {'content-type': 'application/json; charset=utf-8'},
+  );
+
+  testWidgets('active and archived courses are shown in separate groups', (
+    tester,
+  ) async {
+    final api = makeWorkspaceApi(
+      (request) async => jsonResponse({
+        'courses': [
+          {
+            'id': 'active-course',
+            'title': 'Lớp đang học',
+            'courseId': 'google-active',
+            'classroomState': 'ACTIVE',
+            'classroomSyncedAt': '2026-10-20T00:00:00Z',
+            'students': <Map<String, dynamic>>[],
+          },
+          {
+            'id': 'archived-course',
+            'title': 'Lớp đã lưu trữ',
+            'courseId': 'google-archived',
+            'classroomState': 'ARCHIVED',
+            'students': <Map<String, dynamic>>[],
+          },
+        ],
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Đang hoạt động (1)'), findsOneWidget);
+    expect(find.text('Đã lưu trữ (1)'), findsOneWidget);
+    expect(find.text('Lớp đang học'), findsWidgets);
+    expect(find.text('Lớp đã lưu trữ'), findsNothing);
+
+    await tester.tap(find.text('Đã lưu trữ (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lớp đã lưu trữ'), findsWidgets);
+    expect(find.text('Bắt đầu dạy'), findsNothing);
+    expect(find.text('Khôi phục lớp'), findsOneWidget);
+    expect(find.text('Xóa vĩnh viễn'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    api.close();
+  });
+
+  testWidgets('can switch to an empty tab when every course is archived', (
+    tester,
+  ) async {
+    final api = makeWorkspaceApi(
+      (request) async => jsonResponse({
+        'courses': [
+          {
+            'id': 'archived-course',
+            'title': 'Lớp đã lưu trữ',
+            'courseId': 'google-archived',
+            'classroomState': 'ARCHIVED',
+            'students': <Map<String, dynamic>>[],
+          },
+        ],
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lớp đã lưu trữ'), findsWidgets);
+    await tester.tap(find.text('Đang hoạt động (0)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lớp đã lưu trữ'), findsNothing);
+    expect(find.byType(ChoiceChip), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    api.close();
+  });
+
+  testWidgets('can open archived tab when only active courses exist', (
+    tester,
+  ) async {
+    final api = makeWorkspaceApi(
+      (request) async => jsonResponse({
+        'courses': [
+          {
+            'id': 'active-course',
+            'title': 'Lớp đang hoạt động',
+            'courseId': 'google-active',
+            'classroomState': 'ACTIVE',
+            'students': <Map<String, dynamic>>[],
+          },
+        ],
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lớp đang hoạt động'), findsWidgets);
+    await tester.tap(find.text('Đã lưu trữ (0)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lớp đang hoạt động'), findsNothing);
+    expect(find.byType(ChoiceChip), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    api.close();
+  });
+
+  testWidgets('archive moves a course only after the backend confirms it', (
+    tester,
+  ) async {
+    final requests = <String>[];
+    final active = <String, dynamic>{
+      'id': 'active-course',
+      'title': 'Lớp đang học',
+      'courseId': 'google-active',
+      'classroomState': 'ACTIVE',
+      'classroomSyncedAt': '2026-10-20T00:00:00Z',
+      'students': <Map<String, dynamic>>[],
+    };
+    final api = makeWorkspaceApi((request) async {
+      requests.add('${request.method} ${request.url.path}');
+      if (request.url.path.endsWith('/archive')) {
+        return jsonResponse({...active, 'classroomState': 'ARCHIVED'});
+      }
+      return jsonResponse({
+        'courses': [active],
+      });
+    });
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lưu trữ lớp'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lưu trữ'));
+    await tester.pumpAndSettle();
+
+    expect(requests.where((r) => r.endsWith('/archive')).length, 1);
+    expect(find.text('Đang hoạt động (0)'), findsOneWidget);
+    expect(find.text('Đã lưu trữ (1)'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    api.close();
+  });
+
+  testWidgets('restore moves an archived course back to Active', (
+    tester,
+  ) async {
+    final requests = <String>[];
+    final archived = <String, dynamic>{
+      'id': 'archived-course',
+      'title': 'Lớp đã lưu trữ',
+      'courseId': 'google-archived',
+      'classroomState': 'ARCHIVED',
+      'students': <Map<String, dynamic>>[],
+    };
+    final api = makeWorkspaceApi((request) async {
+      requests.add('${request.method} ${request.url.path}');
+      if (request.url.path.endsWith('/restore')) {
+        return jsonResponse({...archived, 'classroomState': 'ACTIVE'});
+      }
+      return jsonResponse({
+        'courses': [archived],
+      });
+    });
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Khôi phục lớp'));
+    await tester.pumpAndSettle();
+
+    expect(requests.where((r) => r.endsWith('/restore')).length, 1);
+    expect(find.text('Đang hoạt động (1)'), findsOneWidget);
+    expect(find.text('Bắt đầu dạy'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    api.close();
+  });
+
+  testWidgets('state refresh errors show cached course read-only with retry', (
+    tester,
+  ) async {
+    final course = <String, dynamic>{
+      'id': 'cached-course',
+      'title': 'Lớp cache',
+      'courseId': 'google-course',
+      'classroomState': 'ACTIVE',
+      'classroomStateSyncError': 'Google chưa kết nối được',
+      'classroomSyncedAt': '2026-10-20T00:00:00Z',
+      'students': <Map<String, dynamic>>[],
+    };
+    final api = makeWorkspaceApi(
+      (request) async => jsonResponse({
+        'courses': [course],
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lớp cache'), findsWidgets);
+    expect(
+      find.textContaining('đang hiển thị dữ liệu gần nhất'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Tạo lớp học'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Bắt đầu dạy'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.refresh))
+          .onPressed,
+      isNotNull,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    api.close();
+  });
+
+  testWidgets('PROVISIONED course requires Classroom activation first', (
+    tester,
+  ) async {
+    final course = <String, dynamic>{
+      'id': 'pending-course',
+      'title': 'Lớp chờ kích hoạt',
+      'courseId': 'google-pending',
+      'classroomState': 'PROVISIONED',
+      'students': <Map<String, dynamic>>[],
+    };
+    final api = makeWorkspaceApi(
+      (request) async => jsonResponse({
+        'courses': [course],
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Mở Google Classroom và kích hoạt lớp trước khi lưu trữ.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip('Tùy chọn lớp'));
+    await tester.pumpAndSettle();
+    expect(find.text('Xóa lớp'), findsNothing);
+    expect(find.text('Lưu trữ lớp'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    api.close();
+  });
+
+  testWidgets('local-only course can still be deleted from Active', (
+    tester,
+  ) async {
+    final requests = <String>[];
+    final api = makeWorkspaceApi((request) async {
+      requests.add('${request.method} ${request.url.path}');
+      return jsonResponse({
+        'courses': [
+          {
+            'id': 'local-course',
+            'title': 'Lớp chỉ có trên HocLuc',
+            'students': <Map<String, dynamic>>[],
+          },
+        ],
+      });
+    });
+    await tester.pumpWidget(MaterialApp(home: GoogleWorkspaceScreen(api: api)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Tùy chọn lớp'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Xóa lớp'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('sẽ bị xóa khỏi danh sách HocLucStation.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Xóa').last);
+    await tester.pumpAndSettle();
+
+    expect(
+      requests,
+      contains('DELETE /api/integrations/google/courses/local-course'),
+    );
+    expect(find.text('Lớp chỉ có trên HocLuc'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    api.close();
+  });
+
+  testWidgets(
+    'state refresh failure locks Google actions but keeps local delete',
+    (tester) async {
+      final api = makeWorkspaceApi(
+        (request) async => jsonResponse({
+          'courses': [
+            {
+              'id': 'remote-course',
+              'title': 'Lớp Google chưa xác minh',
+              'courseId': 'google-course',
+              'classroomState': 'ACTIVE',
+              'classroomStateSyncError': 'Không kết nối được',
+              'students': <Map<String, dynamic>>[],
+            },
+            {
+              'id': 'local-course',
+              'title': 'Lớp local',
+              'students': <Map<String, dynamic>>[],
+            },
+          ],
+        }),
+      );
+      await tester.pumpWidget(
+        MaterialApp(home: GoogleWorkspaceScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lớp local').first);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Tạo lớp học'),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Bắt đầu dạy'),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.byTooltip('Tùy chọn lớp'));
+      await tester.pumpAndSettle();
+      expect(find.text('Xóa lớp'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      api.close();
+    },
+  );
+
   for (final pending in [false, true]) {
     testWidgets(
       'one click prepares Calendar and launches correct room, pending=$pending',
@@ -490,12 +853,15 @@ void main() {
         expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
       } else if (state == 'ACTIVE') {
         expect(find.textContaining('Đã đồng bộ thành viên'), findsNothing);
+      } else if (state == 'ARCHIVED') {
+        expect(find.text('Khôi phục lớp'), findsOneWidget);
+        expect(find.text('Xóa vĩnh viễn'), findsOneWidget);
+        expect(find.text('Mở Classroom'), findsNothing);
       } else {
         expect(
           find.textContaining('Kiểm tra lớp trong Classroom'),
           findsOneWidget,
         );
-        expect(find.text('Mở Classroom'), findsNothing);
       }
       await tester.pumpWidget(const SizedBox());
       api.close();

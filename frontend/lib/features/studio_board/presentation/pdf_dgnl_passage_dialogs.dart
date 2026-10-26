@@ -65,304 +65,323 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
     Color categoryColor = const Color(0xff89b4fa);
     if (activeSpan.category == 'collocation') {
       categoryColor = const Color(0xff86efac);
-    } else if (activeSpan.level == 'C1' || activeSpan.level == 'C2') {
-      categoryColor = const Color(0xffcba6f7);
+    } else if (activeSpan.level == 'A1') {
+      categoryColor = const Color(0xff22c55e);
+    } else if (activeSpan.level == 'A2') {
+      categoryColor = const Color(0xff14b8a6);
+    } else if (activeSpan.level == 'B1') {
+      categoryColor = const Color(0xff3b82f6);
     } else if (activeSpan.level == 'B2') {
-      categoryColor = const Color(0xfff9e2af);
+      categoryColor = const Color(0xfff59e0b);
+    } else if (activeSpan.level == 'C1') {
+      categoryColor = const Color(0xfff97316);
+    } else if (activeSpan.level == 'C2') {
+      categoryColor = const Color(0xffa855f7);
     }
 
     return Positioned(
       left: cardLeft,
       top: cardTop,
       width: cardWidth,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: const Color(0xf8111a15),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: categoryColor.withValues(alpha: 0.8),
-            width: 1.5,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0xbb000000),
-              blurRadius: 8,
-              offset: Offset(0, 6),
+      child: TweenAnimationBuilder<double>(
+        key: ValueKey('span_card_${activeSpan.text}_$cardLeft'),
+        tween: Tween<double>(begin: 0.0, end: 1.0),
+        duration: AppMotion.popoverDuration,
+        curve: AppMotion.easeOut,
+        builder: (context, value, child) {
+          final scale = 0.96 + (0.04 * value);
+          return Transform.scale(
+            scale: scale,
+            alignment: Alignment.topCenter,
+            child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: const Color(0xf8111a15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: categoryColor.withValues(alpha: 0.8),
+              width: 1.5,
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(
-                        activeSpan.category == 'grammar'
-                            ? Icons.auto_stories_outlined
-                            : Icons.lightbulb_outline,
-                        size: 16,
-                        color: categoryColor,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          activeSpan.type,
-                          style: TextStyle(
-                            color: categoryColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: categoryColor.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: categoryColor.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  child: Text(
-                    activeSpan.category == 'grammar'
-                        ? 'GRAMMAR'
-                        : (activeSpan.category == 'collocation'
-                              ? 'COLLOCATION'
-                              : activeSpan.level),
-                    style: TextStyle(
-                      color: categoryColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                InkWell(
-                  onTap: () =>
-                      PdfAnnotationExporter.applyHighlightDirectlyToPdf(
-                        context,
-                        studio,
-                      ),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0x2889b4fa),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0x6689b4fa)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0xbb000000),
+                blurRadius: 8,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
                       children: [
                         Icon(
-                          Icons.draw_rounded,
-                          size: 11,
-                          color: Color(0xff89b4fa),
+                          activeSpan.category == 'grammar'
+                              ? Icons.auto_stories_outlined
+                              : Icons.lightbulb_outline,
+                          size: 16,
+                          color: categoryColor,
                         ),
-                        SizedBox(width: 3),
-                        Text(
-                          'Áp lên file',
-                          style: TextStyle(
-                            color: Color(0xff89b4fa),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            activeSpan.type,
+                            style: TextStyle(
+                              color: categoryColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              activeSpan.note,
-              style: const TextStyle(
-                color: Color(0xffe2e8f0),
-                fontSize: 12.5,
-                height: 1.4,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0x22ffffff),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '"${activeSpan.text}"',
-                style: TextStyle(
-                  color: categoryColor.withValues(alpha: 0.95),
-                  fontSize: 11.5,
-                  fontStyle: FontStyle.italic,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Builder(
-              builder: (context) {
-                final canGoPrev = _activeSpanIndex > 0;
-                final canGoNext = _activeSpanIndex < visibleSpans.length - 1;
-
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    InkWell(
-                      onTap: canGoPrev
-                          ? () {
-                              setState(() {
-                                _activeSpanIndex--;
-                              });
-                            }
-                          : null,
-                      borderRadius: BorderRadius.circular(6),
-                      child: AnimatedOpacity(
-                        duration: AppMotion.duration(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: categoryColor.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: categoryColor.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: Text(
+                      activeSpan.category == 'grammar'
+                          ? 'GRAMMAR'
+                          : (activeSpan.category == 'collocation'
+                                ? 'COLLOCATION'
+                                : activeSpan.level),
+                      style: TextStyle(
+                        color: categoryColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  InkWell(
+                    onTap: () =>
+                        PdfAnnotationExporter.applyHighlightDirectlyToPdf(
                           context,
-                          milliseconds: 150,
+                          studio,
                         ),
-                        curve: AppMotion.stateCurve,
-                        opacity: canGoPrev ? 1.0 : 0.35,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3.5,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0x2889b4fa),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0x6689b4fa)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.draw_rounded,
+                            size: 11,
+                            color: Color(0xff89b4fa),
                           ),
-                          decoration: BoxDecoration(
-                            color: canGoPrev
-                                ? const Color(0x22ffffff)
-                                : const Color(0x0affffff),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: canGoPrev
-                                  ? Colors.white24
-                                  : Colors.transparent,
-                              width: 0.8,
+                          SizedBox(width: 3),
+                          Text(
+                            'Áp lên file',
+                            style: TextStyle(
+                              color: Color(0xff89b4fa),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.chevron_left,
-                                size: 14,
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                activeSpan.note,
+                style: const TextStyle(
+                  color: Color(0xffe2e8f0),
+                  fontSize: 12.5,
+                  height: 1.4,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0x22ffffff),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '"${activeSpan.text}"',
+                  style: TextStyle(
+                    color: categoryColor.withValues(alpha: 0.95),
+                    fontSize: 11.5,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Builder(
+                builder: (context) {
+                  final canGoPrev = _activeSpanIndex > 0;
+                  final canGoNext = _activeSpanIndex < visibleSpans.length - 1;
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: canGoPrev
+                            ? () {
+                                setState(() {
+                                  _activeSpanIndex--;
+                                });
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(6),
+                        child: AnimatedOpacity(
+                          duration: AppMotion.duration(
+                            context,
+                            milliseconds: 150,
+                          ),
+                          curve: AppMotion.stateCurve,
+                          opacity: canGoPrev ? 1.0 : 0.35,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: canGoPrev
+                                  ? const Color(0x22ffffff)
+                                  : const Color(0x0affffff),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
                                 color: canGoPrev
-                                    ? Colors.white
-                                    : Colors.white38,
+                                    ? Colors.white24
+                                    : Colors.transparent,
+                                width: 0.8,
                               ),
-                              const SizedBox(width: 2),
-                              Text(
-                                'Trước',
-                                style: TextStyle(
-                                  fontSize: 11,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.chevron_left,
+                                  size: 14,
                                   color: canGoPrev
                                       ? Colors.white
                                       : Colors.white38,
-                                  fontWeight: FontWeight.w500,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '${_activeSpanIndex + 1} / ${visibleSpans.length}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xff94a3b8),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: canGoNext
-                          ? () {
-                              setState(() {
-                                _activeSpanIndex++;
-                              });
-                            }
-                          : null,
-                      borderRadius: BorderRadius.circular(6),
-                      child: AnimatedOpacity(
-                        duration: AppMotion.duration(
-                          context,
-                          milliseconds: 150,
-                        ),
-                        curve: AppMotion.stateCurve,
-                        opacity: canGoNext ? 1.0 : 0.35,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: canGoNext
-                                ? categoryColor.withValues(alpha: 0.25)
-                                : const Color(0x0affffff),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: canGoNext
-                                  ? categoryColor.withValues(alpha: 0.6)
-                                  : Colors.transparent,
-                              width: 0.8,
+                                const SizedBox(width: 2),
+                                Text(
+                                  'Trước',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: canGoPrev
+                                        ? Colors.white
+                                        : Colors.white38,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Tiếp theo',
-                                style: TextStyle(
-                                  fontSize: 11,
+                        ),
+                      ),
+                      Text(
+                        '${_activeSpanIndex + 1} / ${visibleSpans.length}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xff94a3b8),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: canGoNext
+                            ? () {
+                                setState(() {
+                                  _activeSpanIndex++;
+                                });
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(6),
+                        child: AnimatedOpacity(
+                          duration: AppMotion.duration(
+                            context,
+                            milliseconds: 150,
+                          ),
+                          curve: AppMotion.stateCurve,
+                          opacity: canGoNext ? 1.0 : 0.35,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: canGoNext
+                                  ? categoryColor.withValues(alpha: 0.25)
+                                  : const Color(0x0affffff),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: canGoNext
+                                    ? categoryColor.withValues(alpha: 0.6)
+                                    : Colors.transparent,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Tiếp theo',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: canGoNext
+                                        ? categoryColor
+                                        : Colors.white38,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 14,
                                   color: canGoNext
                                       ? categoryColor
                                       : Colors.white38,
-                                  fontWeight: FontWeight.w700,
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.chevron_right,
-                                size: 14,
-                                color: canGoNext
-                                    ? categoryColor
-                                    : Colors.white38,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -427,6 +446,260 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCefrDropdownChip({
+    required int totalVocabCount,
+    required int a1Count,
+    required int a2Count,
+    required int b1Count,
+    required int b2Count,
+    required int c1Count,
+    required int c2Count,
+  }) {
+    final active = _activeCategoryFilter;
+    final isCefrActive =
+        active == 'vocabulary' ||
+        active == 'vocabulary_all' ||
+        active == 'A1' ||
+        active == 'A2' ||
+        active == 'B1' ||
+        active == 'B2' ||
+        active == 'C1' ||
+        active == 'C2';
+
+    Color activeColor;
+    String displayLabel;
+
+    switch (active) {
+      case 'A1':
+        activeColor = const Color(0xff22c55e);
+        displayLabel = 'A1 ($a1Count)';
+        break;
+      case 'A2':
+        activeColor = const Color(0xff14b8a6);
+        displayLabel = 'A2 ($a2Count)';
+        break;
+      case 'B1':
+        activeColor = const Color(0xff3b82f6);
+        displayLabel = 'B1 ($b1Count)';
+        break;
+      case 'B2':
+        activeColor = const Color(0xfff59e0b);
+        displayLabel = 'B2 ($b2Count)';
+        break;
+      case 'C1':
+        activeColor = const Color(0xfff97316);
+        displayLabel = 'C1 ($c1Count)';
+        break;
+      case 'C2':
+        activeColor = const Color(0xffa855f7);
+        displayLabel = 'C2 ($c2Count)';
+        break;
+      case 'vocabulary':
+      case 'vocabulary_all':
+        activeColor = const Color(0xffcba6f7);
+        displayLabel = 'CEFR ($totalVocabCount)';
+        break;
+      default:
+        activeColor = const Color(0xffcba6f7);
+        displayLabel = 'CEFR ($totalVocabCount)';
+        break;
+    }
+
+    return Theme(
+      data: Theme.of(context).copyWith(cardColor: const Color(0xf6181825)),
+      child: PopupMenuButton<String>(
+        tooltip: 'Lọc cấp độ từ vựng CEFR',
+        offset: const Offset(0, 24),
+        color: const Color(0xf6181825),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xff45475a), width: 1),
+        ),
+        onSelected: (val) {
+          setState(() {
+            if (val == 'clear' || _activeCategoryFilter == val) {
+              _activeCategoryFilter = null;
+            } else {
+              _activeCategoryFilter = val;
+            }
+            _activeSpanIndex = 0;
+          });
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem<String>(
+            value: 'vocabulary',
+            height: 32,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.menu_book_outlined,
+                  size: 14,
+                  color: Color(0xffcba6f7),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Tất cả từ vựng ($totalVocabCount)',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (_activeCategoryFilter == 'vocabulary') ...[
+                  const Spacer(),
+                  const Icon(Icons.check, size: 14, color: Color(0xffcba6f7)),
+                ],
+              ],
+            ),
+          ),
+          const PopupMenuDivider(height: 6),
+          if (a1Count > 0)
+            _buildCefrMenuItem(
+              'A1',
+              'Cơ bản',
+              a1Count,
+              const Color(0xff22c55e),
+            ),
+          if (a2Count > 0)
+            _buildCefrMenuItem(
+              'A2',
+              'Sơ cấp',
+              a2Count,
+              const Color(0xff14b8a6),
+            ),
+          if (b1Count > 0)
+            _buildCefrMenuItem(
+              'B1',
+              'Trung cấp',
+              b1Count,
+              const Color(0xff3b82f6),
+            ),
+          if (b2Count > 0)
+            _buildCefrMenuItem(
+              'B2',
+              'Trung cao',
+              b2Count,
+              const Color(0xfff59e0b),
+            ),
+          if (c1Count > 0)
+            _buildCefrMenuItem(
+              'C1',
+              'Cao cấp',
+              c1Count,
+              const Color(0xfff97316),
+            ),
+          if (c2Count > 0)
+            _buildCefrMenuItem(
+              'C2',
+              'Thành thạo',
+              c2Count,
+              const Color(0xffa855f7),
+            ),
+          if (isCefrActive) ...[
+            const PopupMenuDivider(height: 6),
+            const PopupMenuItem<String>(
+              value: 'clear',
+              height: 28,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.filter_alt_off_outlined,
+                    size: 13,
+                    color: Color(0xfff38ba8),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Bỏ lọc CEFR',
+                    style: TextStyle(fontSize: 10.5, color: Color(0xfff38ba8)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
+          decoration: BoxDecoration(
+            color: isCefrActive
+                ? activeColor.withValues(alpha: 0.3)
+                : activeColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isCefrActive
+                  ? activeColor
+                  : activeColor.withValues(alpha: 0.6),
+              width: isCefrActive ? 1.4 : 1.0,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: activeColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 3.5),
+              Text(
+                displayLabel,
+                style: TextStyle(
+                  color: activeColor,
+                  fontSize: 10,
+                  fontWeight: isCefrActive ? FontWeight.bold : FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 1),
+              Icon(Icons.arrow_drop_down, size: 13, color: activeColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _buildCefrMenuItem(
+    String level,
+    String levelName,
+    int count,
+    Color color,
+  ) {
+    final isSelected = _activeCategoryFilter == level;
+    return PopupMenuItem<String>(
+      value: level,
+      height: 30,
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            level,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '· $levelName ($count)',
+            style: const TextStyle(fontSize: 10.5, color: Color(0xffcdd6f4)),
+          ),
+          if (isSelected) ...[
+            const Spacer(),
+            Icon(Icons.check, size: 14, color: color),
+          ],
+        ],
       ),
     );
   }
@@ -568,5 +841,3 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
     );
   }
 }
-
-

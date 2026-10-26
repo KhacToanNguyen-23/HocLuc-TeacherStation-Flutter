@@ -54,6 +54,21 @@ Refresh token chỉ được dùng ở backend. Danh tính OAuth đã được G
 5. Học sinh dùng **link mới**, đăng nhập đúng email đã mời. Trạng thái **Có trong lời mời Calendar** chỉ xác nhận danh sách khách mời, không khẳng định email đã được giao hoặc học sinh chắc chắn vào không cần duyệt. Khả năng no-knock còn phải nghiệm thu trực tiếp với Gmail/Workspace đang dùng.
 6. **Bắt đầu dạy** đồng bộ lại rồi vào thẳng Studio. Panel Meet bên phải chứa luôn bước chọn tài khoản, mic/camera và tham gia; không mở cửa sổ Meet trung gian hoặc lobby. Chỉ khi bridge báo đã tham gia đúng URL, app mới đăng ký phiên dạy với backend. Có link phòng không đồng nghĩa đang dạy.
 
+## Lưu trữ và xóa lớp Google Classroom
+
+- **Đang hoạt động** và **Đã lưu trữ** là hai nhóm riêng trong màn hình Lớp học & kết nối Google. Trạng thái được đối chiếu với Classroom khi tải danh sách; app chỉ giữ các khóa học đã có trong HocLuc.
+- Giáo viên chọn **Lưu trữ lớp** để gửi yêu cầu lưu trữ lên Google Classroom. Lớp vẫn còn trong HocLuc, chuyển sang nhóm Đã lưu trữ sau khi Google xác nhận. Lưu trữ giữ tài liệu, bài làm và bài đăng; giáo viên có thể **Khôi phục lớp** để dùng lại.
+- Chỉ có thể **Xóa vĩnh viễn** từ nhóm Đã lưu trữ. Hộp xác nhận cảnh báo thao tác không thể hoàn tác. Theo quy tắc Google, chỉ giáo viên chính được xóa; giáo viên phụ có thể lưu trữ nếu Google cho phép. HocLuc không giả định quyền theo vai trò local: Google quyết định và trả lỗi quyền thực tế. Nếu Google từ chối, bản ghi lớp trong HocLuc được giữ để thử lại.
+- Xóa lớp làm mất quyền truy cập các bài đăng và bình luận trong Classroom. Tệp trong thư mục Drive của lớp vẫn có thể truy cập được; thao tác này không xóa tài liệu Drive. HocLuc không xóa riêng lịch Google Calendar của lớp.
+- Lớp Google ở trạng thái `PROVISIONED` vẫn nằm trong nhóm Đang hoạt động, nhưng cần giáo viên mở Classroom và kích hoạt trước khi lưu trữ hoặc xóa. Nếu không đối chiếu được trạng thái, app giữ danh sách gần nhất để xem, khóa thao tác gọi Google và cho phép tải lại để thử.
+- Khi tải đủ danh sách Classroom thành công nhưng một lớp đã liên kết không xuất hiện, HocLuc truy vấn lại trực tiếp mã lớp đó. Google xác nhận `404` thì app xóa bản ghi lớp local; lỗi quyền hoặc mạng thì giữ lớp và trạng thái đã xác nhận gần nhất để có thể thử đồng bộ lại.
+- Lớp chưa có Google `courseId` là lớp local của HocLuc: có thể xóa trực tiếp khỏi danh sách Đang hoạt động. Hộp xác nhận ghi rõ chỉ xóa dữ liệu HocLuc, không thực hiện thao tác trên Google.
+- OAuth scope `https://www.googleapis.com/auth/classroom.courses` đã được yêu cầu bởi tích hợp Classroom hiện tại và được Google liệt kê cho `courses.delete`; tính năng lưu trữ/khôi phục/xóa không bổ sung scope OAuth mới.
+
+Kiểm thử thủ công trên tài khoản giáo viên: lưu trữ trong HocLuc và xác nhận lớp chuyển sang Archived classes ở Classroom; tải lại HocLuc; khôi phục; lưu trữ lần nữa rồi xóa. Thử tài khoản giáo viên phụ riêng nếu có: Google có thể cho phép lưu trữ nhưng phải từ chối xóa; sau khi bị từ chối, đảm bảo lớp vẫn hiện trong HocLuc. Không xóa lớp có dữ liệu thật quan trọng khi kiểm thử.
+
+Nguồn chính thức: [Archive or delete a class (Google Classroom Help)](https://support.google.com/edu/classroom/answer/6149813), [courses resource và courseState (Google Classroom API)](https://developers.google.com/workspace/classroom/reference/rest/v1/courses), [courses.delete (Google Classroom API)](https://developers.google.com/workspace/classroom/reference/rest/v1/courses/delete).
+
 ## Một luồng vào lớp
 
 - Dashboard **Chọn lớp để dạy** mở danh sách lớp. **Bắt đầu dạy** tự chuẩn bị buổi phù hợp; bấm khi Studio cùng phòng đang mở sẽ **Tiếp tục dạy** ngay. Buổi đã kết thúc trong lịch sử HocLuc không được tái sử dụng dù chưa hết thời lượng Calendar; buổi đang dạy quá giờ giữ nguyên phòng. **Dạy buổi lẻ** giữ luồng riêng.

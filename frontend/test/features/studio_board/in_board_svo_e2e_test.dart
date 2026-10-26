@@ -25,6 +25,17 @@ void main() {
             version: '1.0.0',
             author: 'Học Lực Dev Team',
             description: 'Hỗ trợ bóc tách cú pháp câu S-V-O phấn màu viết tay',
+            contributesTools: const [
+              PluginToolContribution(
+                id: 'svo',
+                label: 'Công cụ S-V-O',
+                icon: 'auto_awesome',
+                action: 'toggle_tool',
+                target: 'svo',
+                capturesBoardInput: true,
+                widgetKey: 'svo_tool_button',
+              ),
+            ],
           ),
         );
 

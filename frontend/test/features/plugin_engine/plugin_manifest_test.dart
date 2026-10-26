@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -114,38 +114,51 @@ void main() {
       );
     });
 
-    test('PluginManifest parses Schema v2.1 contributes.tools and inject_sdk', () {
-      final jsonMap = {
-        'id': 'com.hocluc.plugin.opensource_calc',
-        'name': 'OpenSource Calc',
-        'version': '2.1.0',
-        'placement': 'floating_window',
-        'default_width': 380,
-        'default_height': 640,
-        'resizable': true,
-        'inject_sdk': true,
-        'contributes': {
-          'tools': [
-            {
-              'id': 'plot_graph',
-              'label': 'Vẽ đồ thị',
-              'icon': 'auto_awesome',
-              'action': 'rpc_event',
-              'target': 'plot',
-            },
-          ],
-        },
-      };
+    test(
+      'PluginManifest parses Schema v2.1 contributes.tools and inject_sdk',
+      () {
+        final jsonMap = {
+          'id': 'com.hocluc.plugin.opensource_calc',
+          'name': 'OpenSource Calc',
+          'version': '2.1.0',
+          'placement': 'floating_window',
+          'default_width': 380,
+          'default_height': 640,
+          'resizable': true,
+          'inject_sdk': true,
+          'contributes': {
+            'tools': [
+              {
+                'id': 'plot_graph',
+                'label': 'Vẽ đồ thị',
+                'icon': 'auto_awesome',
+                'action': 'rpc_event',
+                'target': 'plot',
+              },
+            ],
+          },
+        };
 
-      final manifest = PluginManifest.fromJson(jsonMap);
-      expect(manifest.id, 'com.hocluc.plugin.opensource_calc');
-      expect(manifest.uiDefaultHeight, 640.0);
-      expect(manifest.resizable, isTrue);
-      expect(manifest.injectSdk, isTrue);
-      expect(manifest.contributesTools.length, 1);
-      expect(manifest.contributesTools.first.id, 'plot_graph');
-      expect(manifest.contributesTools.first.label, 'Vẽ đồ thị');
+        final manifest = PluginManifest.fromJson(jsonMap);
+        expect(manifest.id, 'com.hocluc.plugin.opensource_calc');
+        expect(manifest.uiDefaultHeight, 640.0);
+        expect(manifest.resizable, isTrue);
+        expect(manifest.injectSdk, isTrue);
+        expect(manifest.contributesTools.length, 1);
+        expect(manifest.contributesTools.first.id, 'plot_graph');
+        expect(manifest.contributesTools.first.label, 'Vẽ đồ thị');
+      },
+    );
+
+    test('PluginManifest round-trips transparent WebView opt-in', () {
+      final manifest = PluginManifest.fromJson({
+        'id': 'com.test.glass',
+        'name': 'Glass test',
+        'ui': {'entry': 'ui/index.html', 'transparent_background': true},
+      });
+
+      expect(manifest.transparentBackground, isTrue);
+      expect(manifest.toJson()['ui']['transparent_background'], isTrue);
     });
   });
 }
-

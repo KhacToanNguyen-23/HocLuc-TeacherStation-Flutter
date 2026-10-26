@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:teaching_companion/core/theme/theme.dart';
 
 class StudioRenameDialog extends StatefulWidget {
   const StudioRenameDialog({super.key, required this.initialTitle});
@@ -6,7 +7,7 @@ class StudioRenameDialog extends StatefulWidget {
   final String initialTitle;
 
   static Future<String?> show(BuildContext context, String currentTitle) {
-    return showDialog<String>(
+    return showAppModalDialog<String>(
       context: context,
       builder: (_) => StudioRenameDialog(initialTitle: currentTitle),
     );
