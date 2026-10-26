@@ -73,6 +73,14 @@ class MeetAutomationService extends ChangeNotifier {
   String? _tutorDocumentUrl;
   bool _disposed = false;
   bool _tutorObservationReady = false;
+  bool _tutorObservationRequested = false;
+  String? _tutorObservationId;
+  int _tutorObservationSerial = 0;
+  int _tutorPreparationEpoch = 0;
+  Completer<void> _tutorPreparationCancelled = Completer<void>();
+  String? _tutorObservationError;
+  String? get tutorObservationError => _tutorObservationError;
+  bool get isTutorObservationReady => _tutorObservationReady;
   String? _activeTutorRequestId;
   int _tutorGeneration = 0;
   Completer<void> _tutorCancelled = Completer<void>();
@@ -242,7 +250,9 @@ class MeetAutomationService extends ChangeNotifier {
         try {
           _controller!.dispose();
         } catch (e) {
-          FrontendLogger.write('[MeetAutomationService] Error disposing controller: $e');
+          FrontendLogger.write(
+            '[MeetAutomationService] Error disposing controller: $e',
+          );
         }
         _controller = null;
       }
@@ -434,7 +444,9 @@ class MeetAutomationService extends ChangeNotifier {
             }
           }
         } catch (e) {
-          FrontendLogger.write('[MeetAutomationService] Auto-click tick error: $e');
+          FrontendLogger.write(
+            '[MeetAutomationService] Auto-click tick error: $e',
+          );
         }
       });
 
@@ -462,7 +474,8 @@ class MeetAutomationService extends ChangeNotifier {
     }
   }
 
-  String _mediaConstraintsScript(bool noiseSuppression) => '''
+  String _mediaConstraintsScript(bool noiseSuppression) =>
+      '''
 (function() {
   var media = navigator.mediaDevices;
   if (!media || !media.getUserMedia || media.__hoclucNoiseSettingApplied) return;
@@ -561,11 +574,23 @@ class MeetAutomationService extends ChangeNotifier {
         return;
       }
 
+      if (type == 'TUTOR_OBSERVATION_STATE' && payload is Map) {
+        if (_tutorObservationRequested &&
+            _tutorObservationId != null &&
+            payload['observationId'] == _tutorObservationId &&
+            data['documentId'] == _tutorDocumentId &&
+            _isCurrentMeetMessage(data)) {
+          _tutorObservationReady = payload['ready'] == true && _hostJoined;
+        }
+        return;
+      }
       if (type == 'CHAT_MESSAGE' && payload is Map) {
         final chatPayload = Map<String, dynamic>.from(payload);
         chatPayload['isTutorEligible'] =
             payload['isTutorEligible'] == true &&
+            _tutorObservationRequested &&
             _tutorObservationReady &&
+            chatPayload['observationId'] == _tutorObservationId &&
             _hostJoined &&
             payload['sourceDocumentId'] == _tutorDocumentId &&
             data['documentId'] == _tutorDocumentId &&
@@ -606,6 +631,7 @@ class MeetAutomationService extends ChangeNotifier {
       } else if (type == 'MEET_BRIDGE_READY') {
         if (data['documentId'] is String && _isCurrentMeetMessage(data)) {
           if (_tutorDocumentId != data['documentId']) {
+            if (_tutorDocumentId != null) stopTutorObservation();
             _invalidateTutor();
             _tutorObservationReady = false;
             _hostJoined = false;

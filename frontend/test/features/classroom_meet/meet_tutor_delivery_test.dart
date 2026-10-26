@@ -30,18 +30,24 @@ String reply(Map<String, dynamic> c, String status) => jsonEncode({
   'requestId': c['requestId'],
   'documentId': c['documentId'],
   'url': c['url'],
+  'observationId': c['observationId'],
 });
 MeetAutomationService testService({
   Future<String> Function(String)? executeScript,
   Duration tutorTimeout = const Duration(seconds: 10),
+  void Function(Map<String, dynamic>)? onPrepare,
 }) => MeetAutomationService.forTesting(
   tutorTimeout: tutorTimeout,
   executeScript: (script) async {
     if (script.contains('.beginTutorObservation(')) {
       final c = command(script);
+      onPrepare?.call(c);
       return reply(c, 'READY');
     }
-    if (script.contains('.cancelTutor(')) return 'false';
+    if (script.contains('.cancelTutor(') ||
+        script.contains('.endTutorObservation(')) {
+      return 'false';
+    }
     return await executeScript!(script);
   },
 );
@@ -232,6 +238,7 @@ void main() {
   test('preparation requires authoritative current document READY', () async {
     for (final result in ['NOT_READY', 'READY']) {
       final s = MeetAutomationService.forTesting(
+        tutorTimeout: const Duration(milliseconds: 40),
         executeScript: (script) async => reply(command(script), result),
       );
       await seed(s);
@@ -242,7 +249,11 @@ void main() {
   test(
     'chat eligibility requires prepared observation, current room and both document tokens',
     () async {
-      final s = testService(executeScript: (_) async => 'null');
+      String? observation;
+      final s = testService(
+        executeScript: (_) async => 'null',
+        onPrepare: (c) => observation = c['observationId'] as String,
+      );
       await seed(s);
       var sequence = 0;
       void chat({
@@ -250,6 +261,7 @@ void main() {
         String? source = 'doc',
         String url = room,
         bool eligible = true,
+        String? lease,
       }) {
         s.handleWebMessageForTesting({
           'type': 'CHAT_MESSAGE',
@@ -261,13 +273,21 @@ void main() {
             'text': 'question',
             'isTutorEligible': eligible,
             'sourceDocumentId': source,
+            'observationId': lease ?? observation,
           },
         });
       }
 
       chat();
       expect(s.messages.last.isTutorEligible, isTrue);
-      for (final invalid in ['doc', 'source', 'url', 'flag', 'missing']) {
+      for (final invalid in [
+        'doc',
+        'source',
+        'url',
+        'flag',
+        'missing',
+        'lease',
+      ]) {
         chat(
           doc: invalid == 'doc'
               ? 'old'
@@ -277,6 +297,7 @@ void main() {
           source: invalid == 'source' ? 'old' : 'doc',
           url: invalid == 'url' ? 'https://meet.google.com/xyz-abcd-efg' : room,
           eligible: invalid != 'flag',
+          lease: invalid == 'lease' ? 'previous-enable' : observation,
         );
         expect(s.messages.last.isTutorEligible, isFalse);
       }

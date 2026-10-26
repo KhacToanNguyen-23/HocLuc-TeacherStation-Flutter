@@ -27,6 +27,10 @@ class StudioTutorSession {
           _meet.sendTutorMessageDetailed(text, stillCurrent: valid),
       prepareObservation: () async =>
           identical(_owner, this) && await _meet.beginTutorObservation(),
+      preparationError: () => _meet.tutorObservationError,
+      stopObservation: () {
+        if (identical(_owner, this)) _meet.stopTutorObservation();
+      },
       cancelSend: () {
         if (identical(_owner, this)) _meet.cancelTutorSend();
       },

@@ -465,6 +465,30 @@ void main() {
     expect(sent, hasLength(sentBeforePause));
   });
 
+  test('drawing during activation does not cancel chat preparation', () async {
+    final ready = Completer<bool>();
+    var cancellations = 0;
+    final tutor = TutorController(
+      gateway: gateway,
+      context: (_) async =>
+          TutorContext(revision: revision, currentPage: 1, sources: sources),
+      contextRevision: () => revision,
+      send: (_) async => true,
+      prepareObservation: () => ready.future,
+      cancelSend: () => cancellations++,
+    );
+    tutor.syncMeeting('room', true, []);
+    tutor.configure(config);
+    tutor.setEnabled(true);
+    final beforeDrawing = cancellations;
+    revision++;
+    tutor.contextChanged();
+    expect(cancellations, beforeDrawing);
+    ready.complete(true);
+    await settle();
+    expect(tutor.enabled, isTrue);
+    tutor.dispose();
+  });
   test(
     'baseline handshake gates enabling and excludes history arriving during preparation',
     () async {

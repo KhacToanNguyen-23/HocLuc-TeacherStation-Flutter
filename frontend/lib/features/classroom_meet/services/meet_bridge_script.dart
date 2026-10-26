@@ -118,20 +118,93 @@ class MeetBridgeScript {
     var input = document.querySelector('textarea[name="chatTextInput"], textarea[aria-label*="tin nhắn" i], textarea[aria-label*="message" i], [contenteditable="true"][aria-label*="tin nhắn" i]');
     return input && input.isConnected && input.getClientRects().length ? input : null;
   }
+  var tutorObservationWanted = false;
+  var tutorObservationId = null;
+  var tutorObservationCommand = null;
+  var tutorInitialBaseline = false;
+  var tutorStableInput = null;
+  var tutorStableSignature = null;
+  var tutorStableSince = 0;
+  var tutorLastOpen = -Infinity;
+  var tutorDeferredRows = new Map();
+  // Recent cancelled leases block commands that arrive out of order. Expiry
+  // rejects old transport commands even after their tombstone is evicted.
+  var tutorEndedObservations = new Set();
+  function observationState(ready) {
+    tutorObservationReady = ready;
+    sendToFlutter('TUTOR_OBSERVATION_STATE', {observationId: tutorObservationId, ready: ready});
+  }
+  function maintainTutorObservation() {
+    if (!tutorObservationWanted) return;
+    var input = tutorContext(tutorObservationCommand) ? chatInput() : null;
+    if (tutorObservationReady && input !== tutorObservedInput) observationState(false);
+    if (!input) {
+      tutorStableInput = null;
+      tutorStableSignature = null;
+      if (tutorContext(tutorObservationCommand) && Date.now() - tutorLastOpen >= 1000) {
+        var button = document.querySelector('button[aria-label*="trò chuyện" i], button[aria-label*="chat" i]');
+        if (button && !button.disabled) {
+          tutorLastOpen = Date.now();
+          button.click();
+        }
+      }
+      return;
+    }
+    if (tutorObservationReady) return;
+    var signature = JSON.stringify(chatNodes().map(function(node) {
+      return [messageId(node), node.getAttribute('data-message-text') || node.innerText || ''];
+    }));
+    if (input !== tutorStableInput || signature !== tutorStableSignature) {
+      tutorStableInput = input;
+      tutorStableSignature = signature;
+      tutorStableSince = Date.now();
+      return;
+    }
+    if (Date.now() - tutorStableSince < 250) return;
+    tutorObservedInput = input;
+    if (!tutorInitialBaseline) {
+      // All rows loaded during the first stable history snapshot are historical.
+      scanChatMessages(true);
+      tutorInitialBaseline = true;
+    }
+    observationState(true);
+  }
   function beginTutorObservation(command) {
     if (!tutorContext(command)) return JSON.stringify({status: 'NOT_READY'});
-    if (!chatInput()) {
-      tutorObservationReady = false;
-      var panelButton = document.querySelector('button[aria-label*="trò chuyện" i], button[aria-label*="chat" i]');
-      if (panelButton && !panelButton.disabled) panelButton.click();
-      return JSON.stringify({status: 'NOT_READY'});
+    var id = command.observationId || 'legacy';
+    if ((command.expiresAt !== undefined &&
+        (!Number.isFinite(command.expiresAt) || Date.now() >= command.expiresAt)) ||
+        tutorEndedObservations.has(id)) return JSON.stringify({status: 'NOT_READY'});
+    if (!tutorObservationWanted || id !== tutorObservationId) {
+      tutorObservationWanted = true;
+      tutorObservationId = id;
+      tutorObservationCommand = {documentId: command.documentId, url: command.url};
+      tutorInitialBaseline = false;
+      tutorStableInput = null;
+      tutorStableSignature = null;
+      tutorDeferredRows.clear();
+      observationState(false);
     }
-    // Emit existing chat before enabling eligibility, even on repeated handshakes.
-    tutorObservationReady = false;
     scanChatMessages();
-    tutorObservedInput = chatInput();
-    tutorObservationReady = true;
-    return JSON.stringify({status: 'READY', documentId: documentId, url: window.location.href});
+    return JSON.stringify({status: tutorObservationReady ? 'READY' : 'PENDING', documentId: documentId, url: window.location.href, observationId: id});
+  }
+  function endTutorObservation(command) {
+    if (!command || command.documentId !== documentId || command.url !== window.location.href ||
+        document !== bridgeDocument) return false;
+    var id = command.observationId || 'legacy';
+    tutorEndedObservations.add(id);
+    if (tutorEndedObservations.size > 256) {
+      tutorEndedObservations.delete(tutorEndedObservations.values().next().value);
+    }
+    // An old stop still tombstones its own lease, but cannot stop a newer one.
+    if (!tutorObservationCommand || command.url !== tutorObservationCommand.url ||
+        id !== tutorObservationId) return false;
+    tutorObservationWanted = false;
+    tutorDeferredRows.clear();
+    tutorStableInput = null;
+    tutorObservedInput = null;
+    observationState(false);
+    return true;
   }
   function cancelTutor(command) {
     if (command && command.documentId === documentId && tutorAttempt && command.requestId === tutorAttempt.requestId) {
@@ -170,6 +243,7 @@ class MeetBridgeScript {
     input.dispatchEvent(new Event('input', {bubbles: true}));
   }
   function sendTutor(command) {
+    if (!command || !tutorObservationWanted || !command.observationId || command.observationId !== tutorObservationId || tutorEndedObservations.has(command.observationId)) return JSON.stringify({status: 'NOT_READY'});
     if (!tutorObservationReady || chatInput() !== tutorObservedInput || !tutorContext(command) || !command.requestId || !Number.isFinite(command.expiresAt) || Date.now() >= command.expiresAt || typeof command.text !== 'string' || !command.text.trim()) return JSON.stringify({status: 'NOT_READY'});
     if (tutorAttempt && !tutorAttempt.cancelled && JSON.parse(tutorStatus(tutorAttempt)).status === 'PENDING') return JSON.stringify({status: 'BUSY'});
     if (uncertainTutorTexts.has(command.text.trim())) return JSON.stringify({status: 'UNCONFIRMED'});
@@ -194,9 +268,19 @@ class MeetBridgeScript {
     send.click();
     return tutorStatus(command);
   }
-  function scanChatMessages() {
-    if (!chatInput() || chatInput() !== tutorObservedInput) tutorObservationReady = false;
+  function scanChatMessages(baselineOnly) {
+    if (!baselineOnly) maintainTutorObservation();
     var messageNodes = chatNodes();
+    if (!baselineOnly && tutorObservationWanted && tutorInitialBaseline && !tutorObservationReady) {
+      messageNodes.forEach(function(node) {
+        if (!seenMessageIds.has(messageId(node))) tutorDeferredRows.set(messageId(node), node);
+      });
+      return;
+    }
+    if (tutorObservationReady && tutorDeferredRows.size) {
+      messageNodes = Array.from(tutorDeferredRows.values()).concat(messageNodes);
+      tutorDeferredRows.clear();
+    }
     messageNodes.forEach(function(node) {
       var text = (node.getAttribute('data-message-text') || node.innerText || '').trim();
       var sender = node.getAttribute('data-sender-name') || '';
@@ -217,6 +301,7 @@ class MeetBridgeScript {
       if (!seenMessageIds.has(id)) {
         seenMessageIds.add(id);
         sendToFlutter('CHAT_MESSAGE', {
+          observationId: tutorObservationId,
           id: id,
           sender: sender,
           isSelf: isSelfMessage(node),
@@ -230,6 +315,7 @@ class MeetBridgeScript {
   }
 
   function ensurePeoplePanelOpen() {
+    if (tutorObservationWanted) return;
     var inCall = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
     if (!inCall) return;
 
@@ -314,7 +400,10 @@ class MeetBridgeScript {
     scanHandsAndKnocks();
   }, 1000);
 
+  setInterval(function() { scanChatMessages(); }, 100);
+
   window.MeetBridge = {
+    endTutorObservation: endTutorObservation,
     beginTutorObservation: beginTutorObservation,
     cancelTutor: cancelTutor,
     sendTutor: sendTutor,

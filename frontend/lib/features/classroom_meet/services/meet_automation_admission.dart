@@ -104,6 +104,7 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
       _pendingAdmitCount = _admissionRequests.length + _unknownAdmissionCount;
 
   void _resetAdmissions() {
+    stopTutorObservation();
     _invalidateTutor();
     _tutorObservationReady = false;
     _tutorDocumentId = null;
@@ -165,33 +166,122 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
     _tutorCancelled = Completer<void>();
   }
 
-  /// Baselines visible chat before the controller enables tutor eligibility.
-  /// A closed chat is opened once, but requires another explicit preparation.
+  /// Opens and prepares chat in the retained native Meet page; no Flutter panel
+  /// is required. Polling is bounded and tied to one cancellable observation lease.
   Future<bool> beginTutorObservation() async {
-    if (_disposed || !_hostJoined || _tutorDocumentId == null) return false;
-    final generation = _tutorGeneration;
-    final doc = _tutorDocumentId;
-    final url = _tutorDocumentUrl;
-    _tutorObservationReady = false;
-    try {
-      final command = jsonEncode({'documentId': doc, 'url': url});
-      final raw = await _executeAdmissionScript(
-        'window.MeetBridge ? window.MeetBridge.beginTutorObservation($command) : "null";',
-      ).timeout(_tutorTimeout);
-      var response = jsonDecode(raw);
-      if (response is String) response = jsonDecode(response);
-      _tutorObservationReady =
-          !_disposed &&
-          _hostJoined &&
-          generation == _tutorGeneration &&
-          doc == _tutorDocumentId &&
-          response is Map &&
-          response['status'] == 'READY' &&
-          response['documentId'] == doc &&
-          response['url'] == url;
-      return _tutorObservationReady;
-    } catch (_) {
+    _tutorObservationError = null;
+    final room = _meetingUrl;
+    if (_disposed ||
+        !MeetAutomationService.isOfficialMeetingUrl(room) ||
+        (_controller == null && _testExecuteScript == null)) {
+      _tutorObservationError =
+          'Vào phòng Meet trong ứng dụng trước khi bật AI.';
       return false;
+    }
+    if (_tutorObservationId != null) stopTutorObservation();
+    if (!_tutorPreparationCancelled.isCompleted) {
+      _tutorPreparationCancelled.complete();
+    }
+    _tutorPreparationCancelled = Completer<void>();
+    final id = 'observe-${++_tutorObservationSerial}';
+    final epoch = ++_tutorPreparationEpoch;
+    _tutorObservationId = id;
+    _tutorObservationRequested = true;
+    _tutorObservationReady = false;
+    final ready = await _waitTutorObservation(id, epoch, room!);
+    if (!ready && epoch == _tutorPreparationEpoch) {
+      _tutorObservationError = _hostJoined
+          ? 'AI chưa kết nối được với cuộc trò chuyện Meet. Vui lòng thử lại.'
+          : 'Vào phòng Meet trong ứng dụng trước khi bật AI.';
+      stopTutorObservation();
+    }
+    return ready;
+  }
+
+  Future<bool> _waitTutorObservation(String id, int epoch, String room) async {
+    final watch = Stopwatch()..start();
+    final cancelled = _tutorPreparationCancelled.future;
+    bool current() =>
+        !_disposed &&
+        _tutorObservationRequested &&
+        epoch == _tutorPreparationEpoch &&
+        id == _tutorObservationId &&
+        room == _meetingUrl;
+    while (current() && watch.elapsed < _tutorTimeout) {
+      final doc = _tutorDocumentId;
+      final url = _tutorDocumentUrl;
+      if (_hostJoined && doc != null && url == room) {
+        try {
+          final command = jsonEncode({
+            'documentId': doc,
+            'url': url,
+            'observationId': id,
+            'expiresAt': DateTime.now()
+                .add(_tutorTimeout - watch.elapsed)
+                .millisecondsSinceEpoch,
+          });
+          final raw = await Future.any([
+            _executeAdmissionScript(
+              'window.MeetBridge ? window.MeetBridge.beginTutorObservation($command) : "null";',
+            ),
+            cancelled.then<String>(
+              (_) => throw StateError('Tutor observation cancelled'),
+            ),
+          ]).timeout(_tutorTimeout - watch.elapsed);
+          var response = jsonDecode(raw);
+          if (response is String) response = jsonDecode(response);
+          if (!current() ||
+              doc != _tutorDocumentId ||
+              url != _tutorDocumentUrl) {
+            return false;
+          }
+          if (response is Map &&
+              response['status'] == 'READY' &&
+              response['documentId'] == doc &&
+              response['url'] == url &&
+              response['observationId'] == id) {
+            _tutorObservationReady = true;
+            return true;
+          }
+          if (response is Map && response['status'] == 'READY') return false;
+        } catch (_) {
+          /* A bridge being injected may become ready next poll. */
+        }
+      }
+      final remaining = _tutorTimeout - watch.elapsed;
+      if (remaining <= Duration.zero) break;
+      await Future<void>.delayed(
+        remaining < const Duration(milliseconds: 150)
+            ? remaining
+            : const Duration(milliseconds: 150),
+      );
+    }
+    return false;
+  }
+
+  void stopTutorObservation() {
+    final hadObservation = _tutorObservationId != null;
+    _invalidateTutor();
+    final command = jsonEncode({
+      'documentId': _tutorDocumentId,
+      'url': _tutorDocumentUrl,
+      'observationId': _tutorObservationId,
+    });
+    _tutorPreparationEpoch++;
+    if (!_tutorPreparationCancelled.isCompleted) {
+      _tutorPreparationCancelled.complete();
+    }
+    _tutorObservationRequested = false;
+    _tutorObservationReady = false;
+    _tutorObservationId = null;
+    if (hadObservation &&
+        !_disposed &&
+        (_controller != null || _testExecuteScript != null)) {
+      unawaited(
+        _executeAdmissionScript(
+          'window.MeetBridge && window.MeetBridge.endTutorObservation($command);',
+        ).catchError((Object _) => 'false'),
+      );
     }
   }
 
@@ -222,11 +312,9 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
   Future<MeetTutorDelivery> sendTutorMessageDetailed(
     String text, {
     bool Function()? stillCurrent,
-  }) {
+  }) async {
     final generation = _tutorGeneration;
     final cancelled = _tutorCancelled.future;
-    final documentId = _tutorDocumentId;
-    final url = _tutorDocumentUrl;
     bool callerCurrent() {
       try {
         return stillCurrent?.call() ?? true;
@@ -235,11 +323,33 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
       }
     }
 
+    if (!callerCurrent() || text.trim().isEmpty) {
+      return MeetTutorDelivery.notDispatched;
+    }
+    if (!_tutorObservationReady &&
+        _tutorObservationRequested &&
+        _tutorObservationId != null &&
+        _meetingUrl != null) {
+      await Future.any([
+        _waitTutorObservation(
+          _tutorObservationId!,
+          _tutorPreparationEpoch,
+          _meetingUrl!,
+        ),
+        cancelled.then((_) => false),
+      ]);
+    }
+    final documentId = _tutorDocumentId;
+    final url = _tutorDocumentUrl;
+    final observationId = _tutorObservationId;
     bool current() =>
         callerCurrent() &&
         !_disposed &&
         _hostJoined &&
+        _tutorObservationRequested &&
         _tutorObservationReady &&
+        observationId != null &&
+        observationId == _tutorObservationId &&
         generation == _tutorGeneration &&
         documentId != null &&
         documentId == _tutorDocumentId &&
@@ -259,6 +369,7 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
       _activeTutorRequestId = requestId;
       final command = jsonEncode({
         'requestId': requestId,
+        'observationId': observationId,
         'documentId': documentId,
         'url': url,
         'text': text.trim(),

@@ -58,6 +58,14 @@ A further backend retry of the dinner case still returned `provider_unavailable`
 
 ## Remaining manual acceptance
 
+### Background-observation follow-up (2026-10-27)
+
+- One toggle now prepares the retained Meet page automatically without a mounted Flutter Meet panel. Every enable has a distinct observation lease; incoming rows and outgoing send commands must match it. Old leases, historical rows and delayed cancelled commands cannot become eligible after re-enable.
+- Automatic chat recovery, cancellation while preparing/recovering, drawing during activation, activation-error feedback and solid-blue enabled state have regression coverage. DOM fixtures: 22 passed. Final Flutter regression run including architecture, tutor/delivery/observation and Smart Pen index: 130 passed.
+- The first full Flutter run recorded 639 passes and one Smart Pen performance threshold failure (2,580 ms against 1,000 ms) while native build/analyzer were also active. The unchanged Smart Pen suite passed in the separate regression run; this does not replace a green full CI run.
+- Windows debug build succeeded after the final lease fix. Analyzer reported no issues; plugin validator passed all 3 packages. Backend bootstrap returned HTTP 200.
+- Computer Use still fails before initialization with `failed to write kernel assets ... (os error 3)`. Automatic execution review also rejected the frontend launch command (`blocked by policy`). The built executable is available, but no new live teacher/student Meet acceptance or frontend launch is claimed.
+
 - Draw/create lesson content in the actual native whiteboard.
 - Join a real Meet as teacher plus a distinct student/guest and verify observed student messages and actual chat echoes.
 - Verify scope, low confidence, pause/re-enable, history/self-message filtering and provider failure feedback on real Meet.

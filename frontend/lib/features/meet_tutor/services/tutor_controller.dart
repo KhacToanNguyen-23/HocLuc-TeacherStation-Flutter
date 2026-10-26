@@ -15,6 +15,8 @@ class TutorController extends ChangeNotifier {
     this.detailedSend,
     this.prepareObservation,
     this.cancelSend,
+    this.stopObservation,
+    this.preparationError,
     this.sendInterval = const Duration(seconds: 5),
   });
   final TutorGateway gateway;
@@ -26,6 +28,9 @@ class TutorController extends ChangeNotifier {
   detailedSend;
   final Future<bool> Function()? prepareObservation;
   final VoidCallback? cancelSend;
+  final VoidCallback? stopObservation;
+  final String? Function()? preparationError;
+  String? activationError;
   final Duration sendInterval;
   TutorConfig? config;
   bool enabled = false;
@@ -76,12 +81,14 @@ class TutorController extends ChangeNotifier {
     enabled = ready && _joined;
     status = enabled
         ? 'Đang theo dõi câu hỏi mới.'
-        : 'Hãy mở chat Meet, chờ tin nhắn tải xong rồi bật lại trợ giảng.';
+        : (preparationError?.call() ??
+              'Chưa bật được AI. Kiểm tra kết nối phòng Meet rồi thử lại.');
+    activationError = enabled ? null : status;
     notifyListeners();
   }
 
   void contextChanged() {
-    if (enabled || starting || busy) cancelSend?.call();
+    if (enabled || busy) cancelSend?.call();
   }
 
   void _invalidate(String message) {
@@ -92,6 +99,8 @@ class TutorController extends ChangeNotifier {
       (gateway as CancellableTutorGateway).cancelPending();
     }
     cancelSend?.call();
+    stopObservation?.call();
+    activationError = null;
     enabled = false;
     starting = false;
     _queue.clear();
@@ -348,6 +357,7 @@ class TutorController extends ChangeNotifier {
       (gateway as CancellableTutorGateway).cancelPending();
     }
     cancelSend?.call();
+    stopObservation?.call();
     config = null;
     _queue.clear();
     super.dispose();

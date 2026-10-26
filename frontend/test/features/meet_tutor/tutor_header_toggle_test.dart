@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_top_bar.dart';
 import 'package:flutter/material.dart';
@@ -100,6 +101,36 @@ void main() {
     expect(find.byIcon(Icons.toggle_on_rounded), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('activation failure is visible without opening a panel', (
+    tester,
+  ) async {
+    controller.configure(config);
+    await mount(tester);
+    await tester.tap(find.byType(IconButton));
+    await tester.pump();
+    ready.complete(false);
+    await tester.pump();
+    await tester.pump();
+    expect(controller.enabled, isFalse);
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.textContaining('Kiểm tra kết nối phòng Meet'), findsOneWidget);
+    expect(find.textContaining('Hãy mở chat'), findsNothing);
+  });
+  testWidgets(
+    'active control has a solid blue background and real toggled state',
+    (tester) async {
+      controller.configure(config);
+      await mount(tester);
+      await tester.tap(find.byType(IconButton));
+      ready.complete(true);
+      await tester.pump();
+      await tester.pump();
+      final button = tester.widget<IconButton>(find.byType(IconButton));
+      expect(button.style!.backgroundColor!.resolve({}), AppColors.primary);
+      expect(controller.enabled, isTrue);
+      expect(find.byIcon(Icons.toggle_on_rounded), findsOneWidget);
+    },
+  );
   testWidgets('second click cancels pending enable without late activation', (
     tester,
   ) async {

@@ -2,9 +2,59 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/theme.dart';
 import '../../services/tutor_controller.dart';
 
-class TutorHeaderToggle extends StatelessWidget {
+class TutorHeaderToggle extends StatefulWidget {
   const TutorHeaderToggle({super.key, required this.controller});
   final TutorController controller;
+
+  @override
+  State<TutorHeaderToggle> createState() => _TutorHeaderToggleState();
+}
+
+class _TutorHeaderToggleState extends State<TutorHeaderToggle> {
+  TutorController get controller => widget.controller;
+  String? _shownError;
+  int _errorSequence = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _shownError = controller.activationError;
+    controller.addListener(_activationChanged);
+  }
+
+  @override
+  void didUpdateWidget(TutorHeaderToggle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != controller) {
+      oldWidget.controller.removeListener(_activationChanged);
+      controller.addListener(_activationChanged);
+      _shownError = controller.activationError;
+      _errorSequence++;
+    }
+  }
+
+  void _activationChanged() {
+    final error = controller.activationError;
+    if (_shownError == error) return;
+    _shownError = error;
+    final sequence = ++_errorSequence;
+    if (error == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          sequence == _errorSequence &&
+          controller.activationError == error) {
+        ScaffoldMessenger.maybeOf(
+          context,
+        )?.showSnackBar(SnackBar(content: Text(error)));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    controller.removeListener(_activationChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -12,16 +62,23 @@ class TutorHeaderToggle extends StatelessWidget {
     builder: (context, _) {
       final active = controller.enabled;
       final starting = controller.starting;
-      final color = active || starting
+      final color = active
+          ? Colors.white
+          : starting
           ? AppColors.primary
           : AppColors.textSecondary;
+      final background = active
+          ? AppColors.primary
+          : starting
+          ? AppColors.selected
+          : AppColors.surfaceMuted;
       final tooltip = controller.config == null
           ? 'Trợ giảng chưa sẵn sàng'
           : starting
           ? 'Đang bật AI — nhấn để hủy'
           : active
-          ? 'Tắt AI: ngừng nhận và trả lời câu hỏi'
-          : 'Bật AI: nhận và tự trả lời câu hỏi\n${controller.status}';
+          ? 'Tắt AI: ngừng tự đọc và trả lời câu hỏi Meet'
+          : 'Bật AI: tự đọc và trả lời câu hỏi, không cần mở panel Meet\n${controller.status}';
       return Semantics(
         label: 'AI agent nhận và trả lời câu hỏi',
         toggled: active,
@@ -33,9 +90,7 @@ class TutorHeaderToggle extends StatelessWidget {
             tooltip: tooltip,
             padding: const EdgeInsets.all(4),
             style: IconButton.styleFrom(
-              backgroundColor: active || starting
-                  ? AppColors.selected
-                  : AppColors.surfaceMuted,
+              backgroundColor: background,
               foregroundColor: color,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadii.control),
@@ -60,9 +115,7 @@ class TutorHeaderToggle extends StatelessWidget {
                   bottom: -2,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 1),
-                    color: active || starting
-                        ? AppColors.selected
-                        : AppColors.surfaceMuted,
+                    color: background,
                     child: starting
                         ? SizedBox(
                             width: 14,
