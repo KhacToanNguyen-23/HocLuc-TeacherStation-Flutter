@@ -19,7 +19,6 @@ class StudioTopBar extends StatelessWidget {
     super.key,
     required this.studio,
     this.tutor,
-    this.onConfigureTutor,
     required this.width,
     this.hasLessons = false,
     this.hasInspector = false,
@@ -42,7 +41,6 @@ class StudioTopBar extends StatelessWidget {
 
   final StudioState studio;
   final TutorController? tutor;
-  final VoidCallback? onConfigureTutor;
   final double width;
   final bool hasLessons;
   final bool hasInspector;
@@ -512,7 +510,7 @@ class StudioTopBar extends StatelessWidget {
                 builder: (context, _) {
                   final isLive = MeetAutomationService().isHostJoined;
                   return Tooltip(
-                    message: 'Thiết bị và API AI',
+                    message: 'Thiết bị và trợ giảng',
                     child: TextButton.icon(
                       onPressed: onToggleInspector,
                       icon: SizedBox(
@@ -721,10 +719,7 @@ class StudioTopBar extends StatelessWidget {
                 ),
                 if (tutor != null) ...[
                   const SizedBox(width: 4),
-                  TutorHeaderToggle(
-                    controller: tutor!,
-                    onConfigure: onConfigureTutor ?? onToggleInspector,
-                  ),
+                  TutorHeaderToggle(controller: tutor!),
                 ],
                 if (onToggleStudents != null) ...[
                   const SizedBox(width: 4),

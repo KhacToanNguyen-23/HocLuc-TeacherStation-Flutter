@@ -2,6 +2,7 @@ import '../../classroom_meet/services/meet_automation_service.dart';
 import '../../studio_board/domain/models/studio_state.dart';
 import 'studio_tutor_context.dart';
 import 'tutor_controller.dart';
+import '../domain/models/tutor_models.dart';
 import 'tutor_gateway.dart';
 
 /// One tutor session belongs to the studio route, independently of panel mounts.
@@ -16,8 +17,9 @@ class StudioTutorSession {
       _owner?.controller.setEnabled(false);
       _owner = this;
     }
+    final gateway = CompanionTutorGateway(studio.service);
     controller = TutorController(
-      gateway: CompanionTutorGateway(studio.service),
+      gateway: gateway,
       context: _context.build,
       contextRevision: () => _context.revision,
       send: _meet.sendTutorMessage,
@@ -28,6 +30,9 @@ class StudioTutorSession {
       cancelSend: () {
         if (identical(_owner, this)) _meet.cancelTutorSend();
       },
+    );
+    controller.configure(
+      const TutorConfig(baseUrl: '', model: '', useEnvironment: true),
     );
     _context.addListener(controller.contextChanged);
     _sync();

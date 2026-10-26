@@ -30,7 +30,6 @@ class TutorController extends ChangeNotifier {
   TutorConfig? config;
   bool enabled = false;
   bool starting = false;
-  bool configurationPending = false;
   bool busy = false;
   bool _disposed = false;
   bool _joined = false;
@@ -42,31 +41,16 @@ class TutorController extends ChangeNotifier {
   List<TutorReview> get reviews => List.unmodifiable(_reviews);
   int get queued => _queue.length;
   int sentCount = 0;
-  String status = 'Chưa cấu hình AI';
+  String status = 'Trợ giảng đang tắt.';
   DateTime? _lastSend;
 
   void configure(TutorConfig value) {
-    configurationPending = false;
     config = value;
-    _invalidate('Đã đổi AI; bật trợ giảng để nhận câu hỏi mới.');
-  }
-
-  void markConfigurationPending() {
-    configurationPending = true;
-    setEnabled(false);
-  }
-
-  void discardConfigurationDraft() {
-    if (!configurationPending) return;
-    configurationPending = false;
-    // Settings can be removed while the widget tree is being rebuilt.
-    scheduleMicrotask(() {
-      if (!_disposed) notifyListeners();
-    });
+    _invalidate('Trợ giảng đang tắt. Bật để nhận câu hỏi mới.');
   }
 
   void setEnabled(bool value) {
-    if (value && (config == null || configurationPending)) return;
+    if (value && config == null) return;
     _invalidate(value ? 'Đang theo dõi câu hỏi mới.' : 'Đã tạm dừng.');
     if (value && prepareObservation != null) {
       starting = true;

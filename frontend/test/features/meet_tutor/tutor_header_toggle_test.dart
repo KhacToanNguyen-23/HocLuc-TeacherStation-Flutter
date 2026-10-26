@@ -10,10 +10,8 @@ import 'tutor_controller_test.dart' show FakeGateway, config;
 void main() {
   late TutorController controller;
   late Completer<bool> ready;
-  late int configureCalls;
   setUp(() {
     ready = Completer<bool>.sync();
-    configureCalls = 0;
     controller = TutorController(
       gateway: FakeGateway(),
       context: (_) async => throw UnimplementedError(),
@@ -26,12 +24,7 @@ void main() {
   tearDown(() => controller.dispose());
   Future<void> mount(WidgetTester tester) => tester.pumpWidget(
     MaterialApp(
-      home: Scaffold(
-        body: TutorHeaderToggle(
-          controller: controller,
-          onConfigure: () => configureCalls++,
-        ),
-      ),
+      home: Scaffold(body: TutorHeaderToggle(controller: controller)),
     ),
   );
   testWidgets('live header keeps AI control visible at supported widths', (
@@ -71,13 +64,16 @@ void main() {
     tester.view.resetDevicePixelRatio();
     studio.dispose();
   });
-  testWidgets('icon only opens configuration when missing', (tester) async {
+  testWidgets('icon only stays unavailable without a session', (tester) async {
     await mount(tester);
     expect(find.byType(Text), findsNothing);
     expect(find.byIcon(Icons.smart_toy_outlined), findsOneWidget);
     expect(find.byIcon(Icons.toggle_off_outlined), findsOneWidget);
     await tester.tap(find.byType(IconButton));
-    expect(configureCalls, 1);
+    expect(
+      tester.widget<IconButton>(find.byType(IconButton)).onPressed,
+      isNull,
+    );
     expect(controller.enabled, isFalse);
     expect(tester.takeException(), isNull);
   });
@@ -103,17 +99,6 @@ void main() {
     await tester.pump();
     expect(find.byIcon(Icons.toggle_on_rounded), findsOneWidget);
     expect(tester.takeException(), isNull);
-  });
-  testWidgets('unapplied configuration cannot be enabled from header', (
-    tester,
-  ) async {
-    controller.configure(config);
-    controller.markConfigurationPending();
-    await mount(tester);
-    await tester.tap(find.byType(IconButton));
-    expect(configureCalls, 1);
-    expect(controller.starting, isFalse);
-    expect(controller.enabled, isFalse);
   });
   testWidgets('second click cancels pending enable without late activation', (
     tester,

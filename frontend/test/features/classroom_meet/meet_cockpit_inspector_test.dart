@@ -53,7 +53,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Trợ giảng AI'), findsOneWidget);
-    expect(find.widgetWithText(TextFormField, 'Base URL'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
+    expect(find.textContaining('API'), findsNothing);
     await tester.scrollUntilVisible(
       find.text('ĐẦU RA CHO MEETING'),
       200,

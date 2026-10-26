@@ -3,13 +3,8 @@ import '../../../../core/theme/theme.dart';
 import '../../services/tutor_controller.dart';
 
 class TutorHeaderToggle extends StatelessWidget {
-  const TutorHeaderToggle({
-    super.key,
-    required this.controller,
-    required this.onConfigure,
-  });
+  const TutorHeaderToggle({super.key, required this.controller});
   final TutorController controller;
-  final VoidCallback onConfigure;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -21,7 +16,7 @@ class TutorHeaderToggle extends StatelessWidget {
           ? AppColors.primary
           : AppColors.textSecondary;
       final tooltip = controller.config == null
-          ? 'Cấu hình AI để bật nhận và tự trả lời câu hỏi'
+          ? 'Trợ giảng chưa sẵn sàng'
           : starting
           ? 'Đang bật AI — nhấn để hủy'
           : active
@@ -46,14 +41,9 @@ class TutorHeaderToggle extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadii.control),
               ),
             ),
-            onPressed: () {
-              if (controller.config == null ||
-                  controller.configurationPending) {
-                onConfigure();
-                return;
-              }
-              controller.setEnabled(!active && !starting);
-            },
+            onPressed: controller.config == null
+                ? null
+                : () => controller.setEnabled(!active && !starting),
             icon: Stack(
               clipBehavior: Clip.none,
               children: [

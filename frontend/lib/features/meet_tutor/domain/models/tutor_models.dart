@@ -3,16 +3,20 @@ class TutorConfig {
     required this.baseUrl,
     required this.model,
     this.apiKey = '',
+    this.useEnvironment = false,
   });
   final String baseUrl;
   final String model;
   final String apiKey;
+  final bool useEnvironment;
 
-  Map<String, dynamic> toJson() => {
-    'baseUrl': baseUrl.trim(),
-    'model': model.trim(),
-    'apiKey': apiKey.trim(),
-  };
+  Map<String, dynamic> toJson() => useEnvironment
+      ? {'useEnvironment': true}
+      : {
+          'baseUrl': baseUrl.trim(),
+          'model': model.trim(),
+          'apiKey': apiKey.trim(),
+        };
 }
 
 class TutorSource {

@@ -59,7 +59,7 @@ class StudioScreen extends StatefulWidget {
 class _StudioScreenState extends State<StudioScreen> {
   late final StudioState studio;
   late final StudioTutorSession _tutorSession;
-  int _inspectorInitialTab = 0, _inspectorTabRequest = 0;
+  int _inspectorInitialTab = 0;
   final notes = TextEditingController();
   final question = TextEditingController();
   final endpoint = TextEditingController();
@@ -504,7 +504,6 @@ class _StudioScreenState extends State<StudioScreen> {
                                 : StudioInspectorPanel(
                                     tutor: _tutorSession.controller,
                                     initialTab: _inspectorInitialTab,
-                                    tabRequest: _inspectorTabRequest,
                                     studio: studio,
                                     notesController: notes,
                                     questionController: question,
@@ -521,19 +520,6 @@ class _StudioScreenState extends State<StudioScreen> {
                     children: [
                       StudioTopBar(
                         tutor: _tutorSession.controller,
-                        onConfigureTutor: () {
-                          if (box.maxWidth < 1250) {
-                            openInspector(initialTab: 1);
-                          } else {
-                            setState(() {
-                              _inspectorInitialTab = 1;
-                              _inspectorTabRequest++;
-                              showInspector = true;
-                              showStudentsDrawer = false;
-                              showPluginsMarketplace = false;
-                            });
-                          }
-                        },
                         studio: studio,
                         width: box.maxWidth,
 

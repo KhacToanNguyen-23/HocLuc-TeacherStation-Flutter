@@ -2,13 +2,21 @@
 
 ## Sử dụng
 
-Trong Studio, mở **Google → Cài đặt → Trợ giảng AI**. Nhập Base URL của API **tương thích Chat Completions**, tên model và API key. Base URL là gốc API, ví dụ `https://provider.example/v1`; không thêm `/chat/completions`. HTTP chỉ được chấp nhận cho địa chỉ loopback `127.0.0.1` hoặc `::1`. API local không yêu cầu key có thể để trống.
+Cấu hình API của trợ giảng hoàn toàn bằng file `.env` ở gốc dự án (cùng cấp `backend/`, `frontend/`):
 
-Chọn **Kiểm tra kết nối → Áp dụng**. Kiểm tra gọi một completion nhỏ thực sự, có thể phát sinh phí tại nhà cung cấp. Key chỉ nằm trong bộ nhớ phiên, không ghi vào preferences, lesson JSON hay log; đóng ứng dụng cần nhập lại. Đổi URL/model/key sẽ tạm dừng trợ giảng, cần kiểm tra và áp dụng lại. Không tự chuyển nhà cung cấp nếu API lỗi.
+```dotenv
+HOCLUC_TUTOR_BASE_URL=https://provider.example/v1
+HOCLUC_TUTOR_MODEL=your-model
+HOCLUC_TUTOR_API_KEY=your-api-key
+```
 
-Vào phòng Meet trong WebView hiện tại, mở chat và chờ lịch sử tải xong. Bật **tự trả lời**. Nếu hệ thống vừa mở panel chat, bật lại sau khi chat sẵn sàng. Bước này lấy mốc lịch sử; chỉ các tin mới có nguồn từ tài liệu Meet hiện tại mới được xét. Giữ chat mở; đóng hoặc thay panel có thể làm mất trạng thái quan sát và cần bật lại.
+Base URL là gốc API tương thích Chat Completions, không thêm `/chat/completions`. API local không cần khóa có thể để `HOCLUC_TUTOR_API_KEY=`. HTTPS được chấp nhận; HTTP chỉ cho literal loopback `127.0.0.1` hoặc `::1`. Backend dùng bộ đọc `.env` hiện có: tìm từ thư mục khởi chạy lên gốc repo, chọn file gần nhất; biến môi trường của tiến trình ưu tiên hơn `.env`. Khởi động lại backend sau khi sửa file. `.env` đã được Git ignore; không commit file thật hoặc ghi khóa vào log.
 
-Header của Studio khi dạy có nút robot kèm công tắc, ngay trước nút học sinh: xanh là bật, xám là tắt, vòng chờ là đang lấy mốc chat (nhấn lại để hủy). Nút chỉ có biểu tượng; tooltip giải thích khi rê chuột. Header và Cài đặt dùng chung phiên AI, độc lập với việc đóng/mở panel. Tắt sẽ ngừng nhận câu hỏi mới và hủy xử lý/gửi đang chờ; tin đã gửi không được thu hồi. Khi thiếu cấu hình hoặc đang sửa API, nút mở Cài đặt. Đóng panel khi đang sửa sẽ bỏ bản nháp và giữ cấu hình đã áp dụng, AI vẫn tắt. Tạm rời lớp cũng tắt AI; màn hình soạn bài không nhận quyền điều khiển AI của lớp.
+Không có ô nhập URL/model/key, nút kiểm tra/áp dụng/nạp `.env` hoặc thông tin nhà cung cấp trong giao diện. Khóa chỉ ở backend, không trả về Flutter và không đóng gói vào assets. Phiên Studio chọn `config: {"useEnvironment": true}` để backend dùng toàn bộ bộ cấu hình môi trường; không trộn URL từ ứng dụng với khóa môi trường.
+
+Vào phòng Meet trong WebView hiện tại, mở chat và chờ lịch sử tải xong. Bật biểu tượng robot kèm công tắc trên header, ngay trước nút học sinh: xanh là bật, xám là tắt, vòng chờ là đang lấy mốc chat (nhấn lại để hủy). Nút chỉ có biểu tượng; tooltip giải thích khi rê chuột. Header và bảng trạng thái trợ giảng dùng chung phiên AI, độc lập với việc đóng/mở panel. Tắt sẽ ngừng nhận câu hỏi mới và hủy xử lý/gửi đang chờ; tin đã gửi không được thu hồi. Tạm rời lớp cũng tắt AI; màn hình soạn bài không nhận quyền điều khiển AI của lớp.
+
+AI không tự bật khi mở Studio. Thiếu/sai cấu hình môi trường hoặc provider lỗi không làm AI đang bật im lặng: nhánh lỗi có thông báo cố định cho học sinh theo cơ chế gửi chat hiện có. Chỉ tin mới từ Meet sau khi bật được xử lý; giữ chat mở để duy trì quan sát.
 
 Mở PDF có lớp văn bản hoặc nội dung bảng có sticker/chalk text. Trợ giảng lấy trang đang trình bày và các đoạn PDF liên quan, không lấy ghi chú riêng, nháp, đáp án Smart Pen hoặc bản đồ phân tích plugin. Bảng ở trang khác không được gửi. PDF chalk bị loại vì dữ liệu hiện tại chưa gắn annotation với đúng tài liệu. Nét viết tay thuần hình học, hình vẽ, PDF quét và lời nói chưa được nhận dạng. PPTX cần xuất/mở PDF trước.
 

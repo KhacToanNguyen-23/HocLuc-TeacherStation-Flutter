@@ -69,6 +69,17 @@ class GoogleDesktopEnvironmentTest {
         assertTrue(Files.isRegularFile(root.resolve(".hocluc-local/google-encryption.key")));
     }
 
+    @Test void tutorOnlyEnvIsLoadedFromProjectWithoutGoogleCredentials() throws Exception {
+        Files.writeString(root.resolve(".env"), "HOCLUC_TUTOR_BASE_URL=https://provider.test/v1\nHOCLUC_TUTOR_MODEL='test-model'\nHOCLUC_TUTOR_API_KEY=\"test-key\"\n");
+        MockEnvironment env = new MockEnvironment().withProperty("HOCLUC_TUTOR_MODEL", "process-model");
+        GoogleDesktopEnvironment.configure(env, Files.createDirectories(root.resolve("backend/api")));
+        assertEquals("https://provider.test/v1", env.getProperty("HOCLUC_TUTOR_BASE_URL"));
+        assertEquals("process-model", env.getProperty("HOCLUC_TUTOR_MODEL"));
+        assertEquals("test-key", env.getProperty("HOCLUC_TUTOR_API_KEY"));
+        assertNull(env.getProperty("GOOGLE_CLIENT_ID"));
+        assertFalse(Files.exists(root.resolve(".hocluc-local")));
+    }
+
     @Test void unrelatedEnvDoesNotRequireGoogle() throws Exception {
         Files.writeString(root.resolve(".env"), "EXAM_ADMIN_EMAIL=teacher@example.com\n");
         MockEnvironment env = new MockEnvironment();

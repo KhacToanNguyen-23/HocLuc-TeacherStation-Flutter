@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpServer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.*;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import vn.teaching.config.SecurityTokenInterceptor;
 import java.net.InetSocketAddress;
@@ -55,6 +56,48 @@ class TutorControllerTest {
     org.springframework.test.web.servlet.ResultActions send(String path, String body) throws Exception {
         return mvc.perform(post("/api/tutor/" + path).header("X-Companion-Token", "local-token")
                 .contentType("application/json").content(body));
+    }
+    MockEnvironment environment() {
+        return new MockEnvironment()
+                .withProperty("HOCLUC_TUTOR_BASE_URL", "http://127.0.0.1:" + provider.getAddress().getPort() + "/v1")
+                .withProperty("HOCLUC_TUTOR_MODEL", "env-model")
+                .withProperty("HOCLUC_TUTOR_API_KEY", "env-secret-key");
+    }
+    void useEnvironment(MockEnvironment env) {
+        mvc = MockMvcBuilders.standaloneSetup(new TutorController(new TutorService(env)))
+                .addInterceptors(new SecurityTokenInterceptor("local-token")).build();
+    }
+    @Test void environmentRequestsUseBackendKeyForAnswerAndTestWithoutClientKey() throws Exception {
+        useEnvironment(environment());
+        var body = input(); body.putObject("config").put("useEnvironment", true);
+        send("answer", body.toString()).andExpect(jsonPath("$.status").value("answered"));
+        assertEquals("Bearer env-secret-key", authorization);
+        assertEquals("env-model", TutorService.JSON.readTree(received).path("model").asText());
+        assertFalse(received.contains("env-secret-key"));
+        completion("OK");
+        send("test", "{\"config\":{\"useEnvironment\":true}}")
+                .andExpect(jsonPath("$.success").value(true));
+    }
+    @Test void environmentCannotBeMixedWithClientDestinationAndManualConfigNeverBorrowsItsKey() throws Exception {
+        useEnvironment(environment());
+        var mixed = input(); ((ObjectNode) mixed.get("config")).put("useEnvironment", true);
+        send("answer", mixed.toString()).andExpect(status().isBadRequest());
+        assertEquals(0, calls.get());
+        var manual = input(); ((ObjectNode) manual.get("config")).put("apiKey", "");
+        send("answer", manual.toString()).andExpect(jsonPath("$.status").value("answered"));
+        assertNull(authorization);
+    }
+    @Test void missingInvalidOrKeylessEnvironmentIsHandledWithoutLeakingValues() throws Exception {
+        var body = input(); body.putObject("config").put("useEnvironment", true);
+        useEnvironment(new MockEnvironment());
+        send("answer", body.toString()).andExpect(status().isBadRequest());
+        useEnvironment(environment().withProperty("HOCLUC_TUTOR_BASE_URL", "http://unsafe.test/v1"));
+        var invalid = send("answer", body.toString()).andExpect(status().isBadRequest()).andReturn();
+        assertFalse(invalid.getResponse().getContentAsString().contains("env-secret-key"));
+        assertEquals(0, calls.get());
+        useEnvironment(environment().withProperty("HOCLUC_TUTOR_API_KEY", ""));
+        send("answer", body.toString()).andExpect(jsonPath("$.status").value("answered"));
+        assertNull(authorization);
     }
     @Test void groundedCompletionAndRequestContract() throws Exception {
         send("answer", input().toString()).andExpect(status().isOk())
