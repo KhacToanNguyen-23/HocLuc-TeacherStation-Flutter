@@ -55,7 +55,7 @@ class StudioTutorContext extends ChangeNotifier {
   }
 
   List<Object?> _visibleSignature() {
-    final signature = <Object?>[_studio.viewportMode];
+    final signature = <Object?>[_studio.viewportMode, _studio.subject];
     if (_boardVisible) {
       signature.add(_studio.page);
       for (final s in _studio.pageStickers[_studio.page] ?? <BoardSticker>[]) {
@@ -164,6 +164,7 @@ class StudioTutorContext extends ChangeNotifier {
       if (_disposed || version != revision || key != _documentKey()) {
         return TutorContext(
           revision: version,
+          lessonSubject: _studio.subject,
           currentPage: page,
           sources: const [],
         );
@@ -191,6 +192,7 @@ class StudioTutorContext extends ChangeNotifier {
     });
     return TutorContext(
       revision: version,
+      lessonSubject: _studio.subject,
       currentPage: page,
       sources: List.unmodifiable(
         ranked

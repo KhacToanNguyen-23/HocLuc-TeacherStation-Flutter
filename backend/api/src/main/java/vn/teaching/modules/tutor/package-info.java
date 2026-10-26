@@ -2,9 +2,9 @@
  * Teacher-only stateless tutor MVP (Java 17 HttpClient / Jackson).
  *
  * POST /api/tutor/answer, application/json:
- * {config:{baseUrl,apiKey,model},question,currentPage,sources:[{id,label,text}]}.
+ * {config:{baseUrl,apiKey,model},question,currentPage,lessonSubject?,sources:[{id,label,text}]}.
  * currentPage is an integer 0..100000 (0 means no PDF page).
- * Returns {answer:string,sources:[{id,quote}],status:"answered"|"tentative"|"review",reason:string,
+ * Returns {answer:string,sources:[{id,quote}],status:"answered"|"tentative"|"out_of_scope"|"review",reason:string,
  * confidence:"high"|"low"|"unavailable"}.
  * 200 answered/tentative has reason ""; 200 review has empty answer/sources and reason
  * invalid_evidence or provider_unavailable. Invalid requests: 400 review
@@ -32,7 +32,9 @@
  * Abbreviations/atypical punctuation, formulas and bullet facts without terminal punctuation may fail citation validation.
  * Low-confidence answers allow model inference/general knowledge with optional verified citations, including no source context.
  * The client MUST prepend an uncertainty label on every tentative reply and disclose absent lesson evidence.
- * Both valid branches auto-send without teacher approval; review means a failure/journal entry, not an approval request.
+ * Both valid branches auto-send without teacher approval. out_of_scope maps to a fixed classroom-scope reply.
+ * The frontend maps review/provider failures to a fixed chat notice; only transport ambiguity stays journal-only.
+ * Optional lessonSubject and provider scope metadata allow topic classification without hardcoded subject names.
  * Provider confidence is categorical/self-reported, not a calibrated probability of correctness.
  * This structural gate does NOT prove relevance, semantic entailment or correctness of source text.
  * No real-provider quality or live classroom acceptance is implied by mock tests.

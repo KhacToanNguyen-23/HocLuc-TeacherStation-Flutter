@@ -79,7 +79,151 @@ void main() {
   tearDown(() => controller.dispose());
 
   test(
-    'sends grounded new questions once and ignores self and own replies',
+    'proven pre-dispatch cancellation gets a changed-context notice without retrying old answer',
+    () async {
+      final release = Completer<void>();
+      final tutor = TutorController(
+        gateway: gateway,
+        context: (_) async =>
+            TutorContext(revision: revision, currentPage: 1, sources: sources),
+        contextRevision: () => revision,
+        send: (_) async => false,
+        sendInterval: Duration.zero,
+        detailedSend: (text, valid) async {
+          await release.future;
+          if (!valid()) return MeetTutorDelivery.notDispatched;
+          sent.add(text);
+          return MeetTutorDelivery.confirmed;
+        },
+      );
+      addTearDown(tutor.dispose);
+      tutor.syncMeeting('room1', true, []);
+      tutor.configure(config);
+      tutor.setEnabled(true);
+      tutor.syncMeeting('room1', true, [question('race')]);
+      await settle();
+      revision++;
+      tutor.contextChanged();
+      release.complete();
+      await settle();
+      expect(sent.single, contains(TutorController.changedReply));
+      expect(sent.single, isNot(contains(source.text)));
+      expect(tutor.reviews, isEmpty);
+    },
+  );
+
+  test(
+    'uncertain transport never triggers a second fallback that could duplicate a sent message',
+    () async {
+      var attempts = 0;
+      final tutor = TutorController(
+        gateway: gateway,
+        context: (_) async =>
+            TutorContext(revision: revision, currentPage: 1, sources: sources),
+        contextRevision: () => revision,
+        send: (_) async => false,
+        detailedSend: (_, _) async {
+          attempts++;
+          revision++;
+          return MeetTutorDelivery.unconfirmed;
+        },
+      );
+      addTearDown(tutor.dispose);
+      tutor.syncMeeting('room1', true, []);
+      tutor.configure(config);
+      tutor.setEnabled(true);
+      tutor.syncMeeting('room1', true, [question('ambiguous')]);
+      await settle();
+      expect(attempts, 1);
+      expect(tutor.reviews, hasLength(1));
+    },
+  );
+
+  test(
+    'out-of-scope question always gets the canonical classroom reply',
+    () async {
+      gateway.result = const TutorResult(
+        answer: 'Do not forward this unrelated answer.',
+        evidence: {},
+        confidence: TutorConfidence.outOfScope,
+      );
+      controller.syncMeeting('room1', true, [
+        question('daily', text: 'What should I eat today?'),
+      ]);
+      await settle();
+      expect(sent.single, '[Trợ giảng AI] @An: Không thuộc phạm vi bài giảng.');
+      expect(controller.reviews, isEmpty);
+    },
+  );
+
+  test(
+    'a question without punctuation or recognized keywords still receives a reply',
+    () async {
+      controller.syncMeeting('room1', true, [
+        question('plain', text: 'em hỏi cách làm bước này'),
+      ]);
+      await settle();
+      expect(sent, hasLength(1));
+    },
+  );
+
+  test(
+    'burst overflow produces busy replies and continues queued questions',
+    () async {
+      gateway.pending = Completer();
+      controller.syncMeeting(
+        'room1',
+        true,
+        List.generate(25, (i) => question('$i', text: 'Question $i?')),
+      );
+      await settle();
+      gateway.pending!.complete(supported);
+      await settle();
+      await settle();
+      expect(sent, hasLength(21));
+      expect(sent.where((m) => m.contains('Hệ thống đang bận')), hasLength(1));
+      expect(sent.last, contains('Thông báo chung'));
+      expect(gateway.calls, 20);
+    },
+  );
+
+  test(
+    'overlong question gets a fixed response without calling the provider',
+    () async {
+      controller.syncMeeting('room1', true, [
+        question('long', text: 'x' * 1600),
+      ]);
+      await settle();
+      expect(gateway.calls, 0);
+      expect(sent.single, contains('Câu hỏi quá dài'));
+    },
+  );
+
+  test(
+    'exception in context extraction is also answered without exposing exception',
+    () async {
+      final tutor = TutorController(
+        gateway: gateway,
+        context: (_) async => throw StateError('private path or key'),
+        contextRevision: () => revision,
+        send: (text) async {
+          sent.add(text);
+          return true;
+        },
+      );
+      addTearDown(tutor.dispose);
+      tutor.syncMeeting('room1', true, []);
+      tutor.configure(config);
+      tutor.setEnabled(true);
+      tutor.syncMeeting('room1', true, [question('error')]);
+      await settle();
+      expect(sent.single, contains(TutorController.apiFailureReply));
+      expect(sent.single, isNot(contains('private')));
+    },
+  );
+
+  test(
+    'answers each distinct message even for repeated questions and ignores self',
     () async {
       final messages = [
         question('1'),
@@ -90,10 +234,10 @@ void main() {
       await settle();
       controller.syncMeeting('room1', true, [...messages, question('4')]);
       await settle();
-      expect(gateway.calls, 1);
-      expect(sent, hasLength(1));
-      expect(controller.sentCount, 1);
-      expect(sent.single, contains('Nguồn: Trang 1'));
+      expect(gateway.calls, 2);
+      expect(sent, hasLength(2));
+      expect(controller.sentCount, 2);
+      expect(sent.first, contains('Nguồn: Trang 1'));
     },
   );
   test('does not replay questions seen while paused', () async {
@@ -125,9 +269,10 @@ void main() {
       revision++;
       gateway.pending!.complete(supported);
       await settle();
-      expect(sent, isEmpty);
+      expect(sent, hasLength(2));
+      expect(sent.every((m) => m.contains(TutorController.changedReply)), true);
       expect(gateway.calls, 1);
-      expect(controller.reviews, hasLength(2));
+      expect(controller.reviews, isEmpty);
     },
   );
   test(
@@ -194,7 +339,7 @@ void main() {
   );
 
   test(
-    'tentative fabricated sources, unavailable status and empty answers never auto-send',
+    'invalid answers send a fixed fallback without leaking rejected content',
     () async {
       for (final result in [
         const TutorResult(
@@ -215,15 +360,13 @@ void main() {
       ]) {
         gateway.result = result;
         controller.syncMeeting('room1', true, [
-          question(
-            'bad-${controller.reviews.length}',
-            text: 'Why ${controller.reviews.length}?',
-          ),
+          question('bad-${sent.length}', text: 'Why ${sent.length}?'),
         ]);
         await settle();
       }
-      expect(sent, isEmpty);
-      expect(controller.reviews, hasLength(3));
+      expect(sent, hasLength(3));
+      expect(sent.every((m) => m.contains(TutorController.invalidReply)), true);
+      expect(controller.reviews, isEmpty);
     },
   );
 
@@ -249,8 +392,9 @@ void main() {
     );
     controller.syncMeeting('room1', true, [question('1')]);
     await settle();
-    expect(sent, isEmpty);
-    expect(controller.reviews, hasLength(1));
+    expect(sent.single, contains(TutorController.invalidReply));
+    expect(sent.single, isNot(contains('The answer is 100.')));
+    expect(controller.reviews, isEmpty);
     expect(
       const TutorResult(
         answer: 'Fabricated quote.',
@@ -259,22 +403,26 @@ void main() {
       false,
     );
   });
-  test('provider failure and unconfirmed delivery are review-only', () async {
-    gateway.fail = true;
-    controller.syncMeeting('room1', true, [question('1')]);
-    await settle();
-    expect(sent, isEmpty);
-    expect(controller.reviews.single.reason, isNot(contains('private')));
-    gateway.fail = false;
-    confirmed = false;
-    controller.syncMeeting('room1', true, [
-      question('1'),
-      question('2', text: 'Why is it a triangle?'),
-    ]);
-    await settle();
-    expect(controller.sentCount, 0);
-    expect(controller.reviews, hasLength(2));
-  });
+  test(
+    'provider failure sends an apology while ambiguous delivery stays journal-only',
+    () async {
+      gateway.fail = true;
+      controller.syncMeeting('room1', true, [question('1')]);
+      await settle();
+      expect(sent.single, contains(TutorController.apiFailureReply));
+      expect(sent.single, isNot(contains('private')));
+      expect(controller.reviews, isEmpty);
+      gateway.fail = false;
+      confirmed = false;
+      controller.syncMeeting('room1', true, [
+        question('1'),
+        question('2', text: 'Why is it a triangle?'),
+      ]);
+      await settle();
+      expect(controller.sentCount, 1);
+      expect(controller.reviews, hasLength(1));
+    },
+  );
   test('single sequential bounded queue under burst', () async {
     gateway.pending = Completer();
     final burst = List.generate(
@@ -284,12 +432,13 @@ void main() {
     controller.syncMeeting('room1', true, burst);
     await settle();
     expect(gateway.calls, 1);
-    expect(controller.queued, lessThanOrEqualTo(20));
-    expect(controller.reviews, isNotEmpty);
+    expect(controller.queued, 20);
+    expect(controller.reviews, isEmpty);
+    final sentBeforePause = sent.length;
     controller.setEnabled(false);
     gateway.pending!.complete(supported);
     await settle();
-    expect(sent, isEmpty);
+    expect(sent, hasLength(sentBeforePause));
   });
 
   test(

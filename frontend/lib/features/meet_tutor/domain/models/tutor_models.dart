@@ -32,13 +32,15 @@ class TutorContext {
     required this.revision,
     required this.currentPage,
     required this.sources,
+    this.lessonSubject = '',
   });
   final int revision;
   final int currentPage;
   final List<TutorSource> sources;
+  final String lessonSubject;
 }
 
-enum TutorConfidence { grounded, tentative, unavailable }
+enum TutorConfidence { grounded, tentative, outOfScope, unavailable }
 
 class TutorResult {
   const TutorResult({

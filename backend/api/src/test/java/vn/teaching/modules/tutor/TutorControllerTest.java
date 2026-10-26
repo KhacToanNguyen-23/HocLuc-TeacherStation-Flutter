@@ -67,6 +67,21 @@ class TutorControllerTest {
         assertFalse(received.contains("secret-test-key"));
         assertEquals(1, calls.get());
     }
+    @Test void unrelatedQuestionProducesCanonicalReplyAndReceivesLessonSubject() throws Exception {
+        var input = input(); input.put("lessonSubject", "Mathematics").put("question", "What should I eat today?");
+        completion("{\"answer\":\"arbitrary unrelated advice\",\"sources\":[],\"confidence\":\"low\",\"scope\":\"out_of_scope\"}");
+        send("answer", input.toString()).andExpect(jsonPath("$.status").value("out_of_scope"))
+                .andExpect(jsonPath("$.answer").value("Không thuộc phạm vi bài giảng."))
+                .andExpect(jsonPath("$.sources").isEmpty());
+        var messages = TutorService.JSON.readTree(received).path("messages");
+        assertEquals("Mathematics", TutorService.JSON.readTree(messages.get(1).path("content").asText()).path("lessonSubject").asText());
+    }
+    @Test void newScopeSchemaAcceptsInScopeLowAndRejectsInvalidScope() throws Exception {
+        completion("{\"answer\":\"It may mean the shape has three sides.\",\"sources\":[],\"confidence\":\"low\",\"scope\":\"in_scope\"}");
+        send("answer", input().toString()).andExpect(jsonPath("$.status").value("tentative"));
+        completion("{\"answer\":\"Invalid.\",\"sources\":[],\"confidence\":\"low\",\"scope\":\"anything\"}");
+        send("answer", input().toString()).andExpect(jsonPath("$.status").value("review"));
+    }
     @Test void testRequiresActualSmallCompletion() throws Exception {
         var input = input(); input.remove(java.util.List.of("question", "currentPage", "sources"));
         completion("OK");

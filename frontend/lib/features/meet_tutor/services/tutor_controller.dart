@@ -12,6 +12,7 @@ class TutorController extends ChangeNotifier {
     required this.contextRevision,
     required this.send,
     this.guardedSend,
+    this.detailedSend,
     this.prepareObservation,
     this.cancelSend,
     this.sendInterval = const Duration(seconds: 5),
@@ -21,6 +22,8 @@ class TutorController extends ChangeNotifier {
   final int Function() contextRevision;
   final Future<bool> Function(String) send;
   final Future<bool> Function(String, bool Function())? guardedSend;
+  final Future<MeetTutorDelivery> Function(String, bool Function())?
+  detailedSend;
   final Future<bool> Function()? prepareObservation;
   final VoidCallback? cancelSend;
   final Duration sendInterval;
@@ -32,7 +35,6 @@ class TutorController extends ChangeNotifier {
   String? _room;
   int _generation = 0;
   final _seen = <String>{};
-  final _questions = <String>{};
   final _queue = Queue<_TutorJob>();
   final _reviews = <TutorReview>[];
   List<TutorReview> get reviews => List.unmodifiable(_reviews);
@@ -81,7 +83,6 @@ class TutorController extends ChangeNotifier {
     cancelSend?.call();
     enabled = false;
     _queue.clear();
-    _questions.clear();
     status = message;
     if (!_disposed) notifyListeners();
   }
@@ -106,12 +107,36 @@ class TutorController extends ChangeNotifier {
         continue;
       }
       final question = message.text.trim();
-      if (!_isQuestion(question)) continue;
-      final key =
-          '${contextRevision()}:${question.toLowerCase().replaceAll(RegExp(r'\s+'), ' ')}';
-      if (!_questions.add(key)) continue;
-      if (_queue.length >= 20) {
-        _review(message, 'Nhiều câu hỏi đang chờ; giáo viên hỗ trợ câu này.');
+      if (question.isEmpty) continue;
+      final aiPending = _queue.where((job) => job.notice == null).length;
+      if (question.length > 1500) {
+        if (_queue.any(
+          (job) => job.notice != null && job.message.text.length > 1500,
+        )) {
+          continue;
+        }
+        _queue.add(
+          _TutorJob(
+            message,
+            contextRevision(),
+            notice:
+                'Câu hỏi quá dài. Em vui lòng chia thành các câu hỏi ngắn hơn.',
+          ),
+        );
+      } else if (aiPending >= 20) {
+        if (_queue.any(
+          (job) => job.notice != null && job.message.text.length <= 1500,
+        )) {
+          continue;
+        }
+        _queue.add(
+          _TutorJob(
+            message,
+            contextRevision(),
+            notice:
+                'Hệ thống đang bận nên các câu hỏi mới vượt hàng đợi chưa được xử lý. Các em vui lòng hỏi lại sau.',
+          ),
+        );
       } else {
         _queue.add(_TutorJob(message, contextRevision()));
       }
@@ -121,25 +146,8 @@ class TutorController extends ChangeNotifier {
       final current = messages.map((m) => m.id).toSet();
       _seen.removeWhere((id) => !current.contains(id));
     }
-    if (_questions.length > 2000) _questions.clear();
     if (!busy && enabled && _queue.isNotEmpty) unawaited(_drain());
   }
-
-  bool _isQuestion(String text) =>
-      text.length >= 3 &&
-      text.length <= 1500 &&
-      (text.contains('?') ||
-          RegExp(
-            r'(là gì|tại sao|vì sao|thế nào|như nào|giải thích|bao nhiêu|how |what |why |when |where |which |đúng không|chưa hiểu)',
-            caseSensitive: false,
-          ).hasMatch(text));
-
-  bool _valid(int generation, int revision) =>
-      !_disposed &&
-      enabled &&
-      _joined &&
-      generation == _generation &&
-      revision == contextRevision();
 
   void _review(MeetChatMessage message, String reason) {
     _reviews.insert(0, TutorReview(message.sender, message.text, reason));
@@ -151,6 +159,78 @@ class TutorController extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const invalidReply =
+      'AI chưa tạo được câu trả lời hợp lệ cho câu hỏi này. Em vui lòng diễn đạt lại hoặc hỏi lại sau.';
+  static const apiFailureReply =
+      'Hệ thống AI đang gặp lỗi nên chưa thể trả lời câu hỏi này. Em vui lòng hỏi lại sau.';
+  static const changedReply =
+      'Nội dung bài giảng vừa thay đổi nên câu trả lời đang xử lý đã được hủy. Em vui lòng hỏi lại theo nội dung hiện tại.';
+
+  bool _sessionCurrent(int generation) =>
+      !_disposed && enabled && _joined && generation == _generation;
+
+  Future<void> _deliver(
+    MeetChatMessage question,
+    String body,
+    int generation, {
+    int? revision,
+    bool allowRecovery = true,
+    bool broadcast = false,
+  }) async {
+    final previous = _lastSend;
+    if (previous != null) {
+      final remaining = sendInterval - DateTime.now().difference(previous);
+      if (remaining > Duration.zero) await Future<void>.delayed(remaining);
+    }
+    if (!_sessionCurrent(generation)) return;
+    var dispatchRevision = contextRevision();
+    if (revision != null && revision != dispatchRevision) {
+      body = changedReply;
+      revision = null;
+    }
+    final cleanSender = question.sender.replaceAll(RegExp(r'[\r\n]'), ' ');
+    final sender = cleanSender.substring(0, cleanSender.length.clamp(0, 80));
+    bool valid() =>
+        _sessionCurrent(generation) &&
+        (revision == null || dispatchRevision == contextRevision());
+    _lastSend = DateTime.now();
+    final text = broadcast
+        ? '[Trợ giảng AI] Thông báo chung: $body'
+        : '[Trợ giảng AI] @$sender: $body';
+    MeetTutorDelivery outcome;
+    try {
+      if (detailedSend != null) {
+        outcome = await detailedSend!(text, valid);
+      } else {
+        final confirmed = guardedSend == null
+            ? await send(text)
+            : await guardedSend!(text, valid);
+        outcome = confirmed
+            ? MeetTutorDelivery.confirmed
+            : MeetTutorDelivery.unconfirmed;
+      }
+    } catch (_) {
+      outcome = MeetTutorDelivery.unconfirmed;
+    }
+    if (!_sessionCurrent(generation)) return;
+    if (outcome == MeetTutorDelivery.notDispatched &&
+        allowRecovery &&
+        revision != null &&
+        dispatchRevision != contextRevision()) {
+      await _deliver(question, changedReply, generation, allowRecovery: false);
+      return;
+    }
+    if (outcome == MeetTutorDelivery.confirmed) {
+      sentCount++;
+    } else {
+      // Delivery is ambiguous: do not send another message and risk duplicates.
+      _review(
+        question,
+        'Meet chưa xác nhận gửi; kiểm tra chat trước khi gửi lại.',
+      );
+    }
+  }
+
   Future<void> _drain() async {
     busy = true;
     notifyListeners();
@@ -160,95 +240,64 @@ class TutorController extends ChangeNotifier {
         final question = job.message;
         final generation = _generation;
         final revision = job.revision;
-        final provider = config!;
         try {
+          if (job.notice != null) {
+            await _deliver(question, job.notice!, generation, broadcast: true);
+            continue;
+          }
           if (revision != contextRevision()) {
-            _review(
-              question,
-              'Trang bài học đã đổi trong lúc câu hỏi chờ xử lý.',
-            );
+            await _deliver(question, changedReply, generation);
             continue;
           }
-          status = 'Đang tìm căn cứ trong bài học…';
+          status = 'Đang xử lý câu hỏi…';
           notifyListeners();
-          final lesson = await context(question.text);
-          if (!_valid(generation, revision) || lesson.revision != revision) {
-            if (!_disposed && generation == _generation) {
-              _review(question, 'Bài học hoặc cấu hình đã thay đổi.');
-            }
+          final lesson = await context(
+            question.text,
+          ).timeout(const Duration(seconds: 15));
+          if (!_sessionCurrent(generation)) continue;
+          if (revision != contextRevision() || lesson.revision != revision) {
+            await _deliver(question, changedReply, generation);
             continue;
           }
-          final result = await gateway.answer(provider, question.text, lesson);
-          if (!_valid(generation, revision)) {
-            if (!_disposed && generation == _generation) {
-              _review(question, 'Ngữ cảnh thay đổi trong lúc AI xử lý.');
-            }
+          final result = await gateway.answer(config!, question.text, lesson);
+          if (!_sessionCurrent(generation)) continue;
+          if (revision != contextRevision()) {
+            await _deliver(question, changedReply, generation);
             continue;
           }
-          if (!result.canAutoSend(lesson.sources)) {
-            _review(
+          if (result.confidence == TutorConfidence.outOfScope) {
+            await _deliver(
               question,
-              result.reason.isEmpty
-                  ? 'AI chưa tạo được phản hồi hợp lệ; không có tin đang chờ duyệt.'
-                  : result.reason,
+              'Không thuộc phạm vi bài giảng.',
+              generation,
+              revision: revision,
             );
-            continue;
-          }
-          final previous = _lastSend;
-          if (previous != null) {
-            final remaining =
-                sendInterval - DateTime.now().difference(previous);
-            if (remaining > Duration.zero) {
-              await Future<void>.delayed(remaining);
-            }
-          }
-          if (!_valid(generation, revision)) {
-            if (!_disposed && generation == _generation) {
-              _review(question, 'Đã dừng hoặc đổi nội dung trước khi gửi.');
-            }
-            continue;
-          }
-          final labels = lesson.sources
-              .where((s) => result.evidence.containsKey(s.id))
-              .map((s) => s.label)
-              .join('; ');
-          final cleanSender = question.sender.replaceAll(
-            RegExp(r'[\r\n]'),
-            ' ',
-          );
-          final sender = cleanSender.substring(
-            0,
-            cleanSender.length.clamp(0, 80),
-          );
-          _lastSend = DateTime.now();
-          final tentative = result.confidence == TutorConfidence.tentative;
-          final warning = tentative
-              ? 'Chưa chắc chắn — câu trả lời dự kiến.\n'
-              : '';
-          final sourceLine = labels.isEmpty
-              ? 'Chưa có nguồn bài học xác nhận.'
-              : 'Nguồn: $labels';
-          final text =
-              '[Trợ giảng AI] @$sender: $warning${result.answer}\n$sourceLine';
-          final confirmed = guardedSend == null
-              ? await send(text)
-              : await guardedSend!(text, () => _valid(generation, revision));
-          if (_disposed) return;
-          if (generation != _generation) continue;
-          if (confirmed) {
-            sentCount++;
+          } else if (!result.canAutoSend(lesson.sources)) {
+            final response = result.reason == 'provider_unavailable'
+                ? apiFailureReply
+                : invalidReply;
+            await _deliver(question, response, generation, revision: revision);
           } else {
-            _review(
+            final labels = lesson.sources
+                .where((s) => result.evidence.containsKey(s.id))
+                .map((s) => s.label)
+                .join('; ');
+            final warning = result.confidence == TutorConfidence.tentative
+                ? 'Chưa chắc chắn — câu trả lời dự kiến.\n'
+                : '';
+            final sourceLine = labels.isEmpty
+                ? 'Chưa có nguồn bài học xác nhận.'
+                : 'Nguồn: $labels';
+            await _deliver(
               question,
-              'Meet chưa xác nhận gửi; kiểm tra chat trước khi gửi lại.',
+              '$warning${result.answer}\n$sourceLine',
+              generation,
+              revision: revision,
             );
           }
         } catch (_) {
-          if (!_disposed && generation == _generation) {
-            _review(
-              question,
-              'Không xử lý được câu hỏi. Kiểm tra API hoặc tài liệu.',
-            );
+          if (_sessionCurrent(generation)) {
+            await _deliver(question, apiFailureReply, generation);
           }
         }
       }
@@ -256,7 +305,7 @@ class TutorController extends ChangeNotifier {
       busy = false;
       if (!_disposed) {
         status = enabled
-            ? 'Đang theo dõi • đã gửi $sentCount • sự cố ${_reviews.length}'
+            ? 'Đang theo dõi • đã gửi $sentCount • chưa xác nhận ${_reviews.length}'
             : status;
         notifyListeners();
       }
@@ -275,7 +324,8 @@ class TutorController extends ChangeNotifier {
 }
 
 class _TutorJob {
-  const _TutorJob(this.message, this.revision);
+  const _TutorJob(this.message, this.revision, {this.notice});
   final MeetChatMessage message;
   final int revision;
+  final String? notice;
 }

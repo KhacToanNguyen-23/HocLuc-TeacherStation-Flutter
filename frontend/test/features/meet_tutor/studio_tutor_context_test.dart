@@ -157,6 +157,19 @@ void main() {
   });
 
   test(
+    'subject metadata travels with context and changes invalidate a snapshot',
+    () async {
+      studio.subject = 'Mathematics';
+      final first = await context.build('question');
+      expect(first.lessonSubject, 'Mathematics');
+      studio.change(() => studio.subject = 'Science', persist: false);
+      final next = await context.build('question');
+      expect(next.lessonSubject, 'Science');
+      expect(next.revision, greaterThan(first.revision));
+    },
+  );
+
+  test(
     'handwriting and scanned/textless pages never become invented evidence',
     () async {
       studio.addStroke(BoardStroke(Colors.white, 3, [const Offset(.1, .2)]));

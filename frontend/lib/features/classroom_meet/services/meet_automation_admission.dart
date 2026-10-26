@@ -212,7 +212,17 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
   }
 
   /// Returns true only after a new self-authored DOM echo in this document.
-  Future<bool> sendTutorMessage(String text, {bool Function()? stillCurrent}) {
+  Future<bool> sendTutorMessage(
+    String text, {
+    bool Function()? stillCurrent,
+  }) async =>
+      await sendTutorMessageDetailed(text, stillCurrent: stillCurrent) ==
+      MeetTutorDelivery.confirmed;
+
+  Future<MeetTutorDelivery> sendTutorMessageDetailed(
+    String text, {
+    bool Function()? stillCurrent,
+  }) {
     final generation = _tutorGeneration;
     final cancelled = _tutorCancelled.future;
     final documentId = _tutorDocumentId;
@@ -235,11 +245,14 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
         documentId == _tutorDocumentId &&
         url == _tutorDocumentUrl &&
         MeetAutomationService.isOfficialMeetingUrl(_meetingUrl);
-    if (text.trim().isEmpty || !current()) return Future.value(false);
-    final result = Completer<bool>();
+    if (text.trim().isEmpty || !current()) {
+      return Future.value(MeetTutorDelivery.notDispatched);
+    }
+    final result = Completer<MeetTutorDelivery>();
+    var dispatched = false;
     _tutorQueue = _tutorQueue.then((_) async {
       if (!current()) {
-        result.complete(false);
+        result.complete(MeetTutorDelivery.notDispatched);
         return;
       }
       final requestId = 'tutor-${++_tutorCounter}';
@@ -256,11 +269,22 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
       try {
         var method = 'sendTutor';
         while (current() && watch.elapsed < _tutorTimeout) {
+          if (method == 'sendTutor') dispatched = true;
           final raw = await _executeAdmissionScript(
             'window.MeetBridge ? window.MeetBridge.$method($command) : "null";',
           ).timeout(_tutorTimeout - watch.elapsed);
           var response = jsonDecode(raw);
           if (response is String) response = jsonDecode(response);
+          if (method == 'sendTutor' &&
+              response is Map &&
+              const [
+                'NOT_READY',
+                'INPUT_BUSY',
+                'BUSY',
+              ].contains(response['status'])) {
+            result.complete(MeetTutorDelivery.notDispatched);
+            return;
+          }
           if (!current() ||
               response is! Map ||
               response['requestId'] != requestId ||
@@ -270,7 +294,7 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
           }
           if (watch.elapsed >= _tutorTimeout) break;
           if (response['status'] == 'CONFIRMED') {
-            result.complete(true);
+            result.complete(MeetTutorDelivery.confirmed);
             return;
           }
           if (response['status'] != 'PENDING') break;
@@ -281,9 +305,20 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
       } catch (_) {
         // Transport failure, navigation and timeout never imply delivery.
       }
-      result.complete(false);
+      result.complete(
+        dispatched
+            ? MeetTutorDelivery.unconfirmed
+            : MeetTutorDelivery.notDispatched,
+      );
     });
-    return Future.any([result.future, cancelled.then((_) => false)]);
+    return Future.any([
+      result.future,
+      cancelled.then(
+        (_) => dispatched
+            ? MeetTutorDelivery.unconfirmed
+            : MeetTutorDelivery.notDispatched,
+      ),
+    ]);
   }
 
   /// Gửi tin nhắn chat từ Giáo viên vào phòng Meet
@@ -585,4 +620,3 @@ class _AdmissionAttempt {
   final Completer<bool> completer = Completer<bool>();
   Timer? timer;
 }
-

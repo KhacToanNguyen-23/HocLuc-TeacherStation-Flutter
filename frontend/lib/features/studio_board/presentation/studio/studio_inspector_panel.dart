@@ -48,6 +48,8 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
       send: _meetService.sendTutorMessage,
       guardedSend: (text, valid) =>
           _meetService.sendTutorMessage(text, stillCurrent: valid),
+      detailedSend: (text, valid) =>
+          _meetService.sendTutorMessageDetailed(text, stillCurrent: valid),
       prepareObservation: _meetService.beginTutorObservation,
       cancelSend: _meetService.cancelTutorSend,
     );

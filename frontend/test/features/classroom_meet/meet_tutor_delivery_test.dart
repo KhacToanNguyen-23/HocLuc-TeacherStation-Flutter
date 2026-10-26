@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
+import 'package:teaching_companion/features/classroom_meet/domain/models/meet_events.dart';
 
 const room = 'https://meet.google.com/abc-defg-hij';
 Future<void> seed(MeetAutomationService service, {String doc = 'doc'}) async {
@@ -46,6 +47,28 @@ MeetAutomationService testService({
 );
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'detailed outcome separates no dispatch from ambiguous renderer calls',
+    () async {
+      final s = testService(
+        executeScript: (_) async => throw StateError('renderer lost'),
+      );
+      expect(
+        await s.sendTutorMessageDetailed('hello'),
+        MeetTutorDelivery.notDispatched,
+      );
+      await seed(s);
+      expect(
+        await s.sendTutorMessageDetailed('hello', stillCurrent: () => false),
+        MeetTutorDelivery.notDispatched,
+      );
+      expect(
+        await s.sendTutorMessageDetailed('hello'),
+        MeetTutorDelivery.unconfirmed,
+      );
+      s.dispose();
+    },
+  );
   test(
     'no joined current document means no command; manual signature preserved',
     () async {

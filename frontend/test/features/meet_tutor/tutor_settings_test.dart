@@ -201,7 +201,7 @@ void main() {
       await mount(tester, width: 240, scale: 1.5);
       expect(
         find.text(
-          'Tự gửi cả câu trả lời dự kiến với nhãn “Chưa chắc chắn”, không cần duyệt. Chưa đọc nét viết tay/PDF quét hoặc nghe lời giảng.',
+          'Tự phản hồi mọi câu hỏi nhận được: trả lời, báo ngoài phạm vi, hoặc thông báo lỗi. Câu dự kiến ghi “Chưa chắc chắn”; không cần duyệt.',
         ),
         findsOneWidget,
       );

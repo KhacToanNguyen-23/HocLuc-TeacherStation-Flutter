@@ -1430,7 +1430,7 @@
 {
   "id": "meet-ai-tutor-mvp",
   "title": "Trợ giảng tự trả lời chat Meet theo nguồn bài học",
-  "user_visible_behavior": "Giáo viên đổi API/model, bật trợ giảng tự gửi cả câu trả lời dự kiến với nhãn chưa chắc chắn, xem nhật ký sự cố và tạm dừng; không cần duyệt thủ công.",
+  "user_visible_behavior": "Trợ giảng phản hồi mọi tin học sinh mới nhận khi đang bật: trả lời, báo ngoài phạm vi, thông báo API/kết quả lỗi, đổi bài hoặc quá tải; không cần duyệt thủ công.",
   "verification_command": "flutter test test/features/meet_tutor test/features/classroom_meet/meet_tutor_delivery_test.dart; node --test frontend/test/features/classroom_meet/meet_tutor_bridge.test.cjs; mvn -f backend/api/pom.xml test",
   "status": "active",
   "evidence": "2026-10-26 isolated develop delivery: full Flutter 618 passed; backend 161 passed and JAR packaged; architecture 12/12; analyzer no issues; tutor DOM 14 passed; 3 plugin packages validated. GitHub CI and live provider/Meet acceptance tracked separately.",

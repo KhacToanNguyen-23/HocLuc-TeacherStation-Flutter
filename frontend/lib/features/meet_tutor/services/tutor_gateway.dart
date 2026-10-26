@@ -54,9 +54,17 @@ class CompanionTutorGateway implements TutorGateway {
       'config': config.toJson(),
       'question': question,
       'currentPage': context.currentPage,
+      'lessonSubject': context.lessonSubject,
       'sources': context.sources.map((s) => s.toJson()).toList(),
     });
     final evidence = <String, String>{};
+    if (data['status'] == 'out_of_scope') {
+      return const TutorResult(
+        answer: 'Không thuộc phạm vi bài giảng.',
+        evidence: {},
+        confidence: TutorConfidence.outOfScope,
+      );
+    }
     final grounded =
         data['status'] == 'answered' &&
         (data['confidence'] == null || data['confidence'] == 'high');

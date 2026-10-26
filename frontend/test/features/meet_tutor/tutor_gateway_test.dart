@@ -13,6 +13,37 @@ void main() {
     apiKey: 'secret',
   );
   test(
+    'lesson subject is forwarded and out-of-scope response uses fixed text',
+    () async {
+      final service = LocalService(
+        base: 'http://127.0.0.1:1234',
+        client: MockClient((request) async {
+          if (request.url.path == '/api/bootstrap') {
+            return http.Response('{"token":"local-token"}', 200);
+          }
+          expect(jsonDecode(request.body)['lessonSubject'], 'Mathematics');
+          return http.Response(
+            '{"status":"out_of_scope","answer":"Do not expose unrelated advice"}',
+            200,
+          );
+        }),
+      );
+      addTearDown(service.dispose);
+      final result = await CompanionTutorGateway(service).answer(
+        config,
+        'What to eat?',
+        const TutorContext(
+          revision: 0,
+          currentPage: 1,
+          sources: [],
+          lessonSubject: 'Mathematics',
+        ),
+      );
+      expect(result.confidence, TutorConfidence.outOfScope);
+      expect(result.answer, 'Không thuộc phạm vi bài giảng.');
+    },
+  );
+  test(
     'uses companion token and bounded evidence contract with per-request config',
     () async {
       final calls = <http.Request>[];

@@ -123,7 +123,7 @@ class _TutorSettingsState extends State<TutorSettings> {
             Text('Trợ giảng AI', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             const Text(
-              'Tự gửi cả câu trả lời dự kiến với nhãn “Chưa chắc chắn”, không cần duyệt. Chưa đọc nét viết tay/PDF quét hoặc nghe lời giảng.',
+              'Tự phản hồi mọi câu hỏi nhận được: trả lời, báo ngoài phạm vi, hoặc thông báo lỗi. Câu dự kiến ghi “Chưa chắc chắn”; không cần duyệt.',
             ),
             const SizedBox(height: 8),
             const Text('API tương thích OpenAI (OpenAI-compatible)'),

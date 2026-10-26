@@ -1,3 +1,5 @@
+enum MeetTutorDelivery { confirmed, notDispatched, unconfirmed }
+
 class MeetChatMessage {
   final String id;
   final String sender;
