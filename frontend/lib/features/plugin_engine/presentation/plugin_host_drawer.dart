@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
@@ -143,7 +143,11 @@ class PluginHostDrawer extends StatelessWidget {
     void Function(String)? executeJs;
     return FlatHost(
       url: targetUrl,
-      onMessage: (msg) => studio.handlePluginMessage(msg, executeJs: executeJs),
+      onMessage: (msg) => studio.handlePluginMessage(
+        msg,
+        executeJs: executeJs,
+        manifest: plugin.manifest,
+      ),
       onControllerReady: (sendJs) {
         executeJs = sendJs;
         studio.onSnippetCapturedForPlugin = (text, target) {

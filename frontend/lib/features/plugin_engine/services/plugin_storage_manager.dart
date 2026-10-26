@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
@@ -48,9 +48,54 @@ class PluginStorageManager {
     return dir;
   }
 
+  List<Directory> _resolveSearchRoots() {
+    final list = <Directory>[
+      Directory('plugins'),
+      Directory('../plugins'),
+      Directory('../../plugins'),
+      Directory('../../../plugins'),
+      Directory('../../../../plugins'),
+      Directory('../../../../../plugins'),
+    ];
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent;
+      list.addAll([
+        Directory('${exeDir.path}/plugins'),
+        Directory('${exeDir.path}/../plugins'),
+        Directory('${exeDir.path}/../../plugins'),
+        Directory('${exeDir.path}/../../../plugins'),
+        Directory('${exeDir.path}/../../../../plugins'),
+        Directory('${exeDir.path}/../../../../../plugins'),
+      ]);
+    } catch (_) {}
+    return list;
+  }
+
   /// Get the installed directory for a specific plugin if it exists.
   Directory? getInstalledDirectory(String pluginId, {String? version}) {
     if (kIsWeb) return null;
+
+    final devRoots = _resolveSearchRoots();
+
+    // In debug/dev mode, check local workspace first so live edits are served immediately
+    if (kDebugMode) {
+      for (final rootDir in devRoots) {
+        if (!rootDir.existsSync()) continue;
+        final direct = Directory('${rootDir.path}/$pluginId');
+        if (direct.existsSync() &&
+            File('${direct.path}/manifest.json').existsSync()) {
+          return direct;
+        }
+        try {
+          for (final subDir in rootDir.listSync().whereType<Directory>()) {
+            final m = loadManifestFromDir(subDir);
+            if (m != null && m.id == pluginId) {
+              return subDir;
+            }
+          }
+        } catch (_) {}
+      }
+    }
 
     final root = getPluginsRootDirectory();
     final pluginFolder = Directory('${root.path}/$pluginId');
@@ -74,12 +119,6 @@ class PluginStorageManager {
     }
 
     // Fallback: Check local development workspace folder (e.g. plugins/<plugin_id> or plugins/<folder> with matching manifest.id)
-    final devRoots = [
-      Directory('plugins'),
-      Directory('../plugins'),
-      Directory('../../plugins'),
-    ];
-
     for (final rootDir in devRoots) {
       if (!rootDir.existsSync()) continue;
       final direct = Directory('${rootDir.path}/$pluginId');

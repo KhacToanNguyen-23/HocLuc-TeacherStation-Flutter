@@ -1,0 +1,32 @@
+{
+  "$schema": "https://hocluc.com/schemas/plugin.v2.json",
+  "id": "com.hocluc.plugin.math_studio",
+  "name": "Học Lực Math Studio",
+  "version": "2.1.0",
+  "author": "Học Lực Math Engineering Team",
+  "description": "Studio Toán học Sư phạm: Đồ thị hàm số, Bảng biến thiên, Tích phân và Hình không gian 3D chuẩn SGK.",
+  "category": "math",
+  "main": "ui/index.html",
+  "icon": "icon.png",
+  "placement": "modal",
+  "movable": false,
+  "default_width": 980,
+  "default_height": 560,
+  "resizable": false,
+  "frameless": true,
+  "inject_sdk": true,
+  "backend": null,
+  "contributes": {
+    "tools": [
+      {
+        "id": "open_math_studio",
+        "label": "Đồ thị hàm số",
+        "icon": "functions",
+        "action": "toggle_tool"
+      }
+    ]
+  },
+  "permissions": [
+    "board:insert_annotation"
+  ]
+}

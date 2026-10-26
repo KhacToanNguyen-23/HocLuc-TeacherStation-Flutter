@@ -263,6 +263,15 @@ class CanvasDrawingController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateSticker(BoardSticker updated) {
+    final list = currentStickers;
+    final idx = list.indexWhere((s) => s.id == updated.id);
+    if (idx != -1) {
+      list[idx] = updated;
+      notifyListeners();
+    }
+  }
+
   void removeSticker(String id) {
     final list = currentStickers;
     final idx = list.indexWhere((s) => s.id == id);
@@ -277,6 +286,36 @@ class CanvasDrawingController extends ChangeNotifier {
     final idx = list.indexWhere((s) => s.id == id);
     if (idx != -1) {
       list[idx].normalizedRect = newRect;
+      notifyListeners();
+    }
+  }
+
+  void updateStickerRotation(String id, double rotation) {
+    final list = currentStickers;
+    final idx = list.indexWhere((s) => s.id == id);
+    if (idx != -1) {
+      list[idx] = list[idx].copyWith(rotation: rotation);
+      notifyListeners();
+    }
+  }
+
+  void duplicateSticker(String id) {
+    final list = currentStickers;
+    final idx = list.indexWhere((s) => s.id == id);
+    if (idx != -1) {
+      final orig = list[idx];
+      final r = orig.normalizedRect;
+      final offsetRect = Rect.fromLTWH(
+        (r.left + 0.03).clamp(0.0, 0.9),
+        (r.top + 0.03).clamp(0.0, 0.9),
+        r.width,
+        r.height,
+      );
+      final copy = orig.copyWith(
+        id: 'sticker-${DateTime.now().millisecondsSinceEpoch}',
+        normalizedRect: offsetRect,
+      );
+      list.add(copy);
       notifyListeners();
     }
   }

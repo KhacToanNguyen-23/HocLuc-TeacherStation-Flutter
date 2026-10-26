@@ -93,6 +93,7 @@ class PluginManifest {
     this.uiDefaultHeight = 560.0,
     this.resizable = true,
     this.frameless = false,
+    this.movable = true,
     this.injectSdk = true,
     this.hasSidecar = false,
     this.backendExecutable,
@@ -149,6 +150,7 @@ class PluginManifest {
   final double uiDefaultHeight;
   final bool resizable;
   final bool frameless;
+  final bool movable;
   final bool injectSdk;
   final bool hasSidecar;
   final String? backendExecutable;
@@ -183,6 +185,8 @@ class PluginManifest {
         json['resizable'] as bool? ?? ui['resizable'] as bool? ?? true;
     final frameless =
         json['frameless'] as bool? ?? ui['frameless'] as bool? ?? false;
+    final movable =
+        json['movable'] as bool? ?? ui['movable'] as bool? ?? true;
     final injectSdk =
         json['inject_sdk'] as bool? ?? ui['inject_sdk'] as bool? ?? true;
     final iconPath =
@@ -221,6 +225,7 @@ class PluginManifest {
       uiDefaultHeight: uiDefaultHeight,
       resizable: resizable,
       frameless: frameless,
+      movable: movable,
       injectSdk: injectSdk,
       hasSidecar: hasSidecar,
       backendExecutable: backendExecutable,
@@ -251,6 +256,7 @@ class PluginManifest {
       'default_height': uiDefaultHeight,
       'resizable': resizable,
       'frameless': frameless,
+      'movable': movable,
     },
     'contributes': {
       'tools': contributesTools.map((t) => t.toJson()).toList(),

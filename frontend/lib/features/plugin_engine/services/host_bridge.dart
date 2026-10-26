@@ -60,6 +60,18 @@ class HostBridge {
             'platform': defaultTargetPlatform.name,
             'pluginId': pluginId,
             'pluginName': manifest?.name ?? '',
+            'editingSticker': studio.editingSticker != null
+                ? {
+                    'id': studio.editingSticker!.id,
+                    'title': studio.editingSticker!.title,
+                    'metadata': studio.editingSticker!.metadata,
+                    'formula': studio.editingSticker!.metadata?['formula'] ??
+                        studio.editingSticker!.title?.replaceAll(RegExp(r'^(Đồ thị:\s*|y\s*=\s*)'), '').trim(),
+                    'a': studio.editingSticker!.metadata?['a'],
+                    'b': studio.editingSticker!.metadata?['b'],
+                    'view': studio.editingSticker!.metadata?['view'],
+                  }
+                : null,
           });
           break;
 
@@ -73,6 +85,15 @@ class HostBridge {
           _enforcePermission(permissions, 'board:insert_annotation');
           _handleInsertAnnotation(studio, manifest, payload);
           result = _successResponse(requestId, {'status': 'pinned'});
+          break;
+
+        case 'window:close':
+          if (studio.pluginFloating) {
+            studio.closeFloatingPlugin();
+          } else {
+            studio.showPluginDrawer = false;
+          }
+          result = _successResponse(requestId, {'closed': true});
           break;
 
         case 'storage:get':
@@ -181,17 +202,86 @@ class HostBridge {
       issues = [innerData['grammar_issue'].toString()];
     }
 
-    final sticker = BoardSticker(
-      id: 'sticker-${DateTime.now().millisecondsSinceEpoch}',
-      type: manifest?.id ?? 'generic_sticker',
-      normalizedRect: const Rect.fromLTWH(0.2, 0.25, 0.45, 0.22),
-      rawText: rawText,
-      tokens: tokens,
-      issues: issues,
-    );
-    studio.addSticker(sticker);
+    final title = (innerData['title'] as String?)?.trim();
+    final svgContent =
+        (innerData['svgContent'] as String?) ??
+        (innerData['svg'] as String?);
+    final imageBase64 =
+        (innerData['imageBase64'] as String?) ??
+        (innerData['image'] as String?);
 
-    if (studio.showPluginDrawer && !studio.pluginFloating) {
+    final stickerId = (innerData['stickerId'] as String?) ??
+        (innerData['id'] as String?) ??
+        (payload['stickerId'] as String?);
+
+    final metadata = (innerData['metadata'] is Map)
+        ? Map<String, dynamic>.from(innerData['metadata'] as Map)
+        : (payload['metadata'] is Map)
+            ? Map<String, dynamic>.from(payload['metadata'] as Map)
+            : null;
+
+    final existingIndex = stickerId != null
+        ? studio.currentStickers.indexWhere((s) => s.id == stickerId)
+        : -1;
+
+    if (existingIndex != -1) {
+      final existing = studio.currentStickers[existingIndex];
+      final updated = existing.copyWith(
+        title: title ?? existing.title,
+        svgContent: svgContent ?? existing.svgContent,
+        imageBase64: imageBase64 ?? existing.imageBase64,
+        rawText: rawText.isNotEmpty ? rawText : existing.rawText,
+        tokens: tokens.isNotEmpty ? tokens : existing.tokens,
+        issues: issues.isNotEmpty ? issues : existing.issues,
+        metadata: metadata ?? existing.metadata,
+      );
+      studio.updateSticker(updated);
+    } else {
+      final isGraphOrBbt = svgContent != null && svgContent.isNotEmpty;
+      final passedAspect = (innerData['aspectRatio'] as num?)?.toDouble() ??
+          (innerData['aspect'] as num?)?.toDouble() ??
+          (payload['aspectRatio'] as num?)?.toDouble();
+
+      Rect initialRect;
+      if (passedAspect != null && passedAspect > 0) {
+        const boardAspect = 16.0 / 9.0;
+        final normH = (passedAspect > 1.6) ? 0.30 : 0.44;
+        final normW = (normH * (passedAspect / boardAspect)).clamp(0.18, 0.85);
+        final normLeft = ((1.0 - normW) / 2.0).clamp(0.05, 0.8);
+        final normTop = ((1.0 - normH) / 2.0).clamp(0.05, 0.8);
+        initialRect = Rect.fromLTWH(normLeft, normTop, normW, normH);
+      } else if (isGraphOrBbt) {
+        // Default square aspect ratio on 16:9 board (0.248 x 1920 ~= 476px, 0.44 x 1080 ~= 475px -> 1:1 square)
+        initialRect = const Rect.fromLTWH(0.376, 0.28, 0.248, 0.44);
+      } else {
+        initialRect = const Rect.fromLTWH(0.25, 0.25, 0.45, 0.22);
+      }
+
+      final stickerType = (innerData['pluginId'] as String?) ??
+          (innerData['type'] as String?) ??
+          manifest?.id ??
+          studio.activePlugin?.manifest.id ??
+          'generic_sticker';
+
+      final sticker = BoardSticker(
+        id: stickerId ?? 'sticker-${DateTime.now().millisecondsSinceEpoch}',
+        type: stickerType,
+        normalizedRect: initialRect,
+        rawText: rawText,
+        title: title,
+        svgContent: svgContent,
+        imageBase64: imageBase64,
+        tokens: tokens,
+        issues: issues,
+        metadata: metadata,
+      );
+      studio.addSticker(sticker);
+    }
+
+    // Auto-close or minimize plugin window so teacher immediately sees and interacts with the sticker on chalkboard
+    if (studio.pluginFloating) {
+      studio.closeFloatingPlugin();
+    } else if (studio.showPluginDrawer) {
       studio.showPluginDrawer = false;
     }
   }

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -123,7 +123,17 @@ class PluginManager extends ChangeNotifier {
   List<SubjectPlugin> get installedPlugins =>
       _registry.values.where((p) => _installedPluginIds.contains(p.id)).toList();
 
-  InstalledPlugin? getPlugin(String id) => _installedPackages[id];
+  InstalledPlugin? getPlugin(String id) {
+    if (_installedPackages.containsKey(id)) return _installedPackages[id];
+    final reg = _registry[id];
+    if (reg is InstalledPlugin) return reg;
+    for (final entry in _registry.entries) {
+      if (entry.key == id || entry.value.id == id || entry.key.endsWith(id) || id.endsWith(entry.key)) {
+        if (entry.value is InstalledPlugin) return entry.value as InstalledPlugin;
+      }
+    }
+    return null;
+  }
   PluginCatalogItem? getCatalogItem(String id) => _remoteCatalog[id];
   bool isDownloading(String id) => _downloadingIds.contains(id);
 
@@ -230,11 +240,25 @@ class PluginManager extends ChangeNotifier {
 
   /// Dynamically discover plugins from workspace/bundled plugin directories.
   Future<void> discoverAvailablePlugins() async {
-    final searchDirs = [
+    final searchDirs = <Directory>[
       Directory('plugins'),
       Directory('../plugins'),
       Directory('../../plugins'),
+      Directory('../../../plugins'),
+      Directory('../../../../plugins'),
+      Directory('../../../../../plugins'),
     ];
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent;
+      searchDirs.addAll([
+        Directory('${exeDir.path}/plugins'),
+        Directory('${exeDir.path}/../plugins'),
+        Directory('${exeDir.path}/../../plugins'),
+        Directory('${exeDir.path}/../../../plugins'),
+        Directory('${exeDir.path}/../../../../plugins'),
+        Directory('${exeDir.path}/../../../../../plugins'),
+      ]);
+    } catch (_) {}
 
     for (final dir in searchDirs) {
       if (!dir.existsSync()) continue;
@@ -258,17 +282,30 @@ class PluginManager extends ChangeNotifier {
                   existing is InstalledPlugin &&
                   existing.manifest.version != manifest.version;
 
-              if (existing == null || isNewerVersion) {
-                final filename = hlep.uri.pathSegments
-                    .where((s) => s.isNotEmpty)
-                    .last;
-                Directory? installedDir = PluginStorageManager.instance
-                    .getInstalledDirectory(
-                      manifest.id,
-                      version: manifest.version,
-                    );
-                if (_installedPluginIds.contains(manifest.id) &&
-                    installedDir == null) {
+              final filename = hlep.uri.pathSegments
+                  .where((s) => s.isNotEmpty)
+                  .last;
+              Directory? installedDir = PluginStorageManager.instance
+                  .getInstalledDirectory(
+                    manifest.id,
+                    version: manifest.version,
+                  );
+
+              bool isBundleModified = false;
+              if (installedDir != null) {
+                try {
+                  final cachedManifest = File('${installedDir.path}/manifest.json');
+                  if (!cachedManifest.existsSync() ||
+                      hlep.lastModifiedSync().isAfter(cachedManifest.lastModifiedSync())) {
+                    isBundleModified = true;
+                  }
+                } catch (_) {}
+              }
+
+              if (existing == null || isNewerVersion || isBundleModified) {
+                if ((_installedPluginIds.contains(manifest.id) ||
+                        installedDir != null) &&
+                    (installedDir == null || isBundleModified)) {
                   installedDir = await PluginStorageManager.instance
                       .installFromZip(hlepBytes, customFilename: filename);
                 }

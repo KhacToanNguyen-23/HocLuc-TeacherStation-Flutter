@@ -251,11 +251,36 @@ class StudioState extends ChangeNotifier {
   void clearPage() => canvas.clearPage();
 
   // --- Sticker & Chalk Annotations ---
+  String? _selectedStickerId;
+  String? get selectedStickerId => _selectedStickerId;
+  set selectedStickerId(String? id) => selectSticker(id);
+  void selectSticker(String? id) {
+    if (_selectedStickerId != id) {
+      _selectedStickerId = id;
+      notifyListeners();
+    }
+  }
+
   List<BoardSticker> get currentStickers => canvas.currentStickers;
-  void addSticker(BoardSticker sticker) => canvas.addSticker(sticker);
-  void removeSticker(String id) => canvas.removeSticker(id);
+  void addSticker(BoardSticker sticker) {
+    canvas.addSticker(sticker);
+    _selectedStickerId = sticker.id;
+    notifyListeners();
+  }
+  void updateSticker(BoardSticker sticker) {
+    canvas.updateSticker(sticker);
+    _selectedStickerId = sticker.id;
+    notifyListeners();
+  }
+  void removeSticker(String id) {
+    if (_selectedStickerId == id) _selectedStickerId = null;
+    canvas.removeSticker(id);
+  }
   void updateStickerRect(String id, Rect newRect) =>
       canvas.updateStickerRect(id, newRect);
+  void updateStickerRotation(String id, double rotation) =>
+      canvas.updateStickerRotation(id, rotation);
+  void duplicateSticker(String id) => canvas.duplicateSticker(id);
 
   String get currentPageNote => canvas.currentPageNote;
   void setPageNote(int index, String note) => canvas.setPageNote(index, note);
@@ -601,9 +626,19 @@ class StudioState extends ChangeNotifier {
   Offset get subjectPaletteOffset => pluginBridge.subjectPaletteOffset;
   void setSubjectPaletteOffset(Offset offset) =>
       pluginBridge.setSubjectPaletteOffset(offset);
-  void openPlugin(InstalledPlugin plugin, {bool openModal = false}) {
+  BoardSticker? get editingSticker => pluginBridge.editingSticker;
+  void openPlugin(
+    InstalledPlugin plugin, {
+    bool openModal = false,
+    BoardSticker? editingSticker,
+  }) {
     showQuestionsDrawer = false;
-    pluginBridge.openPlugin(plugin, openModal: openModal);
+    selectSticker(null);
+    pluginBridge.openPlugin(
+      plugin,
+      openModal: openModal,
+      editingSticker: editingSticker,
+    );
   }
   void closePlugin() => pluginBridge.closePlugin();
   void setPluginFloatingPosition(Offset position) =>

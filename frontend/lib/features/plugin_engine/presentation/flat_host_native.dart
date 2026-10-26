@@ -33,6 +33,22 @@ class _FlatHostState extends State<FlatHost> {
     initialize();
   }
 
+  @override
+  void didUpdateWidget(covariant FlatHost oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (ready) {
+      widget.onControllerReady?.call(_evalJs);
+      if (oldWidget.url != widget.url) {
+        final targetUrl = _resolveUrl(widget.url);
+        if (windows != null) {
+          windows!.loadUrl(targetUrl);
+        } else if (macos != null) {
+          macos!.loadRequest(Uri.parse(targetUrl));
+        }
+      }
+    }
+  }
+
   void _evalJs(String script) {
     if (windows != null && ready) {
       windows!.executeScript(script);

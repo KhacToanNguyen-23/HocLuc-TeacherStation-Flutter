@@ -1,4 +1,4 @@
-﻿import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/plugin_engine/domain/models/subject_plugin.dart';
@@ -280,8 +280,10 @@ class _StudioPluginsMarketplacePanelState
     final installedPlugin = plugin is InstalledPlugin ? plugin : null;
     final placementLabel = installedPlugin != null
         ? (installedPlugin.manifest.uiPlacement == 'floating_window'
-              ? 'Cửa sổ nổi'
-              : 'Gắn bài giảng')
+            ? 'Cửa sổ nổi'
+            : installedPlugin.manifest.uiPlacement == 'modal'
+                ? 'Hộp thoại'
+                : 'Gắn bài giảng')
         : null;
 
     return Container(

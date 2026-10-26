@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
@@ -37,6 +37,7 @@ class SubjectToolPalette extends StatelessWidget {
         final plugin = studio.activePlugin;
         if (plugin == null ||
             plugin.manifest.uiPlacement == 'floating_window' ||
+            plugin.manifest.uiPlacement == 'modal' ||
             plugin.manifest.contributesTools.isEmpty) {
           return const SizedBox.shrink();
         }

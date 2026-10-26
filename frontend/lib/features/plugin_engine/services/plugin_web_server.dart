@@ -262,6 +262,9 @@ class PluginWebServer {
     Directory installedDir,
   ) async {
     _setContentType(response, targetFile.path);
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
     final lower = targetFile.path.toLowerCase();
     if (lower.endsWith('.html') || lower.endsWith('.htm')) {
       final manifest = PluginStorageManager.instance.loadManifestFromDir(

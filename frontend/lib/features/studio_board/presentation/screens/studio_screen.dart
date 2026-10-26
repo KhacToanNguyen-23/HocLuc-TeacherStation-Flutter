@@ -472,7 +472,9 @@ class _StudioScreenState extends State<StudioScreen> {
                                           plugin,
                                           openModal:
                                               plugin.manifest.uiPlacement !=
-                                              'floating_window',
+                                                  'floating_window' &&
+                                              plugin.manifest.uiPlacement !=
+                                                  'modal',
                                         );
                                         setState(
                                           () => showPluginsMarketplace = false,

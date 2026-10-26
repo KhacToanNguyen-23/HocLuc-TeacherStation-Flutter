@@ -12,6 +12,7 @@ const isFixMode = process.argv.includes('--fix');
 
 const VALID_PLACEMENTS = new Set([
   'floating_window',
+  'modal',
   'bottom_drawer',
   'drawer_panel',
   'right_panel',
