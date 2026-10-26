@@ -124,17 +124,7 @@ class PluginManager extends ChangeNotifier {
       .where((p) => _installedPluginIds.contains(p.id))
       .toList();
 
-  InstalledPlugin? getPlugin(String id) {
-    if (_installedPackages.containsKey(id)) return _installedPackages[id];
-    final reg = _registry[id];
-    if (reg is InstalledPlugin) return reg;
-    for (final entry in _registry.entries) {
-      if (entry.key == id || entry.value.id == id || entry.key.endsWith(id) || id.endsWith(entry.key)) {
-        if (entry.value is InstalledPlugin) return entry.value as InstalledPlugin;
-      }
-    }
-    return null;
-  }
+  InstalledPlugin? getPlugin(String id) => _installedPackages[id];
   PluginCatalogItem? getCatalogItem(String id) => _remoteCatalog[id];
   bool isDownloading(String id) => _downloadingIds.contains(id);
 

@@ -50,6 +50,7 @@ class CanvasDrawingController extends ChangeNotifier {
   double strokeWidth = 3.5;
   double highlighterWidth = 20.0;
   double eraserRadius = 0.04;
+
   /// Laser pointer position, published through its own [ValueNotifier] so that
   /// per-pointer-move updates repaint only the laser layer and never notify the
   /// aggregate controller listeners (which would rebuild the whole screen).
@@ -126,23 +127,52 @@ class CanvasDrawingController extends ChangeNotifier {
 
   void deletePage(int index) {
     if (index < 0 || index >= pages.length) return;
-    if (pages.length <= 1) {
+    if (pages.length == 1) {
       pages[0].clear();
+      _redoStacks.clear();
+      pageStickers.clear();
+      pageChalkAnnotations.clear();
+      pageTitles[0] = 'Khám phá bài học';
+      pageNotes[0] = '';
+      _page = 0;
       notifyListeners();
       return;
     }
     pages.removeAt(index);
     if (index < pageTitles.length) pageTitles.removeAt(index);
     if (index < pageNotes.length) pageNotes.removeAt(index);
-    if (_page >= pages.length) {
-      _page = pages.length - 1;
+    _reindexPages(_redoStacks, index);
+    _reindexPages(pageStickers, index);
+    _reindexPages(pageChalkAnnotations, index);
+    for (final entry in pageChalkAnnotations.entries) {
+      for (var i = 0; i < entry.value.length; i++) {
+        entry.value[i] = entry.value[i].copyWith(pageIndex: entry.key);
+      }
     }
+    if (_page > index) _page--;
+    if (_page >= pages.length) _page = pages.length - 1;
     notifyListeners();
+  }
+
+  void _reindexPages<T>(Map<int, List<T>> items, int removed) {
+    final kept = items.entries
+        .where((entry) => entry.key != removed)
+        .map(
+          (entry) => MapEntry(
+            entry.key > removed ? entry.key - 1 : entry.key,
+            entry.value,
+          ),
+        )
+        .toList();
+    items
+      ..clear()
+      ..addEntries(kept);
   }
 
   void renamePage(int index, String newTitle) {
     if (index >= 0 && index < pageTitles.length) {
-      pageTitles[index] = newTitle;
+      final trimmed = newTitle.trim();
+      pageTitles[index] = trimmed.isEmpty ? 'Trang ${index + 1}' : trimmed;
       notifyListeners();
     }
   }
@@ -477,7 +507,10 @@ class CanvasDrawingController extends ChangeNotifier {
       final rawTokens = rawList
           ?.map((item) => Map<String, dynamic>.from(item as Map))
           .toList();
-      if (text == null || text.isEmpty || rawTokens == null || rawTokens.isEmpty) {
+      if (text == null ||
+          text.isEmpty ||
+          rawTokens == null ||
+          rawTokens.isEmpty) {
         return;
       }
 

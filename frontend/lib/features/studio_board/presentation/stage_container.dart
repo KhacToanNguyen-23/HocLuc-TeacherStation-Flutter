@@ -1,7 +1,7 @@
-﻿import 'package:desktop_drop/desktop_drop.dart';
+import 'widgets/studio_board_shortcuts.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
-import 'package:flutter/services.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'grid_painter.dart';
 import 'pdf_stage.dart';
@@ -36,28 +36,9 @@ class StageContainer extends StatelessWidget {
     return ListenableBuilder(
       listenable: studio,
       builder: (context, _) {
-        return CallbackShortcuts(
-          bindings: {
-            const SingleActivator(LogicalKeyboardKey.f1): () =>
-                studio.setViewportMode(StudioViewportMode.fullBoard),
-            const SingleActivator(LogicalKeyboardKey.f2): () =>
-                studio.setViewportMode(StudioViewportMode.fullPdf),
-            const SingleActivator(LogicalKeyboardKey.f3): () =>
-                studio.setViewportMode(StudioViewportMode.split),
-            const SingleActivator(LogicalKeyboardKey.keyZ, control: true): () {
-              if (studio.canUndo) studio.undo();
-            },
-            const SingleActivator(LogicalKeyboardKey.keyY, control: true): () {
-              if (studio.canRedo) studio.redo();
-            },
-            const SingleActivator(
-              LogicalKeyboardKey.keyZ,
-              control: true,
-              shift: true,
-            ): () {
-              if (studio.canRedo) studio.redo();
-            },
-          },
+        return StudioBoardShortcuts(
+          studio: studio,
+          enabled: interactive,
           child: Focus(
             autofocus: true,
             child: DropTarget(
@@ -367,4 +348,3 @@ class ViewportModeSwitcher extends StatelessWidget {
     );
   }
 }
-

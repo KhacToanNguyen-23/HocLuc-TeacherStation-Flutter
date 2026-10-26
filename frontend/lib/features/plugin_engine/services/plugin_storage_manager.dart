@@ -97,8 +97,8 @@ class PluginStorageManager {
 
     final devRoots = _resolveSearchRoots();
 
-    // In debug/dev mode, check local workspace first so live edits are served immediately
-    if (kDebugMode) {
+    // In debug/dev mode (outside unit tests), check local workspace first so live edits are served immediately
+    if (kDebugMode && _customBaseDirectory == null) {
       for (final rootDir in devRoots) {
         if (!rootDir.existsSync()) continue;
         final direct = Directory('${rootDir.path}/$pluginId');
