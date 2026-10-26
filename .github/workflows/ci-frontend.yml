@@ -72,13 +72,23 @@ jobs:
       - name: Analyze Static Code Quality
         run: flutter analyze --no-fatal-infos
 
+      - name: Prepare PDFium Native Asset for Flutter Tests
+        run: |
+          for attempt in 1 2 3; do
+            if dart run tool/prepare_pdfium_test_assets.dart; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            echo "PDFium preparation failed; retrying in 10 seconds (attempt $attempt/3)."
+            sleep 10
+          done
+
       - name: Enforce Architecture Invariants (12 Invariants - AGENTS.md)
         run: |
           echo "🔍 Kiểm tra 12 bất biến kiến trúc Clean Architecture & Plugin (AGENTS.md)..."
           flutter test test/architecture_test.dart
-
-      - name: Prepare PDFium Native Asset for Flutter Tests
-        run: dart run tool/prepare_pdfium_test_assets.dart
 
       - name: Run Unit & Widget Tests
         run: flutter test
