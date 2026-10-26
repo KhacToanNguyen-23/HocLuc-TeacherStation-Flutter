@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bút thông minh</title>
+  <style>
+    :root { color-scheme: light; font: 15px/1.5 Manrope, sans-serif; color: #0F172A; }
+    body { margin: 0; padding: 24px; background: #F8FAFC; }
+    h1 { margin: 0 0 10px; font-size: 21px; }
+    p { margin: 0 0 18px; color: #475569; }
+    button { width: 100%; border: 0; border-radius: 8px; padding: 13px; background: #0369A1; color: #FFFFFF; font: inherit; cursor: pointer; }
+    #status { margin-top: 14px; min-height: 24px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Bút thông minh</h1>
+  <p>Bật công cụ rồi chạm vào đáp án trong tài liệu PDF để khoanh hoặc bỏ khoanh.</p>
+  <button id="toggle" type="button">Bật công cụ</button>
+  <div id="status" role="status"></div>
+  <script src="/plugins/smart_pen/ui/engine.js"></script>
+  <script src="/plugins/smart_pen/ui/app.js"></script>
+</body>
+</html>

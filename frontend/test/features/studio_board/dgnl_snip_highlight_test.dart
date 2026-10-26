@@ -51,6 +51,18 @@ void main() {
           'name': 'Trợ giảng Tiếng Anh',
           'version': '1.0.0',
           'main': 'ui/index.html',
+          'contributes': {
+            'tools': [
+              {
+                'id': 'snip_passage',
+                'label': 'Quét đoạn văn',
+                'icon': 'crop_free',
+                'action': 'snip_region',
+                'target': 'dgnl',
+                'key': 'quick_snip_dgnl_button',
+              },
+            ],
+          },
         });
         final plugin = InstalledPlugin(
           manifest: manifest,

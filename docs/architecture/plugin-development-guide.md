@@ -127,7 +127,7 @@ Hiển thị ngăn kéo gắn bài giảng kèm thanh công cụ nổi (`Subject
   "backend": {
     "type": "python",
     "entry": "engine/service.py",
-    "health_check": "/health"
+    "health_endpoint": "/health"
   },
   "permissions": ["board:read_selection", "board:insert_annotation", "storage"]
 }
@@ -141,11 +141,14 @@ Hiển thị ngăn kéo gắn bài giảng kèm thanh công cụ nổi (`Subject
   - Đặt `true` cho thiết bị mô phỏng vật lý (như Casio fx-580VN X) để ẩn toàn bộ header/footer/khung nền của Host, chỉ hiển thị đúng thân thiết bị với dải kéo thả trong suốt ở viền trên (`top: 0..28px`).
 - `ui.inject_sdk`:
   - Đặt `true` khi bạn nhúng một dự án Open-Source có sẵn (HTML/JS/WASM như GeoGebra, Desmos, JSMol, Casio Simulator). `PluginWebServer` sẽ tự động tiêm `<script src="/__hocluc_sdk__/hocluc-plugin-sdk.js"></script>` vào trang HTML mà không cần sửa mã nguồn gốc của dự án Open-Source.
+- `ui.transparent_background`:
+  - Mặc định là `false`. Đặt `true` chỉ khi giao diện plugin có vùng kính đăng ký qua SDK và trang tự giữ nền opaque làm fallback. Trên Windows, Host đặt nền WebView2 trong suốt trước navigation; nếu runtime từ chối, plugin tiếp tục với nền opaque. Khi vùng kính hiện, plugin có thể dùng `html[data-hocluc-transparent-background='true']` để mở nền trong suốt cục bộ.
 - `contributes.tools`:
   - Khai báo các công cụ gắn vào thanh `SubjectToolPalette` trên bảng phấn theo chuẩn `Contribution Points` của VS Code (`action`: `"snip_region"`, `"toggle_tool"`, `"quick_input"`).
+- Tool fields `pdf_tap_mode` and `captures_board_input` reserve PDF tap or board input gestures for the declared contributed tool. A plugin may activate a declared toggle tool with `window.HocLuc.board.setTool(target, enabled)` and must request `board:control_tools` permission.
 - `backend`:
   - Đặt là `null` nếu plugin chỉ là HTML/JS/WASM thuần.
-  - Nếu có Python sidecar: Khai báo `{"type": "python", "entry": "engine/service.py", "health_check": "/health"}`.
+  - Nếu có Python sidecar: Khai báo `{"type": "python", "entry": "engine/service.py", "health_endpoint": "/health"}`. Sidecar nhận cổng Host cấp qua `--port` hoặc `HOCLUC_PLUGIN_PORT`.
 
 ---
 
@@ -157,19 +160,56 @@ Trong file `ui/app.js` (hoặc bất kỳ script nào khi bật `inject_sdk: tru
 // 1. Lấy thông tin ngữ cảnh hiện tại (kèm sidecarUrl nếu có Python Engine)
 const context = await window.HocLuc.getContext();
 
-// 2. Ghim nội dung/thẻ kiến thức lên bảng phấn cho học sinh xem
-await window.HocLuc.pinSticker({
-  type: 'grammar_analysis',
-  data: {
-    sentence: 'The student reads a book.',
-    tokens: [
-      { text: 'The student', role: 'S' },
-      { text: 'reads', role: 'V' },
-      { text: 'a book', role: 'O' }
-    ]
-  }
+// 2. Activate a tool declared in manifest.json (requires board:control_tools)
+await window.HocLuc.board.setTool('declared_tool_target', true);
+
+// 3. Add a generic board annotation (requires board:insert_annotation)
+await window.HocLuc.board.insertAnnotation({
+  type: 'lesson_note',
+  data: { text: 'The student reads a book.' }
+});
+
+// 4. Receive generic PDF text/geometry events and publish plugin-produced regions.
+window.HocLuc.onHostEvent('board:pdf_text_fragments', async (page) => {
+  const regions = classifyPage(page); // plugin-owned implementation
+  await window.HocLuc.board.publishPdfRegions(
+    page.page_number,
+    page.document_generation,
+    page.page_size,
+    regions,
+  );
 });
 ```
+
+PDF tools must declare `board:read_text` and `board:publish_pdf_regions`; the Host only accepts region results from the currently active declared PDF tool and validates every region against the page bounds.
+
+The Host publishes `board:tool_state` with `active_tool` when the toolbar changes,
+and `board:pdf_tap` with `page_point`, `page_number`, and `document_generation`.
+Plugins perform their own hit testing and generate annotation geometry. To toggle
+a grouped closed path, request `board:annotate_pdf` and call:
+
+```javascript
+await window.HocLuc.board.togglePdfAnnotation(
+  page.page_number, page.document_generation, page.page_size,
+  region, affectedPages,
+  { stroke: { points: [[0.1, 0.2], [0.3, 0.2], [0.2, 0.4]],
+              color: 0xff008800, width: 3 }, persist: true },
+);
+```
+
+Points are normalized page coordinates in `[0, 1]`, with 3–512 points per path;
+color is an unsigned ARGB integer and width is in logical pixels (maximum 64).
+The Host never generates a plugin's shape. It namespaces groups by plugin ID,
+replaces the prior item in a group across affected pages, and supports persistence,
+session-only overrides (`persist: false`), serialization, and undo/redo. Requests
+for a stale PDF generation, inactive tool, or invalid geometry are rejected.
+
+If incremental analysis merges provisional groups, call
+`board.rekeyPdfAnnotationGroup(documentGeneration, fromId, toId, affectedPages)`
+before publishing the new region IDs. This operation is scoped to the requesting
+plugin. The Host merges persisted paths, session overrides, and undo/redo
+timelines without adding a user undo step. Serialize analysis and tap handling
+inside the plugin so taps cannot race a group migration.
 
 ---
 

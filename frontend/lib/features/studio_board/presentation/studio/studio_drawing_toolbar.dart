@@ -45,21 +45,28 @@ class StudioDrawingToolbar extends StatelessWidget {
                 ('erase', Icons.auto_fix_normal, 'Tẩy nét'),
                 ('laser', Icons.adjust, 'Chấm Laser (Chỉ trỏ)'),
               ])
-                IconButton(
+                AppPressable(
                   tooltip: label,
-                  onPressed: () =>
+                  onTap: () =>
                       studio.change(() => studio.tool = name, persist: false),
-                  style: IconButton.styleFrom(
-                    backgroundColor: studio.tool == name
-                        ? AppColors.selected
-                        : Colors.transparent,
-                    minimumSize: const Size(36, 36),
-                    padding: EdgeInsets.zero,
-                  ),
-                  icon: Icon(
-                    icon,
-                    size: 18,
-                    color: studio.tool == name ? AppColors.primary : pine,
+                  borderRadius: BorderRadius.circular(AppRadii.control),
+                  child: AnimatedContainer(
+                    duration: AppMotion.duration(context, milliseconds: 140),
+                    curve: AppMotion.stateCurve,
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: studio.tool == name
+                          ? AppColors.selected
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppRadii.control),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      icon,
+                      size: 18,
+                      color: studio.tool == name ? AppColors.primary : pine,
+                    ),
                   ),
                 ),
               _strokeSettings(context),
@@ -73,23 +80,23 @@ class StudioDrawingToolbar extends StatelessWidget {
                 (const Color(0xffff8c69), 'Cam phấn'),
                 (const Color(0xffff85a2), 'Hồng phấn'),
               ])
-                Tooltip(
-                  message: label,
-                  child: InkWell(
-                    onTap: () =>
-                        studio.change(() => studio.ink = color, persist: false),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      margin: const EdgeInsets.symmetric(vertical: 3),
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: studio.ink == color ? pine : AppColors.border,
-                          width: studio.ink == color ? 2.5 : 1.5,
-                        ),
+                AppPressable(
+                  tooltip: label,
+                  onTap: () =>
+                      studio.change(() => studio.ink = color, persist: false),
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: AppMotion.duration(context, milliseconds: 140),
+                    curve: AppMotion.stateCurve,
+                    width: 20,
+                    height: 20,
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: studio.ink == color ? pine : AppColors.border,
+                        width: studio.ink == color ? 2.5 : 1.5,
                       ),
                     ),
                   ),
@@ -97,30 +104,54 @@ class StudioDrawingToolbar extends StatelessWidget {
               const SizedBox(height: 6),
               Container(width: 24, height: 1, color: line),
               const SizedBox(height: 6),
-              IconButton(
+              AppPressable(
                 tooltip: 'Hoàn tác nét',
-                onPressed: studio.canUndo ? studio.undo : null,
-                style: IconButton.styleFrom(
-                  minimumSize: const Size(36, 36),
-                  padding: EdgeInsets.zero,
+                onTap: studio.canUndo ? studio.undo : null,
+                borderRadius: BorderRadius.circular(AppRadii.control),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.undo,
+                    size: 18,
+                    color: studio.canUndo ? pine : AppColors.textMuted,
+                  ),
                 ),
-                icon: const Icon(Icons.undo, size: 18),
               ),
-              IconButton(
+              AppPressable(
                 tooltip: 'Làm lại nét',
-                onPressed: studio.canRedo ? studio.redo : null,
-                icon: const Icon(Icons.redo, size: 19),
+                onTap: studio.canRedo ? studio.redo : null,
+                borderRadius: BorderRadius.circular(AppRadii.control),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.redo,
+                    size: 19,
+                    color: studio.canRedo ? pine : AppColors.textMuted,
+                  ),
+                ),
               ),
-              IconButton(
+              AppPressable(
                 tooltip: 'Xóa nét trang này',
-                onPressed: studio.strokes.isEmpty
+                onTap: studio.strokes.isEmpty
                     ? null
                     : () => _confirmClear(context),
-                style: IconButton.styleFrom(
-                  minimumSize: const Size(36, 36),
-                  padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(AppRadii.control),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: studio.strokes.isNotEmpty
+                        ? AppColors.error
+                        : AppColors.textMuted,
+                  ),
                 ),
-                icon: const Icon(Icons.delete_outline, size: 18),
               ),
               const SizedBox(height: 6),
               Container(width: 24, height: 1, color: line),
@@ -176,6 +207,44 @@ class StudioDrawingToolbar extends StatelessWidget {
                   Icons.collections_bookmark_outlined,
                   size: 18,
                   color: pine,
+                ),
+              ),
+              IconButton(
+                tooltip: studio.showSpeakerNotes
+                    ? 'Đóng ghi chú nhắc bài'
+                    : 'Mở ghi chú nhắc bài',
+                onPressed: studio.toggleSpeakerNotes,
+                style: IconButton.styleFrom(
+                  backgroundColor: studio.showSpeakerNotes
+                      ? AppColors.selected
+                      : Colors.transparent,
+                  minimumSize: const Size(36, 36),
+                  padding: EdgeInsets.zero,
+                ),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      studio.showSpeakerNotes
+                          ? Icons.sticky_note_2
+                          : Icons.sticky_note_2_outlined,
+                      size: 18,
+                      color: studio.showSpeakerNotes ? AppColors.primary : pine,
+                    ),
+                    if (studio.currentPageNote.trim().isNotEmpty)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -313,6 +382,42 @@ class StudioDrawingToolbar extends StatelessWidget {
                   Icons.collections_bookmark_outlined,
                   size: 19,
                   color: pine,
+                ),
+              ),
+              IconButton(
+                tooltip: studio.showSpeakerNotes
+                    ? 'Đóng ghi chú nhắc bài'
+                    : 'Mở ghi chú nhắc bài',
+                onPressed: studio.toggleSpeakerNotes,
+                style: IconButton.styleFrom(
+                  backgroundColor: studio.showSpeakerNotes
+                      ? AppColors.selected
+                      : Colors.transparent,
+                ),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      studio.showSpeakerNotes
+                          ? Icons.sticky_note_2
+                          : Icons.sticky_note_2_outlined,
+                      size: 19,
+                      color: studio.showSpeakerNotes ? AppColors.primary : pine,
+                    ),
+                    if (studio.currentPageNote.trim().isNotEmpty)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],

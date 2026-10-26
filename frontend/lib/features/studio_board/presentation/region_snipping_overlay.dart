@@ -1,4 +1,4 @@
-﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -361,6 +361,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
           'status': analysis.status,
         },
         clozeQuestions: clozeQuestions,
+        textProfile: analysis.textProfile,
       );
 
       // 1. First add passage to PDF stage so in-document highlight appears immediately

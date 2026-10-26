@@ -18,6 +18,7 @@ void main() {
         name: 'Trợ giảng Tiếng Anh',
         uiPlacement: 'drawer_panel',
         uiDefaultWidth: 420,
+        permissions: const ['board:insert_annotation'],
       );
       dummyPlugin = InstalledPlugin(
         manifest: manifest,

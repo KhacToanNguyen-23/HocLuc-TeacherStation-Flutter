@@ -1,0 +1,1291 @@
+{
+  "kind": "current_pipeline",
+  "generated_at_utc": "2026-10-24T05:09:54.401943+00:00",
+  "measurement": "end-to-end /analyze-svo response time after one unmeasured OCR warm-up request, including OCR and S-V-O parsing",
+  "warmup_requests": 1,
+  "repeat_count": 5,
+  "latency_gate": {
+    "maximum_p95_seconds": 3.0,
+    "scope": "aggregate and every image condition",
+    "passed": true,
+    "violations": {}
+  },
+  "host": {
+    "logical_cpu_count": 8,
+    "cpu_utilization_percent_during_measured_requests": 76.9
+  },
+  "runtime": {
+    "python": "3.12.10",
+    "pillow": "12.3.0",
+    "numpy": "2.4.6",
+    "opencv": "5.0.0.93",
+    "rapidocr_onnxruntime": "1.4.4",
+    "rapidocr_model": "en_PP-OCRv4_rec_infer.onnx",
+    "pytesseract_available": false
+  },
+  "conditions": {
+    "blurred": {
+      "sample_count": 40,
+      "cer": {
+        "median": 0.0,
+        "p95": 0.02586206896551724
+      },
+      "wer": {
+        "median": 0.0,
+        "p95": 0.16666666666666666
+      },
+      "scan_latency_seconds": {
+        "median": 0.7470949500000188,
+        "p95": 0.9993973999999071
+      }
+    },
+    "clean": {
+      "sample_count": 40,
+      "cer": {
+        "median": 0.012968515742128935,
+        "p95": 0.6608695652173913
+      },
+      "wer": {
+        "median": 0.08333333333333333,
+        "p95": 0.6875
+      },
+      "scan_latency_seconds": {
+        "median": 0.7914835999999923,
+        "p95": 0.9264870000001793
+      }
+    },
+    "small": {
+      "sample_count": 40,
+      "cer": {
+        "median": 0.004310344827586207,
+        "p95": 0.017241379310344827
+      },
+      "wer": {
+        "median": 0.027777777777777776,
+        "p95": 0.1111111111111111
+      },
+      "scan_latency_seconds": {
+        "median": 0.6784470500000452,
+        "p95": 0.7843783000000712
+      }
+    },
+    "all": {
+      "sample_count": 120,
+      "cer": {
+        "median": 0.0,
+        "p95": 0.6347826086956522
+      },
+      "wer": {
+        "median": 0.0,
+        "p95": 0.6470588235294118
+      },
+      "scan_latency_seconds": {
+        "median": 0.7271176999998943,
+        "p95": 0.9264870000001793
+      },
+      "mean_scan_latency_seconds": 0.7376236341666735
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "clean-01",
+      "repeat": 1,
+      "condition": "clean",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.5773564999999508
+    },
+    {
+      "sample_id": "clean-02",
+      "repeat": 1,
+      "condition": "clean",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains. fruit, and water make a healthy morning meal..",
+      "cer": 0.017241379310344827,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.8308721000000787
+    },
+    {
+      "sample_id": "clean-03",
+      "repeat": 1,
+      "condition": "clean",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds..",
+      "cer": 0.008695652173913044,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.8647812000001522
+    },
+    {
+      "sample_id": "clean-04",
+      "repeat": 1,
+      "condition": "clean",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "and metal can become useful products again..",
+      "cer": 0.6347826086956522,
+      "wer": 0.6470588235294118,
+      "scan_latency_seconds": 0.8081267000000025
+    },
+    {
+      "sample_id": "clean-05",
+      "repeat": 1,
+      "condition": "clean",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.9264870000001793
+    },
+    {
+      "sample_id": "clean-06",
+      "repeat": 1,
+      "condition": "clean",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable.",
+      "cer": 0.008620689655172414,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.869653900000003
+    },
+    {
+      "sample_id": "clean-07",
+      "repeat": 1,
+      "condition": "clean",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "take turns and discuss unfamiliar words..",
+      "cer": 0.6608695652173913,
+      "wer": 0.6875,
+      "scan_latency_seconds": 0.9289141000001564
+    },
+    {
+      "sample_id": "clean-08",
+      "repeat": 1,
+      "condition": "clean",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "result and explain what the evidence supports.",
+      "cer": 0.603448275862069,
+      "wer": 0.631578947368421,
+      "scan_latency_seconds": 0.8867777000000387
+    },
+    {
+      "sample_id": "small-01",
+      "repeat": 1,
+      "condition": "small",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7671909999999116
+    },
+    {
+      "sample_id": "small-02",
+      "repeat": 1,
+      "condition": "small",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energyfor learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.008620689655172414,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.6470451000000139
+    },
+    {
+      "sample_id": "small-03",
+      "repeat": 1,
+      "condition": "small",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6864539000000605
+    },
+    {
+      "sample_id": "small-04",
+      "repeat": 1,
+      "condition": "small",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again..",
+      "cer": 0.008695652173913044,
+      "wer": 0.058823529411764705,
+      "scan_latency_seconds": 0.6759340999999495
+    },
+    {
+      "sample_id": "small-05",
+      "repeat": 1,
+      "condition": "small",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7699282000000949
+    },
+    {
+      "sample_id": "small-06",
+      "repeat": 1,
+      "condition": "small",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable..",
+      "cer": 0.017241379310344827,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.7856217000000925
+    },
+    {
+      "sample_id": "small-07",
+      "repeat": 1,
+      "condition": "small",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words..",
+      "cer": 0.008695652173913044,
+      "wer": 0.0625,
+      "scan_latency_seconds": 0.8646367999999711
+    },
+    {
+      "sample_id": "small-08",
+      "repeat": 1,
+      "condition": "small",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7616261999999097
+    },
+    {
+      "sample_id": "blurred-01",
+      "repeat": 1,
+      "condition": "blurred",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.8711731999999301
+    },
+    {
+      "sample_id": "blurred-02",
+      "repeat": 1,
+      "condition": "blurred",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 1.0126334000001407
+    },
+    {
+      "sample_id": "blurred-03",
+      "repeat": 1,
+      "condition": "blurred",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.9993973999999071
+    },
+    {
+      "sample_id": "blurred-04",
+      "repeat": 1,
+      "condition": "blurred",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.9337149999998928
+    },
+    {
+      "sample_id": "blurred-05",
+      "repeat": 1,
+      "condition": "blurred",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.8700870000000123
+    },
+    {
+      "sample_id": "blurred-06",
+      "repeat": 1,
+      "condition": "blurred",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns.Frequent buses also help people reach school and work affordable..",
+      "cer": 0.02586206896551724,
+      "wer": 0.16666666666666666,
+      "scan_latency_seconds": 0.6352090000000317
+    },
+    {
+      "sample_id": "blurred-07",
+      "repeat": 1,
+      "condition": "blurred",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 1.0991666999998415
+    },
+    {
+      "sample_id": "blurred-08",
+      "repeat": 1,
+      "condition": "blurred",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.9239152000000104
+    },
+    {
+      "sample_id": "clean-01",
+      "repeat": 2,
+      "condition": "clean",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7953608000000258
+    },
+    {
+      "sample_id": "clean-02",
+      "repeat": 2,
+      "condition": "clean",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains. fruit, and water make a healthy morning meal..",
+      "cer": 0.017241379310344827,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.7824643999999807
+    },
+    {
+      "sample_id": "clean-03",
+      "repeat": 2,
+      "condition": "clean",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds..",
+      "cer": 0.008695652173913044,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.8567788000000292
+    },
+    {
+      "sample_id": "clean-04",
+      "repeat": 2,
+      "condition": "clean",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "and metal can become useful products again..",
+      "cer": 0.6347826086956522,
+      "wer": 0.6470588235294118,
+      "scan_latency_seconds": 0.8035930000000917
+    },
+    {
+      "sample_id": "clean-05",
+      "repeat": 2,
+      "condition": "clean",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.8527152999999998
+    },
+    {
+      "sample_id": "clean-06",
+      "repeat": 2,
+      "condition": "clean",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable.",
+      "cer": 0.008620689655172414,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.9277644000001146
+    },
+    {
+      "sample_id": "clean-07",
+      "repeat": 2,
+      "condition": "clean",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "take turns and discuss unfamiliar words..",
+      "cer": 0.6608695652173913,
+      "wer": 0.6875,
+      "scan_latency_seconds": 0.8987512999999581
+    },
+    {
+      "sample_id": "clean-08",
+      "repeat": 2,
+      "condition": "clean",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "result and explain what the evidence supports.",
+      "cer": 0.603448275862069,
+      "wer": 0.631578947368421,
+      "scan_latency_seconds": 0.8419099000000188
+    },
+    {
+      "sample_id": "small-01",
+      "repeat": 2,
+      "condition": "small",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6870822999999291
+    },
+    {
+      "sample_id": "small-02",
+      "repeat": 2,
+      "condition": "small",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energyfor learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.008620689655172414,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.6154688999999962
+    },
+    {
+      "sample_id": "small-03",
+      "repeat": 2,
+      "condition": "small",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7150246999999581
+    },
+    {
+      "sample_id": "small-04",
+      "repeat": 2,
+      "condition": "small",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again..",
+      "cer": 0.008695652173913044,
+      "wer": 0.058823529411764705,
+      "scan_latency_seconds": 0.60851619999994
+    },
+    {
+      "sample_id": "small-05",
+      "repeat": 2,
+      "condition": "small",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7069996000000174
+    },
+    {
+      "sample_id": "small-06",
+      "repeat": 2,
+      "condition": "small",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable..",
+      "cer": 0.017241379310344827,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.7177071999999498
+    },
+    {
+      "sample_id": "small-07",
+      "repeat": 2,
+      "condition": "small",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words..",
+      "cer": 0.008695652173913044,
+      "wer": 0.0625,
+      "scan_latency_seconds": 0.7843783000000712
+    },
+    {
+      "sample_id": "small-08",
+      "repeat": 2,
+      "condition": "small",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.680960000000141
+    },
+    {
+      "sample_id": "blurred-01",
+      "repeat": 2,
+      "condition": "blurred",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7852659000000131
+    },
+    {
+      "sample_id": "blurred-02",
+      "repeat": 2,
+      "condition": "blurred",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6938310000000456
+    },
+    {
+      "sample_id": "blurred-03",
+      "repeat": 2,
+      "condition": "blurred",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7812856000000465
+    },
+    {
+      "sample_id": "blurred-04",
+      "repeat": 2,
+      "condition": "blurred",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6595628000000033
+    },
+    {
+      "sample_id": "blurred-05",
+      "repeat": 2,
+      "condition": "blurred",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7904006000001118
+    },
+    {
+      "sample_id": "blurred-06",
+      "repeat": 2,
+      "condition": "blurred",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns.Frequent buses also help people reach school and work affordable..",
+      "cer": 0.02586206896551724,
+      "wer": 0.16666666666666666,
+      "scan_latency_seconds": 0.786706299999878
+    },
+    {
+      "sample_id": "blurred-07",
+      "repeat": 2,
+      "condition": "blurred",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.8143124999999145
+    },
+    {
+      "sample_id": "blurred-08",
+      "repeat": 2,
+      "condition": "blurred",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7856007000000318
+    },
+    {
+      "sample_id": "clean-01",
+      "repeat": 3,
+      "condition": "clean",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.814043300000094
+    },
+    {
+      "sample_id": "clean-02",
+      "repeat": 3,
+      "condition": "clean",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains. fruit, and water make a healthy morning meal..",
+      "cer": 0.017241379310344827,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.5984710000000177
+    },
+    {
+      "sample_id": "clean-03",
+      "repeat": 3,
+      "condition": "clean",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds..",
+      "cer": 0.008695652173913044,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.701730600000019
+    },
+    {
+      "sample_id": "clean-04",
+      "repeat": 3,
+      "condition": "clean",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "and metal can become useful products again..",
+      "cer": 0.6347826086956522,
+      "wer": 0.6470588235294118,
+      "scan_latency_seconds": 0.600558799999817
+    },
+    {
+      "sample_id": "clean-05",
+      "repeat": 3,
+      "condition": "clean",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7767544999999245
+    },
+    {
+      "sample_id": "clean-06",
+      "repeat": 3,
+      "condition": "clean",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable.",
+      "cer": 0.008620689655172414,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.8133668000000398
+    },
+    {
+      "sample_id": "clean-07",
+      "repeat": 3,
+      "condition": "clean",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "take turns and discuss unfamiliar words..",
+      "cer": 0.6608695652173913,
+      "wer": 0.6875,
+      "scan_latency_seconds": 0.8008835000000545
+    },
+    {
+      "sample_id": "clean-08",
+      "repeat": 3,
+      "condition": "clean",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "result and explain what the evidence supports.",
+      "cer": 0.603448275862069,
+      "wer": 0.631578947368421,
+      "scan_latency_seconds": 0.7279261999999562
+    },
+    {
+      "sample_id": "small-01",
+      "repeat": 3,
+      "condition": "small",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.5927599999999984
+    },
+    {
+      "sample_id": "small-02",
+      "repeat": 3,
+      "condition": "small",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energyfor learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.008620689655172414,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.5535202999999456
+    },
+    {
+      "sample_id": "small-03",
+      "repeat": 3,
+      "condition": "small",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.5923916000001554
+    },
+    {
+      "sample_id": "small-04",
+      "repeat": 3,
+      "condition": "small",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again..",
+      "cer": 0.008695652173913044,
+      "wer": 0.058823529411764705,
+      "scan_latency_seconds": 0.49458919999983664
+    },
+    {
+      "sample_id": "small-05",
+      "repeat": 3,
+      "condition": "small",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6570814000001519
+    },
+    {
+      "sample_id": "small-06",
+      "repeat": 3,
+      "condition": "small",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable..",
+      "cer": 0.017241379310344827,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.7029704999999922
+    },
+    {
+      "sample_id": "small-07",
+      "repeat": 3,
+      "condition": "small",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words..",
+      "cer": 0.008695652173913044,
+      "wer": 0.0625,
+      "scan_latency_seconds": 0.6918276999999762
+    },
+    {
+      "sample_id": "small-08",
+      "repeat": 3,
+      "condition": "small",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6608512000000246
+    },
+    {
+      "sample_id": "blurred-01",
+      "repeat": 3,
+      "condition": "blurred",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7148350999998456
+    },
+    {
+      "sample_id": "blurred-02",
+      "repeat": 3,
+      "condition": "blurred",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6481888000000708
+    },
+    {
+      "sample_id": "blurred-03",
+      "repeat": 3,
+      "condition": "blurred",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7591253000000506
+    },
+    {
+      "sample_id": "blurred-04",
+      "repeat": 3,
+      "condition": "blurred",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6227888000000803
+    },
+    {
+      "sample_id": "blurred-05",
+      "repeat": 3,
+      "condition": "blurred",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6729614000000765
+    },
+    {
+      "sample_id": "blurred-06",
+      "repeat": 3,
+      "condition": "blurred",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns.Frequent buses also help people reach school and work affordable..",
+      "cer": 0.02586206896551724,
+      "wer": 0.16666666666666666,
+      "scan_latency_seconds": 0.7039667999999892
+    },
+    {
+      "sample_id": "blurred-07",
+      "repeat": 3,
+      "condition": "blurred",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.906499699999813
+    },
+    {
+      "sample_id": "blurred-08",
+      "repeat": 3,
+      "condition": "blurred",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6589131000000634
+    },
+    {
+      "sample_id": "clean-01",
+      "repeat": 4,
+      "condition": "clean",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7630982000000586
+    },
+    {
+      "sample_id": "clean-02",
+      "repeat": 4,
+      "condition": "clean",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains. fruit, and water make a healthy morning meal..",
+      "cer": 0.017241379310344827,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.6766706999999315
+    },
+    {
+      "sample_id": "clean-03",
+      "repeat": 4,
+      "condition": "clean",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds..",
+      "cer": 0.008695652173913044,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.6708813999998711
+    },
+    {
+      "sample_id": "clean-04",
+      "repeat": 4,
+      "condition": "clean",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "and metal can become useful products again..",
+      "cer": 0.6347826086956522,
+      "wer": 0.6470588235294118,
+      "scan_latency_seconds": 0.5598660999999083
+    },
+    {
+      "sample_id": "clean-05",
+      "repeat": 4,
+      "condition": "clean",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.8015044999999645
+    },
+    {
+      "sample_id": "clean-06",
+      "repeat": 4,
+      "condition": "clean",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable.",
+      "cer": 0.008620689655172414,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.7415561999998772
+    },
+    {
+      "sample_id": "clean-07",
+      "repeat": 4,
+      "condition": "clean",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "take turns and discuss unfamiliar words..",
+      "cer": 0.6608695652173913,
+      "wer": 0.6875,
+      "scan_latency_seconds": 0.8086907000001702
+    },
+    {
+      "sample_id": "clean-08",
+      "repeat": 4,
+      "condition": "clean",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "result and explain what the evidence supports.",
+      "cer": 0.603448275862069,
+      "wer": 0.631578947368421,
+      "scan_latency_seconds": 0.7724956000001839
+    },
+    {
+      "sample_id": "small-01",
+      "repeat": 4,
+      "condition": "small",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6266928000000007
+    },
+    {
+      "sample_id": "small-02",
+      "repeat": 4,
+      "condition": "small",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energyfor learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.008620689655172414,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.5954927999998745
+    },
+    {
+      "sample_id": "small-03",
+      "repeat": 4,
+      "condition": "small",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.5731513000000632
+    },
+    {
+      "sample_id": "small-04",
+      "repeat": 4,
+      "condition": "small",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again..",
+      "cer": 0.008695652173913044,
+      "wer": 0.058823529411764705,
+      "scan_latency_seconds": 0.5360694999999396
+    },
+    {
+      "sample_id": "small-05",
+      "repeat": 4,
+      "condition": "small",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.553600200000119
+    },
+    {
+      "sample_id": "small-06",
+      "repeat": 4,
+      "condition": "small",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable..",
+      "cer": 0.017241379310344827,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.689954299999954
+    },
+    {
+      "sample_id": "small-07",
+      "repeat": 4,
+      "condition": "small",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words..",
+      "cer": 0.008695652173913044,
+      "wer": 0.0625,
+      "scan_latency_seconds": 0.737342099999978
+    },
+    {
+      "sample_id": "small-08",
+      "repeat": 4,
+      "condition": "small",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6163429999999153
+    },
+    {
+      "sample_id": "blurred-01",
+      "repeat": 4,
+      "condition": "blurred",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7416909999999461
+    },
+    {
+      "sample_id": "blurred-02",
+      "repeat": 4,
+      "condition": "blurred",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7577785000000858
+    },
+    {
+      "sample_id": "blurred-03",
+      "repeat": 4,
+      "condition": "blurred",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.691186400000106
+    },
+    {
+      "sample_id": "blurred-04",
+      "repeat": 4,
+      "condition": "blurred",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6318479000001389
+    },
+    {
+      "sample_id": "blurred-05",
+      "repeat": 4,
+      "condition": "blurred",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7394159999998919
+    },
+    {
+      "sample_id": "blurred-06",
+      "repeat": 4,
+      "condition": "blurred",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns.Frequent buses also help people reach school and work affordable..",
+      "cer": 0.02586206896551724,
+      "wer": 0.16666666666666666,
+      "scan_latency_seconds": 0.7524989000000915
+    },
+    {
+      "sample_id": "blurred-07",
+      "repeat": 4,
+      "condition": "blurred",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.8860282000000552
+    },
+    {
+      "sample_id": "blurred-08",
+      "repeat": 4,
+      "condition": "blurred",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6587893000000804
+    },
+    {
+      "sample_id": "clean-01",
+      "repeat": 5,
+      "condition": "clean",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7216799000000265
+    },
+    {
+      "sample_id": "clean-02",
+      "repeat": 5,
+      "condition": "clean",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains. fruit, and water make a healthy morning meal..",
+      "cer": 0.017241379310344827,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.6444215999999869
+    },
+    {
+      "sample_id": "clean-03",
+      "repeat": 5,
+      "condition": "clean",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds..",
+      "cer": 0.008695652173913044,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.7028172000000268
+    },
+    {
+      "sample_id": "clean-04",
+      "repeat": 5,
+      "condition": "clean",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "and metal can become useful products again..",
+      "cer": 0.6347826086956522,
+      "wer": 0.6470588235294118,
+      "scan_latency_seconds": 0.6535191000000395
+    },
+    {
+      "sample_id": "clean-05",
+      "repeat": 5,
+      "condition": "clean",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7876063999999587
+    },
+    {
+      "sample_id": "clean-06",
+      "repeat": 5,
+      "condition": "clean",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable.",
+      "cer": 0.008620689655172414,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.7750120000000607
+    },
+    {
+      "sample_id": "clean-07",
+      "repeat": 5,
+      "condition": "clean",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "take turns and discuss unfamiliar words..",
+      "cer": 0.6608695652173913,
+      "wer": 0.6875,
+      "scan_latency_seconds": 0.8457729000001564
+    },
+    {
+      "sample_id": "clean-08",
+      "repeat": 5,
+      "condition": "clean",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "result and explain what the evidence supports.",
+      "cer": 0.603448275862069,
+      "wer": 0.631578947368421,
+      "scan_latency_seconds": 0.7649999000000207
+    },
+    {
+      "sample_id": "small-01",
+      "repeat": 5,
+      "condition": "small",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6388084999998682
+    },
+    {
+      "sample_id": "small-02",
+      "repeat": 5,
+      "condition": "small",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energyfor learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.008620689655172414,
+      "wer": 0.1111111111111111,
+      "scan_latency_seconds": 0.5807660999998916
+    },
+    {
+      "sample_id": "small-03",
+      "repeat": 5,
+      "condition": "small",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.654715799999849
+    },
+    {
+      "sample_id": "small-04",
+      "repeat": 5,
+      "condition": "small",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again..",
+      "cer": 0.008695652173913044,
+      "wer": 0.058823529411764705,
+      "scan_latency_seconds": 0.6601513000000523
+    },
+    {
+      "sample_id": "small-05",
+      "repeat": 5,
+      "condition": "small",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6835949999999684
+    },
+    {
+      "sample_id": "small-06",
+      "repeat": 5,
+      "condition": "small",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordable..",
+      "cer": 0.017241379310344827,
+      "wer": 0.05555555555555555,
+      "scan_latency_seconds": 0.7488384000000678
+    },
+    {
+      "sample_id": "small-07",
+      "repeat": 5,
+      "condition": "small",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words..",
+      "cer": 0.008695652173913044,
+      "wer": 0.0625,
+      "scan_latency_seconds": 0.709814999999935
+    },
+    {
+      "sample_id": "small-08",
+      "repeat": 5,
+      "condition": "small",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7263091999998323
+    },
+    {
+      "sample_id": "blurred-01",
+      "repeat": 5,
+      "condition": "blurred",
+      "source_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "recognized_text": "Water conservation begins with small daily choices. Families can save clean water by fixing leaks and turning off taps.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.71165649999989
+    },
+    {
+      "sample_id": "blurred-02",
+      "repeat": 5,
+      "condition": "blurred",
+      "source_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "recognized_text": "A balanced breakfast gives students energy for learning. Whole grains, fruit, and water make a healthy morning meal.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6688728999999967
+    },
+    {
+      "sample_id": "blurred-03",
+      "repeat": 5,
+      "condition": "blurred",
+      "source_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "recognized_text": "Urban trees provide shade and reduce heat. Their roots absorb rainwater, while their leaves offer shelter to birds.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6663450000000921
+    },
+    {
+      "sample_id": "blurred-04",
+      "repeat": 5,
+      "condition": "blurred",
+      "source_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "recognized_text": "Recycling works best when materials are sorted carefully. Paper, glass, and metal can become useful products again.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.6563522999999805
+    },
+    {
+      "sample_id": "blurred-05",
+      "repeat": 5,
+      "condition": "blurred",
+      "source_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "recognized_text": "The science club planted native flowers near the library. These plants attract pollinators and need less watering.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.7259992000001603
+    },
+    {
+      "sample_id": "blurred-06",
+      "repeat": 5,
+      "condition": "blurred",
+      "source_text": "Public transport can reduce traffic in busy towns. Frequent buses also help people reach school and work affordably.",
+      "recognized_text": "Public transport can reduce traffic in busy towns.Frequent buses also help people reach school and work affordable..",
+      "cer": 0.02586206896551724,
+      "wer": 0.16666666666666666,
+      "scan_latency_seconds": 0.7334786000001259
+    },
+    {
+      "sample_id": "blurred-07",
+      "repeat": 5,
+      "condition": "blurred",
+      "source_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "recognized_text": "Reading aloud helps learners notice rhythm and pronunciation. Partners can take turns and discuss unfamiliar words.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.8064520999998877
+    },
+    {
+      "sample_id": "blurred-08",
+      "repeat": 5,
+      "condition": "blurred",
+      "source_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "recognized_text": "A clear experiment changes one factor at a time. Students record each result and explain what the evidence supports.",
+      "cer": 0.0,
+      "wer": 0.0,
+      "scan_latency_seconds": 0.8280564000001505
+    }
+  ]
+}

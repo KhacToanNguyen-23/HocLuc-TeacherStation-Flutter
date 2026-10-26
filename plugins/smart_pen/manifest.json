@@ -1,0 +1,33 @@
+{
+  "$schema": "https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json",
+  "id": "com.hocluc.plugin.smart_pen",
+  "name": "Bút thông minh",
+  "version": "1.0.0",
+  "author": "Học Lực Studio",
+  "description": "Nhận diện và đánh dấu đáp án trên tài liệu PDF.",
+  "category": "education",
+  "icon": "icon.png",
+  "ui": {
+    "entry": "ui/index.html",
+    "placement": "bottom_drawer",
+    "default_width": 360,
+    "default_height": 320,
+    "resizable": false,
+    "frameless": false,
+    "inject_sdk": true
+  },
+  "contributes": {
+    "tools": [
+      {
+        "id": "answer_marker",
+        "label": "Đánh dấu đáp án",
+        "icon": "edit",
+        "tooltip": "Chạm đáp án trên PDF để bật hoặc tắt dấu khoanh.",
+        "action": "toggle_tool",
+        "target": "answer_marker",
+        "pdf_tap_mode": true
+      }
+    ]
+  },
+  "permissions": ["storage", "board:read_text", "board:publish_pdf_regions", "board:annotate_pdf", "board:insert_annotation", "board:control_tools"]
+}

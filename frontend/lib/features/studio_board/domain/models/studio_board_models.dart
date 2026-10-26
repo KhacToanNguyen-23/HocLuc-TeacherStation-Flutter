@@ -2,13 +2,14 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/painting.dart';
 import 'ink_path.dart';
+import 'text_profile_models.dart';
 
 enum StudioViewportMode { fullBoard, fullPdf, split }
 
 class PdfDgnlHighlightSpan {
   final String text;
   final String category; // 'grammar', 'collocation', 'vocabulary'
-  final String level; // 'B2', 'C1', 'C2'
+  final String level; // 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Unknown'
   final String type;
   final String note;
   final List<Rect> normalizedRects;
@@ -32,6 +33,7 @@ class PdfDgnlPassage {
   final Map<String, dynamic> metrics;
   final List<Map<String, dynamic>> clozeQuestions;
   bool isVisible;
+  final TextProfileResult? textProfile;
 
   PdfDgnlPassage({
     required this.id,
@@ -42,6 +44,7 @@ class PdfDgnlPassage {
     required this.metrics,
     required this.clozeQuestions,
     this.isVisible = true,
+    this.textProfile,
   });
 }
 
@@ -56,6 +59,9 @@ class BoardStroke {
     this.isHollow = false,
     this.smartPenGroupId,
     this.smartPenLabel,
+    this.annotationOwnerId,
+    this.annotationGroupId,
+    this.annotationItemId,
   }) : isHighlighter = isHighlighter ?? (width > 6 || rect != null);
   final bool isHighlighter;
   final Color color;
@@ -66,6 +72,15 @@ class BoardStroke {
   final bool isHollow;
   final String? smartPenGroupId;
   final String? smartPenLabel;
+  final String? annotationOwnerId;
+  final String? annotationGroupId;
+  final String? annotationItemId;
+  String? get groupedAnnotationGroupId => annotationGroupId ?? smartPenGroupId;
+  String? get groupedAnnotationItemId => annotationItemId ?? smartPenLabel;
+  bool get isGroupedPdfAnnotation =>
+      groupedAnnotationGroupId != null &&
+      groupedAnnotationItemId != null &&
+      points.length >= 3;
   bool get isSmartPenOval =>
       smartPenGroupId != null && smartPenLabel != null && points.length >= 3;
   Path? _cachedPath;
@@ -121,6 +136,9 @@ class BoardStroke {
     isHollow: isHollow,
     smartPenGroupId: smartPenGroupId,
     smartPenLabel: smartPenLabel,
+    annotationOwnerId: annotationOwnerId,
+    annotationGroupId: annotationGroupId,
+    annotationItemId: annotationItemId,
   );
 
   Map<String, dynamic> toJson() => {
@@ -134,6 +152,9 @@ class BoardStroke {
     if (isHollow) 'isHollow': true,
     if (smartPenGroupId != null) 'smartPenGroupId': smartPenGroupId,
     if (smartPenLabel != null) 'smartPenLabel': smartPenLabel,
+    if (annotationOwnerId != null) 'annotationOwnerId': annotationOwnerId,
+    if (annotationGroupId != null) 'annotationGroupId': annotationGroupId,
+    if (annotationItemId != null) 'annotationItemId': annotationItemId,
   };
 
   static BoardStroke fromJson(Map<String, dynamic> json) {
@@ -163,6 +184,9 @@ class BoardStroke {
       isHollow: json['isHollow'] == true,
       smartPenGroupId: json['smartPenGroupId'] as String?,
       smartPenLabel: json['smartPenLabel'] as String?,
+      annotationOwnerId: json['annotationOwnerId'] as String?,
+      annotationGroupId: json['annotationGroupId'] as String?,
+      annotationItemId: json['annotationItemId'] as String?,
     );
   }
 }

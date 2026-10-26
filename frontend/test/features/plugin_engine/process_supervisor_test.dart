@@ -44,6 +44,7 @@ void main() {
         final manifest = PluginManifest(
           id: 'com.hocluc.test',
           name: 'Test Plugin',
+          permissions: const ['storage'],
         );
 
         await HostBridge.instance.handleMessage(

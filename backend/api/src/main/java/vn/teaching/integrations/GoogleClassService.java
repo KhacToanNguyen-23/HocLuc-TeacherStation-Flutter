@@ -25,7 +25,87 @@ public class GoogleClassService {
         this.connections=connections; this.google=google; this.store=store;
         this.classrooms=classrooms; this.scheduleService=scheduleService;
     }
-    public List<Map<String,Object>> list(String email) { return store.courses(connections.subject(email)); }
+    public synchronized List<Map<String,Object>> list(String email) {
+        String subject=connections.subject(email);
+        var courses=store.courses(subject);
+        var remoteCourses=courses.stream().filter(course -> !string(course,"courseId").isBlank()).toList();
+        if(remoteCourses.isEmpty()) return courses;
+        try {
+            String token=connections.access(email);
+            var remote=pages(CLASSROOM+"courses?teacherId=me","courses",token);
+            var byId=new HashMap<String,Map<String,Object>>();
+            for(var item:remote) if(!string(item,"id").isBlank()) byId.put(string(item,"id"),item);
+            for(var course:remoteCourses) {
+                var classroom=byId.get(string(course,"courseId"));
+                if(classroom==null) {
+                    try {
+                        classroom=google.call("GET",CLASSROOM+"courses/"+encode(string(course,"courseId")),token,null);
+                    } catch(GoogleFailure failure) {
+                        if("GOOGLE_404".equals(failure.code)) {
+                            store.deleteCourse(subject,string(course,"id"));
+                            continue;
+                        }
+                        course.put("classroomStateSyncError",failure.getMessage());
+                        store.saveCourse(subject,course);
+                        continue;
+                    }
+                }
+                if(string(classroom,"courseState").isBlank()) {
+                    course.put("classroomStateSyncError","Không đồng bộ được trạng thái lớp từ Google Classroom. Thử tải lại.");
+                } else {
+                    course.put("classroomState",string(classroom,"courseState"));
+                    course.remove("classroomStateSyncError");
+                }
+                store.saveCourse(subject,course);
+            }
+        } catch(GoogleFailure failure) {
+            for(var course:remoteCourses) {
+                course.put("classroomStateSyncError",failure.getMessage());
+                store.saveCourse(subject,course);
+            }
+        }
+        return store.courses(subject);
+    }
+    public synchronized Map<String,Object> archive(String email,String id) {
+        return changeCourseState(email,id,"ACTIVE","ARCHIVED");
+    }
+    public synchronized Map<String,Object> restore(String email,String id) {
+        return changeCourseState(email,id,"ARCHIVED","ACTIVE");
+    }
+    private Map<String,Object> changeCourseState(String email,String id,String expected,String target) {
+        String subject=connections.subject(email);
+        var course=store.course(subject,id);
+        String courseId=string(course,"courseId");
+        if(courseId.isBlank()) throw new GoogleFailure(409,"CLASSROOM_NOT_CREATED","Lá»›p chÆ°a Ä‘Æ°á»£c táº¡o trÃªn Google Classroom.");
+        String token=connections.access(email),url=CLASSROOM+"courses/"+encode(courseId);
+        try {
+            var current=google.call("GET",url,token,null);
+            String state=required(current,"courseState");
+            course.put("classroomState",state);
+            course.remove("classroomStateSyncError");
+            store.saveCourse(subject,course);
+            if(target.equals(state)) return course;
+            if(!expected.equals(state)) {
+                String code="PROVISIONED".equals(state)?"CLASSROOM_NOT_ACTIVE":"CLASSROOM_STATE_CHANGED";
+                String message="PROVISIONED".equals(state)
+                    ? "Mở Google Classroom và kích hoạt lớp trước khi lưu trữ."
+                    : "Trạng thái lớp trên Google vừa thay đổi. Tải lại danh sách rồi thử lại.";
+                throw new GoogleFailure(409,code,message);
+            }
+            google.call("PATCH",url+"?updateMask=courseState",token,Map.of("courseState",target));
+            var confirmed=google.call("GET",url,token,null);
+            if(!target.equals(string(confirmed,"courseState")))
+                throw new GoogleFailure(409,"CLASSROOM_STATE_UNVERIFIED","Google chưa xác nhận trạng thái mới. Tải lại danh sách rồi thử lại.");
+            course.put("classroomState",target);
+            course.remove("classroomStateSyncError");
+            store.saveCourse(subject,course);
+            return course;
+        } catch(GoogleFailure failure) {
+            course.put("classroomStateSyncError",failure.getMessage());
+            store.saveCourse(subject,course);
+            throw failure;
+        }
+    }
     public synchronized Map<String,Object> create(String email,String requestId,String title,String description,List<String> emails) {
         requireId(requestId); title=title==null?"":title.trim();
         if(title.isEmpty() || title.length()>200 || (description!=null && description.length()>2000))
@@ -111,11 +191,23 @@ public class GoogleClassService {
         var course=store.course(subject,id);
         String googleCourseId=string(course,"courseId");
         if(!googleCourseId.isBlank()) {
+            String token=connections.access(email);
             try {
-                google.call("DELETE",CLASSROOM+"courses/"+encode(googleCourseId),connections.access(email),null);
+                var remote=google.call("GET",CLASSROOM+"courses/"+encode(googleCourseId),token,null);
+                String state=required(remote,"courseState");
+                course.put("classroomState",state);
+                course.remove("classroomStateSyncError");
+                store.saveCourse(subject,course);
+                if(!"ARCHIVED".equals(state))
+                    throw new GoogleFailure(409,"CLASSROOM_NOT_ARCHIVED","Lưu trữ lớp trên Google Classroom trước khi xóa vĩnh viễn.");
+                google.call("DELETE",CLASSROOM+"courses/"+encode(googleCourseId),token,null);
             } catch(GoogleFailure failure) {
-                // A lost response can leave Classroom already deleted; let retry finish local cleanup.
-                if(!"GOOGLE_404".equals(failure.code)) throw failure;
+                // A lost delete response can leave Classroom already deleted; let retry finish local cleanup.
+                if(!"GOOGLE_404".equals(failure.code)) {
+                    course.put("classroomStateSyncError",failure.getMessage());
+                    store.saveCourse(subject,course);
+                    throw failure;
+                }
             }
         }
         store.deleteCourse(subject,id);

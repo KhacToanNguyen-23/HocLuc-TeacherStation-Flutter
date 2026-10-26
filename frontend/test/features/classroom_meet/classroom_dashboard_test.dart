@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/main.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
@@ -82,6 +82,30 @@ void main() {
         expect(find.byType(ClassroomDashboardScreen), findsNothing);
       },
     );
+
+    testWidgets(
+      'CompanionApp automatically redirects to LoginScreen when Auth session expires externally',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
+
+        final auth = GoogleMeetAuthService();
+        auth.signInWithDemoTeacher(name: 'Thầy Hưng', email: 'hung@hocluc.vn');
+
+        await tester.pumpWidget(const CompanionApp());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ClassroomDashboardScreen), findsOneWidget);
+        expect(find.byType(LoginScreen), findsNothing);
+
+        // Simulate external auth loss / token expiration
+        auth.signOut();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LoginScreen), findsOneWidget);
+        expect(find.byType(ClassroomDashboardScreen), findsNothing);
+      },
+    );
   });
 }
-

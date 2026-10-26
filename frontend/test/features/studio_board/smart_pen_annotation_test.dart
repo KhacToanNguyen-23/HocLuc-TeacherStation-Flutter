@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -956,26 +956,29 @@ void main() {
       );
     });
 
-    test('replacing active PDF content clears temporary circles and history', () {
-      final studio = StudioState();
-      addTearDown(studio.dispose);
-      studio.setPdfFile('quiz.pdf', Uint8List.fromList([1, 2, 3]));
-      studio.setSaveAnswerCirclesEnabled(false);
-      studio.toggleSmartPenAnswer(
-        _selection(page: 1, label: 'C', group: 'q-active-replacement'),
-        _pageSize,
-      );
-      expect(studio.canUndo, isTrue);
+    test(
+      'replacing active PDF content clears temporary circles and history',
+      () {
+        final studio = StudioState();
+        addTearDown(studio.dispose);
+        studio.setPdfFile('quiz.pdf', Uint8List.fromList([1, 2, 3]));
+        studio.setSaveAnswerCirclesEnabled(false);
+        studio.toggleSmartPenAnswer(
+          _selection(page: 1, label: 'C', group: 'q-active-replacement'),
+          _pageSize,
+        );
+        expect(studio.canUndo, isTrue);
 
-      studio.addImportedDoc(
-        'quiz.pdf',
-        'quiz.pdf',
-        Uint8List.fromList([4, 5, 6]),
-      );
+        studio.addImportedDoc(
+          'quiz.pdf',
+          'quiz.pdf',
+          Uint8List.fromList([4, 5, 6]),
+        );
 
-      expect(studio.pdfAnnotationsForPage(1), isEmpty);
-      expect(studio.canUndo, isFalse);
-    });
+        expect(studio.pdfAnnotationsForPage(1), isEmpty);
+        expect(studio.canUndo, isFalse);
+      },
+    );
 
     test('saved circles survive close after an in-place PDF export', () {
       final studio = StudioState();
@@ -1403,7 +1406,7 @@ void main() {
     final painter = tester
         .widgetList<CustomPaint>(find.byType(CustomPaint))
         .map((widget) => widget.painter)
-        .whereType<SmartPenOvalPainter>()
+        .whereType<GroupedPdfPathPainter>()
         .single;
     expect(painter.progress, 1);
     expect(oval.points, annotations.single.points);
@@ -1644,4 +1647,3 @@ List<BoardStroke> _ovals(StudioState studio, int page) =>
 
 List<BoardStroke> _ovalsIn(Iterable<BoardStroke> strokes) =>
     strokes.where((stroke) => stroke.isSmartPenOval).toList();
-

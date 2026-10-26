@@ -169,7 +169,7 @@ class StrokeClusterer {
     }
 
     return SmartChalkAnnotation(
-      id: 'svo-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'annotation-${DateTime.now().millisecondsSinceEpoch}',
       source: 'chalkboard',
       pageIndex: pageIndex,
       rawText: sentenceText,

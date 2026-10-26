@@ -24,6 +24,8 @@ const VALID_TOOL_ACTIONS = new Set([
   'quick_input',
   'rpc_event',
 ]);
+const REQUIRED_MANIFEST_SCHEMA = 'https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json';
+const FIXED_PORT_PATTERN = /(?:18888|\bport\s*[:=]\s*\d{2,5}\b|\|\|\s*['"]\d{2,5}['"])/i;
 
 const IGNORED_DIRS = new Set([
   '__pycache__',
@@ -31,6 +33,19 @@ const IGNORED_DIRS = new Set([
   'node_modules',
   '.git',
 ]);
+
+const TEXT_EXTENSIONS = new Set([
+  '.json', '.js', '.mjs', '.cjs', '.html', '.css',
+  '.py', '.txt', '.md', '.yaml', '.yml', '.svg'
+]);
+
+function normalizeEntryBytes(bytes, relPath) {
+  const ext = path.extname(relPath).toLowerCase();
+  if (TEXT_EXTENSIONS.has(ext)) {
+    return Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+  }
+  return bytes;
+}
 
 function getFilesRecursively(dir, relative = '') {
   const result = [];
@@ -44,6 +59,8 @@ function getFilesRecursively(dir, relative = '') {
     const relPath = path.join(relative, entry.name).replace(/\\/g, '/');
 
     if (entry.isDirectory()) {
+      if (relPath === 'engine/tests' || relPath.startsWith('engine/tests/') ||
+          relPath === 'engine/benchmarks' || relPath.startsWith('engine/benchmarks/')) continue;
       result.push(...getFilesRecursively(fullPath, relPath));
     } else {
       const stat = fs.statSync(fullPath);
@@ -51,6 +68,25 @@ function getFilesRecursively(dir, relative = '') {
     }
   }
   return result;
+}
+
+function readStoredZipEntries(zipPath) {
+  const buffer = fs.readFileSync(zipPath);
+  const files = new Map();
+  let offset = 0;
+  while (offset + 30 <= buffer.length && buffer.readUInt32LE(offset) === 0x04034b50) {
+    const method = buffer.readUInt16LE(offset + 8);
+    if (method !== 0) throw new Error(`Unsupported compression method ${method} in ${zipPath}`);
+    const size = buffer.readUInt32LE(offset + 18);
+    const nameLength = buffer.readUInt16LE(offset + 26);
+    const extraLength = buffer.readUInt16LE(offset + 28);
+    const nameStart = offset + 30;
+    const dataStart = nameStart + nameLength + extraLength;
+    const name = buffer.toString('utf8', nameStart, nameStart + nameLength);
+    files.set(name, buffer.subarray(dataStart, dataStart + size));
+    offset = dataStart + size;
+  }
+  return files;
 }
 
 function runPackagePlugin(pluginName) {
@@ -94,6 +130,14 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
   }
 
   // 2. Kiểm tra các trường bắt buộc
+  if (manifest.$schema !== REQUIRED_MANIFEST_SCHEMA || !manifest.ui || !manifest.contributes || !Array.isArray(manifest.contributes.tools)) {
+    errors.push({
+      plugin: pluginName,
+      code: 'LEGACY_MANIFEST_SCHEMA',
+      message: 'Manifest phải khai báo Schema v2.1, ui lồng, và contributes.tools.',
+      fix: 'Di chuyển các trường UI vào ui và khai báo contributes.tools.',
+    });
+  }
   for (const field of ['id', 'name', 'version']) {
     if (!manifest[field] || typeof manifest[field] !== 'string') {
       errors.push({
@@ -161,6 +205,22 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
         });
       }
     }
+    if (manifest.backend.port != null) {
+      errors.push({ plugin: pluginName, code: 'FIXED_BACKEND_PORT', message: 'Không khai báo cổng cố định trong backend; Host cấp cổng lúc chạy.' });
+    }
+    if (manifest.backend.type === 'python' && !fs.existsSync(path.join(dirPath, 'engine', 'requirements.txt'))) {
+      errors.push({ plugin: pluginName, code: 'MISSING_ENGINE_DEPENDENCIES', message: 'Python sidecar cần engine/requirements.txt.' });
+    }
+  }
+
+  for (const file of getFilesRecursively(dirPath).filter((item) => /\.(?:js|ts|py)$/.test(item.relPath))) {
+    const source = fs.readFileSync(file.fullPath, 'utf8');
+    if (file.relPath.endsWith('.js') && !file.relPath.endsWith('sdk.js') && source.includes('window.chrome.webview.postMessage')) {
+      errors.push({ plugin: pluginName, code: 'DIRECT_WEBVIEW_BRIDGE', message: `${file.relPath} gọi WebView bridge trực tiếp; dùng window.HocLuc.` });
+    }
+    if (FIXED_PORT_PATTERN.test(source)) {
+      errors.push({ plugin: pluginName, code: 'FIXED_PORT_IN_UI', message: `${file.relPath} có thể chứa cổng sidecar cố định.` });
+    }
   }
 
   // 6. Kiểm tra Contributes Tools (nếu có)
@@ -195,27 +255,38 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
     });
     outOfSyncPlugins.add(pluginName);
   } else {
-    const hlepStat = fs.statSync(hlepPath);
     const files = getFilesRecursively(dirPath);
-
     let isOutOfSync = false;
-    let latestModifiedFile = null;
-
-    for (const file of files) {
-      // Cho phép lệch 1500ms do độ phân giải thời gian của file system
-      if (file.mtimeMs > hlepStat.mtimeMs + 1500) {
-        isOutOfSync = true;
-        if (!latestModifiedFile || file.mtimeMs > latestModifiedFile.mtimeMs) {
-          latestModifiedFile = file;
+    let mismatchPath = null;
+    try {
+      const archiveFiles = readStoredZipEntries(hlepPath);
+      const sourceFiles = new Map(files.map((file) => [file.relPath, fs.readFileSync(file.fullPath)]));
+      if (archiveFiles.size !== sourceFiles.size) isOutOfSync = true;
+      for (const [name, sourceRaw] of sourceFiles) {
+        const packagedRaw = archiveFiles.get(name);
+        if (!packagedRaw) {
+          isOutOfSync = true;
+          mismatchPath = name;
+          break;
+        }
+        const sourceNorm = normalizeEntryBytes(sourceRaw, name);
+        const packagedNorm = normalizeEntryBytes(packagedRaw, name);
+        if (!sourceNorm.equals(packagedNorm)) {
+          isOutOfSync = true;
+          mismatchPath = name;
+          break;
         }
       }
+      if (!mismatchPath && archiveFiles.size !== sourceFiles.size) mismatchPath = 'archive file list';
+    } catch (error) {
+      isOutOfSync = true;
+      mismatchPath = error.message;
     }
-
     if (isOutOfSync) {
       errors.push({
         plugin: pluginName,
         code: 'OUT_OF_SYNC_HLEP',
-        message: `Mã nguồn plugin "${pluginName}" đã bị sửa đổi (ví dụ: ${latestModifiedFile?.relPath}) nhưng file "${pluginName}.hlep" chưa được đóng gói lại!`,
+        message: `Mã nguồn plugin "${pluginName}" đã bị sửa đổi (ví dụ: ${mismatchPath}) nhưng file "${pluginName}.hlep" chưa được đóng gói lại!`,
         fix: `node scripts/package_plugin.mjs ${pluginName}`,
       });
       outOfSyncPlugins.add(pluginName);

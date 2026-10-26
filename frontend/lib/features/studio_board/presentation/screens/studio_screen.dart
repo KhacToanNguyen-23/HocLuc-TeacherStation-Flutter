@@ -1,3 +1,4 @@
+import '../widgets/studio_board_shortcuts.dart';
 import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:teaching_companion/features/classroom_meet/presentation/screens/
 import 'package:teaching_companion/core/network/local_service.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/studio_board/presentation/scoped_listenable_builder.dart';
+import 'package:teaching_companion/features/classroom_meet/services/classroom_settings_service.dart';
 import 'package:teaching_companion/features/studio_board/presentation/stage_container.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_drawing_toolbar.dart';
 import 'package:teaching_companion/features/studio_board/presentation/studio/studio_inspector_panel.dart';
@@ -107,6 +109,12 @@ class _StudioScreenState extends State<StudioScreen> {
     if (_openingRoom || !mounted) return;
     final target = widget.teachingTarget!;
     final meet = MeetAutomationService();
+    final classroomSettings = ClassroomSettingsService.instance;
+    await classroomSettings.load();
+    if (!mounted) return;
+    if (studio.showCameraPip != classroomSettings.autoCamera) {
+      studio.toggleCameraPip();
+    }
     setState(() {
       _openingRoom = true;
       _sessionError = null;
@@ -431,8 +439,8 @@ class _StudioScreenState extends State<StudioScreen> {
               setState(() => showInspector = false);
             },
           },
-          child: Focus(
-            autofocus: true,
+          child: StudioBoardShortcuts(
+            studio: studio,
             child: Scaffold(
               body: LayoutBuilder(
                 builder: (context, box) {
@@ -561,7 +569,7 @@ class _StudioScreenState extends State<StudioScreen> {
                           children: [
                             Row(
                               children: [
-                                if (studio.view == 'board')
+                                if (studio.view != 'question')
                                   StudioDrawingToolbar(
                                     studio: studio,
                                     isVertical: true,
@@ -574,18 +582,16 @@ class _StudioScreenState extends State<StudioScreen> {
                                       10,
                                       4,
                                     ),
-                                    child: Stack(
+                                    child: Column(
                                       children: [
-                                        Positioned.fill(child: fittedStage()),
-                                        if (studio.view == 'board')
-                                          Positioned(
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            child: StudioSpeakerNotesBar(
-                                              studio: studio,
-                                            ),
+                                        Expanded(child: fittedStage()),
+                                        if (studio.view == 'board' &&
+                                            studio.showSpeakerNotes) ...[
+                                          const SizedBox(height: 4),
+                                          StudioSpeakerNotesBar(
+                                            studio: studio,
                                           ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -648,4 +654,3 @@ class _StudioScreenState extends State<StudioScreen> {
     },
   );
 }
-

@@ -89,7 +89,7 @@ class _StudioSpeakerNotesBarState extends State<StudioSpeakerNotesBar> {
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
@@ -106,7 +106,7 @@ class _StudioSpeakerNotesBarState extends State<StudioSpeakerNotesBar> {
           // Header / Collapsed Bar
           InkWell(
             onTap: () => setState(() => _isExpanded = !_isExpanded),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            borderRadius: BorderRadius.circular(10),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: Row(
@@ -205,6 +205,23 @@ class _StudioSpeakerNotesBarState extends State<StudioSpeakerNotesBar> {
                         : Icons.keyboard_arrow_up_rounded,
                     size: 20,
                     color: AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Tooltip(
+                    message: 'Đóng thanh ghi chú',
+                    child: InkWell(
+                      key: const Key('btn_close_speaker_notes'),
+                      onTap: () => widget.studio.setSpeakerNotesOpen(false),
+                      borderRadius: BorderRadius.circular(12),
+                      child: const Padding(
+                        padding: EdgeInsets.all(3),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 17,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
