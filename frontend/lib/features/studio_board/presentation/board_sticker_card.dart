@@ -151,7 +151,6 @@ class BoardStickerCard extends StatelessWidget {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onSelect,
-            onDoubleTap: onEdit,
             child: Transform.rotate(
               angle: sticker.rotation,
               child: Container(
@@ -193,7 +192,6 @@ class BoardStickerCard extends StatelessWidget {
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onPanUpdate: _handleMove,
-                        onDoubleTap: onEdit,
                         child: Material(
                           color: Colors.transparent,
                           child: Container(
