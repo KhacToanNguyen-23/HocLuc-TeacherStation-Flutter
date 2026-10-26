@@ -103,7 +103,7 @@ class BoardStickerCard extends StatelessWidget {
     bool isCorner = true,
   }) {
     final visualSize = isCorner ? 9.0 : 7.0;
-    const hitSize = 28.0;
+    const hitSize = 16.0;
     return Positioned(
       left: offset.dx - hitSize / 2,
       top: offset.dy - hitSize / 2,
@@ -151,7 +151,7 @@ class BoardStickerCard extends StatelessWidget {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onSelect,
-            onDoubleTap: onEdit ?? onSelect,
+            onDoubleTap: onEdit,
             child: Transform.rotate(
               angle: sticker.rotation,
               child: Container(
@@ -219,7 +219,7 @@ class BoardStickerCard extends StatelessWidget {
                                       // Optional header for text/token cards only
                                       if (!isSvgCard)
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.only(left: 10, right: 14, top: 6, bottom: 4),
                                         decoration: const BoxDecoration(
                                           color: Color(0x22ffffff),
                                           borderRadius: BorderRadius.only(
@@ -359,10 +359,10 @@ class BoardStickerCard extends StatelessWidget {
 
                     // Canva Rotation Stem & Handle (Top-Center)
                     Positioned(
-                      top: -26,
+                      top: -28,
                       left: (boxW - 28) / 2,
                       width: 28,
-                      height: 26,
+                      height: 28,
                       child: MouseRegion(
                         cursor: SystemMouseCursors.grab,
                         child: GestureDetector(
@@ -412,7 +412,7 @@ class BoardStickerCard extends StatelessWidget {
                               ),
                               Container(
                                 width: 1.5,
-                                height: 12,
+                                height: 10,
                                 color: const Color(0xFF8B1D24),
                               ),
                             ],
@@ -595,12 +595,10 @@ class BoardStickerCard extends StatelessWidget {
         child: Container(
           height: availableHeight,
           padding: const EdgeInsets.all(2),
-          child: FittedBox(
+          alignment: Alignment.center,
+          child: SvgPicture.string(
+            sticker.svgContent!,
             fit: BoxFit.contain,
-            alignment: Alignment.center,
-            child: SvgPicture.string(
-              sticker.svgContent!,
-            ),
           ),
         ),
       );
@@ -616,13 +614,10 @@ class BoardStickerCard extends StatelessWidget {
         return Container(
           height: availableHeight,
           padding: const EdgeInsets.all(4),
-          child: FittedBox(
-            fit: BoxFit.contain,
-            alignment: Alignment.center,
-            child: isSvg
-                ? SvgPicture.memory(bytes)
-                : Image.memory(bytes),
-          ),
+          alignment: Alignment.center,
+          child: isSvg
+              ? SvgPicture.memory(bytes, fit: BoxFit.contain)
+              : Image.memory(bytes, fit: BoxFit.contain),
         );
       } catch (_) {
         // Fallback to text if decoding fails
