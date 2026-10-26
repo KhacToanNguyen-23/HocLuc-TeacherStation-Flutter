@@ -8,6 +8,8 @@ Chọn **Kiểm tra kết nối → Áp dụng**. Kiểm tra gọi một complet
 
 Vào phòng Meet trong WebView hiện tại, mở chat và chờ lịch sử tải xong. Bật **tự trả lời**. Nếu hệ thống vừa mở panel chat, bật lại sau khi chat sẵn sàng. Bước này lấy mốc lịch sử; chỉ các tin mới có nguồn từ tài liệu Meet hiện tại mới được xét. Giữ chat mở; đóng hoặc thay panel có thể làm mất trạng thái quan sát và cần bật lại.
 
+Header của Studio khi dạy có nút robot kèm công tắc, ngay trước nút học sinh: xanh là bật, xám là tắt, vòng chờ là đang lấy mốc chat (nhấn lại để hủy). Nút chỉ có biểu tượng; tooltip giải thích khi rê chuột. Header và Cài đặt dùng chung phiên AI, độc lập với việc đóng/mở panel. Tắt sẽ ngừng nhận câu hỏi mới và hủy xử lý/gửi đang chờ; tin đã gửi không được thu hồi. Khi thiếu cấu hình hoặc đang sửa API, nút mở Cài đặt. Đóng panel khi đang sửa sẽ bỏ bản nháp và giữ cấu hình đã áp dụng, AI vẫn tắt. Tạm rời lớp cũng tắt AI; màn hình soạn bài không nhận quyền điều khiển AI của lớp.
+
 Mở PDF có lớp văn bản hoặc nội dung bảng có sticker/chalk text. Trợ giảng lấy trang đang trình bày và các đoạn PDF liên quan, không lấy ghi chú riêng, nháp, đáp án Smart Pen hoặc bản đồ phân tích plugin. Bảng ở trang khác không được gửi. PDF chalk bị loại vì dữ liệu hiện tại chưa gắn annotation với đúng tài liệu. Nét viết tay thuần hình học, hình vẽ, PDF quét và lời nói chưa được nhận dạng. PPTX cần xuất/mở PDF trước.
 
 ## Hành vi trả lời

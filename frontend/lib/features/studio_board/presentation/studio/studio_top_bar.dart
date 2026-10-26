@@ -11,10 +11,15 @@ import 'package:teaching_companion/features/studio_board/presentation/studio/stu
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/create_classroom_dialog.dart';
 
+import '../../../meet_tutor/services/tutor_controller.dart';
+import '../../../meet_tutor/presentation/widgets/tutor_header_toggle.dart';
+
 class StudioTopBar extends StatelessWidget {
   const StudioTopBar({
     super.key,
     required this.studio,
+    this.tutor,
+    this.onConfigureTutor,
     required this.width,
     this.hasLessons = false,
     this.hasInspector = false,
@@ -36,6 +41,8 @@ class StudioTopBar extends StatelessWidget {
   }) : isPlanning = isPlanning ?? isPlanningMode;
 
   final StudioState studio;
+  final TutorController? tutor;
+  final VoidCallback? onConfigureTutor;
   final double width;
   final bool hasLessons;
   final bool hasInspector;
@@ -223,7 +230,7 @@ class StudioTopBar extends StatelessWidget {
     return Container(
       width: width,
       height: 54,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: EdgeInsets.symmetric(horizontal: width <= 1024 ? 8 : 12),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: line)),
@@ -539,11 +546,13 @@ class StudioTopBar extends StatelessWidget {
                           ],
                         ),
                       ),
-                      label: const Text(
-                        'GG Panel',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      label: width <= 800
+                          ? const SizedBox.shrink()
+                          : const Text(
+                              'GG Panel',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                       style: TextButton.styleFrom(
                         foregroundColor: hasInspector
                             ? AppColors.onSelected
@@ -710,6 +719,13 @@ class StudioTopBar extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (tutor != null) ...[
+                  const SizedBox(width: 4),
+                  TutorHeaderToggle(
+                    controller: tutor!,
+                    onConfigure: onConfigureTutor ?? onToggleInspector,
+                  ),
+                ],
                 if (onToggleStudents != null) ...[
                   const SizedBox(width: 4),
                   ListenableBuilder(

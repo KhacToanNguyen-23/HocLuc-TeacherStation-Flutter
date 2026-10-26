@@ -111,6 +111,29 @@ void main() {
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed != null;
 
   testWidgets(
+    'closing edited settings discards draft and unlocks applied config',
+    (tester) async {
+      controller.configure(
+        const TutorConfig(baseUrl: 'https://example.test/v1', model: 'old'),
+      );
+      await mount(tester);
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'https://new.test/v1',
+      );
+      expect(controller.configurationPending, isTrue);
+      controller.setEnabled(true);
+      expect(controller.enabled, isFalse);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      expect(controller.configurationPending, isFalse);
+      expect(controller.enabled, isFalse);
+      expect(controller.config!.model, 'old');
+      controller.setEnabled(true);
+      expect(controller.enabled, isTrue);
+    },
+  );
+  testWidgets(
     'explicit test then apply uses the identical immutable draft and stays paused',
     (tester) async {
       await mount(tester);

@@ -35,6 +35,7 @@ class _TutorSettingsState extends State<TutorSettings> {
   void didUpdateWidget(covariant TutorSettings oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.discardConfigurationDraft();
       _revision++;
       _testing = false;
       _tested = null;
@@ -54,7 +55,7 @@ class _TutorSettingsState extends State<TutorSettings> {
       _tested = null;
       _feedback = null;
     });
-    widget.controller.setEnabled(false);
+    widget.controller.markConfigurationPending();
   }
 
   Future<void> _test() async {
@@ -102,6 +103,7 @@ class _TutorSettingsState extends State<TutorSettings> {
 
   @override
   void dispose() {
+    widget.controller.discardConfigurationDraft();
     _url.dispose();
     _model.dispose();
     _key.dispose();
@@ -213,14 +215,16 @@ class _TutorSettingsState extends State<TutorSettings> {
                 Semantics(
                   label: 'Tự động trả lời câu hỏi Meet',
                   child: Switch(
-                    value: controller.enabled,
+                    value: controller.enabled || controller.starting,
                     onChanged: controller.config == null || _testing || _dirty
                         ? null
                         : controller.setEnabled,
                   ),
                 ),
                 Text(
-                  controller.enabled
+                  controller.starting
+                      ? 'Đang bật AI…'
+                      : controller.enabled
                       ? 'Đang bật tự trả lời'
                       : 'Tạm dừng tự trả lời',
                 ),

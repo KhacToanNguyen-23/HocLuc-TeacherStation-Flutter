@@ -29,6 +29,8 @@ class TutorController extends ChangeNotifier {
   final Duration sendInterval;
   TutorConfig? config;
   bool enabled = false;
+  bool starting = false;
+  bool configurationPending = false;
   bool busy = false;
   bool _disposed = false;
   bool _joined = false;
@@ -44,14 +46,30 @@ class TutorController extends ChangeNotifier {
   DateTime? _lastSend;
 
   void configure(TutorConfig value) {
+    configurationPending = false;
     config = value;
     _invalidate('Đã đổi AI; bật trợ giảng để nhận câu hỏi mới.');
   }
 
+  void markConfigurationPending() {
+    configurationPending = true;
+    setEnabled(false);
+  }
+
+  void discardConfigurationDraft() {
+    if (!configurationPending) return;
+    configurationPending = false;
+    // Settings can be removed while the widget tree is being rebuilt.
+    scheduleMicrotask(() {
+      if (!_disposed) notifyListeners();
+    });
+  }
+
   void setEnabled(bool value) {
-    if (value && config == null) return;
+    if (value && (config == null || configurationPending)) return;
     _invalidate(value ? 'Đang theo dõi câu hỏi mới.' : 'Đã tạm dừng.');
     if (value && prepareObservation != null) {
+      starting = true;
       status = 'Đang lấy mốc chat hiện tại…';
       notifyListeners();
       unawaited(_prepare(_generation));
@@ -69,6 +87,7 @@ class TutorController extends ChangeNotifier {
       ready = false;
     }
     if (_disposed || generation != _generation) return;
+    starting = false;
     enabled = ready && _joined;
     status = enabled
         ? 'Đang theo dõi câu hỏi mới.'
@@ -76,12 +95,15 @@ class TutorController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void contextChanged() => cancelSend?.call();
+  void contextChanged() {
+    if (enabled || starting || busy) cancelSend?.call();
+  }
 
   void _invalidate(String message) {
     _generation++;
     cancelSend?.call();
     enabled = false;
+    starting = false;
     _queue.clear();
     status = message;
     if (!_disposed) notifyListeners();
