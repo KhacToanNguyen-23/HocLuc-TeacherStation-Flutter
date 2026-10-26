@@ -8,6 +8,12 @@ Cấu hình API của trợ giảng hoàn toàn bằng file `.env` ở gốc d�
 HOCLUC_TUTOR_BASE_URL=https://provider.example/v1
 HOCLUC_TUTOR_MODEL=your-model
 HOCLUC_TUTOR_API_KEY=your-api-key
+# Optional: 5..90 seconds; default 45
+HOCLUC_TUTOR_REQUEST_TIMEOUT_SECONDS=45
+# Optional: only when the provider/model supports reasoning_effort
+HOCLUC_TUTOR_REASONING_EFFORT=
+# Optional: only for providers supporting response_format json_schema
+HOCLUC_TUTOR_STRUCTURED_OUTPUT=false
 ```
 
 Base URL là gốc API tương thích Chat Completions, không thêm `/chat/completions`. API local không cần khóa có thể để `HOCLUC_TUTOR_API_KEY=`. HTTPS được chấp nhận; HTTP chỉ cho literal loopback `127.0.0.1` hoặc `::1`. Backend dùng bộ đọc `.env` hiện có: tìm từ thư mục khởi chạy lên gốc repo, chọn file gần nhất; biến môi trường của tiến trình ưu tiên hơn `.env`. Khởi động lại backend sau khi sửa file. `.env` đã được Git ignore; không commit file thật hoặc ghi khóa vào log.
@@ -24,7 +30,7 @@ Mở PDF có lớp văn bản hoặc nội dung bảng có sticker/chalk text. T
 
 Từ 2026-10-26, **mọi tin nhắn mới, không rỗng của học sinh được nhận khi trợ giảng đang bật đều có nhánh phản hồi trên chat**, không qua duyệt thủ công. Không còn bộ lọc từ khóa câu hỏi hoặc gộp hai tin riêng chỉ vì cùng nội dung. Tin đã thấy, lịch sử trước lúc bật, tin của giáo viên và tin AI vẫn bị bỏ qua để tránh vòng lặp.
 
-- Ngoài môn/chủ đề bài giảng: backend yêu cầu model phân loại `scope` từ `lessonSubject` và nguồn bài học. Khi `out_of_scope`, gửi câu cố định **“Không thuộc phạm vi bài giảng.”**; không chuyển lời khuyên ngoài chủ đề của model. Phân loại này phụ thuộc chất lượng model, chưa có đánh giá độ chính xác ngữ nghĩa trên lớp thật.
+- Ngoài môn/chủ đề bài giảng: backend yêu cầu model phân loại `scope` từ `lessonSubject` và nguồn bài học. Khi `out_of_scope`, gửi câu cố định **“Không nằm trong nội dung bài học”**; không chuyển lời khuyên ngoài chủ đề của model. Phân loại này phụ thuộc chất lượng model, chưa có đánh giá độ chính xác ngữ nghĩa trên lớp thật.
 
 - `answered` / `high`: model chọn câu nguyên văn từ nguồn, backend xác minh ID và câu trích đầy đủ; frontend xác minh lại trước khi gửi.
 - `tentative` / `low`: model được diễn giải/suy luận từ ngữ cảnh hoặc kiến thức chung. Mọi tin đều được hệ thống thêm **“Chưa chắc chắn — câu trả lời dự kiến.”**, không phụ thuộc model có tự ghi cảnh báo hay không. Nếu không có trích dẫn, tin ghi **“Chưa có nguồn bài học xác nhận.”**. Câu hỏi không có văn bản bài học vẫn có thể được trả lời theo nhánh này; AI không được giả vờ đã đọc hình, nét viết tay hoặc nghe lời giảng.
@@ -58,3 +64,7 @@ Frontend nằm trong `features/meet_tutor`, backend trong `modules/tutor`. `Stud
 ## Phạm vi kiểm chứng
 
 Test tự động dùng provider giả lập và DOM fixture; không gửi tin vào lớp thật. CI gate không thay thế nghiệm thu Windows WebView2 + tài khoản học sinh và API thật. Cần kiểm chứng: đọc tin mới, không trả lời lịch sử, thấy câu trả lời từ máy học sinh, dừng/đổi bài lúc đang xử lý, độ trễ/tải cùng Meet và độ chính xác trên câu hỏi giữ riêng.
+
+### Gemini manual-test configuration
+
+For newly provisioned Gemini accounts tested on 2026-10-26, `gemini-2.5-flash-lite` returned 404 (no longer available to new users). Use an available model, for example `gemini-3.5-flash-lite`, with `HOCLUC_TUTOR_REASONING_EFFORT=minimal` and `HOCLUC_TUTOR_STRUCTURED_OUTPUT=true`. Live probing returned OK, but this alone does not verify Meet delivery or lesson-answer quality. Backend request timeout defaults to 45 seconds, bounded to 5..90 via `.env`; the client transport waits up to 100 seconds. A reasoning-enabled connection probe uses a 512-token budget so it can complete after thinking. No provider/model controls are shown in the teacher UI.

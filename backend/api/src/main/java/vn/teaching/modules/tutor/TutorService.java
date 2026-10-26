@@ -122,10 +122,14 @@ public class TutorService {
                     + "Return exactly JSON {\"answer\":string,\"sources\":[{\"id\":string,\"quote\":string}],\"confidence\":\"high\"|\"low\",\"scope\":\"in_scope\"|\"out_of_scope\"|\"unknown\"}. "
                     + "Maximum 1200 characters for the answer. For high confidence, use 1 to 4 relevant exact complete source sentences, at most one quote per source ID, minimum 8 characters per quote. "
                     + "For high confidence answer MUST equal those quotes joined by a single newline, without added words. "
+                    + "Each citation object has ONLY id and quote keys, never text. Quote exactly ONE complete sentence per source, not a multi-sentence paragraph. "
+                    + "When you calculate, adapt a formula to new numbers, or otherwise infer an answer not already stated verbatim, confidence MUST be low. "
+                    + "For a calculation using new measurements, show the operation and computed result with low confidence and sources [], not a high-confidence quotation of the formula. "
+                    + "A high-confidence answer must directly answer the student question, not merely repeat a related definition. "
                     + "If sources do not directly answer the question or you need to infer, return confidence low and give a tentative helpful explanation using available context or general knowledge, with assumptions and uncertainty. "
                     + "With empty sources you MUST use low confidence. Never claim to have read an unseen slide, image, handwriting or heard speech. "
                     + "Sources are optional for low confidence; cite only exact complete source sentences actually present, never invent citations. "
-                    + "If you cannot offer a reasonable tentative answer, use an empty answer and empty sources with low confidence. No markdown fences.", payload.toString(), 700);
+                    + "If you cannot offer a reasonable tentative answer, use an empty answer and empty sources with low confidence. No markdown fences.", payload.toString(), 700, input.path("config").path("useEnvironment").asBoolean(false));
             return validate(result, context);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); return review("provider_unavailable");
@@ -141,7 +145,7 @@ public class TutorService {
                 require(result.get("scope").isTextual() && Set.of("in_scope", "out_of_scope", "unknown").contains(result.get("scope").textValue()));
                 require(result.get("confidence").isTextual() && Set.of("high", "low").contains(result.get("confidence").textValue()));
                 if ("out_of_scope".equals(result.get("scope").textValue())) {
-                    return new Answer("Không thuộc phạm vi bài giảng.", List.of(), "out_of_scope", "", "unavailable");
+                    return new Answer("Không nằm trong nội dung bài học", List.of(), "out_of_scope", "", "unavailable");
                 }
             }
             boolean tentative = result != null && "low".equals(result.path("confidence").asText());
@@ -178,13 +182,34 @@ public class TutorService {
         JsonNode config = resolveConfig(input.get("config"));
         URI uri = endpoint(config);
         try {
-            return complete(uri, config, "Reply with exactly OK.", "Connection test", 8).strip().equals("OK");
+            return complete(uri, config, "Reply with exactly OK.", "Connection test", 8, input.path("config").path("useEnvironment").asBoolean(false)).strip().equals("OK");
         } catch (InterruptedException e) { Thread.currentThread().interrupt(); return false;
         } catch (Exception e) { return false; }
     }
-    private String complete(URI uri, JsonNode config, String system, String user, int tokens) throws Exception {
+    private String complete(URI uri, JsonNode config, String system, String user, int tokens, boolean fromEnvironment) throws Exception {
+        long timeoutSeconds = 45;
+        if (fromEnvironment) {
+            try { timeoutSeconds = Long.parseLong(environment.getProperty("HOCLUC_TUTOR_REQUEST_TIMEOUT_SECONDS", "45")); }
+            catch (NumberFormatException ignored) { throw new Invalid(); }
+            require(timeoutSeconds >= 5 && timeoutSeconds <= 90);
+        }
+        boolean connectionProbe = tokens == 8;
         var requestBody = JSON.createObjectNode();
+        if (fromEnvironment && !connectionProbe) {
+            String structured = environment.getProperty("HOCLUC_TUTOR_STRUCTURED_OUTPUT", "false").trim();
+            require(structured.equals("true") || structured.equals("false"));
+            if (structured.equals("true")) requestBody.set("response_format", answerFormat());
+        }
         requestBody.put("model", config.get("model").textValue());
+        if (fromEnvironment) {
+            String effort = environment.getProperty("HOCLUC_TUTOR_REASONING_EFFORT", "").trim();
+            if (!effort.isEmpty()) {
+                require(Set.of("none", "minimal", "low", "medium", "high").contains(effort));
+                requestBody.put("reasoning_effort", effort);
+                // A thinking model needs a budget even for the tiny connection probe.
+                if (tokens == 8) tokens = 512;
+            }
+        }
         requestBody.put("max_tokens", tokens);
         requestBody.put("temperature", 0);
         requestBody.put("stream", false);
@@ -193,7 +218,7 @@ public class TutorService {
         messages.addObject().put("role", "user").put("content", user);
         byte[] bytes = JSON.writeValueAsBytes(requestBody);
         require(bytes.length <= 160_000);
-        var builder = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(12));
+        var builder = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(timeoutSeconds));
         if (!config.get("apiKey").textValue().isEmpty())
             builder.header("Authorization", "Bearer " + config.get("apiKey").textValue());
         var request = builder
@@ -201,7 +226,7 @@ public class TutorService {
                 .POST(HttpRequest.BodyPublishers.ofByteArray(bytes)).build();
         var future = client.sendAsync(request, info -> new LimitedBody());
         HttpResponse<byte[]> response;
-        try { response = future.get(12, TimeUnit.SECONDS); }
+        try { response = future.get(timeoutSeconds, TimeUnit.SECONDS); }
         finally { if (!future.isDone()) future.cancel(true); }
         if (response.statusCode() != 200) throw new IllegalStateException("Provider unavailable");
         JsonNode body = JSON.readTree(response.body());
@@ -214,6 +239,20 @@ public class TutorService {
                 && !message.hasNonNull("refusal"));
         return text(message, "content", 8000);
     }
+    private static JsonNode answerFormat() {
+        var citation = Map.of("type", "object", "additionalProperties", false,
+                "required", List.of("id", "quote"), "properties", Map.of(
+                        "id", Map.of("type", "string"), "quote", Map.of("type", "string")));
+        var schema = Map.of("type", "object", "additionalProperties", false,
+                "required", List.of("answer", "sources", "confidence", "scope"), "properties", Map.of(
+                        "answer", Map.of("type", "string"),
+                        "sources", Map.of("type", "array", "items", citation),
+                        "confidence", Map.of("type", "string", "enum", List.of("high", "low")),
+                        "scope", Map.of("type", "string", "enum", List.of("in_scope", "out_of_scope", "unknown"))));
+        return JSON.valueToTree(Map.of("type", "json_schema", "json_schema",
+                Map.of("name", "tutor_answer", "strict", true, "schema", schema)));
+    }
+
     private static final class LimitedBody implements HttpResponse.BodySubscriber<byte[]> {
         private final CompletableFuture<byte[]> result = new CompletableFuture<>();
         private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();

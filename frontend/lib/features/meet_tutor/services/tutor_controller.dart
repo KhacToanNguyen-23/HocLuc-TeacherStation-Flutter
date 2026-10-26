@@ -35,6 +35,7 @@ class TutorController extends ChangeNotifier {
   bool _joined = false;
   String? _room;
   int _generation = 0;
+  Completer<void> _cancelled = Completer<void>();
   final _seen = <String>{};
   final _queue = Queue<_TutorJob>();
   final _reviews = <TutorReview>[];
@@ -85,6 +86,11 @@ class TutorController extends ChangeNotifier {
 
   void _invalidate(String message) {
     _generation++;
+    if (!_cancelled.isCompleted) _cancelled.complete();
+    _cancelled = Completer<void>();
+    if (gateway is CancellableTutorGateway) {
+      (gateway as CancellableTutorGateway).cancelPending();
+    }
     cancelSend?.call();
     enabled = false;
     starting = false;
@@ -237,14 +243,22 @@ class TutorController extends ChangeNotifier {
     }
   }
 
+  Future<T> _untilCancelled<T>(Future<T> task, Future<void> cancelled) =>
+      Future.any([
+        task,
+        cancelled.then<T>((_) => throw const _TutorCancelled()),
+      ]);
+
   Future<void> _drain() async {
+    final drainGeneration = _generation;
+    final cancelled = _cancelled.future;
     busy = true;
     notifyListeners();
     try {
-      while (!_disposed && enabled && _joined && _queue.isNotEmpty) {
+      while (_sessionCurrent(drainGeneration) && _queue.isNotEmpty) {
         final job = _queue.removeFirst();
         final question = job.message;
-        final generation = _generation;
+        final generation = drainGeneration;
         final revision = job.revision;
         try {
           if (job.notice != null) {
@@ -257,15 +271,19 @@ class TutorController extends ChangeNotifier {
           }
           status = 'Đang xử lý câu hỏi…';
           notifyListeners();
-          final lesson = await context(
-            question.text,
-          ).timeout(const Duration(seconds: 15));
+          final lesson = await _untilCancelled(
+            context(question.text).timeout(const Duration(seconds: 15)),
+            cancelled,
+          );
           if (!_sessionCurrent(generation)) continue;
           if (revision != contextRevision() || lesson.revision != revision) {
             await _deliver(question, changedReply, generation);
             continue;
           }
-          final result = await gateway.answer(config!, question.text, lesson);
+          final result = await _untilCancelled(
+            gateway.answer(config!, question.text, lesson),
+            cancelled,
+          );
           if (!_sessionCurrent(generation)) continue;
           if (revision != contextRevision()) {
             await _deliver(question, changedReply, generation);
@@ -274,7 +292,7 @@ class TutorController extends ChangeNotifier {
           if (result.confidence == TutorConfidence.outOfScope) {
             await _deliver(
               question,
-              'Không thuộc phạm vi bài giảng.',
+              'Không nằm trong nội dung bài học',
               generation,
               revision: revision,
             );
@@ -314,6 +332,9 @@ class TutorController extends ChangeNotifier {
             ? 'Đang theo dõi • đã gửi $sentCount • chưa xác nhận ${_reviews.length}'
             : status;
         notifyListeners();
+        if (enabled && _joined && _queue.isNotEmpty && !busy) {
+          unawaited(_drain());
+        }
       }
     }
   }
@@ -322,6 +343,10 @@ class TutorController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _generation++;
+    if (!_cancelled.isCompleted) _cancelled.complete();
+    if (gateway is CancellableTutorGateway) {
+      (gateway as CancellableTutorGateway).cancelPending();
+    }
     cancelSend?.call();
     config = null;
     _queue.clear();
@@ -334,4 +359,8 @@ class _TutorJob {
   final MeetChatMessage message;
   final int revision;
   final String? notice;
+}
+
+class _TutorCancelled implements Exception {
+  const _TutorCancelled();
 }

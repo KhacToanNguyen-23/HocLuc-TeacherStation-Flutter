@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -6,11 +7,70 @@ import 'package:teaching_companion/core/network/local_service.dart';
 import 'package:teaching_companion/features/meet_tutor/domain/models/tutor_models.dart';
 import 'package:teaching_companion/features/meet_tutor/services/tutor_gateway.dart';
 
+class AbortProbeClient extends http.BaseClient {
+  final requestSeen = Completer<http.BaseRequest>();
+  bool closed = false;
+  int answerCalls = 0;
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.url.path == '/api/bootstrap') {
+      return http.StreamedResponse(
+        Stream.value(utf8.encode('{"token":"local-token"}')),
+        200,
+      );
+    }
+    answerCalls++;
+    if (answerCalls == 1) {
+      requestSeen.complete(request);
+      await (request as http.AbortableRequest).abortTrigger;
+      throw http.RequestAbortedException();
+    }
+    return http.StreamedResponse(
+      Stream.value(
+        utf8.encode(
+          '{"status":"tentative","confidence":"low","answer":"Maybe.","sources":[]}',
+        ),
+      ),
+      200,
+    );
+  }
+
+  @override
+  void close() {
+    closed = true;
+  }
+}
+
 void main() {
   const config = TutorConfig(
     baseUrl: 'https://provider.test/v1',
     model: 'model',
     apiKey: 'secret',
+  );
+  test(
+    'cancel aborts only tutor transport and a new request can use the shared client',
+    () async {
+      final client = AbortProbeClient();
+      final service = LocalService(
+        base: 'http://127.0.0.1:1234',
+        client: client,
+      );
+      addTearDown(service.dispose);
+      final gateway = CompanionTutorGateway(service);
+      const lesson = TutorContext(revision: 0, currentPage: 1, sources: []);
+      final pending = gateway.answer(config, 'Old question', lesson);
+      final cancelled = expectLater(
+        pending,
+        throwsA(isA<http.RequestAbortedException>()),
+      );
+      expect(await client.requestSeen.future, isA<http.AbortableRequest>());
+      gateway.cancelPending();
+      await cancelled;
+      expect(client.closed, isFalse);
+      final next = await gateway.answer(config, 'New question', lesson);
+      expect(next.answer, 'Maybe.');
+      expect(client.answerCalls, 2);
+    },
   );
   test(
     'lesson subject is forwarded and out-of-scope response uses fixed text',
@@ -40,7 +100,7 @@ void main() {
         ),
       );
       expect(result.confidence, TutorConfidence.outOfScope);
-      expect(result.answer, 'Không thuộc phạm vi bài giảng.');
+      expect(result.answer, 'Không nằm trong nội dung bài học');
     },
   );
   test(

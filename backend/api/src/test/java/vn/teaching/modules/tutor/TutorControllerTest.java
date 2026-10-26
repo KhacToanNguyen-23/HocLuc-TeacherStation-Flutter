@@ -99,6 +99,37 @@ class TutorControllerTest {
         send("answer", body.toString()).andExpect(jsonPath("$.status").value("answered"));
         assertNull(authorization);
     }
+    @Test void environmentSupportsBoundedTimeoutAndReasoningWithoutExposingSettings() throws Exception {
+        useEnvironment(environment().withProperty("HOCLUC_TUTOR_REQUEST_TIMEOUT_SECONDS", "45")
+                .withProperty("HOCLUC_TUTOR_REASONING_EFFORT", "minimal"));
+        completion("OK");
+        send("test", "{\"config\":{\"useEnvironment\":true}}")
+                .andExpect(jsonPath("$.success").value(true));
+        var payload = TutorService.JSON.readTree(received);
+        assertEquals("minimal", payload.path("reasoning_effort").asText());
+        assertEquals(512, payload.path("max_tokens").asInt());
+        assertFalse(received.contains("env-secret-key"));
+        var body = input(); body.putObject("config").put("useEnvironment", true);
+        for (String timeout : new String[]{"0", "91", "not-a-number"}) {
+            useEnvironment(environment().withProperty("HOCLUC_TUTOR_REQUEST_TIMEOUT_SECONDS", timeout));
+            send("answer", body.toString()).andExpect(jsonPath("$.reason").value("provider_unavailable"));
+        }
+        useEnvironment(environment().withProperty("HOCLUC_TUTOR_REASONING_EFFORT", "invalid"));
+        send("answer", body.toString()).andExpect(jsonPath("$.reason").value("provider_unavailable"));
+        assertEquals(1, calls.get());
+    }
+    @Test void environmentStructuredOutputDefinesQuoteContractButStillValidatesEvidence() throws Exception {
+        useEnvironment(environment().withProperty("HOCLUC_TUTOR_STRUCTURED_OUTPUT", "true"));
+        var body = input(); body.putObject("config").put("useEnvironment", true);
+        send("answer", body.toString()).andExpect(jsonPath("$.status").value("answered"));
+        var format = TutorService.JSON.readTree(received).path("response_format");
+        assertEquals("json_schema", format.path("type").asText());
+        assertTrue(format.path("json_schema").path("strict").asBoolean());
+        assertTrue(format.path("json_schema").path("schema").path("properties").path("sources")
+                .path("items").path("properties").has("quote"));
+        completion("{\"answer\":\"Invented.\",\"sources\":[{\"id\":\"p1\",\"quote\":\"Invented.\"}],\"confidence\":\"high\",\"scope\":\"in_scope\"}");
+        send("answer", body.toString()).andExpect(jsonPath("$.reason").value("invalid_evidence"));
+    }
     @Test void groundedCompletionAndRequestContract() throws Exception {
         send("answer", input().toString()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("answered")).andExpect(jsonPath("$.answer").value(QUOTE))
@@ -114,7 +145,7 @@ class TutorControllerTest {
         var input = input(); input.put("lessonSubject", "Mathematics").put("question", "What should I eat today?");
         completion("{\"answer\":\"arbitrary unrelated advice\",\"sources\":[],\"confidence\":\"low\",\"scope\":\"out_of_scope\"}");
         send("answer", input.toString()).andExpect(jsonPath("$.status").value("out_of_scope"))
-                .andExpect(jsonPath("$.answer").value("Không thuộc phạm vi bài giảng."))
+                .andExpect(jsonPath("$.answer").value("Không nằm trong nội dung bài học"))
                 .andExpect(jsonPath("$.sources").isEmpty());
         var messages = TutorService.JSON.readTree(received).path("messages");
         assertEquals("Mathematics", TutorService.JSON.readTree(messages.get(1).path("content").asText()).path("lessonSubject").asText());
@@ -224,22 +255,27 @@ class TutorControllerTest {
         status = 200; response = "x".repeat(40_000);
         send("answer", input().toString()).andExpect(jsonPath("$.status").value("review"));
     }
-    @Test void providerBodyDeadlineUnderTwentySeconds() throws Exception {
+    @Test void environmentProviderBodyDeadlineRespectsConfiguredTimeout() throws Exception {
+        var release = new java.util.concurrent.CountDownLatch(1);
         provider.createContext("/slow/chat/completions", exchange -> {
             exchange.sendResponseHeaders(200, 0);
             try (var out = exchange.getResponseBody()) {
                 out.write('{'); out.flush();
-                try { new java.util.concurrent.CountDownLatch(1).await(14, java.util.concurrent.TimeUnit.SECONDS); }
+                try { release.await(14, java.util.concurrent.TimeUnit.SECONDS); }
                 catch (InterruptedException e) { Thread.currentThread().interrupt(); }
             } catch (java.io.IOException ignored) { }
         });
-        var input = input();
-        ((ObjectNode) input.get("config")).put("baseUrl", "http://127.0.0.1:"+provider.getAddress().getPort()+"/slow");
+        useEnvironment(environment().withProperty("HOCLUC_TUTOR_BASE_URL",
+                "http://127.0.0.1:" + provider.getAddress().getPort() + "/slow")
+                .withProperty("HOCLUC_TUTOR_REQUEST_TIMEOUT_SECONDS", "5"));
+        var input = input(); input.putObject("config").put("useEnvironment", true);
         long start = System.nanoTime();
-        send("answer", input.toString()).andExpect(jsonPath("$.status").value("review"))
-                .andExpect(jsonPath("$.reason").value("provider_unavailable"));
-        long millis = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-start);
-        assertTrue(millis >= 10_000 && millis < 19_000, "provider body deadline: " + millis);
+        try {
+            send("answer", input.toString()).andExpect(jsonPath("$.status").value("review"))
+                    .andExpect(jsonPath("$.reason").value("provider_unavailable"));
+            long millis = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-start);
+            assertTrue(millis >= 4_500 && millis < 12_000, "provider body deadline: " + millis);
+        } finally { release.countDown(); }
     }
     @Test void remoteSocketRejectedEvenWithToken() throws Exception {
         mvc.perform(post("/api/tutor/answer").with(req -> { req.setRemoteAddr("192.168.1.20"); return req; })

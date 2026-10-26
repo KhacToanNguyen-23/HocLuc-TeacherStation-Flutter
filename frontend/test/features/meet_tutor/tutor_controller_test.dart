@@ -151,7 +151,10 @@ void main() {
         question('daily', text: 'What should I eat today?'),
       ]);
       await settle();
-      expect(sent.single, '[Trợ giảng AI] @An: Không thuộc phạm vi bài giảng.');
+      expect(
+        sent.single,
+        '[Trợ giảng AI] @An: Không nằm trong nội dung bài học',
+      );
       expect(controller.reviews, isEmpty);
     },
   );
@@ -370,6 +373,27 @@ void main() {
     },
   );
 
+  test(
+    're-enable processes a new question while an obsolete provider future remains unresolved',
+    () async {
+      final obsolete = Completer<TutorResult>();
+      gateway.pending = obsolete;
+      controller.syncMeeting('room1', true, [question('old')]);
+      await settle();
+      expect(gateway.calls, 1);
+      controller.setEnabled(false);
+      gateway.pending = null;
+      controller.setEnabled(true);
+      controller.syncMeeting('room1', true, [question('old'), question('new')]);
+      await settle();
+      expect(gateway.calls, 2);
+      expect(sent, hasLength(1));
+      expect(controller.busy, isFalse);
+      obsolete.complete(supported);
+      await settle();
+      expect(sent, hasLength(1));
+    },
+  );
   test('pause also cancels in-flight low-confidence response', () async {
     gateway.pending = Completer();
     controller.syncMeeting('room1', true, [question('1')]);
