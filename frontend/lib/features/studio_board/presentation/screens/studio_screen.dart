@@ -1,3 +1,4 @@
+import '../widgets/studio_board_shortcuts.dart';
 import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -438,8 +439,8 @@ class _StudioScreenState extends State<StudioScreen> {
               setState(() => showInspector = false);
             },
           },
-          child: Focus(
-            autofocus: true,
+          child: StudioBoardShortcuts(
+            studio: studio,
             child: Scaffold(
               body: LayoutBuilder(
                 builder: (context, box) {
