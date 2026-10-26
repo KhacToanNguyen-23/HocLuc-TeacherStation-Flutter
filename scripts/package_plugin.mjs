@@ -32,11 +32,12 @@ function validateManifest(sourceDir) {
     }
   }
   console.log(`Validated manifest.json: ${manifest.id} v${manifest.version} (${manifest.name})`);
+  return manifest;
 }
 
 // Minimal zip creator without external dependencies
 function createZip(sourceDir, outputFile) {
-  validateManifest(sourceDir);
+  const manifest = validateManifest(sourceDir);
 
   // Ensure icon.png exists if not present
   const iconPath = path.join(sourceDir, 'icon.png');
@@ -154,6 +155,22 @@ function createZip(sourceDir, outputFile) {
   fs.writeFileSync(outputFile, fullBuffer);
   const sha256 = crypto.createHash('sha256').update(fullBuffer).digest('hex');
   console.log(`Successfully created ${outputFile} (${fullBuffer.length} bytes, ${files.length} files, sha256: ${sha256})`);
+
+  // Best-effort sync to %LOCALAPPDATA%/HocLuc/plugins/<id>/v<version> so running/restarted dev builds immediately use fresh assets
+  try {
+    const localAppData = process.env.LOCALAPPDATA;
+    if (localAppData && manifest?.id && manifest?.version) {
+      const cacheDir = path.join(localAppData, 'HocLuc', 'plugins', manifest.id, `v${manifest.version}`);
+      for (const file of files) {
+        const destPath = path.join(cacheDir, file.relPath);
+        fs.mkdirSync(path.dirname(destPath), { recursive: true });
+        fs.writeFileSync(destPath, file.data);
+      }
+      console.log(`Synced unpacked plugin cache: ${cacheDir}`);
+    }
+  } catch (_) {
+    // Ignore sandbox/permission restrictions if LOCALAPPDATA is outside sandbox
+  }
 }
 
 // CRC32 table & function

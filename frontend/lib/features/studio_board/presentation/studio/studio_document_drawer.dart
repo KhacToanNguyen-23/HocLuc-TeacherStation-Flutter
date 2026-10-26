@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'studio_document_pages_list.dart';
@@ -269,7 +269,9 @@ class StudioDocumentDrawer extends StatelessWidget {
                                       plugin,
                                       openModal:
                                           plugin.manifest.uiPlacement !=
-                                          'floating_window',
+                                              'floating_window' &&
+                                          plugin.manifest.uiPlacement !=
+                                              'modal',
                                     );
                                   }
                                   studio.change(() {});

@@ -132,7 +132,13 @@ void main() {
         expect(manifest.version, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường version');
         expect(manifest.uiEntry, isNotEmpty, reason: 'Plugin ${folder.path} thiếu trường ui.entry/main');
         expect(
-          ['floating_window', 'bottom_drawer', 'drawer_panel', 'right_panel'],
+          [
+            'floating_window',
+            'modal',
+            'bottom_drawer',
+            'drawer_panel',
+            'right_panel',
+          ],
           contains(manifest.uiPlacement),
           reason: 'Plugin ${folder.path} có ui.placement không hợp lệ: ${manifest.uiPlacement}',
         );

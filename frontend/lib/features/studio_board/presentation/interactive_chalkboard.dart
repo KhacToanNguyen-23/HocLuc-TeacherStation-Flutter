@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'board_sticker_card.dart';
+import 'board_sticker_floating_bar.dart';
 import 'grid_painter.dart';
 import 'stroke_canvas.dart';
 import 'smart_chalk_overlay.dart';
@@ -59,6 +61,12 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
         }
       },
       onKeyEvent: (node, event) {
+        if (event.logicalKey == LogicalKeyboardKey.escape && event is KeyDownEvent) {
+          if (widget.studio.selectedStickerId != null) {
+            widget.studio.selectSticker(null);
+            return KeyEventResult.handled;
+          }
+        }
         if (event.logicalKey == LogicalKeyboardKey.space) {
           final isDown = event is KeyDownEvent || event is KeyRepeatEvent;
           if (_isSpacePressed != isDown) {
@@ -81,8 +89,12 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                const Positioned.fill(
-                  child: CustomPaint(painter: GridPainter()),
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () => widget.studio.selectSticker(null),
+                    child: const CustomPaint(painter: GridPainter()),
+                  ),
                 ),
                 Positioned.fill(
                   child: StrokeCanvas(
@@ -107,9 +119,21 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
                             constraints.maxHeight,
                           );
                           final stickers = widget.studio.currentStickers;
+                          final selectedId = widget.studio.selectedStickerId;
+                          final selSticker = selectedId != null
+                              ? stickers.where((s) => s.id == selectedId).firstOrNull
+                              : null;
                           return Stack(
                             fit: StackFit.expand,
+                            clipBehavior: Clip.none,
                             children: [
+                              if (widget.studio.selectedStickerId != null)
+                                Positioned.fill(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () => widget.studio.selectSticker(null),
+                                  ),
+                                ),
                               for (final s in stickers)
                                 Positioned(
                                   left: s.normalizedRect.left * size.width,
@@ -119,13 +143,43 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
                                         200.0,
                                         size.width > 200 ? size.width : 200.0,
                                       ),
+                                  height: (s.normalizedRect.height * size.height)
+                                      .clamp(
+                                        120.0,
+                                        size.height > 120 ? size.height : 120.0,
+                                      ),
                                   child: BoardStickerCard(
                                     sticker: s,
+                                    isSelected: widget.studio.selectedStickerId == s.id,
+                                    showFloatingBar: false,
+                                    onSelect: () => widget.studio.selectSticker(s.id),
+                                    onDeselect: () => widget.studio.selectSticker(null),
                                     parentSize: size,
                                     onDelete: () =>
                                         widget.studio.removeSticker(s.id),
                                     onUpdateRect: (r) => widget.studio
                                         .updateStickerRect(s.id, r),
+                                    onUpdateRotation: (rot) => widget.studio
+                                        .updateStickerRotation(s.id, rot),
+                                    onDuplicate: () => widget.studio
+                                        .duplicateSticker(s.id),
+                                    onEdit: () => _handleEdit(s),
+                                  ),
+                                ),
+                              // Canva Selection Overlay Layer: Top-most Floating Action Bar
+                              if (selSticker != null)
+                                Positioned(
+                                  left: _calculateBarLeft(selSticker, size),
+                                  top: _calculateBarTop(selSticker, size),
+                                  width: 540.0,
+                                  height: 38.0,
+                                  child: BoardStickerFloatingBar(
+                                    sticker: selSticker,
+                                    onDeselect: () => widget.studio.selectSticker(null),
+                                    onToggleRevolve: () => _handleRevolveOrEdit(selSticker),
+                                    onEdit: () => _handleEdit(selSticker),
+                                    onDuplicate: () => widget.studio.duplicateSticker(selSticker.id),
+                                    onDelete: () => widget.studio.removeSticker(selSticker.id),
                                   ),
                                 ),
                             ],
@@ -176,5 +230,53 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
         ],
       ),
     );
+  }
+
+  double _calculateBarLeft(BoardSticker s, Size size) {
+    const barWidth = 540.0;
+    final stickerLeft = s.normalizedRect.left * size.width;
+    final stickerWidth = (s.normalizedRect.width * size.width)
+        .clamp(200.0, size.width > 200 ? size.width : 200.0);
+    final centerDx = stickerLeft + (stickerWidth - barWidth) / 2.0;
+    return centerDx.clamp(
+      12.0,
+      size.width > barWidth + 24.0 ? (size.width - barWidth - 12.0) : 12.0,
+    );
+  }
+
+  double _calculateBarTop(BoardSticker s, Size size) {
+    final stickerTop = s.normalizedRect.top * size.height;
+    final stickerHeight = (s.normalizedRect.height * size.height)
+        .clamp(120.0, size.height > 120 ? size.height : 120.0);
+    return (stickerTop < 54.0)
+        ? (stickerTop + stickerHeight + 12.0)
+        : (stickerTop - 48.0);
+  }
+
+  void _handleEdit(BoardSticker s) {
+    InstalledPlugin? plugin = PluginManager.instance.getPlugin(s.type);
+    if (plugin == null) {
+      final all = [
+        ...PluginManager.instance.installedPlugins,
+        ...PluginManager.instance.availablePlugins,
+      ].whereType<InstalledPlugin>().toList();
+
+      plugin = all.where((p) =>
+        p.id == s.type ||
+        p.manifest.id == s.type ||
+        s.type.contains(p.id) ||
+        p.id.contains(s.type) ||
+        s.type.contains(p.manifest.id) ||
+        p.manifest.id.contains(s.type) ||
+        (s.svgContent != null && p.manifest.id.contains('math'))
+      ).firstOrNull ?? all.firstOrNull;
+    }
+    if (plugin != null) {
+      widget.studio.openPlugin(plugin, editingSticker: s);
+    }
+  }
+
+  void _handleRevolveOrEdit(BoardSticker s) {
+    _handleEdit(s);
   }
 }

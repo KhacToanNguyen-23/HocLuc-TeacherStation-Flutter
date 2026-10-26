@@ -319,11 +319,15 @@ class StudioState extends ChangeNotifier {
   void setPage(int p) => canvas.setPage(p);
 
   // --- Sticker & Chalk Annotations ---
-  List<BoardSticker> get currentStickers => canvas.currentStickers;
-  void addSticker(BoardSticker sticker) => canvas.addSticker(sticker);
-  void removeSticker(String id) => canvas.removeSticker(id);
-  void updateStickerRect(String id, Rect newRect) =>
-      canvas.updateStickerRect(id, newRect);
+  String? _selectedStickerId;
+  String? get selectedStickerId => _selectedStickerId;
+  set selectedStickerId(String? id) => selectSticker(id);
+  void selectSticker(String? id) {
+    if (_selectedStickerId != id) {
+      _selectedStickerId = id;
+      notifyListeners();
+    }
+  }
 
   String get currentPageNote => canvas.currentPageNote;
 

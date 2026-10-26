@@ -151,6 +151,7 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
         final plugin = studio.activePlugin;
         if (plugin == null ||
             plugin.manifest.uiPlacement == 'floating_window' ||
+            plugin.manifest.uiPlacement == 'modal' ||
             plugin.manifest.contributesTools.isEmpty) {
           return const SizedBox.shrink();
         }
