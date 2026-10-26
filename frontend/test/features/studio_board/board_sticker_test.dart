@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/presentation/board_sticker_card.dart';
+import 'package:teaching_companion/features/studio_board/presentation/board_sticker_floating_bar.dart';
 
 void main() {
-  group('Phase 01: BoardSticker Model & State', () {
-    test('BoardSticker model serialization and deserialization', () {
+  group('Học Lực Math Studio BoardSticker & Canva Transform Controls Tests', () {
+    test('BoardSticker model serialization and rotation deserialization', () {
       final sticker = BoardSticker(
         id: 'sticker-1',
         type: 'english_svo_card',
         normalizedRect: const Rect.fromLTWH(0.1, 0.2, 0.4, 0.15),
         rawText: 'The teacher explained the lesson',
+        rotation: 0.25,
         tokens: [
           {'text': 'The', 'role': 'OTHER', 'pos': 'DET', 'dep': 'det'},
           {'text': 'teacher', 'role': 'SUBJECT', 'pos': 'NOUN', 'dep': 'nsubj'},
@@ -26,6 +29,7 @@ void main() {
       expect(json['type'], 'english_svo_card');
       expect(json['rect'], [0.1, 0.2, 0.4, 0.15]);
       expect(json['rawText'], 'The teacher explained the lesson');
+      expect(json['rotation'], 0.25);
       expect((json['tokens'] as List).length, 5);
       expect((json['issues'] as List).length, 1);
 
@@ -36,13 +40,15 @@ void main() {
       expect(restored.normalizedRect.top, closeTo(0.2, 0.001));
       expect(restored.normalizedRect.width, closeTo(0.4, 0.001));
       expect(restored.normalizedRect.height, closeTo(0.15, 0.001));
+      expect(restored.rotation, closeTo(0.25, 0.001));
       expect(restored.tokens.length, 5);
       expect(restored.issues.first, '⚠️ Watch verb tense agreement');
     });
 
-    test('StudioState manages stickers per page correctly', () {
+    test('StudioState manages stickers and Canva selection state correctly', () {
       final studio = StudioState()..loading = false;
       expect(studio.currentStickers, isEmpty);
+      expect(studio.selectedStickerId, isNull);
 
       final sticker1 = BoardSticker(
         id: 's1',
@@ -58,6 +64,14 @@ void main() {
       studio.addSticker(sticker1);
       expect(studio.currentStickers.length, 1);
       expect(studio.currentStickers.first.id, 's1');
+      expect(studio.selectedStickerId, 's1'); // auto-selected on add
+
+      // Test deselect and select
+      studio.selectSticker(null);
+      expect(studio.selectedStickerId, isNull);
+
+      studio.selectSticker('s1');
+      expect(studio.selectedStickerId, 's1');
 
       // Change page to page 1
       studio.addPage('Trang 2');
@@ -79,6 +93,7 @@ void main() {
       // Remove sticker
       studio.removeSticker('s1');
       expect(studio.currentStickers, isEmpty);
+      expect(studio.selectedStickerId, isNull);
 
       studio.dispose();
     });
@@ -105,6 +120,7 @@ void main() {
             home: Scaffold(
               body: BoardStickerCard(
                 sticker: sticker,
+                isSelected: true,
                 onDelete: () => deleted = true,
                 onUpdateRect: (_) {},
               ),
@@ -118,12 +134,141 @@ void main() {
         expect(find.text('V'), findsOneWidget);
         expect(find.textContaining('Simple present tense'), findsOneWidget);
 
-        // Tap close button
+        // Tap close / delete button
         await tester.tap(find.byIcon(Icons.close));
         await tester.pump();
         expect(deleted, isTrue);
       },
     );
+
+    testWidgets(
+      'BoardStickerCard renders title badge and SVG content in selected mode',
+      (tester) async {
+        final sticker = BoardSticker(
+          id: 's-svg-card',
+          type: 'generic_card',
+          normalizedRect: const Rect.fromLTWH(0.1, 0.1, 0.4, 0.3),
+          rawText: 'Bảng biến thiên hàm số',
+          title: 'Bảng biến thiên: y = x³ - 3x + 1',
+          svgContent:
+              '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><text x="10" y="25">SVG BBT</text></svg>',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BoardStickerCard(
+                sticker: sticker,
+                isSelected: true,
+                onDelete: () {},
+                onUpdateRect: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          find.text('Bảng biến thiên: y = x³ - 3x + 1'),
+          findsOneWidget,
+        );
+        expect(find.byType(SvgPicture), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'BoardStickerFloatingBar renders action items and triggers callbacks',
+      (tester) async {
+        final sticker = BoardSticker(
+          id: 's-canva',
+          type: 'math_studio',
+          normalizedRect: const Rect.fromLTWH(0.1, 0.1, 0.5, 0.4),
+          rawText: 'y = 1.5 + sin(x)',
+          title: 'Đồ thị: y = 1.5 + sin(x)',
+          svgContent:
+              '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><text x="10" y="25">y = 1.5 + sin(x)</text></svg>',
+        );
+
+        bool revolved = false;
+        bool duplicated = false;
+        bool edited = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: BoardStickerFloatingBar(
+                  sticker: sticker,
+                  onDelete: () {},
+                  onEdit: () => edited = true,
+                  onDuplicate: () => duplicated = true,
+                  onToggleRevolve: () => revolved = true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Expect Canva Floating Action Bar action items
+        expect(find.text('Phát quay'), findsOneWidget);
+        expect(find.text('Sách GK'), findsOneWidget);
+        expect(find.text('Nhân bản'), findsOneWidget);
+        expect(find.text('Sửa'), findsOneWidget);
+
+        // Tap 'Phát quay'
+        await tester.tap(find.text('Phát quay'));
+        await tester.pump();
+        expect(revolved, isTrue);
+
+        // Tap 'Nhân bản'
+        await tester.tap(find.text('Nhân bản'));
+        await tester.pump();
+        expect(duplicated, isTrue);
+
+        // Tap 'Sửa'
+        await tester.tap(find.text('Sửa'));
+        await tester.pump();
+        expect(edited, isTrue);
+      },
+    );
+
+    testWidgets(
+      'BoardStickerCard renders purely transparent content when deselected',
+      (tester) async {
+        final sticker = BoardSticker(
+          id: 's-deselected',
+          type: 'math_studio',
+          normalizedRect: const Rect.fromLTWH(0.1, 0.1, 0.5, 0.4),
+          rawText: 'y = x^3 - 3x',
+          svgContent:
+              '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><text x="10" y="25">y = x³ - 3x</text></svg>',
+        );
+
+        bool selected = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BoardStickerCard(
+                sticker: sticker,
+                isSelected: false,
+                onSelect: () => selected = true,
+                onDelete: () {},
+                onUpdateRect: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        // In Deselected mode: Floating Action Bar and handles must NOT be rendered
+        expect(find.text('Phát quay'), findsNothing);
+        expect(find.text('Nhân bản'), findsNothing);
+        expect(find.byType(SvgPicture), findsOneWidget);
+
+        // Tap sticker to select
+        await tester.tap(find.byType(BoardStickerCard));
+        await tester.pump();
+        expect(selected, isTrue);
+      },
+    );
   });
 }
-

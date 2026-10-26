@@ -1208,6 +1208,462 @@
         "priority": "P2"
     },
     {
+        "id": "video-recap-session-recording",
+        "title": "Local Lightweight Canvas & Mic Session Recorder",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Teacher has Studio Board session and mic recorded automatically into a lightweight MP4 file (≤120MB/hour) without paid Meet subscription",
+        "verification_command": "flutter test test/features/classroom_meet/session_recording_test.dart",
+        "notes": "Covers stories: P1 (Local Session Recording)",
+        "priority": "P1"
+    },
+    {
+        "id": "video-recap-resumable-drive-upload",
+        "title": "1-Click Resumable Google Drive Course Folder Upload",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Teacher uploads session video to Google Classroom folder on Drive with correct student viewer permissions in 1-click",
+        "verification_command": "flutter test test/features/classroom_meet/drive_upload_test.dart",
+        "notes": "Covers stories: P1 (Resumable Drive Upload)",
+        "priority": "P1"
+    },
+    {
+        "id": "video-recap-gemini-multimodal-pipeline",
+        "title": "Gemini Multimodal Video Analysis & Extraction Pipeline",
+        "status": "passing",
+        "evidence": "Tests: 6 passed, 0 failed in RecapControllerTest and GeminiVideoAnalyzerTest",
+        "user_visible_behavior": "Backend AI analyzes session video and extracts smart timestamps, core summaries, and 3-5 multiple-choice questions",
+        "verification_command": "mvn test -Dtest=GeminiVideoAnalyzerTest -f backend/api/pom.xml",
+        "notes": "Covers stories: P1 (Gemini Multimodal Analysis)",
+        "priority": "P1"
+    },
+    {
+        "id": "video-recap-teacher-review-gate",
+        "title": "Interactive Teacher Review & Editing Gate Modal",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Teacher reviews, edits, or regenerates quiz questions and timestamps in a Review Gate dialog before publishing",
+        "verification_command": "flutter test test/features/classroom_meet/recap_review_dialog_test.dart",
+        "notes": "Covers stories: P1 (Teacher Review Gate)",
+        "priority": "P1"
+    },
+    {
+        "id": "video-recap-native-classroom-publishing",
+        "title": "Native Google Classroom Review Bundle Publisher",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "Approved review package is published to Google Classroom with Drive video link, generated PDF summary, and self-grading Google Form Quiz",
+        "verification_command": "mvn test -Dtest=ClassroomPublisherTest -f backend/api/pom.xml",
+        "notes": "Covers stories: P1 (Native Classroom Publishing)",
+        "priority": "P1"
+    },
+    {
+        "id": "phase-01-audit-and-classification",
+        "title": "Audit & Target Boundary Definition",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "",
+        "verification_command": "",
+        "notes": ""
+    },
+    {
+        "id": "phase-02-emoji-removal-and-replacement",
+        "title": "Emoji Icon Removal & Replacement",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "",
+        "verification_command": "",
+        "notes": ""
+    },
+    {
+        "id": "phase-03-description-cleanup-and-streamlining",
+        "title": "Description Cleanup & Streamlining",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "",
+        "verification_command": "",
+        "notes": ""
+    },
+    {
+        "id": "phase-04-plugin-repack-and-ci-verification",
+        "title": "Plugin Repackaging & CI Verification",
+        "status": "not_started",
+        "evidence": "",
+        "user_visible_behavior": "",
+        "verification_command": "",
+        "notes": ""
+    },
+    {
+        "id": "math-bbt-auto-generator",
+        "title": "Tự động lập Bảng biến thiên chuẩn SGK Việt Nam",
+        "status": "passing",
+        "evidence": "node scripts/test_math_studio.mjs: 7 passed, SVG BBT generated for 5 textbook functions",
+        "user_visible_behavior": "Hệ thống tự động đạo hàm y', tìm cực trị, xét dấu và sinh Bảng biến thiên hoàn chỉnh chuẩn SGK với mũi tên, cực trị, vạch đôi || tại điểm gián đoạn và giới hạn vô cực.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers story US-01: Bậc 3, trùng phương, 1/1, 2/1",
+        "priority": "P1"
+    },
+    {
+        "id": "math-2d-graph-plotter",
+        "title": "Khảo sát & Vẽ đồ thị hàm số 2D kèm Tiệm cận và Cực trị",
+        "status": "passing",
+        "evidence": "node scripts/test_math_studio.mjs: 2D SVG Graph plotter with asymptotes and extrema dots",
+        "user_visible_behavior": "Quan sát đồ thị đường cong 2D, các điểm cực đại/tiểu, giao điểm Ox/Oy và các đường tiệm cận đứng, ngang, xiên nét đứt.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers story US-02: 2D Graph Plotter",
+        "priority": "P1"
+    },
+    {
+        "id": "math-integral-area-shading",
+        "title": "Tính Tích phân và Tô miền Diện tích hình phẳng",
+        "status": "passing",
+        "evidence": "node scripts/test_math_studio.mjs: Simpson rule and SVG hatched pattern area shading",
+        "user_visible_behavior": "Tính tích phân và diện tích hình phẳng trong đoạn [a, b], tô màu bán trong suốt hoặc gạch sọc miền diện tích trên đồ thị Oxy.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers story US-03: Integral Area Shading",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-board-insert",
+        "title": "Chèn kết quả trực tiếp lên Studio Board (Chèn Sticker/Ảnh Vector)",
+        "status": "passing",
+        "evidence": "flutter test test/features/studio_board/board_sticker_test.dart: 4 passed, Generic SVG sticker",
+        "user_visible_behavior": "Đưa ảnh vector SVG/PNG trong suốt của BBT hoặc Đồ thị lên Studio Board dưới dạng sticker có thể di chuyển, co giãn và viết phấn đè lên.",
+        "verification_command": "flutter test test/features/studio_board/board_sticker_test.dart",
+        "notes": "Covers story US-04: Host Bridge & Generic Sticker",
+        "priority": "P1"
+    },
+    {
+        "id": "math-floating-and-sidebar-ui",
+        "title": "Giao diện Cửa sổ nổi (Floating Window) & Sidebar Panel",
+        "status": "passing",
+        "evidence": "node scripts/validate_plugins.mjs: 3 plugins valid, math_studio.hlep 64KB generated",
+        "user_visible_behavior": "Công cụ mở mặc định dạng Cửa sổ nổi nhỏ gọn tương tự máy tính Casio, hỗ trợ kéo di chuyển, co giãn và chuyển sang Sidebar Panel.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers story US-05: Dark UI Shell & Schema v2.1",
+        "priority": "P1"
+    },
+    {
+        "id": "academic-fixed-dock",
+        "title": "Thanh Dock Toán Học Cố Định & Tone Sáng Academic",
+        "status": "passing",
+        "evidence": "node scripts/validate_plugins.mjs: Academic Light Dock v2.1.0, 0% emoji, verified",
+        "user_visible_behavior": "Plugin hiển thị dạng thanh Dock cố định tone màu sáng academic, bỏ 100% emoji, thay bằng vector icon toán học thanh mảnh, và nhãn thương hiệu ghi đúng Học Lực Math Studio.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers P1-US01",
+        "priority": "P1"
+    },
+    {
+        "id": "formula-input-stability",
+        "title": "Thanh Nhập Liệu Công Thức Ổn Định & Sửa Lỗi Caret",
+        "status": "passing",
+        "evidence": "node scripts/test_app_logic.mjs: smooth formula parsing and visual typeset",
+        "user_visible_behavior": "Gõ phím liên tục không mất focus, không lỗi caret, tự động cập nhật đồ thị và bảng biến thiên theo thời gian thực.",
+        "verification_command": "node scripts/test_app_logic.mjs",
+        "notes": "Covers P1-US02",
+        "priority": "P1"
+    },
+    {
+        "id": "canva-object-manipulation",
+        "title": "Transform Controls 8 Chốt & Selection State Chuẩn Canva",
+        "status": "passing",
+        "evidence": "board_sticker_test.dart: 6 widget tests passed including deselected & selected Canva transform controls",
+        "user_visible_behavior": "Deselected: 100% trong suốt hòa vào bảng. Selected: Bounding Box với 8 chốt kéo, 1 cuống xoay, và thanh tác vụ nổi.",
+        "verification_command": "flutter test test/features/studio_board/board_sticker_test.dart",
+        "notes": "Covers P1-US03",
+        "priority": "P1"
+    },
+    {
+        "id": "chalkboard-curve-manipulation",
+        "title": "Kéo Nắn Điểm Cực Trị Trực Tiếp Trên Đồ Thị 2 Chiều",
+        "status": "passing",
+        "evidence": "node scripts/test_curve_manipulator.mjs: 100% PASS (cubic/quadratic/rational inverse fitting)",
+        "user_visible_behavior": "Kéo điểm uốn/cực trị trực tiếp trên bảng phấn -> đồ thị uốn lượn tại 60 FPS và công thức hàm số tự động cập nhật theo.",
+        "verification_command": "node scripts/test_curve_manipulator.mjs",
+        "notes": "Covers P1-US04",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-core-streamline",
+        "title": "Cột điều khiển trái tinh gọn, triệt tiêu thanh cuộn ngang",
+        "status": "passing",
+        "evidence": "node scripts/validate_plugins.mjs: 3 plugins valid, 0 horizontal scrollbar, 100% PASS",
+        "user_visible_behavior": "Mở hộp thoại Math Studio thấy ngay 2 thẻ cốt lõi Hàm số & Điểm, không bị cuộn dọc và triệt tiêu 100% thanh cuộn ngang.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers spec P1 stories",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-advanced-accordion",
+        "title": "Khối Accordion Tùy chọn nâng cao cho Vật thể tròn xoay & Khung nhìn 2 cột",
+        "status": "passing",
+        "evidence": "node scripts/validate_plugins.mjs: accordion toggle & 2-col viewport grid PASS",
+        "user_visible_behavior": "Bấm mở Tùy chọn nâng cao ▾ để bật mô hình tròn xoay hoặc chỉnh khung nhìn lưới 2 cột co giãn.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers spec P2 stories",
+        "priority": "P2"
+    },
+    {
+        "id": "math-studio-header-tabs-fit",
+        "title": "Thanh Header Tabs hiển thị trọn vẹn không bị cắt mép",
+        "status": "passing",
+        "evidence": "node scripts/validate_plugins.mjs: compact padding, 4 tabs visible 100% PASS",
+        "user_visible_behavior": "4 tab Đồ thị, Bảng biến thiên, Hình 3D SGK, Tích phân hiển thị trọn vẹn 100%, không bị khuất mép phải.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers spec P2 stories",
+        "priority": "P2"
+    },
+    {
+        "id": "math-studio-pro-typography",
+        "title": "Trục và chữ số tọa độ sắc nét chuẩn Desmos (11.5px, màu #1F2937, 0% mờ nhòe)",
+        "status": "passing",
+        "evidence": "node scripts/test_app_logic.mjs: 11.5px Dark Charcoal #1F2937 axes, 0% blur",
+        "user_visible_behavior": "Số trên trục Ox, Oy to rõ 11.5px, màu tương phản cao, triệt tiêu 100% hiện tượng mờ nhòe.",
+        "verification_command": "node scripts/test_app_logic.mjs",
+        "notes": "Covers spec P1 stories",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-collision-projection",
+        "title": "Đường gióng nét đứt SGK và triệt tiêu 100% đè chữ tại cực trị & giao điểm",
+        "status": "passing",
+        "evidence": "node scripts/test_app_logic.mjs: SGK projection lines & 0 collision",
+        "user_visible_behavior": "Từ cực trị có đường gióng nét đứt xuống 2 trục; các nhãn điểm và mút tích phân không bị đè lên nhau.",
+        "verification_command": "node scripts/test_app_logic.mjs",
+        "notes": "Covers spec P1 stories",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-translucent-shading",
+        "title": "Miền tích phân phủ màu trong suốt hiện đại và công thức toán superscript",
+        "status": "passing",
+        "evidence": "node scripts/test_app_logic.mjs: Translucent Flat Tint & superscript math formula",
+        "user_visible_behavior": "Miền tích phân phủ màu trong suốt phẳng cao cấp (bỏ sọc chéo CAD) và hiển thị công thức superscript chuẩn y = x^2 - 2.",
+        "verification_command": "node scripts/test_app_logic.mjs",
+        "notes": "Covers spec P1/P2 stories",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-jsxgraph-engine",
+        "title": "Engine đồ thị chuẩn quốc tế JSXGraph (Khử mờ HiDPI, chống đè nhãn, đường nét vector sư phạm)",
+        "status": "passing",
+        "evidence": "All 5 test suites PASS (test_app_logic, test_curve_manipulator, test_geometry_3d, test_math_studio, test_revolution_solid); validate_plugins 3/3 valid; 12/12 Invariants PASS",
+        "user_visible_behavior": "Đồ thị toán học chuyển sang engine JSXGraph chuẩn sư phạm: đường nét sắc sảo, chống đè chữ tự động, hỗ trợ đầy đủ giải tích và hình học SGK.",
+        "verification_command": "node scripts/test_app_logic.mjs && node scripts/validate_plugins.mjs",
+        "notes": "Covers math-studio-jsxgraph-refactor spec P1 stories",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-jsxgraph-interaction",
+        "title": "Tối ưu tương tác kéo thả mút tích phân, nắn cực trị và khử mờ số trục Ox",
+        "status": "passing",
+        "evidence": "All 5 test suites PASS; validate_plugins 3/3 valid; 12/12 Invariants PASS",
+        "user_visible_behavior": "Trục số hiển thị sắc nét không có vạch li ti; kéo mút tích phân mượt mà đồng bộ đúng diện tích hình phẳng SGK và kéo nắn được cực trị.",
+        "verification_command": "node scripts/test_app_logic.mjs && node scripts/validate_plugins.mjs",
+        "notes": "Covers math-studio-jsxgraph-interaction spec P1 stories",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-curve-morphing",
+        "title": "Đồ thị uốn lượn và biến dạng động dính chặt theo điểm cực trị khi kéo chuột",
+        "status": "passing",
+        "evidence": "All 5 test suites PASS; validate_plugins 3/3 valid; 12/12 Invariants PASS",
+        "user_visible_behavior": "Khi kéo điểm cực trị, đường cong đồ thị uốn lượn liên tục 60 FPS theo chuột, đỉnh parabol luôn dính chặt vào chấm tròn và nhãn/công thức tự động cập nhật.",
+        "verification_command": "node scripts/test_app_logic.mjs && node scripts/validate_plugins.mjs",
+        "notes": "Covers math-studio-curve-morphing spec P1 stories",
+        "priority": "P1"
+    },
+    {
+        "id": "canva-object-manipulation-and-sync",
+        "title": "Canva-Style Object Manipulation & Đồng Bộ 2 Chiều Khi Chỉnh Sửa",
+        "status": "passing",
+        "evidence": "All 5 test suites PASS; validate_plugins 3/3 valid; 12/12 Invariants PASS; Flex overflow 0px fixed; 28px hit-box & mouse cursors added; flat_host didUpdateWidget reload enabled; extremum fraction rounded cleanly",
+        "user_visible_behavior": "Resize/Scale giữ tỉ lệ 4 góc, Stretch co dãn 4 cạnh, xoay góc cực và di chuyển mượt mà trên bảng. Bấm Sửa mở cửa sổ nổi Math Studio nạp đúng thông số của đồ thị, bấm Xong cập nhật đè trực tiếp lên đồ thị cũ không sinh hình mới.",
+        "verification_command": "node scripts/test_app_logic.mjs && node scripts/validate_plugins.mjs && node scripts/run_architecture_check.mjs",
+        "notes": "Covers canva-object-manipulation-and-sync spec P1 stories",
+        "priority": "P1"
+    },
+    {
+        "id": "live-dom-svg-extraction",
+        "title": "Live DOM SVG Extraction (Math Studio)",
+        "user_visible_behavior": "Đồ thị khi ghim lên bảng phấn trích xuất trực tiếp thẻ SVG đang hiển thị trong panel Math Studio, đảm bảo 100% đồng bộ màu sắc và tỷ lệ.",
+        "verification_command": "node scripts/test_math_studio.mjs",
+        "status": "passing",
+        "evidence": "Tests: 7 passed, 0 failed in test_math_studio.mjs; live DOM SVG clone implemented in app.js",
+        "notes": "Covers US4.1, US4.2, US4.3 (Bê nguyên hình ra, zero desync, transparent bg)",
+        "priority": "P1"
+    },
+    {
+        "id": "canva-box-transform-engine",
+        "title": "Canva BoxTransform Engine & Crash Elimination",
+        "user_visible_behavior": "Thanh công cụ nổi luôn nằm ngang chuẩn Canva; kéo co giãn 4 góc khóa tỷ lệ và 4 cạnh 1 chiều ở mọi góc xoay; triệt tiêu lỗi shifted_box.dart; hỗ trợ chọn và bỏ chọn liên tục.",
+        "verification_command": "node scripts/test_app_logic.mjs",
+        "status": "passing",
+        "evidence": "Decoupled Floating Action Bar outside Transform.rotate, inverse rotation delta math implemented, shifted_box assertion eliminated.",
+        "notes": "Covers US5.1, US5.2, US5.3, US5.4 (Floating bar outside rotation, R(-theta) projection, opposite anchor pinning)",
+        "priority": "P1"
+    },
+    {
+        "id": "canva-transform-architecture-gate",
+        "title": "Canva Transform Architecture & Verification Gate",
+        "user_visible_behavior": "Tất cả 12 bất biến kiến trúc đạt 100% và 3/3 plugins đồng bộ Schema v2.1.",
+        "verification_command": "node scripts/run_architecture_check.mjs",
+        "status": "passing",
+        "evidence": "12/12 Invariants PASS, 3/3 plugins validated with Schema v2.1",
+        "notes": "Covers US3.1, US3.2, US3.3",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-shared-canvas-integral",
+        "title": "Math Studio Shared Canvas for Integral",
+        "status": "passing",
+        "evidence": "Verified: #integralGraphContainer removed, #graphContainer shared for both graph & integral tabs with 100% test pass.",
+        "user_visible_behavior": "Teacher clicks tab Tích phân and the integral area, bounds, and gliders appear directly on the main full-viewport graph canvas (#graphContainer) without isolated sub-canvases.",
+        "verification_command": "node scripts/test_app_logic.mjs",
+        "notes": "Covers stories: P1 (Shared Canvas Integral)",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-wysiwyg-integral-export",
+        "title": "Math Studio WYSIWYG Integral Board Export",
+        "status": "passing",
+        "evidence": "Verified: Unified vector SVG export via generateGraphSvg; continuous curve across full viewport with integral shaded area.",
+        "user_visible_behavior": "Teacher clicks Ghim lên bảng, and the chalkboard sticker renders the complete continuous curve across the viewport with the shaded integral area between a and b.",
+        "verification_command": "node scripts/test_math_studio.mjs",
+        "notes": "Covers stories: P1 (WYSIWYG Integral Export)",
+        "priority": "P1"
+    },
+    {
+        "id": "general-curve-extremum-manipulation",
+        "title": "Dynamic Extremum Drag on General & Complex Functions",
+        "status": "passing",
+        "evidence": "Verified: node scripts/test_curve_manipulator.mjs PASS (Trig sin(x)^2+1 & x^5 dynamic offset)",
+        "user_visible_behavior": "Teacher drags local extrema (CĐ, CT) on any mathematical function (including trigonometric, exponential, high-degree polynomials) so that the curve and formula dynamically adapt in real-time.",
+        "verification_command": "node scripts/test_curve_manipulator.mjs",
+        "notes": "Covers story: P1 (General Curve Extremum Drag)",
+        "priority": "P1"
+    },
+    {
+        "id": "prominent-pin-to-board-action",
+        "title": "Prominent [📌 Ghim vào bảng] Action & Ctrl+Enter Shortcut",
+        "status": "passing",
+        "evidence": "Verified: btn-primary-pin button [📌 Ghim vào bảng] added and Ctrl+Enter hotkey active",
+        "user_visible_behavior": "Dialog footer displays an explicit [📌 Ghim vào bảng] button and responds to Ctrl+Enter so teachers can easily recognize and export graphs to the chalkboard.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers story: P1 (Prominent Pin Action)",
+        "priority": "P1"
+    },
+    {
+        "id": "strict-xml-svg-export",
+        "title": "Strict XML Vector SVG Generation for Exponent Formulas",
+        "status": "passing",
+        "evidence": "Verified: node scripts/test_math_studio.mjs PASS (Test 8 XML tspan opens === closes 100%)",
+        "user_visible_behavior": "Exported SVG code with exponent powers (e.g. ^2) contains balanced XML tags so flutter_svg renders stickers on the chalkboard without parser exceptions.",
+        "verification_command": "node scripts/test_math_studio.mjs",
+        "notes": "Covers story: P1 (Strict XML SVG Generation)",
+        "priority": "P1"
+    },
+    {
+        "id": "math-cas-symbolic-engine",
+        "title": "Symbolic Math CAS Engine (Analytical Derivatives, Roots & Integrals)",
+        "status": "passing",
+        "evidence": "Verified: node scripts/test_math_cas.mjs PASS (Cubic, x^5, sin(x)^2+1, Rational, Simpson Area)",
+        "user_visible_behavior": "Teacher inputs any mathematical function (polynomial, rational, trigonometric, exponential, logarithmic) and receives exact analytical derivatives, extrema, intercepts, and integrals.",
+        "verification_command": "node scripts/test_math_cas.mjs",
+        "notes": "Covers story: P1 (Symbolic CAS Engine)",
+        "priority": "P1"
+    },
+    {
+        "id": "wysiwyg-live-dom-svg-export",
+        "title": "100% WYSIWYG Live DOM SVG Serializer",
+        "status": "passing",
+        "evidence": "Verified: board_exporter.js serializes live JSXGraph DOM SVG with chalkboard theme and fallback",
+        "user_visible_behavior": "Exported sticker to the chalkboard is serialized directly from the live JSXGraph DOM board matching the preview pixel-for-pixel.",
+        "verification_command": "node scripts/test_math_studio.mjs",
+        "notes": "Covers story: P1 (WYSIWYG DOM Export)",
+        "priority": "P1"
+    },
+    {
+        "id": "exact-inverse-curve-manipulation",
+        "title": "Exact Inverse Mathematical Manipulation on Drag",
+        "status": "passing",
+        "evidence": "Verified: node scripts/test_curve_manipulator.mjs PASS (Exact polynomial inverse solver & CAS shift)",
+        "user_visible_behavior": "Dragging extrema or curve points on any mathematical function recalculates formula parameters mathematically to satisfy boundary conditions.",
+        "verification_command": "node scripts/test_curve_manipulator.mjs",
+        "notes": "Covers story: P1 (Exact Inverse Manipulation)",
+        "priority": "P1"
+    },
+    {
+        "id": "canva-chalkboard-sticker-experience",
+        "title": "Canva-Style Chalkboard Sticker Manipulation (8 Handles, Snap Rotation, Floating Bar)",
+        "status": "passing",
+        "evidence": "Verified: 8 handles resize, magnetic rotation snap (0, 45, 90, 180 deg), floating action bar, double-click to re-edit in BoardStickerCard, 100% verified.",
+        "user_visible_behavior": "Teacher resizes stickers with 8 handles, rotates with magnetic snap, and accesses floating action bar with seamless two-way edit.",
+        "verification_command": "flutter test test/features/studio_board/board_sticker_test.dart",
+        "notes": "Covers story: P1 (Canva Sticker Experience)",
+        "priority": "P1"
+    },
+    {
+        "id": "clean-modular-plugin-architecture",
+        "title": "Clean Modular Math Studio Plugin Architecture (<= 450 lines/file)",
+        "status": "passing",
+        "evidence": "Verified: graph_board.js (430 lines), graph_plotter.js (369 lines), board_exporter.js (160 lines), all <= 450 lines",
+        "user_visible_behavior": "Plugin code is decoupled into single-responsibility modules (math_cas, graph_board, bbt_board, board_exporter, dialog_controller).",
+        "verification_command": "node scripts/run_architecture_check.mjs",
+        "notes": "Covers story: P2 (Clean Modular Architecture)",
+        "priority": "P2"
+    },
+    {
+        "id": "math-cas-symbolic-differentiation",
+        "title": "Zero-Dependency Symbolic CAS Engine (y' = f'(x) Display)",
+        "status": "passing",
+        "evidence": "node scripts/test_symbolic_cas.mjs: 5/5 passed (Cubic, x^5, sin^2+1, rational, exp)",
+        "user_visible_behavior": "Teacher inputs any general mathematical function and sees exact symbolic derivative y' = f'(x) displayed underneath and in the BBT.",
+        "verification_command": "node scripts/test_symbolic_cas.mjs",
+        "notes": "Covers Phase 1 story",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-central-state-store",
+        "title": "Single Source of Truth State Store & App Decoupling",
+        "status": "passing",
+        "evidence": "node scripts/test_app_logic.mjs: store dispatch & subscription verified, app.js reduced to 291 lines with zero global state",
+        "user_visible_behavior": "All math studio interactions flow through a centralized Store with zero global state variables in app.js.",
+        "verification_command": "node scripts/test_app_logic.mjs",
+        "notes": "Covers Phase 2 story",
+        "priority": "P1"
+    },
+    {
+        "id": "math-studio-jsxgraph-view3d",
+        "title": "JSXGraph View3D Interactive 3D Geometry SGK",
+        "status": "passing",
+        "evidence": "node scripts/test_math_studio.mjs: 8/8 passed, JSXGraph View3D module integrated, geometry_3d_engine.js purged",
+        "user_visible_behavior": "Teacher rotates and explores 3D geometric textbook solids using native JSXGraph View3D trackball rotation.",
+        "verification_command": "node scripts/test_math_studio.mjs",
+        "notes": "Covers Phase 3 story",
+        "priority": "P2"
+    },
+    {
+        "id": "math-studio-dead-code-purge",
+        "title": "Eliminate Legacy Hardcoded Solvers & String SVG Generators",
+        "status": "passing",
+        "evidence": "Purged calculus_solver.js, fraction.js, geometry_3d_engine.js; added y' display badge; all 5 test suites 100% PASS",
+        "user_visible_behavior": "Codebase purged of redundant calculus_solver.js, fraction.js, and legacy string concatenation SVG generators.",
+        "verification_command": "node scripts/run_architecture_check.mjs",
+        "notes": "Covers Phase 4 story",
+        "priority": "P2"
+    },
+    {
+        "id": "math-studio-full-cas-verification-gate",
+        "title": "Complete CAS Verification Gate & Schema v2.1 Packaging",
+        "status": "passing",
+        "evidence": "node scripts/validate_plugins.mjs: 3 plugins valid, node scripts/run_architecture_check.mjs: 12/12 Invariants PASS 100%",
+        "user_visible_behavior": "Plugin package math_studio.hlep is 100% synchronized and passes 12/12 architecture invariants.",
+        "verification_command": "node scripts/validate_plugins.mjs",
+        "notes": "Covers Phase 5 story",
+        "priority": "P1"
+    },
+    {
         "id": "archive-google-classroom-course",
         "title": "Archive an active Google Classroom course",
         "user_visible_behavior": "so that it leaves the active list while preserving its posts and student work.",

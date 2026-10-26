@@ -2,12 +2,14 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import '../../../plugin_engine/services/host_bridge.dart';
 import '../../../plugin_engine/services/plugin_manager.dart';
+import '../../domain/models/board_sticker.dart';
 
 /// Single-responsibility controller managing Plugin lifecycle,
 /// floating window coordinates, dynamic port communications, and webview RPCs.
 class StudioPluginBridgeController extends ChangeNotifier {
   InstalledPlugin? activePlugin;
   InstalledPlugin? floatingPlugin;
+  BoardSticker? editingSticker;
   bool showPluginDrawer = false;
   bool pluginFloating = false;
   Offset pluginFloatingPosition = const Offset(80, 80);
@@ -42,16 +44,26 @@ class StudioPluginBridgeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void openPlugin(InstalledPlugin plugin, {bool openModal = false}) {
-    if (plugin.manifest.uiPlacement == 'floating_window') {
+  void openPlugin(
+    InstalledPlugin plugin, {
+    bool openModal = false,
+    BoardSticker? editingSticker,
+  }) {
+    this.editingSticker = editingSticker;
+    if (plugin.manifest.uiPlacement == 'floating_window' ||
+        plugin.manifest.uiPlacement == 'modal') {
       floatingPlugin = plugin;
       pluginFloating = true;
       pluginFloatingSize = Size(
         plugin.manifest.uiDefaultWidth,
         plugin.manifest.uiDefaultHeight,
       );
+      if (plugin.manifest.uiPlacement == 'modal') {
+        pluginFloatingPosition = const Offset(80, 80);
+      }
       if (activePlugin == null ||
-          activePlugin!.manifest.uiPlacement == 'floating_window') {
+          activePlugin!.manifest.uiPlacement == 'floating_window' ||
+          activePlugin!.manifest.uiPlacement == 'modal') {
         activePlugin = plugin;
       }
     } else {
@@ -65,6 +77,7 @@ class StudioPluginBridgeController extends ChangeNotifier {
   }
 
   void closePlugin() {
+    editingSticker = null;
     if (activePlugin != null &&
         floatingPlugin != null &&
         activePlugin!.id == floatingPlugin!.id) {
@@ -85,12 +98,14 @@ class StudioPluginBridgeController extends ChangeNotifier {
   }
 
   void closeFloatingPlugin() {
+    editingSticker = null;
     final closingId = floatingPlugin?.id;
     floatingPlugin = null;
     pluginFloating = false;
     if (activePlugin != null &&
         (activePlugin!.id == closingId ||
-            activePlugin!.manifest.uiPlacement == 'floating_window')) {
+            activePlugin!.manifest.uiPlacement == 'floating_window' ||
+            activePlugin!.manifest.uiPlacement == 'modal')) {
       activePlugin = null;
       showPluginDrawer = false;
       activeSubjectTool = null;
