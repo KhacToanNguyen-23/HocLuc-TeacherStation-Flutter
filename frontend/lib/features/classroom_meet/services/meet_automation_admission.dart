@@ -104,6 +104,11 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
       _pendingAdmitCount = _admissionRequests.length + _unknownAdmissionCount;
 
   void _resetAdmissions() {
+    _invalidateTutor();
+    _tutorObservationReady = false;
+    _tutorDocumentId = null;
+    _tutorDocumentUrl = null;
+    _hostJoined = false;
     _admissionGeneration++;
     _admissionBatch = null;
     for (final attempt in _admissionAttempts.values) {
@@ -152,6 +157,133 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
     } catch (e) {
       FrontendLogger.write('[MeetAutomation] syncMuteState error: $e');
     }
+  }
+
+  void _invalidateTutor() {
+    _tutorGeneration++;
+    if (!_tutorCancelled.isCompleted) _tutorCancelled.complete();
+    _tutorCancelled = Completer<void>();
+  }
+
+  /// Baselines visible chat before the controller enables tutor eligibility.
+  /// A closed chat is opened once, but requires another explicit preparation.
+  Future<bool> beginTutorObservation() async {
+    if (_disposed || !_hostJoined || _tutorDocumentId == null) return false;
+    final generation = _tutorGeneration;
+    final doc = _tutorDocumentId;
+    final url = _tutorDocumentUrl;
+    _tutorObservationReady = false;
+    try {
+      final command = jsonEncode({'documentId': doc, 'url': url});
+      final raw = await _executeAdmissionScript(
+        'window.MeetBridge ? window.MeetBridge.beginTutorObservation($command) : "null";',
+      ).timeout(_tutorTimeout);
+      var response = jsonDecode(raw);
+      if (response is String) response = jsonDecode(response);
+      _tutorObservationReady =
+          !_disposed &&
+          _hostJoined &&
+          generation == _tutorGeneration &&
+          doc == _tutorDocumentId &&
+          response is Map &&
+          response['status'] == 'READY' &&
+          response['documentId'] == doc &&
+          response['url'] == url;
+      return _tutorObservationReady;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Controller context/state changes invalidate pending and queued requests.
+  void cancelTutorSend() {
+    final command = jsonEncode({
+      'documentId': _tutorDocumentId,
+      'requestId': _activeTutorRequestId,
+    });
+    _invalidateTutor();
+    if (!_disposed && (_controller != null || _testExecuteScript != null)) {
+      unawaited(
+        _executeAdmissionScript(
+          'window.MeetBridge && window.MeetBridge.cancelTutor($command);',
+        ).catchError((Object _) => 'false'),
+      );
+    }
+  }
+
+  /// Returns true only after a new self-authored DOM echo in this document.
+  Future<bool> sendTutorMessage(String text, {bool Function()? stillCurrent}) {
+    final generation = _tutorGeneration;
+    final cancelled = _tutorCancelled.future;
+    final documentId = _tutorDocumentId;
+    final url = _tutorDocumentUrl;
+    bool callerCurrent() {
+      try {
+        return stillCurrent?.call() ?? true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    bool current() =>
+        callerCurrent() &&
+        !_disposed &&
+        _hostJoined &&
+        _tutorObservationReady &&
+        generation == _tutorGeneration &&
+        documentId != null &&
+        documentId == _tutorDocumentId &&
+        url == _tutorDocumentUrl &&
+        MeetAutomationService.isOfficialMeetingUrl(_meetingUrl);
+    if (text.trim().isEmpty || !current()) return Future.value(false);
+    final result = Completer<bool>();
+    _tutorQueue = _tutorQueue.then((_) async {
+      if (!current()) {
+        result.complete(false);
+        return;
+      }
+      final requestId = 'tutor-${++_tutorCounter}';
+      _activeTutorRequestId = requestId;
+      final command = jsonEncode({
+        'requestId': requestId,
+        'documentId': documentId,
+        'url': url,
+        'text': text.trim(),
+        'timeoutMs': _tutorTimeout.inMilliseconds,
+        'expiresAt': DateTime.now().add(_tutorTimeout).millisecondsSinceEpoch,
+      });
+      final watch = Stopwatch()..start();
+      try {
+        var method = 'sendTutor';
+        while (current() && watch.elapsed < _tutorTimeout) {
+          final raw = await _executeAdmissionScript(
+            'window.MeetBridge ? window.MeetBridge.$method($command) : "null";',
+          ).timeout(_tutorTimeout - watch.elapsed);
+          var response = jsonDecode(raw);
+          if (response is String) response = jsonDecode(response);
+          if (!current() ||
+              response is! Map ||
+              response['requestId'] != requestId ||
+              response['documentId'] != documentId ||
+              response['url'] != url) {
+            break;
+          }
+          if (watch.elapsed >= _tutorTimeout) break;
+          if (response['status'] == 'CONFIRMED') {
+            result.complete(true);
+            return;
+          }
+          if (response['status'] != 'PENDING') break;
+          method = 'tutorStatus';
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          if (!current()) break;
+        }
+      } catch (_) {
+        // Transport failure, navigation and timeout never imply delivery.
+      }
+      result.complete(false);
+    });
+    return Future.any([result.future, cancelled.then((_) => false)]);
   }
 
   /// Gửi tin nhắn chat từ Giáo viên vào phòng Meet

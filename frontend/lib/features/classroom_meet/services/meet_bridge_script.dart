@@ -9,9 +9,11 @@ class MeetBridgeScript {
   }
   window.__meetBridgeInstalled = true;
 
+  var bridgeDocument = document;
+  var documentId = 'meet-' + Date.now() + '-' + Math.random().toString(36).slice(2);
   function sendToFlutter(type, payload) {
     try {
-      var msg = JSON.stringify({ type: type, payload: payload, timestamp: Date.now() });
+      var msg = JSON.stringify({ type: type, payload: payload, documentId: documentId, url: window.location.href, timestamp: Date.now() });
       if (window.chrome && window.chrome.webview && window.chrome.webview.postMessage) {
         window.chrome.webview.postMessage(msg);
       }
@@ -86,8 +88,115 @@ class MeetBridgeScript {
   }
 
   var seenMessageIds = new Set();
+  var tutorObservationReady = false;
+  var tutorObservedInput = null;
+  function messageId(node) {
+    var row = node.closest('[data-message-id]') || node;
+    var nativeId = row.getAttribute('data-message-id');
+    if (nativeId) return documentId + ':' + nativeId;
+    var sender = node.getAttribute('data-sender-name') || (node.closest('[data-sender-name]') || node).getAttribute('data-sender-name') || '';
+    var text = (node.getAttribute('data-message-text') || node.innerText || '').trim();
+    // Conservative fallback survives DOM remounts; identical repeats may be dropped.
+    return documentId + ':fallback:' + JSON.stringify([sender, text]);
+  }
+  function isSelfMessage(node) {
+    // Names (including "You") are user-controlled and are never identity proof.
+    var row = node.closest('[data-is-self], [data-self], [data-sender-id]');
+    if (!row) return false;
+    if (row.getAttribute('data-is-self') === 'true' || row.getAttribute('data-self') === 'true') return true;
+    var self = document.querySelector('[data-participant-id][data-is-self="true"], [data-participant-id][data-self="true"]');
+    return !!self && !!row.getAttribute('data-sender-id') && row.getAttribute('data-sender-id') === self.getAttribute('data-participant-id');
+  }
+  function chatNodes() {
+    return Array.from(document.querySelectorAll('[data-message-text], div[data-sender-name]')).filter(function(node) {
+      return !node.querySelector('[data-message-text]');
+    });
+  }
+  var tutorAttempt = null;
+  var uncertainTutorTexts = new Set();
+  function chatInput() {
+    var input = document.querySelector('textarea[name="chatTextInput"], textarea[aria-label*="tin nhắn" i], textarea[aria-label*="message" i], [contenteditable="true"][aria-label*="tin nhắn" i]');
+    return input && input.isConnected && input.getClientRects().length ? input : null;
+  }
+  function beginTutorObservation(command) {
+    if (!tutorContext(command)) return JSON.stringify({status: 'NOT_READY'});
+    if (!chatInput()) {
+      tutorObservationReady = false;
+      var panelButton = document.querySelector('button[aria-label*="trò chuyện" i], button[aria-label*="chat" i]');
+      if (panelButton && !panelButton.disabled) panelButton.click();
+      return JSON.stringify({status: 'NOT_READY'});
+    }
+    // Emit existing chat before enabling eligibility, even on repeated handshakes.
+    tutorObservationReady = false;
+    scanChatMessages();
+    tutorObservedInput = chatInput();
+    tutorObservationReady = true;
+    return JSON.stringify({status: 'READY', documentId: documentId, url: window.location.href});
+  }
+  function cancelTutor(command) {
+    if (command && command.documentId === documentId && tutorAttempt && command.requestId === tutorAttempt.requestId) {
+      if (!tutorAttempt.confirmed) uncertainTutorTexts.add(tutorAttempt.text);
+      tutorAttempt.cancelled = true;
+    }
+    return false;
+  }
+  function tutorContext(command) {
+    return command && command.documentId === documentId && document === bridgeDocument &&
+      command.url === window.location.href && !!confirmedCallButton();
+  }
+  function tutorStatus(command) {
+    if (!tutorContext(command) || !tutorAttempt || tutorAttempt.requestId !== command.requestId) return JSON.stringify({status: 'STALE'});
+    if (tutorAttempt.cancelled) return JSON.stringify({status: 'CANCELLED'});
+    if (tutorAttempt.confirmed) return JSON.stringify({status: 'CONFIRMED', requestId: command.requestId, documentId: documentId, url: window.location.href});
+    if (Date.now() >= tutorAttempt.deadline) {
+      uncertainTutorTexts.add(tutorAttempt.text);
+      clearTutorDraft(chatInput(), tutorAttempt.text);
+      return JSON.stringify({status: 'TIMEOUT'});
+    }
+    var confirmed = chatNodes().some(function(node) {
+      return !tutorAttempt.baseline.has(messageId(node)) && isSelfMessage(node) &&
+        (node.getAttribute('data-message-text') || node.innerText || '').trim() === tutorAttempt.text;
+    });
+    if (confirmed) tutorAttempt.confirmed = true;
+    return JSON.stringify({status: confirmed ? 'CONFIRMED' : 'PENDING', requestId: command.requestId, documentId: documentId, url: window.location.href});
+  }
+  function clearTutorDraft(input, text) {
+    if (!input || (input.isContentEditable ? input.textContent : input.value) !== text) return;
+    if (input.isContentEditable) input.textContent = '';
+    else {
+      var setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value');
+      if (setter && setter.set) setter.set.call(input, ''); else input.value = '';
+    }
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+  }
+  function sendTutor(command) {
+    if (!tutorObservationReady || chatInput() !== tutorObservedInput || !tutorContext(command) || !command.requestId || !Number.isFinite(command.expiresAt) || Date.now() >= command.expiresAt || typeof command.text !== 'string' || !command.text.trim()) return JSON.stringify({status: 'NOT_READY'});
+    if (tutorAttempt && !tutorAttempt.cancelled && JSON.parse(tutorStatus(tutorAttempt)).status === 'PENDING') return JSON.stringify({status: 'BUSY'});
+    if (uncertainTutorTexts.has(command.text.trim())) return JSON.stringify({status: 'UNCONFIRMED'});
+    var input = chatInput();
+    // No delayed click/retry: a closed panel or a teacher draft fails safely.
+    if (!input || input.disabled || input.readOnly || (input.value || input.textContent || '')) return JSON.stringify({status: 'INPUT_BUSY'});
+    var send = document.querySelector('button[aria-label*="gửi" i], button[aria-label*="send" i], [data-tooltip*="gửi" i]');
+    if (!send) return JSON.stringify({status: 'NOT_READY'});
+    tutorAttempt = Object.assign({}, command, {text: command.text.trim(), deadline: Math.min(command.expiresAt, Date.now() + Math.min(command.timeoutMs || 10000, 10000)), baseline: new Set(Array.from(seenMessageIds).concat(chatNodes().map(messageId)))});
+    if (input.isContentEditable) input.textContent = tutorAttempt.text;
+    else {
+      var setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value');
+      if (setter && setter.set) setter.set.call(input, tutorAttempt.text);
+      else input.value = tutorAttempt.text;
+    }
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    if (!tutorContext(command) || Date.now() >= tutorAttempt.deadline || send.disabled || !input.isConnected || !send.isConnected) {
+      clearTutorDraft(input, tutorAttempt.text);
+      tutorAttempt = null;
+      return JSON.stringify({status: 'NOT_READY'});
+    }
+    send.click();
+    return tutorStatus(command);
+  }
   function scanChatMessages() {
-    var messageNodes = document.querySelectorAll('[data-message-text], div[data-sender-name]');
+    if (!chatInput() || chatInput() !== tutorObservedInput) tutorObservationReady = false;
+    var messageNodes = chatNodes();
     messageNodes.forEach(function(node) {
       var text = (node.getAttribute('data-message-text') || node.innerText || '').trim();
       var sender = node.getAttribute('data-sender-name') || '';
@@ -104,12 +213,15 @@ class MeetBridgeScript {
 
       if (!text) return;
 
-      var id = sender + '_' + text;
+      var id = messageId(node);
       if (!seenMessageIds.has(id)) {
         seenMessageIds.add(id);
         sendToFlutter('CHAT_MESSAGE', {
           id: id,
           sender: sender,
+          isSelf: isSelfMessage(node),
+          isTutorEligible: tutorObservationReady && !!chatInput(),
+          sourceDocumentId: documentId,
           text: text,
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         });
@@ -203,6 +315,10 @@ class MeetBridgeScript {
   }, 1000);
 
   window.MeetBridge = {
+    beginTutorObservation: beginTutorObservation,
+    cancelTutor: cancelTutor,
+    sendTutor: sendTutor,
+    tutorStatus: tutorStatus,
     attemptAutoJoin: attemptAutoJoin,
     reportCallState: reportCallState,
     // Admission is exclusively driven by the teacher's named request snapshot.

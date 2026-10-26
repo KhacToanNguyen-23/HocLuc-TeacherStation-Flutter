@@ -4,6 +4,7 @@ class MeetChatMessage {
   final String text;
   final String time;
   final bool isSelf;
+  final bool isTutorEligible;
 
   const MeetChatMessage({
     required this.id,
@@ -11,6 +12,7 @@ class MeetChatMessage {
     required this.text,
     required this.time,
     this.isSelf = false,
+    this.isTutorEligible = true,
   });
 
   factory MeetChatMessage.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class MeetChatMessage {
       text: json['text'] as String? ?? '',
       time: json['time'] as String? ?? '',
       isSelf: json['isSelf'] as bool? ?? false,
+      isTutorEligible: json['isTutorEligible'] == true,
     );
   }
 
@@ -29,6 +32,7 @@ class MeetChatMessage {
     'text': text,
     'time': time,
     'isSelf': isSelf,
+    'isTutorEligible': isTutorEligible,
   };
 }
 

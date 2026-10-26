@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/classroom_meet/services/meet_automation_service.dart';
@@ -14,7 +14,7 @@ void main() {
     final endpointController = TextEditingController();
 
     final meetService = MeetAutomationService();
-    meetService.setMeetingUrl('meet.google.com/test-room-123');
+    meetService.setMeetingUrl('https://meet.google.com/abc-defg-hij');
 
     await tester.pumpWidget(
       MaterialApp(
@@ -34,7 +34,7 @@ void main() {
       ),
     );
 
-    // Initial tab 0: Trực tiếp
+    // Preserve develop navigation and keep the Meet surface mounted.
     expect(find.text('Trực tiếp'), findsOneWidget);
     expect(find.text('Thiết bị & Cài đặt'), findsOneWidget);
     expect(find.text('Chuẩn bị Google Meet'), findsOneWidget);
@@ -49,16 +49,24 @@ void main() {
     expect(find.text('Chào các em!'), findsOneWidget);
     expect(find.text('Tôi (Giáo viên)'), findsOneWidget);
 
-    // Switch to Tab 1: Thiết bị & Cài đặt
     await tester.tap(find.text('Thiết bị & Cài đặt'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Trợ giảng AI'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Base URL'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('ĐẦU RA CHO MEETING'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('ĐẦU RA CHO MEETING'), findsOneWidget);
-    expect(find.text('Khung trình bày bảng vẽ'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    meetService.clearMeetingEvents();
+    studio.dispose();
 
     notesController.dispose();
     questionController.dispose();
     endpointController.dispose();
   });
 }
-

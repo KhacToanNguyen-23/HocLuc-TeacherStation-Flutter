@@ -2,7 +2,7 @@ name: Frontend CI (Flutter)
 
 on:
   push:
-    branches: [ develop, main, master ]
+    branches: [ develop, main, master, feat/AI-agent-auto-answer ]
     paths:
       - 'frontend/**'
       - 'plugins/**'
@@ -56,7 +56,7 @@ jobs:
       - name: Run Browser Bridge Scripts E2E Test (Node.js)
         run: |
           echo "🔍 [Browser Gate] Chạy kiểm thử tự động Browser Bridge Script..."
-          node --test test/e2e_browser/meet_screen_share.test.cjs
+          node --test test/e2e_browser/meet_screen_share.test.cjs test/features/classroom_meet/meet_tutor_bridge.test.cjs
 
       - name: Set up Flutter Environment
         uses: subosito/flutter-action@v2

@@ -69,6 +69,16 @@ class MeetAutomationService extends ChangeNotifier {
   int _admissionSequence = -1;
   int _admissionAttemptCounter = 0;
   int _unknownAdmissionCount = 0;
+  String? _tutorDocumentId;
+  String? _tutorDocumentUrl;
+  bool _disposed = false;
+  bool _tutorObservationReady = false;
+  String? _activeTutorRequestId;
+  int _tutorGeneration = 0;
+  Completer<void> _tutorCancelled = Completer<void>();
+  int _tutorCounter = 0;
+  Future<void> _tutorQueue = Future.value();
+  Duration _tutorTimeout = const Duration(seconds: 10);
   Duration _admissionTimeout = const Duration(seconds: 10);
   Future<String> Function(String)? _testExecuteScript;
 
@@ -79,10 +89,12 @@ class MeetAutomationService extends ChangeNotifier {
   @visibleForTesting
   MeetAutomationService.forTesting({
     Future<String> Function(String)? executeScript,
+    Duration tutorTimeout = const Duration(seconds: 10),
     Duration admissionTimeout = const Duration(seconds: 10),
   }) {
     _testExecuteScript = executeScript;
     _admissionTimeout = admissionTimeout;
+    _tutorTimeout = tutorTimeout;
   }
 
   bool get isAdmittingAll => _admissionBatch != null;
@@ -308,6 +320,9 @@ class MeetAutomationService extends ChangeNotifier {
 
       _urlSubscription?.cancel();
       _urlSubscription = controller.url.listen((url) {
+        if (_tutorDocumentUrl != null && url != _tutorDocumentUrl) {
+          _resetAdmissions();
+        }
         FrontendLogger.write('[MeetAutomation] Navigation state changed');
         if (url.contains('accounts.google.com')) {
           _needsGoogleLogin = true;
@@ -471,6 +486,7 @@ class MeetAutomationService extends ChangeNotifier {
       _handleWebMessage(rawData);
 
   void _handleWebMessage(dynamic rawData) {
+    if (_disposed) return;
     try {
       final Map<String, dynamic> data = rawData is String
           ? jsonDecode(rawData) as Map<String, dynamic>
@@ -483,7 +499,10 @@ class MeetAutomationService extends ChangeNotifier {
         if (!_isCurrentMeetMessage(data)) return;
         final documentId = data['documentId'] as String?;
         if (documentId == null || documentId.isEmpty) return;
-        if (_admissionDocumentId != documentId) _resetAdmissions();
+        if (_admissionDocumentId != null &&
+            _admissionDocumentId != documentId) {
+          _resetAdmissions();
+        }
         _admissionDocumentId = documentId;
         notifyListeners();
         return;
@@ -543,7 +562,15 @@ class MeetAutomationService extends ChangeNotifier {
       }
 
       if (type == 'CHAT_MESSAGE' && payload is Map) {
-        final chat = MeetChatMessage.fromJson(payload.cast<String, dynamic>());
+        final chatPayload = Map<String, dynamic>.from(payload);
+        chatPayload['isTutorEligible'] =
+            payload['isTutorEligible'] == true &&
+            _tutorObservationReady &&
+            _hostJoined &&
+            payload['sourceDocumentId'] == _tutorDocumentId &&
+            data['documentId'] == _tutorDocumentId &&
+            _isCurrentMeetMessage(data);
+        final chat = MeetChatMessage.fromJson(chatPayload);
         if (!_messages.any((m) => m.id == chat.id)) {
           _messages.add(chat);
           notifyListeners();
@@ -577,6 +604,15 @@ class MeetAutomationService extends ChangeNotifier {
         _isScreenSharing = active;
         notifyListeners();
       } else if (type == 'MEET_BRIDGE_READY') {
+        if (data['documentId'] is String && _isCurrentMeetMessage(data)) {
+          if (_tutorDocumentId != data['documentId']) {
+            _invalidateTutor();
+            _tutorObservationReady = false;
+            _hostJoined = false;
+          }
+          _tutorDocumentId = data['documentId'] as String;
+          _tutorDocumentUrl = data['url'] as String;
+        }
         _isBridgeReady = true;
         notifyListeners();
       } else if (type == 'MEET_JOINED') {
@@ -585,6 +621,10 @@ class MeetAutomationService extends ChangeNotifier {
         if (uri == null ||
             uri.host != 'meet.google.com' ||
             'https://meet.google.com${uri.path}' != _meetingUrl) {
+          return;
+        }
+        if (data['documentId'] != null &&
+            data['documentId'] != _tutorDocumentId) {
           return;
         }
         if (_hostJoined) return;
@@ -629,6 +669,7 @@ class MeetAutomationService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _resetAdmissions();
     _loadingSubscription?.cancel();
     _bridgeTimer?.cancel();
