@@ -3,7 +3,7 @@
 class MeetAdmissionBridgeScript {
   static const String script = r'''
 (function() {
-  if (location.hostname !== 'meet.google.com' || !/^\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/.test(location.pathname)) return;
+  if (location.origin !== 'https://meet.google.com' || !/^\/(?:meet\/)?[a-z]{3}-[a-z]{4}-[a-z]{3}$/.test(location.pathname)) return;
   if (window.MeetAdmissionBridge && window.MeetAdmissionBridge.version === 1) {
     window.MeetAdmissionBridge.report();
     return;

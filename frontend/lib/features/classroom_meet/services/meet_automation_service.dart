@@ -70,6 +70,24 @@ class MeetAutomationService extends ChangeNotifier {
   int _admissionSequence = -1;
   int _admissionAttemptCounter = 0;
   int _unknownAdmissionCount = 0;
+  String? _tutorDocumentId;
+  String? _tutorDocumentUrl;
+  bool _disposed = false;
+  bool _tutorObservationReady = false;
+  bool _tutorObservationRequested = false;
+  String? _tutorObservationId;
+  int _tutorObservationSerial = 0;
+  int _tutorPreparationEpoch = 0;
+  Completer<void> _tutorPreparationCancelled = Completer<void>();
+  String? _tutorObservationError;
+  String? get tutorObservationError => _tutorObservationError;
+  bool get isTutorObservationReady => _tutorObservationReady;
+  String? _activeTutorRequestId;
+  int _tutorGeneration = 0;
+  Completer<void> _tutorCancelled = Completer<void>();
+  int _tutorCounter = 0;
+  Future<void> _tutorQueue = Future.value();
+  Duration _tutorTimeout = const Duration(seconds: 10);
   Duration _admissionTimeout = const Duration(seconds: 10);
   Future<String> Function(String)? _testExecuteScript;
 
@@ -80,10 +98,12 @@ class MeetAutomationService extends ChangeNotifier {
   @visibleForTesting
   MeetAutomationService.forTesting({
     Future<String> Function(String)? executeScript,
+    Duration tutorTimeout = const Duration(seconds: 10),
     Duration admissionTimeout = const Duration(seconds: 10),
   }) {
     _testExecuteScript = executeScript;
     _admissionTimeout = admissionTimeout;
+    _tutorTimeout = tutorTimeout;
   }
 
   bool get isAdmittingAll => _admissionBatch != null;
@@ -130,7 +150,9 @@ class MeetAutomationService extends ChangeNotifier {
         !cleanUrl.startsWith('https://')) {
       cleanUrl = 'https://$cleanUrl';
     }
-    final nextUrl = cleanUrl.isEmpty ? null : cleanUrl;
+    final nextUrl = cleanUrl.isEmpty
+        ? null
+        : canonicalMeetingUrl(cleanUrl) ?? cleanUrl;
     if (_meetingUrl != nextUrl) {
       _resetAdmissions();
       _hostJoined = false;
@@ -204,6 +226,9 @@ class MeetAutomationService extends ChangeNotifier {
     if (kIsWeb) {
       return null;
     }
+
+    final navigationUrl = existingUrl?.trim();
+    existingUrl = canonicalMeetingUrl(existingUrl) ?? existingUrl;
 
     final previousUrl = _meetingUrl;
     if (existingUrl != null &&
@@ -312,6 +337,9 @@ class MeetAutomationService extends ChangeNotifier {
 
       _urlSubscription?.cancel();
       _urlSubscription = controller.url.listen((url) {
+        if (_tutorDocumentUrl != null && url != _tutorDocumentUrl) {
+          _resetAdmissions();
+        }
         FrontendLogger.write('[MeetAutomation] Navigation state changed');
         if (url.contains('accounts.google.com')) {
           _needsGoogleLogin = true;
@@ -321,19 +349,14 @@ class MeetAutomationService extends ChangeNotifier {
           }
           return;
         }
-        final match = RegExp(
-          r'meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})',
-          caseSensitive: false,
-        ).firstMatch(url);
-        if (match != null) {
-          final realUrl =
-              'https://meet.google.com/${match.group(1)!.toLowerCase()}';
+        final realUrl = canonicalMeetingUrl(url);
+        if (realUrl != null) {
           onMeetingUrlDetected(realUrl);
         }
       });
 
-      final targetUrl = (existingUrl != null && existingUrl.trim().isNotEmpty)
-          ? existingUrl.trim()
+      final targetUrl = (navigationUrl != null && navigationUrl.isNotEmpty)
+          ? navigationUrl
           : 'https://meet.google.com/new?hs=193';
       FrontendLogger.write('[MeetAutomation] Loading meeting page');
       await controller.loadUrl(targetUrl);
@@ -357,7 +380,8 @@ class MeetAutomationService extends ChangeNotifier {
           final res = await _controller!.executeScript(r'''
             (function() {
               var href = window.location.href || '';
-              var m = href.match(/meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})/i);
+              var m = location.protocol === 'https:' && location.hostname === 'meet.google.com'
+                ? location.pathname.match(/^\/(?:meet\/)?([a-z]{3}-[a-z]{4}-[a-z]{3})$/) : null;
               var code = m ? m[1].toLowerCase() : '';
 
               // Kiểm tra xem đã vào phòng chưa (nút kết thúc cuộc gọi đỏ)
@@ -453,7 +477,8 @@ class MeetAutomationService extends ChangeNotifier {
     }
   }
 
-  String _mediaConstraintsScript(bool noiseSuppression) => '''
+  String _mediaConstraintsScript(bool noiseSuppression) =>
+      '''
 (function() {
   var media = navigator.mediaDevices;
   if (!media || !media.getUserMedia || media.__hoclucNoiseSettingApplied) return;
@@ -477,6 +502,7 @@ class MeetAutomationService extends ChangeNotifier {
       _handleWebMessage(rawData);
 
   void _handleWebMessage(dynamic rawData) {
+    if (_disposed) return;
     try {
       final Map<String, dynamic> data = rawData is String
           ? jsonDecode(rawData) as Map<String, dynamic>
@@ -489,7 +515,10 @@ class MeetAutomationService extends ChangeNotifier {
         if (!_isCurrentMeetMessage(data)) return;
         final documentId = data['documentId'] as String?;
         if (documentId == null || documentId.isEmpty) return;
-        if (_admissionDocumentId != documentId) _resetAdmissions();
+        if (_admissionDocumentId != null &&
+            _admissionDocumentId != documentId) {
+          _resetAdmissionQueue();
+        }
         _admissionDocumentId = documentId;
         notifyListeners();
         return;
@@ -548,8 +577,32 @@ class MeetAutomationService extends ChangeNotifier {
         return;
       }
 
+      if (type == 'TUTOR_OBSERVATION_STATE' && payload is Map) {
+        if (_tutorObservationRequested &&
+            _tutorObservationId != null &&
+            payload['observationId'] == _tutorObservationId &&
+            data['documentId'] == _tutorDocumentId &&
+            _isCurrentMeetMessage(data)) {
+          final ready = payload['ready'] == true && _hostJoined;
+          if (_tutorObservationReady != ready) {
+            _tutorObservationReady = ready;
+            notifyListeners();
+          }
+        }
+        return;
+      }
       if (type == 'CHAT_MESSAGE' && payload is Map) {
-        final chat = MeetChatMessage.fromJson(payload.cast<String, dynamic>());
+        final chatPayload = Map<String, dynamic>.from(payload);
+        chatPayload['isTutorEligible'] =
+            payload['isTutorEligible'] == true &&
+            _tutorObservationRequested &&
+            _tutorObservationReady &&
+            chatPayload['observationId'] == _tutorObservationId &&
+            _hostJoined &&
+            payload['sourceDocumentId'] == _tutorDocumentId &&
+            data['documentId'] == _tutorDocumentId &&
+            _isCurrentMeetMessage(data);
+        final chat = MeetChatMessage.fromJson(chatPayload);
         if (!_messages.any((m) => m.id == chat.id)) {
           _messages.add(chat);
           notifyListeners();
@@ -583,14 +636,30 @@ class MeetAutomationService extends ChangeNotifier {
         _isScreenSharing = active;
         notifyListeners();
       } else if (type == 'MEET_BRIDGE_READY') {
+        if (data['documentId'] is! String ||
+            (data['documentId'] as String).isEmpty ||
+            !_isCurrentMeetMessage(data)) {
+          return;
+        }
+        if (_tutorDocumentId != data['documentId']) {
+          if (_tutorDocumentId != null) stopTutorObservation();
+          _invalidateTutor();
+          _tutorObservationReady = false;
+          _hostJoined = false;
+        }
+        _tutorDocumentId = data['documentId'] as String;
+        _tutorDocumentUrl = data['url'] as String;
         _isBridgeReady = true;
         notifyListeners();
       } else if (type == 'MEET_JOINED') {
         if (payload is! Map || payload['url'] is! String) return;
-        final uri = Uri.tryParse(payload['url'] as String);
-        if (uri == null ||
-            uri.host != 'meet.google.com' ||
-            'https://meet.google.com${uri.path}' != _meetingUrl) {
+        final joinedRoom = canonicalMeetingUrl(payload['url'] as String);
+        if (joinedRoom == null ||
+            joinedRoom != canonicalMeetingUrl(_meetingUrl)) {
+          return;
+        }
+        if (data['documentId'] != null &&
+            data['documentId'] != _tutorDocumentId) {
           return;
         }
         if (_hostJoined) return;
@@ -607,22 +676,29 @@ class MeetAutomationService extends ChangeNotifier {
   void receiveBridgeMessage(Map<String, dynamic> data) =>
       _handleWebMessage(data);
 
-  static bool isOfficialMeetingUrl(String? url) {
+  /// Google serves the same room at /<code> and /meet/<code>. Persist one room
+  /// identity, while bridge commands retain the exact current document URL.
+  static String? canonicalMeetingUrl(String? url) {
     final uri = Uri.tryParse(url ?? '');
-    return uri != null &&
-        uri.scheme == 'https' &&
-        uri.host == 'meet.google.com' &&
-        RegExp(r'^/[a-z]{3}-[a-z]{4}-[a-z]{3}$').hasMatch(uri.path);
+    if (uri == null ||
+        uri.scheme != 'https' ||
+        uri.host != 'meet.google.com' ||
+        uri.userInfo.isNotEmpty ||
+        (uri.hasPort && uri.port != 443)) {
+      return null;
+    }
+    final match = RegExp(
+      r'^/(?:meet/)?([a-z]{3}-[a-z]{4}-[a-z]{3})$',
+    ).firstMatch(uri.path);
+    return match == null ? null : 'https://meet.google.com/${match.group(1)}';
   }
 
+  static bool isOfficialMeetingUrl(String? url) =>
+      canonicalMeetingUrl(url) != null;
+
   bool _isCurrentMeetMessage(Map<String, dynamic> data) {
-    final uri = Uri.tryParse(data['url']?.toString() ?? '');
-    final room = Uri.tryParse(_meetingUrl ?? '');
-    return uri != null &&
-        room != null &&
-        isOfficialMeetingUrl(_meetingUrl) &&
-        isOfficialMeetingUrl(uri.toString()) &&
-        uri.path == room.path;
+    final actualRoom = canonicalMeetingUrl(data['url']?.toString());
+    return actualRoom != null && actualRoom == canonicalMeetingUrl(_meetingUrl);
   }
 
   Future<String> _executeAdmissionScript(String script) async {
@@ -635,6 +711,7 @@ class MeetAutomationService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _resetAdmissions();
     _loadingSubscription?.cancel();
     _bridgeTimer?.cancel();
