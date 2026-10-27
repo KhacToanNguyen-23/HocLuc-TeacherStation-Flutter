@@ -219,7 +219,10 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
     while (current() && watch.elapsed < _tutorTimeout) {
       final doc = _tutorDocumentId;
       final url = _tutorDocumentUrl;
-      if (_hostJoined && doc != null && url == room) {
+      if (_hostJoined &&
+          doc != null &&
+          MeetAutomationService.canonicalMeetingUrl(url) ==
+              MeetAutomationService.canonicalMeetingUrl(room)) {
         try {
           final command = jsonEncode({
             'documentId': doc,

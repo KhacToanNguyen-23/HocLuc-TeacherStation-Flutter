@@ -149,7 +149,9 @@ class MeetAutomationService extends ChangeNotifier {
         !cleanUrl.startsWith('https://')) {
       cleanUrl = 'https://$cleanUrl';
     }
-    final nextUrl = cleanUrl.isEmpty ? null : cleanUrl;
+    final nextUrl = cleanUrl.isEmpty
+        ? null
+        : canonicalMeetingUrl(cleanUrl) ?? cleanUrl;
     if (_meetingUrl != nextUrl) {
       _resetAdmissions();
       _hostJoined = false;
@@ -223,6 +225,9 @@ class MeetAutomationService extends ChangeNotifier {
     if (kIsWeb) {
       return null;
     }
+
+    final navigationUrl = existingUrl?.trim();
+    existingUrl = canonicalMeetingUrl(existingUrl) ?? existingUrl;
 
     final previousUrl = _meetingUrl;
     if (existingUrl != null &&
@@ -342,19 +347,14 @@ class MeetAutomationService extends ChangeNotifier {
           }
           return;
         }
-        final match = RegExp(
-          r'meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})',
-          caseSensitive: false,
-        ).firstMatch(url);
-        if (match != null) {
-          final realUrl =
-              'https://meet.google.com/${match.group(1)!.toLowerCase()}';
+        final realUrl = canonicalMeetingUrl(url);
+        if (realUrl != null) {
           onMeetingUrlDetected(realUrl);
         }
       });
 
-      final targetUrl = (existingUrl != null && existingUrl.trim().isNotEmpty)
-          ? existingUrl.trim()
+      final targetUrl = (navigationUrl != null && navigationUrl.isNotEmpty)
+          ? navigationUrl
           : 'https://meet.google.com/new?hs=193';
       FrontendLogger.write('[MeetAutomation] Loading meeting page');
       await controller.loadUrl(targetUrl);
@@ -378,7 +378,8 @@ class MeetAutomationService extends ChangeNotifier {
           final res = await _controller!.executeScript(r'''
             (function() {
               var href = window.location.href || '';
-              var m = href.match(/meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})/i);
+              var m = location.protocol === 'https:' && location.hostname === 'meet.google.com'
+                ? location.pathname.match(/^\/(?:meet\/)?([a-z]{3}-[a-z]{4}-[a-z]{3})$/) : null;
               var code = m ? m[1].toLowerCase() : '';
 
               // Kiểm tra xem đã vào phòng chưa (nút kết thúc cuộc gọi đỏ)
@@ -646,10 +647,9 @@ class MeetAutomationService extends ChangeNotifier {
         notifyListeners();
       } else if (type == 'MEET_JOINED') {
         if (payload is! Map || payload['url'] is! String) return;
-        final uri = Uri.tryParse(payload['url'] as String);
-        if (uri == null ||
-            uri.host != 'meet.google.com' ||
-            'https://meet.google.com${uri.path}' != _meetingUrl) {
+        final joinedRoom = canonicalMeetingUrl(payload['url'] as String);
+        if (joinedRoom == null ||
+            joinedRoom != canonicalMeetingUrl(_meetingUrl)) {
           return;
         }
         if (data['documentId'] != null &&
@@ -670,22 +670,29 @@ class MeetAutomationService extends ChangeNotifier {
   void receiveBridgeMessage(Map<String, dynamic> data) =>
       _handleWebMessage(data);
 
-  static bool isOfficialMeetingUrl(String? url) {
+  /// Google serves the same room at /<code> and /meet/<code>. Persist one room
+  /// identity, while bridge commands retain the exact current document URL.
+  static String? canonicalMeetingUrl(String? url) {
     final uri = Uri.tryParse(url ?? '');
-    return uri != null &&
-        uri.scheme == 'https' &&
-        uri.host == 'meet.google.com' &&
-        RegExp(r'^/[a-z]{3}-[a-z]{4}-[a-z]{3}$').hasMatch(uri.path);
+    if (uri == null ||
+        uri.scheme != 'https' ||
+        uri.host != 'meet.google.com' ||
+        uri.userInfo.isNotEmpty ||
+        (uri.hasPort && uri.port != 443)) {
+      return null;
+    }
+    final match = RegExp(
+      r'^/(?:meet/)?([a-z]{3}-[a-z]{4}-[a-z]{3})$',
+    ).firstMatch(uri.path);
+    return match == null ? null : 'https://meet.google.com/${match.group(1)}';
   }
 
+  static bool isOfficialMeetingUrl(String? url) =>
+      canonicalMeetingUrl(url) != null;
+
   bool _isCurrentMeetMessage(Map<String, dynamic> data) {
-    final uri = Uri.tryParse(data['url']?.toString() ?? '');
-    final room = Uri.tryParse(_meetingUrl ?? '');
-    return uri != null &&
-        room != null &&
-        isOfficialMeetingUrl(_meetingUrl) &&
-        isOfficialMeetingUrl(uri.toString()) &&
-        uri.path == room.path;
+    final actualRoom = canonicalMeetingUrl(data['url']?.toString());
+    return actualRoom != null && actualRoom == canonicalMeetingUrl(_meetingUrl);
   }
 
   Future<String> _executeAdmissionScript(String script) async {

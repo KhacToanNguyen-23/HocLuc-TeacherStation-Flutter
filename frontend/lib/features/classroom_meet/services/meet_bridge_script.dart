@@ -151,7 +151,7 @@ class MeetBridgeScript {
   }
   function namedTutorAction(pattern) {
     return Array.from(document.querySelectorAll('button, [role="button"], [role="menuitem"]')).find(function(node) {
-      var label = (node.getAttribute('aria-label') || node.innerText || node.textContent || '').trim();
+      var label = (node.getAttribute('aria-label') || node.innerText || node.textContent || '').replace(/\s+/g, ' ').trim();
       return visibleTutorAction(node) && pattern.test(label);
     });
   }
@@ -162,7 +162,9 @@ class MeetBridgeScript {
     if (!tutorOpening) tutorOpening = {menuClicked: false, chatClicked: false};
     if (tutorOpening.chatClicked) return;
     var direct = document.querySelector('button[aria-label*="trò chuyện" i], button[aria-label*="chat" i]');
-    var chatName = /^(?:chat|trò chuyện|in-call messages|chat with everyone|send a message to everyone|tin nhắn trong cuộc gọi|trò chuyện với mọi người|gửi tin nhắn cho mọi người)(?:\s*\([^)]*\))?$/i;
+    // Meet's overflow item includes the Material icon text "chat" on its own
+    // line before the localized action name. Keep the remaining name exact.
+    var chatName = /^(?:chat\s+)?(?:chat|trò chuyện|in-call messages|chat with everyone|send a message to everyone|tin nhắn trong cuộc gọi|trò chuyện với mọi người|gửi tin nhắn cho mọi người)(?:\s*\([^)]*\))?$/i;
     var action = visibleTutorAction(direct) && chatName.test((direct.getAttribute('aria-label') || '').trim()) ? direct : namedTutorAction(chatName);
     if (action) {
       tutorOpening.chatClicked = true;

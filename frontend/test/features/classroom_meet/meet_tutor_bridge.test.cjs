@@ -29,7 +29,7 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
   const send = Object.assign(node(), {click() { clicks++; input.value = ''; }});
   const leave = Object.assign(node({'aria-label': 'Leave call'}), {isConnected: hangupConnected, getClientRects() { return hangupVisible ? [{}] : []; }});
   const hiddenLeave = Object.assign(node({'aria-label': 'Leave call'}), {getClientRects() { return []; }});
-  const chatButton = Object.assign(node({'aria-label': chatLabel, 'aria-expanded': String(directExpanded), 'aria-pressed': String(directPressed)}), {click() { chatClicks++; if (!delayedInput) inputPresent = !inputPresent; }});
+  const chatButton = Object.assign(node({...(!chatLabel.includes('\n') ? {'aria-label': chatLabel} : {}), 'aria-expanded': String(directExpanded), 'aria-pressed': String(directPressed)}, chatLabel), {click() { chatClicks++; if (!delayedInput) inputPresent = !inputPresent; }});
   const hiddenChatButton = Object.assign(node({'aria-label': 'Chat with everyone'}), {getClientRects() { return []; }, click() { hiddenClicks++; }});
   const menuButton = Object.assign(node({'aria-label': menuLabel, 'aria-expanded': String(menuExpanded)}), {click() { menuClicks++; if (!delayedMenu) menuOpen = !menuOpen; }});
   const context = vm.createContext({
@@ -375,6 +375,19 @@ test('periodic participant scans never close the teacher overflow menu while AI 
   assert.equal(f.peopleClicks(), 0);
   assert.equal(f.panels().menuOpen, true);
   assert.equal(f.chatClicks(), 0);
+});
+
+test('live Meet menu label with a chat icon line opens the actual chat action', () => {
+  for (const chatLabel of ['chat\nTin nhắn trong cuộc gọi', 'chat\nIn-call messages']) {
+    const f = fixture({prepare:false, overflow:true, hiddenDirect:true, chatLabel});
+    f.closeInput();
+    const lease = {...f.command, observationId:'icon-label', expiresAt:10000};
+    f.call('beginTutorObservation',lease); f.mutations(); f.mutations(); f.tick(300);
+    assert.equal(f.call('beginTutorObservation',lease).status,'READY');
+    assert.equal(f.chatClicks(),1);
+    assert.equal(f.panels().menuClicks,1);
+    assert.equal(f.peopleClicks(),0);
+  }
 });
 
 test('English and Vietnamese overflow chat actions remain usable behind a hidden direct button', () => {
