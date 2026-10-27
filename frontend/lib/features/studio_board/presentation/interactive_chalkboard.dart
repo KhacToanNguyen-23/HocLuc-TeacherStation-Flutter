@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
@@ -7,6 +8,7 @@ import 'board_sticker_floating_bar.dart';
 import 'grid_painter.dart';
 import 'stroke_canvas.dart';
 import 'smart_chalk_overlay.dart';
+import 'widgets/middle_mouse_pan.dart';
 
 class InteractiveChalkboard extends StatefulWidget {
   const InteractiveChalkboard({
@@ -61,7 +63,8 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
         }
       },
       onKeyEvent: (node, event) {
-        if (event.logicalKey == LogicalKeyboardKey.escape && event is KeyDownEvent) {
+        if (event.logicalKey == LogicalKeyboardKey.escape &&
+            event is KeyDownEvent) {
           if (widget.studio.selectedStickerId != null) {
             widget.studio.selectSticker(null);
             return KeyEventResult.handled;
@@ -80,116 +83,156 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          InteractiveViewer(
-            transformationController: _transformController,
-            minScale: 0.5,
-            maxScale: 3.0,
-            panEnabled: isPanMode,
-            scaleEnabled: true,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: () => widget.studio.selectSticker(null),
-                    child: const CustomPaint(painter: GridPainter()),
-                  ),
+          MiddleMousePan(
+            enabled: widget.interactive,
+            onPan: (delta) {
+              final matrix = _transformController.value.clone();
+              final box = context.findRenderObject() as RenderBox?;
+              if (box == null) return;
+              final extent = box.size * (1 - matrix.getMaxScaleOnAxis());
+              matrix.setEntry(
+                0,
+                3,
+                (matrix.entry(0, 3) + delta.dx).clamp(
+                  math.min(0.0, extent.width),
+                  math.max(0.0, extent.width),
                 ),
-                Positioned.fill(
-                  child: StrokeCanvas(
-                    studio: widget.studio,
-                    interactive: widget.interactive && !isPanMode,
-                  ),
+              );
+              matrix.setEntry(
+                1,
+                3,
+                (matrix.entry(1, 3) + delta.dy).clamp(
+                  math.min(0.0, extent.height),
+                  math.max(0.0, extent.height),
                 ),
-                Positioned.fill(
-                  child: SmartChalkOverlay(
-                    studio: widget.studio,
-                    onDelete: (id) => widget.studio.removeChalkAnnotation(id),
+              );
+              _transformController.value = matrix;
+            },
+            child: InteractiveViewer(
+              transformationController: _transformController,
+              minScale: 0.5,
+              maxScale: 3.0,
+              panEnabled: isPanMode,
+              scaleEnabled: true,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () => widget.studio.selectSticker(null),
+                      child: const CustomPaint(painter: GridPainter()),
+                    ),
                   ),
-                ),
-                Positioned.fill(
-                  child: ListenableBuilder(
-                    listenable: widget.studio,
-                    builder: (context, _) {
-                      return LayoutBuilder(
-                        builder: (context, constraints) {
-                          final size = Size(
-                            constraints.maxWidth,
-                            constraints.maxHeight,
-                          );
-                          final stickers = widget.studio.currentStickers;
-                          final selectedId = widget.studio.selectedStickerId;
-                          final selSticker = selectedId != null
-                              ? stickers.where((s) => s.id == selectedId).firstOrNull
-                              : null;
-                          return Stack(
-                            fit: StackFit.expand,
-                            clipBehavior: Clip.none,
-                            children: [
-                              if (widget.studio.selectedStickerId != null)
-                                Positioned.fill(
-                                  child: GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: () => widget.studio.selectSticker(null),
+                  Positioned.fill(
+                    child: StrokeCanvas(
+                      studio: widget.studio,
+                      interactive: widget.interactive && !isPanMode,
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: SmartChalkOverlay(
+                      studio: widget.studio,
+                      onDelete: (id) => widget.studio.removeChalkAnnotation(id),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: ListenableBuilder(
+                      listenable: widget.studio,
+                      builder: (context, _) {
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            final size = Size(
+                              constraints.maxWidth,
+                              constraints.maxHeight,
+                            );
+                            final stickers = widget.studio.currentStickers;
+                            final selectedId = widget.studio.selectedStickerId;
+                            final selSticker = selectedId != null
+                                ? stickers
+                                      .where((s) => s.id == selectedId)
+                                      .firstOrNull
+                                : null;
+                            return Stack(
+                              fit: StackFit.expand,
+                              clipBehavior: Clip.none,
+                              children: [
+                                if (widget.studio.selectedStickerId != null)
+                                  Positioned.fill(
+                                    child: GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: () =>
+                                          widget.studio.selectSticker(null),
+                                    ),
                                   ),
-                                ),
-                              for (final s in stickers)
-                                Positioned(
-                                  left: s.normalizedRect.left * size.width,
-                                  top: s.normalizedRect.top * size.height,
-                                  width: (s.normalizedRect.width * size.width)
-                                      .clamp(
-                                        200.0,
-                                        size.width > 200 ? size.width : 200.0,
-                                      ),
-                                  height: (s.normalizedRect.height * size.height)
-                                      .clamp(
-                                        120.0,
-                                        size.height > 120 ? size.height : 120.0,
-                                      ),
-                                  child: BoardStickerCard(
-                                    sticker: s,
-                                    isSelected: widget.studio.selectedStickerId == s.id,
-                                    showFloatingBar: false,
-                                    onSelect: () => widget.studio.selectSticker(s.id),
-                                    onDeselect: () => widget.studio.selectSticker(null),
-                                    parentSize: size,
-                                    onDelete: () =>
-                                        widget.studio.removeSticker(s.id),
-                                    onUpdateRect: (r) => widget.studio
-                                        .updateStickerRect(s.id, r),
-                                    onUpdateRotation: (rot) => widget.studio
-                                        .updateStickerRotation(s.id, rot),
-                                    onDuplicate: () => widget.studio
-                                        .duplicateSticker(s.id),
-                                    onEdit: () => _handleEdit(s),
+                                for (final s in stickers)
+                                  Positioned(
+                                    left: s.normalizedRect.left * size.width,
+                                    top: s.normalizedRect.top * size.height,
+                                    width: (s.normalizedRect.width * size.width)
+                                        .clamp(
+                                          200.0,
+                                          size.width > 200 ? size.width : 200.0,
+                                        ),
+                                    height:
+                                        (s.normalizedRect.height * size.height)
+                                            .clamp(
+                                              120.0,
+                                              size.height > 120
+                                                  ? size.height
+                                                  : 120.0,
+                                            ),
+                                    child: BoardStickerCard(
+                                      sticker: s,
+                                      isSelected:
+                                          widget.studio.selectedStickerId ==
+                                          s.id,
+                                      showFloatingBar: false,
+                                      onSelect: () =>
+                                          widget.studio.selectSticker(s.id),
+                                      onDeselect: () =>
+                                          widget.studio.selectSticker(null),
+                                      parentSize: size,
+                                      onDelete: () =>
+                                          widget.studio.removeSticker(s.id),
+                                      onUpdateRect: (r) => widget.studio
+                                          .updateStickerRect(s.id, r),
+                                      onUpdateRotation: (rot) => widget.studio
+                                          .updateStickerRotation(s.id, rot),
+                                      onDuplicate: () =>
+                                          widget.studio.duplicateSticker(s.id),
+                                      onEdit: () => _handleEdit(s),
+                                    ),
                                   ),
-                                ),
-                              // Canva Selection Overlay Layer: Top-most Floating Action Bar
-                              if (selSticker != null)
-                                Positioned(
-                                  left: _calculateBarLeft(selSticker, size),
-                                  top: _calculateBarTop(selSticker, size),
-                                  width: 540.0,
-                                  height: 38.0,
-                                  child: BoardStickerFloatingBar(
-                                    sticker: selSticker,
-                                    onDeselect: () => widget.studio.selectSticker(null),
-                                    onToggleRevolve: () => _handleRevolveOrEdit(selSticker),
-                                    onEdit: () => _handleEdit(selSticker),
-                                    onDuplicate: () => widget.studio.duplicateSticker(selSticker.id),
-                                    onDelete: () => widget.studio.removeSticker(selSticker.id),
+                                // Canva Selection Overlay Layer: Top-most Floating Action Bar
+                                if (selSticker != null)
+                                  Positioned(
+                                    left: _calculateBarLeft(selSticker, size),
+                                    top: _calculateBarTop(selSticker, size),
+                                    width: 540.0,
+                                    height: 38.0,
+                                    child: BoardStickerFloatingBar(
+                                      sticker: selSticker,
+                                      onDeselect: () =>
+                                          widget.studio.selectSticker(null),
+                                      onToggleRevolve: () =>
+                                          _handleRevolveOrEdit(selSticker),
+                                      onEdit: () => _handleEdit(selSticker),
+                                      onDuplicate: () => widget.studio
+                                          .duplicateSticker(selSticker.id),
+                                      onDelete: () => widget.studio
+                                          .removeSticker(selSticker.id),
+                                    ),
                                   ),
-                                ),
-                            ],
-                          );
-                        },
-                      );
-                    },
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           if (widget.interactive)
@@ -235,8 +278,10 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
   double _calculateBarLeft(BoardSticker s, Size size) {
     const barWidth = 540.0;
     final stickerLeft = s.normalizedRect.left * size.width;
-    final stickerWidth = (s.normalizedRect.width * size.width)
-        .clamp(200.0, size.width > 200 ? size.width : 200.0);
+    final stickerWidth = (s.normalizedRect.width * size.width).clamp(
+      200.0,
+      size.width > 200 ? size.width : 200.0,
+    );
     final centerDx = stickerLeft + (stickerWidth - barWidth) / 2.0;
     return centerDx.clamp(
       12.0,
@@ -246,8 +291,10 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
 
   double _calculateBarTop(BoardSticker s, Size size) {
     final stickerTop = s.normalizedRect.top * size.height;
-    final stickerHeight = (s.normalizedRect.height * size.height)
-        .clamp(120.0, size.height > 120 ? size.height : 120.0);
+    final stickerHeight = (s.normalizedRect.height * size.height).clamp(
+      120.0,
+      size.height > 120 ? size.height : 120.0,
+    );
     return (stickerTop < 54.0)
         ? (stickerTop + stickerHeight + 12.0)
         : (stickerTop - 48.0);
@@ -261,15 +308,20 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
         ...PluginManager.instance.availablePlugins,
       ].whereType<InstalledPlugin>().toList();
 
-      plugin = all.where((p) =>
-        p.id == s.type ||
-        p.manifest.id == s.type ||
-        s.type.contains(p.id) ||
-        p.id.contains(s.type) ||
-        s.type.contains(p.manifest.id) ||
-        p.manifest.id.contains(s.type) ||
-        (s.svgContent != null && p.manifest.id.contains('math'))
-      ).firstOrNull ?? all.firstOrNull;
+      plugin =
+          all
+              .where(
+                (p) =>
+                    p.id == s.type ||
+                    p.manifest.id == s.type ||
+                    s.type.contains(p.id) ||
+                    p.id.contains(s.type) ||
+                    s.type.contains(p.manifest.id) ||
+                    p.manifest.id.contains(s.type) ||
+                    (s.svgContent != null && p.manifest.id.contains('math')),
+              )
+              .firstOrNull ??
+          all.firstOrNull;
     }
     if (plugin != null) {
       widget.studio.openPlugin(plugin, editingSticker: s);
