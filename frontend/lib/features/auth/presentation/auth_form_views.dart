@@ -61,6 +61,7 @@ extension AuthFormViews on _AuthFormCardState {
       children: [
         TextField(
           controller: _identifierController,
+          textInputAction: TextInputAction.next,
           decoration: InputDecoration(
             prefixIcon: const Icon(
               Icons.person_outline_rounded,
@@ -94,6 +95,8 @@ extension AuthFormViews on _AuthFormCardState {
         TextField(
           controller: _passwordController,
           obscureText: _obscurePassword,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _isLoading ? null : _handlePasswordLogin(),
           decoration: InputDecoration(
             prefixIcon: const Icon(
               Icons.lock_outline_rounded,
@@ -160,6 +163,7 @@ extension AuthFormViews on _AuthFormCardState {
           child: ElevatedButton(
             onPressed: _isLoading ? null : _handlePasswordLogin,
             style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadii.control),
@@ -229,38 +233,33 @@ extension AuthFormViews on _AuthFormCardState {
   }
 
   Widget _buildGoogleCircleButton() {
-    return Tooltip(
-      message: 'Đăng nhập bằng Google',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isLoading ? null : _handleGoogleSignInAction,
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              border: Border.all(color: AppColors.inputBorder, width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+    return AppPressable(
+      tooltip: 'Đăng nhập bằng Google',
+      onTap: _isLoading ? null : _handleGoogleSignInAction,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+          border: Border.all(color: AppColors.inputBorder, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
-            child: const Center(
-              child: Text(
-                'G',
-                style: TextStyle(
-                  color: Color(0xFF4285F4),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Manrope',
-                ),
-              ),
+          ],
+        ),
+        child: const Center(
+          child: Text(
+            'G',
+            style: TextStyle(
+              color: Color(0xFF4285F4),
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Manrope',
             ),
           ),
         ),
@@ -283,6 +282,7 @@ extension AuthFormViews on _AuthFormCardState {
         const SizedBox(height: 12),
         TextField(
           controller: _signupTargetController,
+          textInputAction: TextInputAction.next,
           decoration: InputDecoration(
             prefixIcon: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -321,6 +321,7 @@ extension AuthFormViews on _AuthFormCardState {
         const SizedBox(height: 12),
         TextField(
           controller: _signupOtpController,
+          textInputAction: TextInputAction.next,
           decoration: InputDecoration(
             prefixIcon: const Icon(
               Icons.shield_outlined,
@@ -369,6 +370,8 @@ extension AuthFormViews on _AuthFormCardState {
         TextField(
           controller: _signupPasswordController,
           obscureText: _obscurePassword,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _isLoading ? null : _handleVerifySignupOtp(),
           decoration: InputDecoration(
             prefixIcon: const Icon(
               Icons.lock_outline_rounded,
@@ -435,6 +438,7 @@ extension AuthFormViews on _AuthFormCardState {
         ElevatedButton(
           onPressed: _isLoading ? null : _handleVerifySignupOtp,
           style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 13),
             shape: RoundedRectangleBorder(

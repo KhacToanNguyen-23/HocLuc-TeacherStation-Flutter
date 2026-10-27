@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 
 /// Card container for Room List and History columns with educational illustrations.
@@ -64,8 +64,9 @@ class DashboardEmptyCard extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: AppColors.surfaceSoft,
                       borderRadius: BorderRadius.circular(AppRadii.control),
+                      border: Border.all(color: AppColors.surfaceBorder),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(

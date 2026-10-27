@@ -1,4 +1,4 @@
-﻿import 'package:teaching_companion/core/utils/frontend_logger.dart';
+import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -246,37 +246,139 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
     );
     String? validationError;
 
-    showDialog<void>(
+    showAppModalDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadii.panel),
+          void submit() {
+            final input = customUrlController.text.trim();
+            final extracted = extractRealGoogleMeetUrl(input);
+            if (extracted != null) {
+              setState(() => _currentMeetingUrl = extracted);
+              _meetService.setMeetingUrl(extracted);
+              Navigator.of(ctx).pop();
+            } else {
+              setDialogState(() {
+                validationError =
+                    'Đường dẫn không hợp lệ. Vui lòng nhập link dạng meet.google.com/xxx-yyyy-zzz';
+              });
+            }
+          }
+
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
             ),
-            title: const Row(
-              children: [
-                Icon(Icons.link_rounded, color: AppColors.primary),
-                SizedBox(width: 8),
-                Text(
-                  'Dán link Google Meet',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            content: SizedBox(
-              width: 440,
+            child: Container(
+              width: 460,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppRadii.panel),
+                border: Border.all(color: AppColors.border, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.slate900.withValues(alpha: 0.12),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.selected,
+                          borderRadius: BorderRadius.circular(
+                            AppRadii.control,
+                          ),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.link_rounded,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Dán link Google Meet',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 20,
+                          color: AppColors.textMuted,
+                        ),
+                        tooltip: 'Đóng',
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Input
                   TextField(
                     controller: customUrlController,
                     autofocus: true,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'https://meet.google.com/xxx-yyyy-zzz',
-                      prefixIcon: const Icon(Icons.videocam_outlined, size: 18),
+                      hintStyle: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.videocam_outlined,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
                       errorText: validationError,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppRadii.control,
+                        ),
+                        borderSide: const BorderSide(
+                          color: AppColors.surfaceBorder,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppRadii.control,
+                        ),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
+                      ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.paste_rounded, size: 18),
                         tooltip: 'Dán từ bộ nhớ tạm',
@@ -292,39 +394,54 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
                         },
                       ),
                     ),
+                    onSubmitted: (_) => submit(),
                     onChanged: (_) {
                       if (validationError != null) {
                         setDialogState(() => validationError = null);
                       }
                     },
                   ),
+                  const SizedBox(height: 22),
+
+                  // Actions
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textMuted,
+                        ),
+                        child: const Text('Hủy'),
+                      ),
+                      ElevatedButton(
+                        onPressed: submit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadii.control,
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Xác nhận link',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Hủy'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final input = customUrlController.text.trim();
-                  final extracted = extractRealGoogleMeetUrl(input);
-                  if (extracted != null) {
-                    setState(() => _currentMeetingUrl = extracted);
-                    _meetService.setMeetingUrl(extracted);
-                    Navigator.of(ctx).pop();
-                  } else {
-                    setDialogState(() {
-                      validationError =
-                          'Đường dẫn không hợp lệ. Vui lòng nhập link dạng meet.google.com/xxx-yyyy-zzz';
-                    });
-                  }
-                },
-                style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
-                child: const Text('Xác nhận link'),
-              ),
-            ],
           );
         },
       ),
@@ -334,47 +451,135 @@ class _ClassroomLobbyScreenState extends State<ClassroomLobbyScreen> {
   void _enterTeachingStudio() {
     if (_currentMeetingUrl == null ||
         !isRealGoogleMeetUrl(_currentMeetingUrl)) {
-      showDialog<void>(
+      showAppModalDialog<void>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadii.panel),
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
           ),
-          title: const Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-              SizedBox(width: 8),
-              Text(
-                'Chưa có link Google Meet',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Bạn có thể vào dạy ngoại tuyến hoặc để ứng dụng tự động tạo một phòng Google Meet mới.',
-            style: TextStyle(fontSize: 13, color: AppColors.slate700),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _proceedToStudio(meetingUrl: null);
-              },
-              child: const Text(
-                'Vào dạy ngoại tuyến',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
+          child: Container(
+            width: 480,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadii.panel),
+              border: Border.all(color: AppColors.border, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.slate900.withValues(alpha: 0.12),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _handleGenerateNewMeetRoom();
-              },
-              icon: const Icon(Icons.video_call_rounded, size: 16),
-              label: const Text('Tự động tạo phòng Meet'),
-              style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.warningSurface,
+                        borderRadius: BorderRadius.circular(
+                          AppRadii.control,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          color: AppColors.warning,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Chưa có link Google Meet',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: AppColors.textMuted,
+                      ),
+                      tooltip: 'Đóng',
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Bạn có thể vào dạy ngoại tuyến hoặc để ứng dụng tự động tạo một phòng Google Meet mới.',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _proceedToStudio(meetingUrl: null);
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.textMuted,
+                      ),
+                      child: const Text('Vào dạy ngoại tuyến'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _handleGenerateNewMeetRoom();
+                      },
+                      icon: const Icon(
+                        Icons.video_call_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Tự động tạo phòng Meet',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppRadii.control,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
       return;

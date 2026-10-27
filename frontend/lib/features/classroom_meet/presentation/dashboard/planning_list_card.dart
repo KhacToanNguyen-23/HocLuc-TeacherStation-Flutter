@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/planning_meta.dart';
 import 'dashboard_empty_card.dart';
@@ -68,11 +68,113 @@ class PlanningListCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.panel),
           border: Border.all(color: AppColors.surfaceBorder),
         ),
-        child: const Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 3,
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Skeleton Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Kế hoạch bài giảng',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 48,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceSoft,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 96,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSoft,
+                    borderRadius: BorderRadius.circular(AppRadii.control),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Skeleton List Items
+            Expanded(
+              child: ListView.separated(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 4,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (_, _) => Container(
+                  height: 60,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSoft,
+                    borderRadius: BorderRadius.circular(AppRadii.control),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.skeletonHighlight,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 140,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: AppColors.skeletonHighlight,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              width: 80,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: AppColors.skeletonHighlight,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: const BoxDecoration(
+                          color: AppColors.skeletonHighlight,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -99,6 +201,7 @@ class PlanningListCard extends StatelessWidget {
               style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -198,6 +301,7 @@ class PlanningListCard extends StatelessWidget {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shadowColor: AppColors.primary.withValues(alpha: 0.3),
