@@ -60,7 +60,7 @@ class TutorController extends ChangeNotifier {
     _invalidate(value ? 'Đang theo dõi câu hỏi mới.' : 'Đã tạm dừng.');
     if (value && prepareObservation != null) {
       starting = true;
-      status = 'Đang lấy mốc chat hiện tại…';
+      status = 'Đang tự mở chat Meet và chờ lịch sử tải xong…';
       notifyListeners();
       unawaited(_prepare(_generation));
       return;

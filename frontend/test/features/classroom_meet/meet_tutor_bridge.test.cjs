@@ -6,12 +6,12 @@ const path = require('node:path');
 const script = fs.readFileSync(path.join(__dirname, '../../../lib/features/classroom_meet/services/meet_bridge_script.dart'), 'utf8').match(/r'''([\s\S]*?)'''/)[1];
 
 // Same node:vm pattern as the screen-share harness. No network or real Meet.
-function fixture({prepare = true} = {}) {
+function fixture({prepare = true, overflow = false, hiddenDirect = false, delayedMenu = false, delayedInput = false, chatLabel = 'In-call messages', menuLabel = 'More options', englishEditable = false, directExpanded = false, directPressed = false, menuExpanded = false} = {}) {
   let now = 1000, joined = true, inputPresent = true;
   const nodes = [], messages = [];
   let mutations;
   const intervals = [];
-  let chatClicks = 0, peopleClicks = 0;
+  let chatClicks = 0, peopleClicks = 0, menuClicks = 0, hiddenClicks = 0, menuOpen = menuExpanded && !delayedMenu;
   const node = (attrs = {}, text = '') => ({
     attrs, innerText: text, textContent: text, isConnected: true, getClientRects() { return [{}]; },
     getAttribute(k) { return this.attrs[k] ?? null; },
@@ -24,20 +24,28 @@ function fixture({prepare = true} = {}) {
     querySelector() { return null; },
   });
   let input = Object.assign(node(), {value: '', dispatchEvent() {}});
+  if (englishEditable) { input.isContentEditable = true; input.attrs['aria-label'] = 'Send a message'; }
   let clicks = 0;
   const send = Object.assign(node(), {click() { clicks++; input.value = ''; }});
   const leave = node();
+  const chatButton = Object.assign(node({'aria-label': chatLabel, 'aria-expanded': String(directExpanded), 'aria-pressed': String(directPressed)}), {click() { chatClicks++; if (!delayedInput) inputPresent = !inputPresent; }});
+  const hiddenChatButton = Object.assign(node({'aria-label': 'Chat with everyone'}), {getClientRects() { return []; }, click() { hiddenClicks++; }});
+  const menuButton = Object.assign(node({'aria-label': menuLabel, 'aria-expanded': String(menuExpanded)}), {click() { menuClicks++; if (!delayedMenu) menuOpen = !menuOpen; }});
   const context = vm.createContext({
     document: {body: {innerText: ''},
       querySelector(s) {
         if (s.startsWith('button[aria-label*="rời khỏi"')) return joined ? leave : null;
-        if (s.startsWith('textarea')) return inputPresent ? input : null;
+        if (s.startsWith('textarea')) return inputPresent && (!englishEditable || s.includes('[contenteditable="true"][aria-label*="message" i]')) ? input : null;
         if (s.startsWith('button[aria-label*="gửi"')) return send;
-        if (s.startsWith('button[aria-label*="trò chuyện"')) return {click() { chatClicks++; inputPresent = true; }};
-        if (s.startsWith('button[aria-label*="mọi người"')) return {click() { peopleClicks++; inputPresent = false; }};
+        if (s.startsWith('button[aria-label*="trò chuyện"')) return hiddenDirect ? hiddenChatButton : overflow ? null : chatButton;
+        if (s.startsWith('button[aria-label*="mọi người"')) return {click() { peopleClicks++; inputPresent = false; menuOpen = false; }};
         return null;
       },
-      querySelectorAll(s) { return s.startsWith('[data-message-text]') ? nodes : []; },
+      querySelectorAll(s) {
+        if (s.startsWith('[data-message-text]')) return nodes;
+        if (s.startsWith('button,')) return overflow ? [hiddenChatButton, menuButton, ...(menuOpen ? [chatButton] : [])] : [chatButton];
+        return [];
+      },
     },
     location: {href: 'https://meet.google.com/abc-defg-hij'},
     chrome: {webview: {postMessage(raw) { messages.push(JSON.parse(raw)); }}},
@@ -57,7 +65,9 @@ function fixture({prepare = true} = {}) {
   function tick(ms = 300) { now += ms; intervals.forEach(fn => fn()); }
   function ready(arg = command) { call('beginTutorObservation', arg); tick(); assert.equal(call('beginTutorObservation', arg).status, 'READY'); }
   if (prepare) ready();
-  return {context, input, send, nodes, messages, command, call, echo, ready, tick, chatClicks: () => chatClicks, peopleClicks: () => peopleClicks, mutations: () => mutations(), clicks: () => clicks++, count: () => clicks,
+  return {context, input, send, nodes, messages, command, call, echo, ready, tick, chatClicks: () => chatClicks, peopleClicks: () => peopleClicks,
+    panels: () => ({chatClicks, peopleClicks, menuClicks, hiddenClicks, menuOpen}), showMenu: () => {menuOpen = true;}, openInput: () => {inputPresent = true;},
+    mutations: () => mutations(), clicks: () => clicks++, count: () => clicks,
     leave: () => {joined = false;}, remountInput: () => { input = Object.assign(node(), {value: 'teacher draft', dispatchEvent() {}}); inputPresent = true; }, closeInput: () => {inputPresent = false;}, expire: () => {now += 1001;}};
 }
 
@@ -207,7 +217,7 @@ test('closed-chat lease polls remain pending until history is stable and never r
   assert.equal(f.peopleClicks(), 0);
 });
 
-test('active lease suppresses People panel and debounces missing-chat open attempts', () => {
+test('active lease opens once per recovery episode without toggling a slow chat shut', () => {
   const f = fixture();
   f.closeInput(); f.mutations();
   assert.equal(f.chatClicks(), 1);
@@ -216,6 +226,10 @@ test('active lease suppresses People panel and debounces missing-chat open attem
   assert.equal(f.chatClicks(), 1);
   assert.equal(f.peopleClicks(), 0);
   f.tick(1000);
+  assert.equal(f.chatClicks(), 1);
+  f.openInput(); f.mutations(); f.tick(260);
+  // Only a later observed close starts another opening transition.
+  f.closeInput(); f.mutations();
   assert.equal(f.chatClicks(), 2);
 });
 
@@ -350,4 +364,112 @@ test('fresh toggle tags every chat row with its lease and never replays old hist
   assert.equal(chats().length, count + 1);
   assert.equal(chats().at(-1).payload.observationId, 'toggle-two');
   assert.equal(chats().at(-1).payload.isTutorEligible, true);
+});
+
+test('periodic participant scans never close the teacher overflow menu while AI is off', () => {
+  const f = fixture({prepare: false});
+  f.showMenu(); f.tick(2000); f.tick(2000);
+  assert.equal(f.peopleClicks(), 0);
+  assert.equal(f.panels().menuOpen, true);
+  assert.equal(f.chatClicks(), 0);
+});
+
+test('English and Vietnamese overflow chat actions remain usable behind a hidden direct button', () => {
+  for (const chatLabel of ['In-call messages', 'Tin nhắn trong cuộc gọi']) {
+    const menuLabel = chatLabel === 'In-call messages' ? 'More options' : 'Tùy chọn khác';
+    const f = fixture({prepare: false, overflow: true, hiddenDirect: true, chatLabel, menuLabel}); f.closeInput();
+    const lease = {...f.command, observationId: 'overflow', expiresAt: 10000};
+    assert.equal(f.call('beginTutorObservation', lease).status, 'PENDING');
+    f.mutations(); f.mutations(); f.tick(300);
+    assert.equal(f.call('beginTutorObservation', lease).status, 'READY');
+    assert.equal(f.panels().menuClicks, 1);
+    assert.equal(f.panels().hiddenClicks, 0);
+    assert.equal(f.chatClicks(), 1);
+    assert.equal(f.peopleClicks(), 0);
+  }
+});
+
+test('delayed overflow and chat input never toggle an already requested panel shut', () => {
+  const f = fixture({prepare: false, overflow: true, delayedMenu: true, delayedInput: true}); f.closeInput();
+  const lease = {...f.command, observationId: 'slow-open', expiresAt: 10000};
+  f.call('beginTutorObservation', lease);
+  f.tick(1200); f.tick(1200);
+  assert.equal(f.panels().menuClicks, 1);
+  f.showMenu(); f.mutations();
+  assert.equal(f.chatClicks(), 1);
+  f.tick(1200); f.tick(1200);
+  assert.equal(f.chatClicks(), 1);
+  f.openInput(); f.mutations(); f.tick(300);
+  assert.equal(f.call('beginTutorObservation', lease).status, 'READY');
+});
+
+test('pause stops delayed overflow opening and a fresh lease can recover', () => {
+  const f = fixture({prepare: false, overflow: true, delayedMenu: true}); f.closeInput();
+  const ended = {...f.command, observationId: 'ended', expiresAt: 10000};
+  f.call('beginTutorObservation', ended);
+  assert.equal(f.panels().menuClicks, 1);
+  assert.equal(f.context.MeetBridge.endTutorObservation(ended), true);
+  f.showMenu(); f.tick(1500); f.mutations();
+  assert.equal(f.chatClicks(), 0);
+  assert.equal(f.call('beginTutorObservation', ended).status, 'NOT_READY');
+  const next = {...ended, observationId: 're-enabled'};
+  f.call('beginTutorObservation', next); f.mutations(); f.tick(300);
+  assert.equal(f.call('beginTutorObservation', next).status, 'READY');
+  assert.equal(f.chatClicks(), 1);
+  f.echo(false, 'after-re-enable', 'new question');
+  assert.equal(f.messages.at(-1).payload.observationId, 're-enabled');
+  assert.equal(f.messages.at(-1).payload.isTutorEligible, true);
+});
+
+test('English contenteditable chat retains teacher draft protection and sends only from an empty input', () => {
+  const f = fixture({englishEditable: true});
+  f.input.textContent = 'teacher draft';
+  assert.equal(f.call('sendTutor').status, 'INPUT_BUSY');
+  assert.equal(f.input.textContent, 'teacher draft');
+  assert.equal(f.count(), 0);
+  f.input.textContent = '';
+  assert.equal(f.call('sendTutor').status, 'PENDING');
+  assert.equal(f.count(), 1);
+});
+
+test('overflow opener does not click unrelated chat settings actions', () => {
+  const f = fixture({prepare: false, overflow: true, hiddenDirect: true, chatLabel: 'Chat settings'}); f.closeInput();
+  const lease = {...f.command, observationId: 'unrelated-action', expiresAt: 10000};
+  f.call('beginTutorObservation', lease); f.mutations(); f.tick(1200);
+  assert.equal(f.call('beginTutorObservation', lease).status, 'PENDING');
+  assert.equal(f.panels().menuClicks, 1);
+  assert.equal(f.chatClicks(), 0);
+  assert.equal(f.panels().hiddenClicks, 0);
+});
+
+test('already expanded or pressed chat waits for its delayed composer without clicking it closed', () => {
+  for (const state of [{directExpanded: true}, {directPressed: true}]) {
+    const f = fixture({prepare: false, delayedInput: true, ...state}); f.closeInput();
+    const lease = {...f.command, observationId: 'already-open', expiresAt: 10000};
+    f.call('beginTutorObservation', lease); f.tick(1500); f.mutations();
+    assert.equal(f.chatClicks(), 0);
+    f.openInput(); f.mutations(); f.tick(300);
+    assert.equal(f.call('beginTutorObservation', lease).status, 'READY');
+    assert.equal(f.chatClicks(), 0);
+  }
+});
+
+test('already expanded teacher overflow menu is not clicked shut while items load', () => {
+  const f = fixture({prepare: false, overflow: true, menuExpanded: true, delayedMenu: true}); f.closeInput();
+  const lease = {...f.command, observationId: 'teacher-menu', expiresAt: 10000};
+  f.call('beginTutorObservation', lease); f.tick(1500); f.mutations();
+  assert.equal(f.panels().menuClicks, 0);
+  assert.equal(f.chatClicks(), 0);
+  f.showMenu(); f.mutations(); f.mutations(); f.tick(300);
+  assert.equal(f.call('beginTutorObservation', lease).status, 'READY');
+  assert.equal(f.panels().menuClicks, 0);
+  assert.equal(f.chatClicks(), 1);
+});
+
+test('a visible close-chat or chat-settings button is never treated as an opener', () => {
+  for (const chatLabel of ['Close chat', 'Chat settings']) {
+    const f = fixture({prepare: false, chatLabel}); f.closeInput();
+    f.call('beginTutorObservation'); f.mutations(); f.tick(300);
+    assert.equal(f.chatClicks(), 0);
+  }
 });

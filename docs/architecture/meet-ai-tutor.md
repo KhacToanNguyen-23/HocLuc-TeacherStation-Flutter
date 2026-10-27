@@ -59,7 +59,7 @@ Tạm dừng, đổi phòng, thay API hoặc thay nội dung sẽ vô hiệu hó
 
 `POST /api/tutor/answer` nhận `{config,question,currentPage,lessonSubject,sources:[{id,label,text}]}` (`lessonSubject` tùy chọn để tương thích client cũ); trả `{status:"answered"|"tentative"|"out_of_scope"|"review",confidence:"high"|"low"|"unavailable",answer,sources:[{id,quote}],reason}`. `review` được frontend đổi thành thông báo chat an toàn, không phải yêu cầu phê duyệt. Provider thêm `scope:"in_scope"|"out_of_scope"|"unknown"` vào `{answer,sources,confidence}`. Config được chụp riêng cho mỗi request, không ghi lại phía backend. Dùng companion token hiện có, kiểm tra socket/Host/Origin riêng cho tutor; không trả body lỗi nhà cung cấp.
 
-Frontend nằm trong `features/meet_tutor`, backend trong `modules/tutor`. `StudioInspectorPanel` sở hữu vòng đời controller và collector, giữ chúng khi đổi tab, hủy listener và công việc khi đóng inspector. Không thay đổi hệ plugin.
+Frontend nằm trong `features/meet_tutor`, backend trong `modules/tutor`. `StudioScreen` sở hữu `StudioTutorSession` (controller và collector); inspector dùng chung controller đó. Đóng inspector không dừng AI; rời màn giảng dạy sẽ hủy session và các công việc đang chờ. Không thay đổi hệ plugin.
 
 ## Phạm vi kiểm chứng
 
@@ -71,6 +71,8 @@ For newly provisioned Gemini accounts tested on 2026-10-26, `gemini-2.5-flash-li
 
 ### Bật AI và đọc ngầm, không chiếm màn hình bảng
 
-Handshake tự mở chat, đợi lịch sử ổn định và thử lại có giới hạn trong cùng một lần bật. Khi AI bật, vòng quét People không được giành panel khỏi chat. Nếu DOM input chat remount, agent tự mở lại và giữ các tin mới chờ đến khi quan sát sẵn sàng; không phát lại ID cũ. Tắt AI hủy cả đọc ngầm và chuẩn bị đang chờ; các lệnh begin/end cũ được chặn bằng lease và hạn thực thi. Nếu chưa vào được Meet hoặc không thể chuẩn bị chat, toggle không giả vờ bật và hiển thị thông báo ngay trên màn hình; không yêu cầu giáo viên mở chat thủ công.
+Toggle AI giữ nguyên trên thanh đầu của Studio và đồng bộ với phần Trợ giảng AI trong Cài đặt; cấu hình provider tiếp tục lấy từ backend `.env`, không có form nhập key/model trong app. Handshake tự mở chat qua nút trực tiếp hoặc mục chat trong menu tùy chọn tiếng Việt/Anh, đợi lịch sử ổn định và thăm dò có giới hạn trong cùng một lần bật. Nút ẩn/disabled không được chọn; mỗi đợt mở chỉ bấm nút/menu một lần để tránh đóng lại panel đang tải. Polling People chỉ đọc danh sách, không ép mở panel cả khi AI bật lẫn tắt; các lệnh quản lý người tham gia chủ động vẫn giữ nguyên.
+
+Nếu DOM input chat remount, agent tự mở lại và giữ các tin mới chờ đến khi quan sát sẵn sàng; không phát lại ID cũ. Tắt AI hủy cả đọc ngầm và chuẩn bị đang chờ; các lệnh begin/end cũ được chặn bằng lease và hạn thực thi. Nếu chưa vào được Meet hoặc không thể chuẩn bị chat, toggle không giả vờ bật và hiển thị thông báo ngay trên màn hình; không yêu cầu giáo viên mở chat thủ công. Mốc lịch sử ổn định vẫn là heuristic DOM, không phải tín hiệu Google cam kết đã tải toàn bộ lịch sử.
 
 Đây vẫn là DOM automation trên WebView2, không phải Google Meet Chat API. Native controller, page, subscription và bridge thuộc service, sống độc lập với widget panel. Không tạo controller hoặc phiên đăng nhập thứ hai; không gắn một WebView nền kích thước nhỏ cạnh một WebView đang hiển thị. Kiểm tra trên Meet thật vẫn cần xác nhận ngoài các test DOM và service giả lập.

@@ -115,7 +115,7 @@ class MeetBridgeScript {
   var tutorAttempt = null;
   var uncertainTutorTexts = new Set();
   function chatInput() {
-    var input = document.querySelector('textarea[name="chatTextInput"], textarea[aria-label*="tin nhắn" i], textarea[aria-label*="message" i], [contenteditable="true"][aria-label*="tin nhắn" i]');
+    var input = document.querySelector('textarea[name="chatTextInput"], textarea[aria-label*="tin nhắn" i], textarea[aria-label*="message" i], [contenteditable="true"][aria-label*="tin nhắn" i], [contenteditable="true"][aria-label*="message" i]');
     return input && input.isConnected && input.getClientRects().length ? input : null;
   }
   var tutorObservationWanted = false;
@@ -125,7 +125,7 @@ class MeetBridgeScript {
   var tutorStableInput = null;
   var tutorStableSignature = null;
   var tutorStableSince = 0;
-  var tutorLastOpen = -Infinity;
+  var tutorOpening = null;
   var tutorDeferredRows = new Map();
   // Recent cancelled leases block commands that arrive out of order. Expiry
   // rejects old transport commands even after their tombstone is evicted.
@@ -134,6 +134,40 @@ class MeetBridgeScript {
     tutorObservationReady = ready;
     sendToFlutter('TUTOR_OBSERVATION_STATE', {observationId: tutorObservationId, ready: ready});
   }
+  function visibleTutorAction(node) {
+    return node && node.isConnected && node.getClientRects().length &&
+      !node.disabled && node.getAttribute('aria-disabled') !== 'true';
+  }
+  function namedTutorAction(pattern) {
+    return Array.from(document.querySelectorAll('button, [role="button"], [role="menuitem"]')).find(function(node) {
+      var label = (node.getAttribute('aria-label') || node.innerText || node.textContent || '').trim();
+      return visibleTutorAction(node) && pattern.test(label);
+    });
+  }
+  function expandedTutorAction(node) {
+    return node.getAttribute('aria-expanded') === 'true' || node.getAttribute('aria-pressed') === 'true';
+  }
+  function openTutorChat() {
+    if (!tutorOpening) tutorOpening = {menuClicked: false, chatClicked: false};
+    if (tutorOpening.chatClicked) return;
+    var direct = document.querySelector('button[aria-label*="trò chuyện" i], button[aria-label*="chat" i]');
+    var chatName = /^(?:chat|trò chuyện|in-call messages|chat with everyone|send a message to everyone|tin nhắn trong cuộc gọi|trò chuyện với mọi người|gửi tin nhắn cho mọi người)(?:\s*\([^)]*\))?$/i;
+    var action = visibleTutorAction(direct) && chatName.test((direct.getAttribute('aria-label') || '').trim()) ? direct : namedTutorAction(chatName);
+    if (action) {
+      tutorOpening.chatClicked = true;
+      if (!expandedTutorAction(action)) action.click();
+      return;
+    }
+    if (!tutorOpening.menuClicked) {
+      var menu = namedTutorAction(/^(?:more options|tùy chọn khác|tuỳ chọn khác|các tùy chọn khác|thêm tùy chọn)(?:\s*\([^)]*\))?$/i);
+      if (menu) {
+        // Record the transition before clicking: its DOM mutations can reenter
+        // observation. Never toggle the menu again while its contents load.
+        tutorOpening.menuClicked = true;
+        if (!expandedTutorAction(menu)) menu.click();
+      }
+    }
+  }
   function maintainTutorObservation() {
     if (!tutorObservationWanted) return;
     var input = tutorContext(tutorObservationCommand) ? chatInput() : null;
@@ -141,15 +175,12 @@ class MeetBridgeScript {
     if (!input) {
       tutorStableInput = null;
       tutorStableSignature = null;
-      if (tutorContext(tutorObservationCommand) && Date.now() - tutorLastOpen >= 1000) {
-        var button = document.querySelector('button[aria-label*="trò chuyện" i], button[aria-label*="chat" i]');
-        if (button && !button.disabled) {
-          tutorLastOpen = Date.now();
-          button.click();
-        }
-      }
+      if (tutorContext(tutorObservationCommand)) openTutorChat();
       return;
     }
+    // A later close/remount starts a new recovery episode. Within each episode
+    // an opening click is issued once, even if Meet renders the input slowly.
+    tutorOpening = null;
     if (tutorObservationReady) return;
     var signature = JSON.stringify(chatNodes().map(function(node) {
       return [messageId(node), node.getAttribute('data-message-text') || node.innerText || ''];
@@ -182,6 +213,7 @@ class MeetBridgeScript {
       tutorInitialBaseline = false;
       tutorStableInput = null;
       tutorStableSignature = null;
+      tutorOpening = null;
       tutorDeferredRows.clear();
       observationState(false);
     }
@@ -203,6 +235,7 @@ class MeetBridgeScript {
     tutorDeferredRows.clear();
     tutorStableInput = null;
     tutorObservedInput = null;
+    tutorOpening = null;
     observationState(false);
     return true;
   }
@@ -314,21 +347,6 @@ class MeetBridgeScript {
     });
   }
 
-  function ensurePeoplePanelOpen() {
-    if (tutorObservationWanted) return;
-    var inCall = document.querySelector('button[aria-label*="rời khỏi" i], button[aria-label*="leave call" i]');
-    if (!inCall) return;
-
-    var panel = document.querySelector('[aria-label*="mọi người" i][role="tabpanel"], div[jsname="AznF2e"], [data-tab-id="1"]');
-    var isPanelVisible = panel && panel.offsetParent !== null;
-    if (!isPanelVisible) {
-      var peopleBtn = document.querySelector('button[aria-label*="mọi người" i], button[aria-label*="people" i], button[data-panel-id="1"]');
-      if (peopleBtn && !peopleBtn.disabled) {
-        peopleBtn.click();
-      }
-    }
-  }
-
   var lastParticipantsKey = '';
   function scanParticipants() {
     var nodes = Array.from(document.querySelectorAll('[data-participant-id]'));
@@ -395,7 +413,7 @@ class MeetBridgeScript {
   }, 1000);
 
   setInterval(function() {
-    ensurePeoplePanelOpen();
+    // Participant polling is read-only and must not close chat or teacher menus.
     scanParticipants();
     scanHandsAndKnocks();
   }, 1000);
