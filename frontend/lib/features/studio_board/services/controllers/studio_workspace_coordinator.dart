@@ -53,11 +53,13 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
     _boardUndoSequence[stroke] = ++pdf.smartPenManager.historySequence;
     canvas.clearRedo();
     pdf.smartPenManager.smartPenRedo[pdf.historyKey]?.clear();
+    pdf.clearAnnotationRedo();
   }
 
   void recordPdfAction(List<BoardStroke> target) {
     canvas.clearRedo();
     pdf.smartPenManager.smartPenRedo[pdf.historyKey]?.clear();
+    pdf.clearAnnotationRedo();
   }
 
   final LocalService service;

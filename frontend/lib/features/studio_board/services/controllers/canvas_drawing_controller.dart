@@ -50,6 +50,7 @@ class CanvasDrawingController extends ChangeNotifier {
   double strokeWidth = 3.5;
   double highlighterWidth = 20.0;
   double eraserRadius = 0.04;
+
   /// Laser pointer position, published through its own [ValueNotifier] so that
   /// per-pointer-move updates repaint only the laser layer and never notify the
   /// aggregate controller listeners (which would rebuild the whole screen).
@@ -126,23 +127,52 @@ class CanvasDrawingController extends ChangeNotifier {
 
   void deletePage(int index) {
     if (index < 0 || index >= pages.length) return;
-    if (pages.length <= 1) {
+    if (pages.length == 1) {
       pages[0].clear();
+      _redoStacks.clear();
+      pageStickers.clear();
+      pageChalkAnnotations.clear();
+      pageTitles[0] = 'Khám phá bài học';
+      pageNotes[0] = '';
+      _page = 0;
       notifyListeners();
       return;
     }
     pages.removeAt(index);
     if (index < pageTitles.length) pageTitles.removeAt(index);
     if (index < pageNotes.length) pageNotes.removeAt(index);
-    if (_page >= pages.length) {
-      _page = pages.length - 1;
+    _reindexPages(_redoStacks, index);
+    _reindexPages(pageStickers, index);
+    _reindexPages(pageChalkAnnotations, index);
+    for (final entry in pageChalkAnnotations.entries) {
+      for (var i = 0; i < entry.value.length; i++) {
+        entry.value[i] = entry.value[i].copyWith(pageIndex: entry.key);
+      }
     }
+    if (_page > index) _page--;
+    if (_page >= pages.length) _page = pages.length - 1;
     notifyListeners();
+  }
+
+  void _reindexPages<T>(Map<int, List<T>> items, int removed) {
+    final kept = items.entries
+        .where((entry) => entry.key != removed)
+        .map(
+          (entry) => MapEntry(
+            entry.key > removed ? entry.key - 1 : entry.key,
+            entry.value,
+          ),
+        )
+        .toList();
+    items
+      ..clear()
+      ..addEntries(kept);
   }
 
   void renamePage(int index, String newTitle) {
     if (index >= 0 && index < pageTitles.length) {
-      pageTitles[index] = newTitle;
+      final trimmed = newTitle.trim();
+      pageTitles[index] = trimmed.isEmpty ? 'Trang ${index + 1}' : trimmed;
       notifyListeners();
     }
   }
@@ -297,6 +327,15 @@ class CanvasDrawingController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateSticker(BoardSticker updated) {
+    final list = currentStickers;
+    final idx = list.indexWhere((s) => s.id == updated.id);
+    if (idx != -1) {
+      list[idx] = updated;
+      notifyListeners();
+    }
+  }
+
   void removeSticker(String id) {
     final list = currentStickers;
     final idx = list.indexWhere((s) => s.id == id);
@@ -311,6 +350,36 @@ class CanvasDrawingController extends ChangeNotifier {
     final idx = list.indexWhere((s) => s.id == id);
     if (idx != -1) {
       list[idx].normalizedRect = newRect;
+      notifyListeners();
+    }
+  }
+
+  void updateStickerRotation(String id, double rotation) {
+    final list = currentStickers;
+    final idx = list.indexWhere((s) => s.id == id);
+    if (idx != -1) {
+      list[idx] = list[idx].copyWith(rotation: rotation);
+      notifyListeners();
+    }
+  }
+
+  void duplicateSticker(String id) {
+    final list = currentStickers;
+    final idx = list.indexWhere((s) => s.id == id);
+    if (idx != -1) {
+      final orig = list[idx];
+      final r = orig.normalizedRect;
+      final offsetRect = Rect.fromLTWH(
+        (r.left + 0.03).clamp(0.0, 0.9),
+        (r.top + 0.03).clamp(0.0, 0.9),
+        r.width,
+        r.height,
+      );
+      final copy = orig.copyWith(
+        id: 'sticker-${DateTime.now().millisecondsSinceEpoch}',
+        normalizedRect: offsetRect,
+      );
+      list.add(copy);
       notifyListeners();
     }
   }
@@ -472,7 +541,10 @@ class CanvasDrawingController extends ChangeNotifier {
       final rawTokens = rawList
           ?.map((item) => Map<String, dynamic>.from(item as Map))
           .toList();
-      if (text == null || text.isEmpty || rawTokens == null || rawTokens.isEmpty) {
+      if (text == null ||
+          text.isEmpty ||
+          rawTokens == null ||
+          rawTokens.isEmpty) {
         return;
       }
 

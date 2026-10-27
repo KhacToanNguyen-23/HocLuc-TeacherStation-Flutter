@@ -43,6 +43,43 @@ class _PdfAnnotationHistoryEntry {
 /// Host storage for plugin-provided closed paths. Geometry and style belong to
 /// the plugin; the Host provides group replacement, persistence and undo.
 extension StudioStatePluginAnnotationsExt on StudioState {
+  void undo() {
+    final pdfAnnotationSequence = pdf.annotationUndoSequence;
+    final pluginAnnotationSequence =
+        _pdfAnnotationUndo[_pdfAnnotationHistoryKey]?.last.sequence ?? -1;
+    if (pdf.canUndoAnnotation &&
+        pdfAnnotationSequence > coordinator.undoSequence &&
+        pdfAnnotationSequence > pluginAnnotationSequence) {
+      pdf.undoAnnotation();
+      dirty = true;
+      _revision++;
+      notifyListeners();
+    } else if (!_undoPluginAnnotation()) {
+      coordinator.undo();
+    }
+  }
+
+  void redo() {
+    final pdfAnnotationSequence = pdf.annotationRedoSequence;
+    final pluginAnnotationSequence =
+        _pdfAnnotationRedo[_pdfAnnotationHistoryKey]?.last.redoSequence ?? -1;
+    if (pdf.canRedoAnnotation &&
+        pdfAnnotationSequence > coordinator.redoSequence &&
+        pdfAnnotationSequence > pluginAnnotationSequence) {
+      pdf.redoAnnotation();
+      dirty = true;
+      _revision++;
+      notifyListeners();
+    } else if (!_redoPluginAnnotation()) {
+      coordinator.redo();
+    }
+  }
+
+  bool get canUndo =>
+      pdf.canUndoAnnotation || _canUndoPluginAnnotation || coordinator.canUndo;
+  bool get canRedo =>
+      pdf.canRedoAnnotation || _canRedoPluginAnnotation || coordinator.canRedo;
+
   void togglePluginPdfAnnotation({
     required int pageNumber,
     required BoardStroke annotation,

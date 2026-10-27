@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -6,10 +7,26 @@ import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_storage_service.dart';
+import 'package:teaching_companion/features/studio_board/services/controllers/pdf_smart_pen_controller.dart';
 
 class _MockBuildContext implements BuildContext {
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _DelayedAnnotationStorage extends PdfAnnotationStorageService {
+  _DelayedAnnotationStorage(this.loads);
+
+  final Map<String, Completer<PdfAnnotationLayerData?>> loads;
+
+  @override
+  Future<PdfAnnotationLayerData?> loadAnnotations({
+    String? filePath,
+    Uint8List? bytes,
+    String? documentId,
+  }) => loads
+      .putIfAbsent(filePath!, Completer<PdfAnnotationLayerData?>.new)
+      .future;
 }
 
 void main() {
@@ -46,6 +63,75 @@ void main() {
   }
 
   group('A. Non-Destructive Protection & Source PDF Integrity', () {
+    test(
+      'undo and redo follow the order of PDF highlights and board strokes',
+      () {
+        final studio = StudioState()..loading = false;
+        addTearDown(studio.dispose);
+        studio.setPdfFile('history-order.pdf', Uint8List.fromList([8, 4, 2]));
+
+        final highlight = BoardStroke(
+          const Color(0xff22c55e),
+          20,
+          const [Offset(0.1, 0.1), Offset(0.3, 0.1)],
+          rect: const Rect.fromLTWH(0.1, 0.1, 0.2, 0.05),
+          category: 'vocabulary',
+        );
+        studio.pdfAnnotations.putIfAbsent(1, () => []).add(highlight);
+        studio.pdf.recordAnnotationAdded(1, highlight);
+        studio.startStroke(const Offset(0.4, 0.4));
+        final boardStroke = studio.strokes.single;
+
+        studio.undo();
+        expect(studio.strokes, isEmpty);
+        expect(studio.pdfAnnotations[1], contains(highlight));
+
+        studio.redo();
+        expect(studio.strokes, contains(boardStroke));
+        studio.undo();
+        studio.undo();
+        expect(studio.pdfAnnotations[1], isEmpty);
+
+        studio.redo();
+        expect(studio.pdfAnnotations[1], contains(highlight));
+        studio.redo();
+        expect(studio.strokes, contains(boardStroke));
+      },
+    );
+
+    test(
+      'late annotation restore is discarded after switching documents',
+      () async {
+        final loads = <String, Completer<PdfAnnotationLayerData?>>{};
+        final controller = PdfSmartPenController(
+          storageServiceFactory: () => _DelayedAnnotationStorage(loads),
+        );
+        addTearDown(controller.dispose);
+        controller.setPdfFile('document-a.pdf', Uint8List.fromList([1, 1, 1]));
+        await Future<void>.delayed(Duration.zero);
+        controller.setPdfFile('document-b.pdf', Uint8List.fromList([2, 2, 2]));
+
+        final staleStroke = BoardStroke(const Color(0xffef4444), 4, const [
+          Offset(0.2, 0.2),
+          Offset(0.3, 0.3),
+        ]);
+        loads['document-a.pdf']!.complete(
+          PdfAnnotationLayerData(
+            documentId: 'document-a',
+            annotations: {
+              1: [staleStroke],
+            },
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(controller.pdfAnnotations, isEmpty);
+
+        loads['document-b.pdf']!.complete(null);
+        await Future<void>.delayed(Duration.zero);
+        expect(controller.pdfAnnotations, isEmpty);
+      },
+    );
+
     test(
       'applyHighlightDirectlyToPdf does NOT overwrite the original PDF file on disk',
       () async {

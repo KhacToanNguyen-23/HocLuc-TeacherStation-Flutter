@@ -12,7 +12,11 @@ import 'smart_pen_answer_manager.dart';
 /// Single-responsibility controller managing PDF document state,
 /// page navigation, per-page annotations, window geometry, and Smart Pen oval snapping.
 class PdfSmartPenController extends ChangeNotifier {
-  PdfSmartPenController({VoidCallback? onMarkDirty}) {
+  PdfSmartPenController({
+    VoidCallback? onMarkDirty,
+    PdfAnnotationStorageService Function()? storageServiceFactory,
+  }) : _storageServiceFactory =
+           storageServiceFactory ?? PdfAnnotationStorageService.new {
     smartPenManager = SmartPenAnswerManager(
       getPdfAnnotations: () => pdfAnnotations,
       getHistoryKey: () => _historyKey,
@@ -22,6 +26,10 @@ class PdfSmartPenController extends ChangeNotifier {
   }
 
   late final SmartPenAnswerManager smartPenManager;
+  final PdfAnnotationStorageService Function() _storageServiceFactory;
+  int _documentGeneration = 0;
+
+  PdfAnnotationStorageService _newStorageService() => _storageServiceFactory();
 
   VoidCallback? get onMarkDirty => smartPenManager.onMarkDirty;
   set onMarkDirty(VoidCallback? cb) => smartPenManager.onMarkDirty = cb;
@@ -159,6 +167,19 @@ class PdfSmartPenController extends ChangeNotifier {
 
   bool get canUndoAnnotation => _annotationUndoStack.isNotEmpty;
   bool get canRedoAnnotation => _annotationRedoStack.isNotEmpty;
+  int get annotationUndoSequence =>
+      _annotationUndoStack.isEmpty ? -1 : _annotationUndoStack.last.sequence;
+  int get annotationRedoSequence => _annotationRedoStack.isEmpty
+      ? -1
+      : _annotationRedoStack.last.redoSequence;
+
+  void clearAnnotationRedo() => _annotationRedoStack.clear();
+
+  void _pushAnnotationUndo(_PdfAnnotationHistoryItem item) {
+    item.sequence = ++smartPenManager.historySequence;
+    _annotationUndoStack.add(item);
+    _annotationRedoStack.clear();
+  }
 
   void setPdfHighlightsVisible(bool val) {
     if (pdfHighlightsVisible != val) {
@@ -181,7 +202,7 @@ class PdfSmartPenController extends ChangeNotifier {
         final removed = strokes.where((s) => s.category != null).toList();
         if (removed.isNotEmpty) {
           strokes.removeWhere((s) => s.category != null);
-          _annotationUndoStack.add(
+          _pushAnnotationUndo(
             _PdfAnnotationHistoryItem(
               pageNumber: pageNumber,
               clearedStrokes: removed,
@@ -199,7 +220,7 @@ class PdfSmartPenController extends ChangeNotifier {
         final removed = entry.value.where((s) => s.category != null).toList();
         if (removed.isNotEmpty) {
           entry.value.removeWhere((s) => s.category != null);
-          _annotationUndoStack.add(
+          _pushAnnotationUndo(
             _PdfAnnotationHistoryItem(
               pageNumber: entry.key,
               clearedStrokes: removed,
@@ -210,7 +231,6 @@ class PdfSmartPenController extends ChangeNotifier {
         }
       }
       if (anyRemoved) {
-        _annotationRedoStack.clear();
         savePersistentAnnotations();
         notifyListeners();
       }
@@ -218,19 +238,18 @@ class PdfSmartPenController extends ChangeNotifier {
   }
 
   void recordAnnotationAdded(int page, BoardStroke stroke) {
-    _annotationUndoStack.add(
+    _pushAnnotationUndo(
       _PdfAnnotationHistoryItem(
         pageNumber: page,
         stroke: stroke,
         isDeletion: false,
       ),
     );
-    _annotationRedoStack.clear();
     savePersistentAnnotations();
   }
 
   void recordAnnotationRemoved(int page, BoardStroke stroke, int index) {
-    _annotationUndoStack.add(
+    _pushAnnotationUndo(
       _PdfAnnotationHistoryItem(
         pageNumber: page,
         stroke: stroke,
@@ -238,7 +257,6 @@ class PdfSmartPenController extends ChangeNotifier {
         isDeletion: true,
       ),
     );
-    _annotationRedoStack.clear();
     savePersistentAnnotations();
   }
 
@@ -258,6 +276,7 @@ class PdfSmartPenController extends ChangeNotifier {
       final list = pdfAnnotations[entry.pageNumber];
       list?.remove(entry.stroke);
     }
+    entry.redoSequence = ++smartPenManager.historySequence;
     _annotationRedoStack.add(entry);
     savePersistentAnnotations();
     notifyListeners();
@@ -277,6 +296,7 @@ class PdfSmartPenController extends ChangeNotifier {
       final list = pdfAnnotations.putIfAbsent(entry.pageNumber, () => []);
       list.add(entry.stroke!);
     }
+    entry.sequence = ++smartPenManager.historySequence;
     _annotationUndoStack.add(entry);
     savePersistentAnnotations();
     notifyListeners();
@@ -285,7 +305,7 @@ class PdfSmartPenController extends ChangeNotifier {
 
   Future<void> savePersistentAnnotations() async {
     try {
-      final storage = PdfAnnotationStorageService();
+      final storage = _newStorageService();
       final docId = await storage.computeDocumentId(
         filePath: pdfFilePath,
         bytes: pdfBytes,
@@ -301,12 +321,22 @@ class PdfSmartPenController extends ChangeNotifier {
 
   Future<void> restorePersistentAnnotations() async {
     if (pdfFilePath == null && pdfBytes == null) return;
+    final generation = _documentGeneration;
+    final documentId = activeDocId;
+    final filePath = pdfFilePath;
+    final bytes = pdfBytes;
     try {
-      final storage = PdfAnnotationStorageService();
+      final storage = _newStorageService();
       final layer = await storage.loadAnnotations(
-        filePath: pdfFilePath,
-        bytes: pdfBytes,
+        filePath: filePath,
+        bytes: bytes,
       );
+      if (generation != _documentGeneration ||
+          documentId != activeDocId ||
+          filePath != pdfFilePath ||
+          !identical(bytes, pdfBytes)) {
+        return;
+      }
       if (layer != null && layer.annotations.isNotEmpty) {
         for (final entry in layer.annotations.entries) {
           final targetList = pdfAnnotations.putIfAbsent(entry.key, () => []);
@@ -366,6 +396,7 @@ class PdfSmartPenController extends ChangeNotifier {
   }
 
   void setPdfFile(String? path, [Uint8List? bytes]) {
+    _documentGeneration++;
     final replacedDocumentId = _historyKey;
     smartPenManager.clearTemporaryAnswers(documentId: replacedDocumentId);
 
@@ -525,6 +556,7 @@ class PdfSmartPenController extends ChangeNotifier {
       activeDoc!.totalPages = _pdfTotalPages;
     }
 
+    _documentGeneration++;
     activeDocId = id;
     pdfFilePath = doc.path;
     pdfBytes = doc.bytes;
@@ -553,6 +585,7 @@ class PdfSmartPenController extends ChangeNotifier {
   }
 
   void closePdf() {
+    _documentGeneration++;
     pdfFilePath = null;
     pdfBytes = null;
     activeDocId = null;
@@ -565,6 +598,7 @@ class PdfSmartPenController extends ChangeNotifier {
   }
 
   void updatePdfBytesInPlace(Uint8List newBytes) {
+    _documentGeneration++;
     final replacedDocumentId = _historyKey;
     smartPenManager.clearTemporaryAnswers(documentId: replacedDocumentId);
     pdfBytes = newBytes;
@@ -819,4 +853,6 @@ class _PdfAnnotationHistoryItem {
   final bool isDeletion;
   final bool isClear;
   final List<BoardStroke>? clearedStrokes;
+  int sequence = 0;
+  int redoSequence = 0;
 }
