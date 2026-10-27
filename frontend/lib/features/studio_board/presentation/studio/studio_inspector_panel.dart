@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/classroom_meet/services/google_meet_auth_service.dart';
@@ -6,6 +6,8 @@ import 'package:teaching_companion/features/classroom_meet/services/meet_automat
 import 'studio_meet_cockpit_tab.dart';
 import 'studio_notes_settings_tab.dart';
 import 'package:teaching_companion/core/ui/google_brand_icon.dart';
+import '../../../meet_tutor/services/studio_tutor_session.dart';
+import '../../../meet_tutor/services/tutor_controller.dart';
 
 class StudioInspectorPanel extends StatefulWidget {
   const StudioInspectorPanel({
@@ -15,9 +17,15 @@ class StudioInspectorPanel extends StatefulWidget {
     required this.questionController,
     required this.endpointController,
     required this.onPreview,
+    this.tutor,
+    this.initialTab = 0,
+    this.tabRequest = 0,
   });
 
   final StudioState studio;
+  final TutorController? tutor;
+  final int initialTab;
+  final int tabRequest;
   final TextEditingController notesController;
   final TextEditingController questionController;
   final TextEditingController endpointController;
@@ -31,6 +39,44 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
   int _selectedTab = 0;
   final MeetAutomationService _meetService = MeetAutomationService();
   final GoogleMeetAuthService _authService = GoogleMeetAuthService();
+  StudioTutorSession? _ownedSession;
+  late TutorController _tutor;
+
+  void _bindTutor() {
+    _ownedSession?.dispose();
+    _ownedSession = widget.tutor == null
+        ? StudioTutorSession(widget.studio, meet: _meetService)
+        : null;
+    _tutor = widget.tutor ?? _ownedSession!.controller;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTab = widget.initialTab.clamp(0, 2);
+    _bindTutor();
+    _meetService.showSharingPanel(_selectedTab == 1);
+  }
+
+  @override
+  void didUpdateWidget(covariant StudioInspectorPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tutor != widget.tutor || oldWidget.studio != widget.studio) {
+      _bindTutor();
+    }
+    if (oldWidget.initialTab != widget.initialTab ||
+        oldWidget.tabRequest != widget.tabRequest) {
+      _selectedTab = widget.initialTab.clamp(0, 2);
+      _meetService.showSharingPanel(_selectedTab == 1);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ownedSession?.dispose();
+    _meetService.showSharingPanel(false);
+    super.dispose();
+  }
 
   Widget _buildTabBar() {
     return ListenableBuilder(
@@ -50,7 +96,7 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                 Expanded(
                   child: _buildTab(
                     index: 0,
-                    label: 'Trực tiếp',
+                    label: 'Meet',
                     icon: const GoogleBrandIcon(size: 14),
                     live: isLive,
                   ),
@@ -58,7 +104,14 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
                 Expanded(
                   child: _buildTab(
                     index: 1,
-                    label: 'Thiết bị & Cài đặt',
+                    label: 'Chia sẻ',
+                    icon: const Icon(Icons.screen_share_outlined, size: 14),
+                  ),
+                ),
+                Expanded(
+                  child: _buildTab(
+                    index: 2,
+                    label: 'Cài đặt',
                     icon: const Icon(Icons.settings_outlined, size: 14),
                   ),
                 ),
@@ -81,7 +134,10 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
       button: true,
       selected: selected,
       child: InkWell(
-        onTap: () => setState(() => _selectedTab = index),
+        onTap: () {
+          setState(() => _selectedTab = index);
+          _meetService.showSharingPanel(index == 1);
+        },
         borderRadius: BorderRadius.circular(AppRadii.control),
         child: AnimatedContainer(
           duration: AppMotion.duration(context, milliseconds: 170),
@@ -156,40 +212,26 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
 
           // Tab Content
           Expanded(
-            child: AnimatedSwitcher(
-              duration: AppMotion.duration(context, milliseconds: 190),
-              switchInCurve: AppMotion.enterCurve,
-              switchOutCurve: AppMotion.exitCurve,
-              transitionBuilder: (child, animation) {
-                final offset = Tween<Offset>(
-                  begin: const Offset(0.025, 0),
-                  end: Offset.zero,
-                ).animate(animation);
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(position: offset, child: child),
-                );
-              },
-              child: _selectedTab == 0
-                  ? ListenableBuilder(
-                      key: const ValueKey('inspector-meet-tab'),
-                      listenable: Listenable.merge([
-                        _meetService,
-                        _authService,
-                      ]),
-                      builder: (context, _) => StudioMeetCockpitTab(
-                        meetService: _meetService,
-                        authService: _authService,
-                      ),
-                    )
-                  : StudioNotesSettingsTab(
-                      key: const ValueKey('inspector-notes-tab'),
-                      studio: widget.studio,
-                      notesController: widget.notesController,
-                      questionController: widget.questionController,
-                      endpointController: widget.endpointController,
-                      onPreview: widget.onPreview,
-                    ),
+            child: IndexedStack(
+              index: _selectedTab == 2 ? 1 : 0,
+              children: [
+                ListenableBuilder(
+                  listenable: Listenable.merge([_meetService, _authService]),
+                  builder: (context, _) => StudioMeetCockpitTab(
+                    meetService: _meetService,
+                    authService: _authService,
+                    sharingPanel: _selectedTab == 1,
+                  ),
+                ),
+                StudioNotesSettingsTab(
+                  tutor: _tutor,
+                  studio: widget.studio,
+                  notesController: widget.notesController,
+                  questionController: widget.questionController,
+                  endpointController: widget.endpointController,
+                  onPreview: widget.onPreview,
+                ),
+              ],
             ),
           ),
         ],
@@ -197,5 +239,3 @@ class _StudioInspectorPanelState extends State<StudioInspectorPanel> {
     );
   }
 }
-
-

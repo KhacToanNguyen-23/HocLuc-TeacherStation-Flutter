@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/domain/models/meet_events.dart';
@@ -13,10 +13,12 @@ class StudioMeetCockpitTab extends StatefulWidget {
     super.key,
     required this.meetService,
     required this.authService,
+    this.sharingPanel = false,
   });
 
   final MeetAutomationService meetService;
   final GoogleMeetAuthService authService;
+  final bool sharingPanel;
 
   @override
   State<StudioMeetCockpitTab> createState() => _StudioMeetCockpitTabState();
@@ -196,7 +198,9 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
                     Expanded(
                       child: Text(
                         meetService.isHostJoined
-                            ? 'Đã tham gia Meet'
+                            ? (widget.sharingPanel
+                                  ? 'Meet khi chia sẻ'
+                                  : 'Đã tham gia Meet')
                             : 'Chuẩn bị Meet',
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
@@ -538,5 +542,3 @@ class _StudioMeetCockpitTabState extends State<StudioMeetCockpitTab> {
     );
   }
 }
-
-

@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const script = fs.readFileSync(path.join(__dirname, '../../lib/features/classroom_meet/services/meet_screen_share_script.dart'), 'utf8').match(/r'''([\s\S]*?)'''/)[1];
 
-function fixture({ reject = false, deferred = false, origin = 'https://meet.google.com' } = {}) {
+function fixture({ reject = false, deferred = false, origin = 'https://meet.google.com', setup }  = {}) {
   const messages = [];
   const calls = [];
   const tracks = ['video', 'audio'].map(kind => ({
@@ -30,6 +30,7 @@ function fixture({ reject = false, deferred = false, origin = 'https://meet.goog
   });
   context.window = context;
   context.top = context;
+  if (setup) setup(context);
   vm.runInContext(script, context);
   return { context, devices, stream, tracks, messages, calls, poll: () => poll(), resolveCapture: () => resolveCapture() };
 }
@@ -89,4 +90,44 @@ test('installation is idempotent and restricted to the top-level Meet origin', (
   vm.runInContext(script, f.context);
   assert.equal(f.devices.getDisplayMedia, wrapped);
   assert.equal(fixture({ origin: 'https://accounts.google.com' }).context.HocLucScreenShare, undefined);
+});
+
+
+test('Meet companion stays in one iframe and follows panel selection', async () => {
+  let nativeRequests = 0;
+  let enters = 0;
+  let hidden = 0;
+  const child = {
+    document: { body: { style: {} } },
+    dispatchEvent(event) { if (event.type === 'pagehide') hidden++; },
+  };
+  const frames = [];
+  const f = fixture({ setup(context) {
+  context.Event = class { constructor(type) { this.type = type; } };
+  context.document = {
+    body: { appendChild(frame) { frames.push(frame); } },
+    createElement() { return { style: {}, contentWindow: child, remove() { frames.pop(); } }; },
+  };
+  context.documentPictureInPicture = {
+    requestWindow() { nativeRequests++; },
+    dispatchEvent(event) { if (event.type === 'enter') enters++; },
+  };
+  }});
+  const pip = f.context.documentPictureInPicture;
+  assert.equal(await pip.requestWindow(), child);
+  assert.equal(nativeRequests, 0);
+  assert.equal(frames[0].style.display, 'none');
+  f.context.HocLucScreenShare.showPanel(true);
+  assert.equal(frames[0].style.display, 'block');
+  assert.equal(await pip.requestWindow(), child);
+  assert.equal(frames.length, 1);
+  assert.equal(pip.window, child);
+  f.context.HocLucScreenShare.showPanel(false);
+  assert.equal(frames[0].style.display, 'none');
+  child.close();
+  child.close();
+  assert.equal(hidden, 1);
+  assert.equal(frames.length, 0);
+  assert.equal(pip.window, null);
+  assert.equal(enters, 2);
 });

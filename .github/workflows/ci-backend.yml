@@ -2,7 +2,7 @@ name: Backend CI (Spring Boot)
 
 on:
   push:
-    branches: [ develop, main, master ]
+    branches: [ develop, main, master, feat/AI-agent-auto-answer ]
     paths:
       - 'backend/api/**'
       - '.github/workflows/ci-backend.yml'
