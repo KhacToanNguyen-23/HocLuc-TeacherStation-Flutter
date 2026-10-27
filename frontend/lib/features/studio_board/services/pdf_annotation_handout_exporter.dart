@@ -117,12 +117,18 @@ Future<Uint8List> _generateHandoutPdfBytesImpl(StudioState studio) async {
             s.rect!.height * slideBox.height,
           );
           if (s.isHollow) {
+            g.save();
+            g.setTransparency(s.color.a < 1.0 ? s.color.a : 0.85);
             g.drawRectangle(pen: pen, bounds: r);
+            g.restore();
           } else {
+            g.save();
+            g.setTransparency(s.color.a < 1.0 ? s.color.a : 0.22);
             g.drawRectangle(
               brush: sf.PdfSolidBrush(sf.PdfColor(rVal, gVal, bVal)),
               bounds: r,
             );
+            g.restore();
           }
         } else if (s.points.length == 1) {
           final pt = Offset(

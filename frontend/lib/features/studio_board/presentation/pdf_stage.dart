@@ -1,5 +1,6 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -71,6 +72,7 @@ class _PdfStageState extends State<PdfStage> {
   int _smartDocumentGeneration = 0;
   int _pdfTextCacheContentGeneration = -1;
   bool _lastSmartSnapEnabled = false;
+  bool _lastBoardOptimization = true;
   String? _lastPdfDispatchTarget;
   String? _lastPluginToolStateKey;
   String? _pluginRegionSubscriptionKey;
@@ -85,6 +87,8 @@ class _PdfStageState extends State<PdfStage> {
     _lastPage = widget.studio.pdfPage;
     _lastZoomAction = widget.studio.pdfZoomAction;
     _lastSmartSnapEnabled = widget.studio.smartSnapEnabled;
+    _lastBoardOptimization =
+        ClassroomSettingsService.instance.boardOptimization;
     _syncPluginRegionSubscription();
     widget.studio.addListener(_onStudioChanged);
     ClassroomSettingsService.instance.addListener(_onClassroomSettingsChanged);
@@ -186,6 +190,9 @@ class _PdfStageState extends State<PdfStage> {
 
   void _onClassroomSettingsChanged() {
     if (!mounted) return;
+    final current = ClassroomSettingsService.instance.boardOptimization;
+    if (_lastBoardOptimization == current) return;
+    _lastBoardOptimization = current;
     setState(() {
       _cachedPdfViewer = null;
       _cachedPdfPath = null;
@@ -526,17 +533,23 @@ class _PdfStageState extends State<PdfStage> {
   void _applyFit() {
     if (!_pdfController.isReady) return;
     final page = widget.studio.pdfPage;
-    if (widget.studio.pdfFitWidth) {
-      final fitW = _pdfController.calcMatrixFitWidthForPage(pageNumber: page);
-      if (fitW != null) {
-        _pdfController.goTo(fitW);
+    if (page < 1 || page > widget.studio.pdfTotalPages) return;
+    try {
+      final viewSize = _pdfController.viewSize;
+      if (viewSize.width <= 0 || viewSize.height <= 0) return;
+
+      if (widget.studio.pdfFitWidth) {
+        final fitW = _pdfController.calcMatrixFitWidthForPage(pageNumber: page);
+        if (fitW != null && fitW.storage.every((v) => v.isFinite)) {
+          _pdfController.goTo(fitW, duration: Duration.zero);
+        }
+      } else {
+        final fitH = _pdfController.calcMatrixFitHeightForPage(pageNumber: page);
+        if (fitH != null && fitH.storage.every((v) => v.isFinite)) {
+          _pdfController.goTo(fitH, duration: Duration.zero);
+        }
       }
-    } else {
-      final fitH = _pdfController.calcMatrixFitHeightForPage(pageNumber: page);
-      if (fitH != null) {
-        _pdfController.goTo(fitH);
-      }
-    }
+    } catch (_) {}
   }
 
   Future<void> _pickFile() async {

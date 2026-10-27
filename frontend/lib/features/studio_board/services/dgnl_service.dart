@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:teaching_companion/features/plugin_engine/services/process_supervisor.dart';
+import '../domain/models/dgnl_highlight_palette.dart';
 import '../domain/models/text_profile_models.dart';
 import 'profiler/dgnl_collocation_data.dart';
 import 'profiler/text_profiler_service.dart';
@@ -80,20 +82,60 @@ class DgnlService {
           final profile =
               offlineRes.textProfile ?? TextProfilerService.profile(clean);
 
-          // Merge online and offline highlights without duplicate spans
+          // Deterministic overlap resolution between online and offline highlights:
+          // 1. Same category + same offsets or exact text => duplicate, keep online or richer item.
+          // 2. Different categories (e.g. grammar vs vocabulary) => keep BOTH! Nested vocabulary
+          //    inside a grammar structure (or collocation) provides distinct pedagogical layers.
+          // 3. Same category partial overlap => keep the longer/more specific span.
           final mergedHl = <Map<String, dynamic>>[...onlineRes.highlights];
           for (final oHl in offlineRes.highlights) {
             final oText = oHl['text']?.toString().toLowerCase().trim() ?? '';
-            final alreadyPresent = mergedHl.any((m) {
+            final oCat = oHl['category']?.toString().toLowerCase().trim() ?? '';
+            final oStart = oHl['start'] as int?;
+            final oEnd = oHl['end'] as int?;
+
+            final isDuplicate = mergedHl.any((m) {
               final mText = m['text']?.toString().toLowerCase().trim() ?? '';
-              return mText == oText ||
-                  mText.contains(oText) ||
-                  oText.contains(mText);
+              final mCat = m['category']?.toString().toLowerCase().trim() ?? '';
+              final mStart = m['start'] as int?;
+              final mEnd = m['end'] as int?;
+
+              // Different categories never suppress each other (preserves nested vocab & collocations)
+              if (mCat != oCat) return false;
+
+              // Same category: exact text or exact offset match is a duplicate
+              if (mStart != null &&
+                  mEnd != null &&
+                  oStart != null &&
+                  oEnd != null) {
+                if (mStart == oStart && mEnd == oEnd) return true;
+                // Significant overlap within same category: keep existing
+                final overlapStart = math.max(mStart, oStart);
+                final overlapEnd = math.min(mEnd, oEnd);
+                if (overlapStart < overlapEnd) {
+                  final overlapLen = overlapEnd - overlapStart;
+                  final oLen = oEnd - oStart;
+                  if (oLen > 0 && (overlapLen / oLen) > 0.7) return true;
+                }
+              }
+
+              return mText == oText;
             });
-            if (!alreadyPresent) {
+
+            if (!isDuplicate) {
               mergedHl.add(oHl);
             }
           }
+
+          // Sort deterministically: start ascending, then length descending (outer spans first)
+          mergedHl.sort((a, b) {
+            final aStart = a['start'] as int? ?? 0;
+            final bStart = b['start'] as int? ?? 0;
+            if (aStart != bStart) return aStart.compareTo(bStart);
+            final aEnd = a['end'] as int? ?? 0;
+            final bEnd = b['end'] as int? ?? 0;
+            return bEnd.compareTo(aEnd);
+          });
 
           return DgnlAnalysisResult(
             totalWords: onlineRes.totalWords > 0
@@ -302,6 +344,7 @@ class DgnlService {
       'a',
       'an',
       'the',
+      'of',
       'and',
       'or',
       'but',
@@ -423,46 +466,66 @@ class DgnlService {
         .toSet();
 
     for (final token in profilerResult.tokens) {
-      if (token.cefrLevel == 'Unknown' ||
-          token.isProperNoun ||
-          token.isNumber ||
-          token.clean.length <= 1) {
+      if (token.clean.isEmpty || token.surface.trim().isEmpty) {
         continue;
       }
 
       final isFunctionWord = functionWords.contains(token.clean);
-      final isB1OrHigher =
-          token.cefrLevel == 'B1' ||
+      final isHigherLevel =
           token.cefrLevel == 'B2' ||
           token.cefrLevel == 'C1' ||
           token.cefrLevel == 'C2';
       final isAcademic = token.isAcademic;
       final isPreTeach = preTeachLemmas.contains(token.lemma);
 
-      // Function words bị loại khỏi lớp từ vựng hiển thị mặc định
-      if (isFunctionWord && !isAcademic) {
-        continue;
-      }
+      // Selective B1: Only pedagogical if academic, pre-teach, or non-K1 frequency band
+      final isSelectiveB1 = token.cefrLevel == 'B1' &&
+          (isAcademic || isPreTeach || token.frequencyBand != 'K1');
 
-      final isPedagogical = isB1OrHigher || isAcademic || isPreTeach;
+      // Sư phạm chọn lọc: B2-C2, Academic (AWL), Pre-teach, hoặc Selective B1
+      // Loại trừ hoàn toàn A1/A2 cơ bản, từ chức năng, số và tên riêng
+      final isPedagogical =
+          (isHigherLevel || isAcademic || isPreTeach || isSelectiveB1) &&
+          !isFunctionWord &&
+          !token.isProperNoun &&
+          !token.isNumber;
 
-      final colorHex = switch (token.cefrLevel) {
-        'A1' => '#22c55e',
-        'A2' => '#14b8a6',
-        'B1' => '#3b82f6',
-        'B2' => '#f59e0b',
-        'C1' => '#f97316',
-        'C2' => '#a855f7',
-        _ => '#94a3b8',
-      };
+      final colorHex = DgnlHighlightPalette.colorHexForLevel(token.cefrLevel);
 
       String typeLabel = 'CEFR ${token.cefrLevel}';
-      if (isAcademic) {
+      if (token.cefrLevel == 'Unknown') {
+        typeLabel = token.isProperNoun
+            ? 'Danh từ riêng (Proper)'
+            : (token.isNumber ? 'Chữ số (Number)' : 'Chưa định danh (Unknown)');
+      } else if (isAcademic) {
         typeLabel = 'AWL (${token.cefrLevel})';
       } else if (isPreTeach) {
         typeLabel = 'Dạy trước (${token.cefrLevel})';
+      } else if (isFunctionWord) {
+        typeLabel = 'Từ chức năng (${token.cefrLevel})';
       } else if (!isPedagogical) {
         typeLabel = 'Cơ bản (${token.cefrLevel})';
+      }
+
+      String note = '';
+      if (token.cefrLevel == 'Unknown') {
+        note = token.isProperNoun
+            ? "Tên riêng hoặc thực thể xác định trong văn cảnh."
+            : (token.isNumber
+                  ? "Chữ số hoặc đại lượng định lượng."
+                  : "Từ vựng hiếm hoặc chưa có trong từ điển CEFR (nguyên mẫu: '${token.lemma}').");
+      } else if (isAcademic) {
+        note =
+            "Từ vựng học thuật AWL cấp độ ${token.cefrLevel} (Dải tần ${token.frequencyBand}, nguyên mẫu: '${token.lemma}').";
+      } else if (isPedagogical) {
+        note =
+            "Từ vựng trọng tâm cấp độ ${token.cefrLevel} (Dải tần ${token.frequencyBand}, nguyên mẫu: '${token.lemma}').";
+      } else if (isFunctionWord) {
+        note =
+            "Từ chức năng ngữ pháp cấp độ ${token.cefrLevel} (nguyên mẫu: '${token.lemma}').";
+      } else {
+        note =
+            "Từ vựng nền tảng cấp độ ${token.cefrLevel} (nguyên mẫu: '${token.lemma}').";
       }
 
       highlights.add({
@@ -476,13 +539,25 @@ class DgnlService {
         'isPedagogical': isPedagogical,
         'isAcademic': isAcademic,
         'isPreTeach': isPreTeach,
-        'note': isAcademic
-            ? "Từ vựng học thuật AWL cấp độ ${token.cefrLevel} (Dải tần ${token.frequencyBand}, nguyên mẫu: '${token.lemma}')."
-            : (isPedagogical
-                  ? "Từ vựng trọng tâm cấp độ ${token.cefrLevel} (Dải tần ${token.frequencyBand}, nguyên mẫu: '${token.lemma}')."
-                  : "Từ vựng nền tảng cấp độ ${token.cefrLevel} (nguyên mẫu: '${token.lemma}')."),
+        'isFunctionWord': isFunctionWord,
+        'isProperNoun': token.isProperNoun,
+        'isNumber': token.isNumber,
+        'lemma': token.lemma,
+        'clean': token.clean,
+        'frequencyBand': token.frequencyBand,
+        'syllables': token.syllables,
+        'note': note,
       });
     }
+
+    highlights.sort((a, b) {
+      final aStart = a['start'] as int? ?? 0;
+      final bStart = b['start'] as int? ?? 0;
+      if (aStart != bStart) return aStart.compareTo(bStart);
+      final aEnd = a['end'] as int? ?? 0;
+      final bEnd = b['end'] as int? ?? 0;
+      return bEnd.compareTo(aEnd);
+    });
 
     final b2Pct = profilerResult.cefrPercentages['B2'] ?? 0.0;
     final c1C2Pct =

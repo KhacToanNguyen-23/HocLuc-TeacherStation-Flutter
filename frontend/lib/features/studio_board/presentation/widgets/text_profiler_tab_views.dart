@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/models/dgnl_highlight_palette.dart';
 import '../../domain/models/text_profile_models.dart';
 
 class TextProfilerTabViews {
@@ -225,7 +226,7 @@ class TextProfilerTabViews {
                   value: '${div.ttr}',
                   subtitle:
                       '${div.uniqueWordCount} từ / ${div.totalTokens} lượt từ',
-                  color: const Color(0xff89dceb),
+                  color: DgnlHighlightPalette.tokenFocused.badgeDark,
                   icon: Icons.donut_large_outlined,
                 ),
               ),
@@ -235,7 +236,7 @@ class TextProfilerTabViews {
                   title: 'MATTR (Cửa sổ 25 từ)',
                   value: '${div.mattr}',
                   subtitle: 'Độ đa dạng trung bình trượt',
-                  color: const Color(0xff86efac),
+                  color: DgnlHighlightPalette.tokenCollocation.badgeDark,
                   icon: Icons.timeline_outlined,
                 ),
               ),
@@ -245,7 +246,7 @@ class TextProfilerTabViews {
                   title: 'Chỉ số MTLD',
                   value: '${div.mtld}',
                   subtitle: 'Độ dài chuỗi bảo toàn TTR 0.72',
-                  color: const Color(0xffcba6f7),
+                  color: DgnlHighlightPalette.tokenAllVocab.badgeDark,
                   icon: Icons.linear_scale_outlined,
                 ),
               ),
@@ -255,7 +256,7 @@ class TextProfilerTabViews {
                   title: 'Từ Học thuật (AWL)',
                   value: '${div.academicPercentage}%',
                   subtitle: '${div.academicWordCount} từ học thuật xuất hiện',
-                  color: const Color(0xfff59e0b),
+                  color: DgnlHighlightPalette.tokenB2.badgeDark,
                   icon: Icons.school_outlined,
                 ),
               ),
@@ -499,7 +500,7 @@ class TextProfilerTabViews {
                   title: 'Dải K1 (1–1000 từ)',
                   value: '${cov.k1Percent}%',
                   subtitle: 'Từ vựng cốt lõi A1–A2',
-                  color: const Color(0xff22c55e),
+                  color: DgnlHighlightPalette.tokenA1.badgeDark,
                   icon: Icons.filter_1_outlined,
                 ),
               ),
@@ -509,7 +510,7 @@ class TextProfilerTabViews {
                   title: 'Dải K2 (1001–2000 từ)',
                   value: '${cov.k2Percent}%',
                   subtitle: 'Từ vựng trung cấp B1',
-                  color: const Color(0xff3b82f6),
+                  color: DgnlHighlightPalette.tokenB1.badgeDark,
                   icon: Icons.filter_2_outlined,
                 ),
               ),
@@ -519,7 +520,7 @@ class TextProfilerTabViews {
                   title: 'Dải K3 (2001–3000 từ)',
                   value: '${cov.k3Percent}%',
                   subtitle: 'Từ vựng trung cao B2',
-                  color: const Color(0xfff59e0b),
+                  color: DgnlHighlightPalette.tokenB2.badgeDark,
                   icon: Icons.filter_3_outlined,
                 ),
               ),
@@ -529,7 +530,7 @@ class TextProfilerTabViews {
                   title: 'Dải K4+ & Học thuật',
                   value: '${cov.k4PlusPercent}%',
                   subtitle: 'Từ nâng cao C1–C2 / AWL',
-                  color: const Color(0xffa855f7),
+                  color: DgnlHighlightPalette.tokenC2.badgeDark,
                   icon: Icons.filter_4_outlined,
                 ),
               ),

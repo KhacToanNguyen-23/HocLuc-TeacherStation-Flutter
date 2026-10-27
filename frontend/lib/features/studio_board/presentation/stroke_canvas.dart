@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../domain/models/ink_path.dart';
+import '../services/board_cursor_manager.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 
 class LaserPoint {
@@ -20,6 +22,7 @@ class StrokeCanvas extends StatefulWidget {
     this.smartSnapEnabled = false,
     this.onSmartTap,
     this.deferTapToOverlay = false,
+    this.pageNumber,
   });
 
   final StudioState studio;
@@ -29,6 +32,7 @@ class StrokeCanvas extends StatefulWidget {
   final bool smartSnapEnabled;
   final ValueChanged<Offset>? onSmartTap;
   final bool deferTapToOverlay;
+  final int? pageNumber;
 
   @override
   State<StrokeCanvas> createState() => _StrokeCanvasState();
@@ -46,6 +50,20 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
   Timer? _laserTimer;
   Offset? _laserHoverOffset;
   bool _smartPointerMovedBeyondTapSlop = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCursors();
+  }
+
+  void _initCursors() {
+    if (!BoardCursorManager.isInitialized) {
+      BoardCursorManager.init().then((_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
 
   void _trackSmartPointerDown(PointerDownEvent event) {
     if (!widget.deferTapToOverlay) return;
@@ -113,15 +131,14 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
             widget.studio.strokes;
 
         final capturesBoardInput = widget.studio.activeToolCapturesBoardInput;
+        final isSpacePressed = widget.studio.isSpacePressed;
 
         return MouseRegion(
-          cursor: capturesBoardInput
-              ? SystemMouseCursors.click
-              : widget.studio.tool == 'laser'
-              ? SystemMouseCursors.none
-              : widget.studio.tool == 'erase'
-              ? SystemMouseCursors.grab
-              : SystemMouseCursors.precise,
+          cursor: BoardCursorManager.getCursorForTool(
+            widget.studio.tool,
+            capturesBoardInput: capturesBoardInput,
+            isSpacePressed: isSpacePressed,
+          ),
           onHover: (e) {
             final norm = normalized(e.localPosition);
             if (widget.studio.tool == 'laser') {
@@ -154,7 +171,11 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                         _addLaserPoint(norm);
                         widget.studio.setLaserOffset(norm);
                       } else if (widget.studio.tool == 'erase') {
-                        widget.studio.erase(norm, target: widget.targetStrokes);
+                        widget.studio.erase(
+                          norm,
+                          target: widget.targetStrokes,
+                          pageNumber: widget.pageNumber,
+                        );
                       } else {
                         _activePoints.clear();
                         _activePoints.add(norm);
@@ -170,7 +191,11 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                         _addLaserPoint(norm);
                         widget.studio.setLaserOffset(norm);
                       } else if (widget.studio.tool == 'erase') {
-                        widget.studio.erase(norm, target: widget.targetStrokes);
+                        widget.studio.erase(
+                          norm,
+                          target: widget.targetStrokes,
+                          pageNumber: widget.pageNumber,
+                        );
                       } else {
                         _activePoints.add(norm);
                         _activeStrokeNotifier.value = List.of(_activePoints);
@@ -245,7 +270,11 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                         _addLaserPoint(norm);
                         widget.studio.setLaserOffset(norm);
                       } else if (widget.studio.tool == 'erase') {
-                        widget.studio.erase(norm, target: widget.targetStrokes);
+                        widget.studio.erase(
+                          norm,
+                          target: widget.targetStrokes,
+                          pageNumber: widget.pageNumber,
+                        );
                       } else {
                         final isHighlighter = widget.studio.tool == 'highlight';
                         final width = isHighlighter
@@ -371,21 +400,37 @@ class CommittedStrokesPainter extends CustomPainter {
       if (stroke.points.isEmpty && stroke.rect == null) continue;
 
       final isHighlight = stroke.isHighlighter || stroke.rect != null;
+      final opacity = stroke.opacity ??
+          (stroke.isHollow
+              ? 0.85
+              : (stroke.color.a < 1.0
+                    ? stroke.color.a
+                    : (isHighlight
+                          ? (stroke.rect != null ? 0.22 : 0.35)
+                          : 1.0)));
       final paint = Paint()
-        ..color = stroke.isHollow
-            ? stroke.color.withValues(alpha: 0.95)
-            : (isHighlight
-                  ? stroke.color.withValues(
-                      alpha: stroke.rect != null ? 0.38 : 0.35,
-                    )
-                  : stroke.color)
+        ..color = stroke.color.withValues(alpha: opacity)
         ..style = stroke.isHollow ? PaintingStyle.stroke : PaintingStyle.fill
         ..strokeWidth = stroke.isHollow
-            ? (stroke.width <= 3.0 ? stroke.width : 1.6)
+            ? (stroke.width <= 3.0 ? stroke.width : 1.5)
             : stroke.width;
 
       final path = stroke.getPath(size);
-      canvas.drawPath(path, paint);
+      if (stroke.isDashed) {
+        for (final metric in path.computeMetrics()) {
+          double distance = 0.0;
+          const dashWidth = 4.0;
+          const dashSpace = 3.0;
+          while (distance < metric.length) {
+            final len = math.min(dashWidth, metric.length - distance);
+            final segment = metric.extractPath(distance, distance + len);
+            canvas.drawPath(segment, paint);
+            distance += dashWidth + dashSpace;
+          }
+        }
+      } else {
+        canvas.drawPath(path, paint);
+      }
     }
   }
 

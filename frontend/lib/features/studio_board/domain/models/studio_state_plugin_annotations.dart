@@ -178,7 +178,7 @@ extension StudioStatePdfAnnotationHistoryExt on StudioState {
           ),
         );
     _pdfAnnotationRedo[_pdfAnnotationHistoryKey]?.clear();
-    _currentRedoStack.clear();
+    canvas.clearRedo();
     _revision++;
     if (persistedChanged) dirty = true;
     notifyListeners();
@@ -205,79 +205,52 @@ extension StudioStatePdfAnnotationHistoryExt on StudioState {
     }
   }
 
-  Map<int, List<BoardStroke>> get redoPages =>
-      _redoPages ??= <int, List<BoardStroke>>{};
-  List<BoardStroke> get _currentRedoStack =>
-      redoPages.putIfAbsent(page, () => []);
-  bool get canUndo =>
-      (_pdfAnnotationUndo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false) ||
-      strokes.isNotEmpty;
-  bool get canRedo =>
-      (_pdfAnnotationRedo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false) ||
-      _currentRedoStack.isNotEmpty;
+  bool get _canUndoPluginAnnotation =>
+      _pdfAnnotationUndo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false;
 
-  void undo() {
-    final pdfHistory = _pdfAnnotationUndo[_pdfAnnotationHistoryKey];
-    final boardSequence = strokes.isEmpty
-        ? -1
-        : (_boardUndoSequence[strokes.last] ?? 0);
-    final pdfSequence = pdfHistory == null || pdfHistory.isEmpty
-        ? -1
-        : pdfHistory.last.sequence;
-    if (pdfHistory != null &&
-        pdfHistory.isNotEmpty &&
-        pdfSequence > boardSequence) {
-      final entry = pdfHistory.removeLast();
+  bool get _canRedoPluginAnnotation =>
+      _pdfAnnotationRedo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false;
+
+  bool _undoPluginAnnotation() {
+    final history = _pdfAnnotationUndo[_pdfAnnotationHistoryKey];
+    if (history != null &&
+        history.isNotEmpty &&
+        history.last.sequence > coordinator.undoSequence) {
+      final entry = history.removeLast();
       _applyPdfAnnotationHistory(entry, entry.before);
+      _historySequence = pdf.smartPenManager.historySequence;
       entry.redoSequence = ++_historySequence;
+      pdf.smartPenManager.historySequence = _historySequence;
       _pdfAnnotationRedo
           .putIfAbsent(_pdfAnnotationHistoryKey, () => [])
           .add(entry);
       _revision++;
       if (entry.persistedChanged) dirty = true;
       notifyListeners();
-      return;
+      return true;
     }
-    if (strokes.isNotEmpty) {
-      final stroke = strokes.removeLast();
-      _currentRedoStack.add(stroke);
-      _boardRedoSequence[stroke] = ++_historySequence;
-      _revision++;
-      dirty = true;
-      notifyListeners();
-    }
+    return false;
   }
 
-  void redo() {
-    final pdfHistory = _pdfAnnotationRedo[_pdfAnnotationHistoryKey];
-    final boardSequence = _currentRedoStack.isEmpty
-        ? -1
-        : (_boardRedoSequence[_currentRedoStack.last] ?? 0);
-    final pdfSequence = pdfHistory == null || pdfHistory.isEmpty
-        ? -1
-        : pdfHistory.last.redoSequence;
-    if (pdfHistory != null &&
-        pdfHistory.isNotEmpty &&
-        pdfSequence > boardSequence) {
-      final entry = pdfHistory.removeLast();
+  bool _redoPluginAnnotation() {
+    final history = _pdfAnnotationRedo[_pdfAnnotationHistoryKey];
+    if (history != null &&
+        history.isNotEmpty &&
+        history.last.redoSequence > coordinator.redoSequence) {
+      final entry = history.removeLast();
       _applyPdfAnnotationHistory(entry, entry.after);
+      _historySequence = pdf.smartPenManager.historySequence;
       entry.sequence = ++_historySequence;
+      pdf.smartPenManager.historySequence = _historySequence;
       _pdfAnnotationUndo
           .putIfAbsent(_pdfAnnotationHistoryKey, () => [])
           .add(entry);
       _revision++;
       if (entry.persistedChanged) dirty = true;
       notifyListeners();
-      return;
+      return true;
     }
-    if (_currentRedoStack.isNotEmpty) {
-      final stroke = _currentRedoStack.removeLast();
-      strokes.add(stroke);
-      _boardUndoSequence[stroke] = ++_historySequence;
-      _revision++;
-      dirty = true;
-      notifyListeners();
-    }
+    return false;
   }
 
   void _clearPdfAnnotationHistory({String? documentId}) {

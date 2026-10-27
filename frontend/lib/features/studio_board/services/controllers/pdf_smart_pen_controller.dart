@@ -6,6 +6,7 @@ import '../../domain/models/smart_chalk_annotation.dart';
 import '../../domain/models/smart_pen_answer_selection.dart';
 import '../../domain/models/studio_board_models.dart';
 import '../english_analyzer.dart';
+import '../pdf_annotation_storage_service.dart';
 import 'smart_pen_answer_manager.dart';
 
 /// Single-responsibility controller managing PDF document state,
@@ -81,6 +82,7 @@ class PdfSmartPenController extends ChangeNotifier {
     smartPenManager.smartSnapEnabled = val;
     notifyListeners();
   }
+
   void setSmartSnapEnabled(bool enabled) => smartSnapEnabled = enabled;
 
   bool get saveAnswerCirclesEnabled => smartPenManager.saveAnswerCirclesEnabled;
@@ -88,7 +90,9 @@ class PdfSmartPenController extends ChangeNotifier {
     smartPenManager.saveAnswerCirclesEnabled = val;
     notifyListeners();
   }
-  void setSaveAnswerCirclesEnabled(bool enabled) => saveAnswerCirclesEnabled = enabled;
+
+  void setSaveAnswerCirclesEnabled(bool enabled) =>
+      saveAnswerCirclesEnabled = enabled;
 
   SmartPenAnswerSelection? get smartPenAnswerSelection =>
       smartPenManager.smartPenAnswerSelection;
@@ -96,6 +100,7 @@ class PdfSmartPenController extends ChangeNotifier {
     smartPenManager.smartPenAnswerSelection = val;
     notifyListeners();
   }
+
   void dispatchSmartPenAnswer(SmartPenAnswerSelection selection) {
     smartPenAnswerSelection = selection;
   }
@@ -148,9 +153,191 @@ class PdfSmartPenController extends ChangeNotifier {
   List<BoardStroke> get currentPdfStrokes =>
       pdfAnnotations.putIfAbsent(_pdfPage, () => []);
 
+  bool pdfHighlightsVisible = true;
+  final List<_PdfAnnotationHistoryItem> _annotationUndoStack = [];
+  final List<_PdfAnnotationHistoryItem> _annotationRedoStack = [];
+
+  bool get canUndoAnnotation => _annotationUndoStack.isNotEmpty;
+  bool get canRedoAnnotation => _annotationRedoStack.isNotEmpty;
+
+  void setPdfHighlightsVisible(bool val) {
+    if (pdfHighlightsVisible != val) {
+      pdfHighlightsVisible = val;
+      savePersistentAnnotations();
+      notifyListeners();
+    }
+  }
+
+  void togglePdfHighlightsVisible() {
+    pdfHighlightsVisible = !pdfHighlightsVisible;
+    savePersistentAnnotations();
+    notifyListeners();
+  }
+
+  void clearPdfHighlights({int? pageNumber}) {
+    if (pageNumber != null) {
+      final strokes = pdfAnnotations[pageNumber];
+      if (strokes != null && strokes.isNotEmpty) {
+        final removed = strokes.where((s) => s.category != null).toList();
+        if (removed.isNotEmpty) {
+          strokes.removeWhere((s) => s.category != null);
+          _annotationUndoStack.add(
+            _PdfAnnotationHistoryItem(
+              pageNumber: pageNumber,
+              clearedStrokes: removed,
+              isClear: true,
+            ),
+          );
+          _annotationRedoStack.clear();
+          savePersistentAnnotations();
+          notifyListeners();
+        }
+      }
+    } else {
+      var anyRemoved = false;
+      for (final entry in pdfAnnotations.entries) {
+        final removed = entry.value.where((s) => s.category != null).toList();
+        if (removed.isNotEmpty) {
+          entry.value.removeWhere((s) => s.category != null);
+          _annotationUndoStack.add(
+            _PdfAnnotationHistoryItem(
+              pageNumber: entry.key,
+              clearedStrokes: removed,
+              isClear: true,
+            ),
+          );
+          anyRemoved = true;
+        }
+      }
+      if (anyRemoved) {
+        _annotationRedoStack.clear();
+        savePersistentAnnotations();
+        notifyListeners();
+      }
+    }
+  }
+
+  void recordAnnotationAdded(int page, BoardStroke stroke) {
+    _annotationUndoStack.add(
+      _PdfAnnotationHistoryItem(
+        pageNumber: page,
+        stroke: stroke,
+        isDeletion: false,
+      ),
+    );
+    _annotationRedoStack.clear();
+    savePersistentAnnotations();
+  }
+
+  void recordAnnotationRemoved(int page, BoardStroke stroke, int index) {
+    _annotationUndoStack.add(
+      _PdfAnnotationHistoryItem(
+        pageNumber: page,
+        stroke: stroke,
+        index: index,
+        isDeletion: true,
+      ),
+    );
+    _annotationRedoStack.clear();
+    savePersistentAnnotations();
+  }
+
+  bool undoAnnotation() {
+    if (_annotationUndoStack.isEmpty) return false;
+    final entry = _annotationUndoStack.removeLast();
+    if (entry.isClear && entry.clearedStrokes != null) {
+      final list = pdfAnnotations.putIfAbsent(entry.pageNumber, () => []);
+      list.addAll(entry.clearedStrokes!);
+    } else if (entry.isDeletion && entry.stroke != null) {
+      final list = pdfAnnotations.putIfAbsent(entry.pageNumber, () => []);
+      final idx = entry.index != null && entry.index! <= list.length
+          ? entry.index!
+          : list.length;
+      list.insert(idx, entry.stroke!);
+    } else if (!entry.isDeletion && entry.stroke != null) {
+      final list = pdfAnnotations[entry.pageNumber];
+      list?.remove(entry.stroke);
+    }
+    _annotationRedoStack.add(entry);
+    savePersistentAnnotations();
+    notifyListeners();
+    return true;
+  }
+
+  bool redoAnnotation() {
+    if (_annotationRedoStack.isEmpty) return false;
+    final entry = _annotationRedoStack.removeLast();
+    if (entry.isClear && entry.clearedStrokes != null) {
+      final list = pdfAnnotations[entry.pageNumber];
+      list?.removeWhere((s) => entry.clearedStrokes!.contains(s));
+    } else if (entry.isDeletion && entry.stroke != null) {
+      final list = pdfAnnotations[entry.pageNumber];
+      list?.remove(entry.stroke);
+    } else if (!entry.isDeletion && entry.stroke != null) {
+      final list = pdfAnnotations.putIfAbsent(entry.pageNumber, () => []);
+      list.add(entry.stroke!);
+    }
+    _annotationUndoStack.add(entry);
+    savePersistentAnnotations();
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> savePersistentAnnotations() async {
+    try {
+      final storage = PdfAnnotationStorageService();
+      final docId = await storage.computeDocumentId(
+        filePath: pdfFilePath,
+        bytes: pdfBytes,
+      );
+      await storage.saveAnnotations(
+        documentId: docId,
+        filePath: pdfFilePath,
+        annotations: pdfAnnotations,
+        highlightsVisible: pdfHighlightsVisible,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> restorePersistentAnnotations() async {
+    if (pdfFilePath == null && pdfBytes == null) return;
+    try {
+      final storage = PdfAnnotationStorageService();
+      final layer = await storage.loadAnnotations(
+        filePath: pdfFilePath,
+        bytes: pdfBytes,
+      );
+      if (layer != null && layer.annotations.isNotEmpty) {
+        for (final entry in layer.annotations.entries) {
+          final targetList = pdfAnnotations.putIfAbsent(entry.key, () => []);
+          for (final stroke in entry.value) {
+            final exists = targetList.any(
+              (s) =>
+                  (s.id != null && s.id == stroke.id) ||
+                  (s.rect != null && s.rect == stroke.rect),
+            );
+            if (!exists) {
+              targetList.add(stroke);
+            }
+          }
+          activeDoc?.annotations[entry.key] = List.of(targetList);
+        }
+        pdfHighlightsVisible = layer.highlightsVisible;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   List<BoardStroke> pdfAnnotationsForPage(int pageNumber) {
     final persisted = pdfAnnotations[pageNumber] ?? const <BoardStroke>[];
-    return smartPenManager.filterVisibleAnnotations(pageNumber, persisted);
+    final base = smartPenManager.filterVisibleAnnotations(
+      pageNumber,
+      persisted,
+    );
+    if (!pdfHighlightsVisible) {
+      return base.where((s) => s.category == null).toList();
+    }
+    return base;
   }
 
   void addPdfAnnotation(int page, BoardStroke stroke) {
@@ -166,7 +353,8 @@ class PdfSmartPenController extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _pdfContentFingerprint(Uint8List bytes) => sha256.convert(bytes).toString();
+  String _pdfContentFingerprint(Uint8List bytes) =>
+      sha256.convert(bytes).toString();
 
   bool _samePdfBytes(Uint8List left, Uint8List right) {
     if (identical(left, right)) return true;
@@ -224,15 +412,17 @@ class PdfSmartPenController extends ChangeNotifier {
           name: name,
           path: path,
           bytes: bytes,
-          contentFingerprint:
-              bytes == null ? null : _pdfContentFingerprint(bytes),
+          contentFingerprint: bytes == null
+              ? null
+              : _pdfContentFingerprint(bytes),
         );
         importedDocs.add(doc);
         activeDocId = id;
       } else {
         activeDocId = existing.id;
-        final incomingFingerprint =
-            bytes == null ? null : _pdfContentFingerprint(bytes);
+        final incomingFingerprint = bytes == null
+            ? null
+            : _pdfContentFingerprint(bytes);
         if (bytes != null &&
             ((existing.contentFingerprint != null &&
                     existing.contentFingerprint != incomingFingerprint) ||
@@ -252,12 +442,14 @@ class PdfSmartPenController extends ChangeNotifier {
     } else {
       activeDocId = null;
     }
+    restorePersistentAnnotations();
     notifyListeners();
   }
 
   void addImportedDoc(String name, String? path, Uint8List? bytes) {
-    final incomingFingerprint =
-        bytes == null ? null : _pdfContentFingerprint(bytes);
+    final incomingFingerprint = bytes == null
+        ? null
+        : _pdfContentFingerprint(bytes);
     final exactPathMatch = path == null
         ? null
         : importedDocs.where((doc) => doc.path == path).firstOrNull;
@@ -520,9 +712,19 @@ class PdfSmartPenController extends ChangeNotifier {
     pdfDgnlPassages.add(passage);
     notifyListeners();
   }
+
   void removePdfDgnlPassage(String id) {
     pdfDgnlPassages.removeWhere((p) => p.id == id);
     notifyListeners();
+  }
+
+  PedagogicalHighlightPolicy pedagogicalPolicy =
+      const PedagogicalHighlightPolicy();
+  void setPedagogicalPolicy(PedagogicalHighlightPolicy policy) {
+    if (pedagogicalPolicy != policy) {
+      pedagogicalPolicy = policy;
+      notifyListeners();
+    }
   }
 
   bool analyzePdfSentenceAt(
@@ -599,4 +801,22 @@ class PdfSmartPenController extends ChangeNotifier {
     addPdfChalkAnnotation(pageNumber, annotation);
     return true;
   }
+}
+
+class _PdfAnnotationHistoryItem {
+  _PdfAnnotationHistoryItem({
+    required this.pageNumber,
+    this.stroke,
+    this.index,
+    this.isDeletion = false,
+    this.isClear = false,
+    this.clearedStrokes,
+  });
+
+  final int pageNumber;
+  final BoardStroke? stroke;
+  final int? index;
+  final bool isDeletion;
+  final bool isClear;
+  final List<BoardStroke>? clearedStrokes;
 }

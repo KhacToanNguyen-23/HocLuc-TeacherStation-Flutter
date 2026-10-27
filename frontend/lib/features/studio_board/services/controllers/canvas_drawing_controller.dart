@@ -210,13 +210,47 @@ class CanvasDrawingController extends ChangeNotifier {
 
   void clearBoard() => clearPage();
 
-  void erase(Offset point, {List<BoardStroke>? target}) {
+  void erase(
+    Offset point, {
+    List<BoardStroke>? target,
+    void Function(BoardStroke stroke, int index)? onErased,
+  }) {
     final list = target ?? currentStrokes;
     final r = eraserRadius;
     final int beforeCount = list.length;
-    list.removeWhere(
-      (stroke) => stroke.points.any((p) => (p - point).distance < r),
-    );
+
+    // Collect all candidate strokes that hit this point
+    final hits = <BoardStroke>[];
+    for (final stroke in list) {
+      if (stroke.hitTest(point, r)) {
+        hits.add(stroke);
+      }
+    }
+
+    if (hits.isNotEmpty) {
+      // Deterministic selection:
+      // If multiple strokes hit, prioritize:
+      // 1) Strokes with bounding rect: smallest area first (inner specific word)
+      // 2) Topmost stroke / last drawn
+      hits.sort((a, b) {
+        if (a.rect != null && b.rect != null) {
+          final areaA = a.rect!.width * a.rect!.height;
+          final areaB = b.rect!.width * b.rect!.height;
+          return areaA.compareTo(areaB);
+        }
+        if (a.rect != null) return -1;
+        if (b.rect != null) return 1;
+        return 0;
+      });
+
+      final strokeToRemove = hits.first;
+      final index = list.indexOf(strokeToRemove);
+      if (index != -1) {
+        list.removeAt(index);
+        onErased?.call(strokeToRemove, index);
+      }
+    }
+
     final bool strokesRemoved = list.length < beforeCount;
 
     if (target == null) {

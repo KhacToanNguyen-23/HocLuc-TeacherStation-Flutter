@@ -4,6 +4,10 @@ import 'package:flutter/painting.dart';
 import 'ink_path.dart';
 import 'text_profile_models.dart';
 
+export 'dgnl_highlight_palette.dart';
+export 'offline_lexeme.dart';
+export 'pedagogical_highlight_policy.dart';
+
 enum StudioViewportMode { fullBoard, fullPdf, split }
 
 class PdfDgnlHighlightSpan {
@@ -13,6 +17,13 @@ class PdfDgnlHighlightSpan {
   final String type;
   final String note;
   final List<Rect> normalizedRects;
+  final bool isPedagogical;
+  final bool isAcademic;
+  final bool isPreTeach;
+  final bool isFunctionWord;
+  final bool isProperNoun;
+  final bool isNumber;
+  final String? lemma;
 
   const PdfDgnlHighlightSpan({
     required this.text,
@@ -21,6 +32,13 @@ class PdfDgnlHighlightSpan {
     required this.type,
     required this.note,
     required this.normalizedRects,
+    this.isPedagogical = false,
+    this.isAcademic = false,
+    this.isPreTeach = false,
+    this.isFunctionWord = false,
+    this.isProperNoun = false,
+    this.isNumber = false,
+    this.lemma,
   });
 }
 
@@ -53,16 +71,23 @@ class BoardStroke {
     this.color,
     this.width,
     this.points, {
+    this.id,
     this.isEraser = false,
     bool? isHighlighter,
     this.rect,
     this.isHollow = false,
+    this.isDashed = false,
+    this.text,
     this.smartPenGroupId,
     this.smartPenLabel,
     this.annotationOwnerId,
     this.annotationGroupId,
     this.annotationItemId,
+    this.category,
+    this.level,
+    this.opacity,
   }) : isHighlighter = isHighlighter ?? (width > 6 || rect != null);
+  final String? id;
   final bool isHighlighter;
   final Color color;
   final double width;
@@ -70,11 +95,16 @@ class BoardStroke {
   final bool isEraser;
   final Rect? rect;
   final bool isHollow;
+  final bool isDashed;
+  final String? text;
   final String? smartPenGroupId;
   final String? smartPenLabel;
   final String? annotationOwnerId;
   final String? annotationGroupId;
   final String? annotationItemId;
+  final String? category;
+  final String? level;
+  final double? opacity;
   String? get groupedAnnotationGroupId => annotationGroupId ?? smartPenGroupId;
   String? get groupedAnnotationItemId => annotationItemId ?? smartPenLabel;
   bool get isGroupedPdfAnnotation =>
@@ -85,6 +115,14 @@ class BoardStroke {
       smartPenGroupId != null && smartPenLabel != null && points.length >= 3;
   Path? _cachedPath;
   Size? _cachedSize;
+
+  bool hitTest(Offset point, double radius) {
+    if (rect != null) {
+      final inflated = rect!.inflate(radius);
+      return inflated.contains(point);
+    }
+    return points.any((p) => (p - point).distance < radius);
+  }
 
   Path getPath([Size? size]) {
     if (rect != null) {
@@ -130,15 +168,21 @@ class BoardStroke {
     color,
     width,
     List<Offset>.of(points),
+    id: id,
     isEraser: isEraser,
     isHighlighter: isHighlighter,
     rect: rect,
     isHollow: isHollow,
+    isDashed: isDashed,
+    text: text,
     smartPenGroupId: smartPenGroupId,
     smartPenLabel: smartPenLabel,
     annotationOwnerId: annotationOwnerId,
     annotationGroupId: annotationGroupId,
     annotationItemId: annotationItemId,
+    category: category,
+    level: level,
+    opacity: opacity,
   );
 
   Map<String, dynamic> toJson() => {
@@ -147,14 +191,20 @@ class BoardStroke {
     'isEraser': isEraser,
     'isHighlighter': isHighlighter,
     'points': points.map((p) => [p.dx, p.dy]).toList(),
+    if (id != null) 'id': id,
     if (rect != null)
       'rect': [rect!.left, rect!.top, rect!.width, rect!.height],
     if (isHollow) 'isHollow': true,
+    if (isDashed) 'isDashed': true,
+    if (text != null) 'text': text,
     if (smartPenGroupId != null) 'smartPenGroupId': smartPenGroupId,
     if (smartPenLabel != null) 'smartPenLabel': smartPenLabel,
     if (annotationOwnerId != null) 'annotationOwnerId': annotationOwnerId,
     if (annotationGroupId != null) 'annotationGroupId': annotationGroupId,
     if (annotationItemId != null) 'annotationItemId': annotationItemId,
+    if (category != null) 'category': category,
+    if (level != null) 'level': level,
+    if (opacity != null) 'opacity': opacity,
   };
 
   static BoardStroke fromJson(Map<String, dynamic> json) {
@@ -178,15 +228,21 @@ class BoardStroke {
             (p) => Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()),
           )
           .toList(),
+      id: json['id'] as String?,
       isEraser: json['isEraser'] as bool? ?? false,
       isHighlighter: json['isHighlighter'] as bool?,
       rect: r,
       isHollow: json['isHollow'] == true,
+      isDashed: json['isDashed'] == true,
+      text: json['text'] as String?,
       smartPenGroupId: json['smartPenGroupId'] as String?,
       smartPenLabel: json['smartPenLabel'] as String?,
       annotationOwnerId: json['annotationOwnerId'] as String?,
       annotationGroupId: json['annotationGroupId'] as String?,
       annotationItemId: json['annotationItemId'] as String?,
+      category: json['category'] as String?,
+      level: json['level'] as String?,
+      opacity: (json['opacity'] as num?)?.toDouble(),
     );
   }
 }

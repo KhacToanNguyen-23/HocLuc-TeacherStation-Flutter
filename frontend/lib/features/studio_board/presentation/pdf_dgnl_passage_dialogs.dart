@@ -62,22 +62,8 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
         .clamp(8.0, math.max(8.0, pageRect.width - cardWidth - 8))
         .toDouble();
 
-    Color categoryColor = const Color(0xff89b4fa);
-    if (activeSpan.category == 'collocation') {
-      categoryColor = const Color(0xff86efac);
-    } else if (activeSpan.level == 'A1') {
-      categoryColor = const Color(0xff22c55e);
-    } else if (activeSpan.level == 'A2') {
-      categoryColor = const Color(0xff14b8a6);
-    } else if (activeSpan.level == 'B1') {
-      categoryColor = const Color(0xff3b82f6);
-    } else if (activeSpan.level == 'B2') {
-      categoryColor = const Color(0xfff59e0b);
-    } else if (activeSpan.level == 'C1') {
-      categoryColor = const Color(0xfff97316);
-    } else if (activeSpan.level == 'C2') {
-      categoryColor = const Color(0xffa855f7);
-    }
+    final token = DgnlHighlightPalette.tokenForSpan(activeSpan);
+    final categoryColor = token.badgeDark;
 
     return Positioned(
       left: cardLeft,
@@ -102,7 +88,7 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
             color: const Color(0xf8111a15),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: categoryColor.withValues(alpha: 0.8),
+              color: categoryColor.withValues(alpha: 0.85),
               width: 1.5,
             ),
             boxShadow: const [
@@ -151,10 +137,10 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: categoryColor.withValues(alpha: 0.18),
+                      color: token.fill.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: categoryColor.withValues(alpha: 0.6),
+                        color: categoryColor.withValues(alpha: 0.7),
                       ),
                     ),
                     child: Text(
@@ -172,41 +158,44 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  InkWell(
-                    onTap: () =>
-                        PdfAnnotationExporter.applyHighlightDirectlyToPdf(
-                          context,
-                          studio,
+                  Tooltip(
+                    message: 'Lưu điểm highlight vào tài liệu (có thể tẩy xóa và bảo toàn tệp gốc)',
+                    child: InkWell(
+                      onTap: () =>
+                          PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+                            context,
+                            studio,
+                          ),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
                         ),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0x2889b4fa),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0x6689b4fa)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.draw_rounded,
-                            size: 11,
-                            color: Color(0xff89b4fa),
-                          ),
-                          SizedBox(width: 3),
-                          Text(
-                            'Áp lên file',
-                            style: TextStyle(
-                              color: Color(0xff89b4fa),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                        decoration: BoxDecoration(
+                          color: DgnlHighlightPalette.tokenGrammar.badgeDark.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: DgnlHighlightPalette.tokenGrammar.badgeDark.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.draw_rounded,
+                              size: 11,
+                              color: DgnlHighlightPalette.tokenGrammar.badgeDark,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 3),
+                            Text(
+                              'Áp lên file',
+                              style: TextStyle(
+                                color: DgnlHighlightPalette.tokenGrammar.badgeDark,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -408,7 +397,7 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
           border: isDashed
               ? null
               : Border.all(
-                  color: isSelected ? color : color.withValues(alpha: 0.6),
+                  color: isSelected ? color : color.withValues(alpha: 0.7),
                   width: isSelected ? 1.4 : 1.0,
                 ),
         ),
@@ -451,18 +440,21 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
   }
 
   Widget _buildCefrDropdownChip({
-    required int totalVocabCount,
+    required int pedagogicalCount,
+    required int totalCefrCount,
     required int a1Count,
     required int a2Count,
     required int b1Count,
     required int b2Count,
     required int c1Count,
     required int c2Count,
+    int unknownCount = 0,
   }) {
     final active = _activeCategoryFilter;
     final isCefrActive =
         active == 'vocabulary' ||
         active == 'vocabulary_all' ||
+        active == 'unknown' ||
         active == 'A1' ||
         active == 'A2' ||
         active == 'B1' ||
@@ -470,44 +462,22 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
         active == 'C1' ||
         active == 'C2';
 
-    Color activeColor;
-    String displayLabel;
-
-    switch (active) {
-      case 'A1':
-        activeColor = const Color(0xff22c55e);
-        displayLabel = 'A1 ($a1Count)';
-        break;
-      case 'A2':
-        activeColor = const Color(0xff14b8a6);
-        displayLabel = 'A2 ($a2Count)';
-        break;
-      case 'B1':
-        activeColor = const Color(0xff3b82f6);
-        displayLabel = 'B1 ($b1Count)';
-        break;
-      case 'B2':
-        activeColor = const Color(0xfff59e0b);
-        displayLabel = 'B2 ($b2Count)';
-        break;
-      case 'C1':
-        activeColor = const Color(0xfff97316);
-        displayLabel = 'C1 ($c1Count)';
-        break;
-      case 'C2':
-        activeColor = const Color(0xffa855f7);
-        displayLabel = 'C2 ($c2Count)';
-        break;
-      case 'vocabulary':
-      case 'vocabulary_all':
-        activeColor = const Color(0xffcba6f7);
-        displayLabel = 'CEFR ($totalVocabCount)';
-        break;
-      default:
-        activeColor = const Color(0xffcba6f7);
-        displayLabel = 'CEFR ($totalVocabCount)';
-        break;
-    }
+    final token = DgnlHighlightPalette.tokenForCategory(
+      active ?? 'vocabulary',
+      active,
+    );
+    final activeColor = token.badgeDark;
+    final displayLabel = switch (active) {
+      'A1' => 'A1 ($a1Count)',
+      'A2' => 'A2 ($a2Count)',
+      'B1' => 'B1 ($b1Count)',
+      'B2' => 'B2 ($b2Count)',
+      'C1' => 'C1 ($c1Count)',
+      'C2' => 'C2 ($c2Count)',
+      'unknown' => 'Unknown ($unknownCount)',
+      'vocabulary_all' => 'Tất cả từ ($totalCefrCount)',
+      _ => 'CEFR ($pedagogicalCount/$totalCefrCount)',
+    };
 
     return Theme(
       data: Theme.of(context).copyWith(cardColor: const Color(0xf6181825)),
@@ -535,14 +505,14 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
             height: 32,
             child: Row(
               children: [
-                const Icon(
-                  Icons.menu_book_outlined,
+                Icon(
+                  Icons.auto_awesome_outlined,
                   size: 14,
-                  color: Color(0xffcba6f7),
+                  color: DgnlHighlightPalette.tokenAllVocab.badgeDark,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Tất cả từ vựng ($totalVocabCount)',
+                  'Từ vựng Trọng tâm B1-C2 ($pedagogicalCount)',
                   style: const TextStyle(
                     fontSize: 11,
                     color: Colors.white,
@@ -551,7 +521,33 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
                 ),
                 if (_activeCategoryFilter == 'vocabulary') ...[
                   const Spacer(),
-                  const Icon(Icons.check, size: 14, color: Color(0xffcba6f7)),
+                  Icon(Icons.check, size: 14, color: DgnlHighlightPalette.tokenAllVocab.badgeDark),
+                ],
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'vocabulary_all',
+            height: 32,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.menu_book_outlined,
+                  size: 14,
+                  color: DgnlHighlightPalette.tokenFocused.badgeDark,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Tất cả từ vựng A1-C2 ($totalCefrCount)',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (_activeCategoryFilter == 'vocabulary_all') ...[
+                  const Spacer(),
+                  Icon(Icons.check, size: 14, color: DgnlHighlightPalette.tokenFocused.badgeDark),
                 ],
               ],
             ),
@@ -562,43 +558,52 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
               'A1',
               'Cơ bản',
               a1Count,
-              const Color(0xff22c55e),
+              DgnlHighlightPalette.tokenA1.badgeDark,
             ),
           if (a2Count > 0)
             _buildCefrMenuItem(
               'A2',
               'Sơ cấp',
               a2Count,
-              const Color(0xff14b8a6),
+              DgnlHighlightPalette.tokenA2.badgeDark,
             ),
           if (b1Count > 0)
             _buildCefrMenuItem(
               'B1',
               'Trung cấp',
               b1Count,
-              const Color(0xff3b82f6),
+              DgnlHighlightPalette.tokenB1.badgeDark,
             ),
           if (b2Count > 0)
             _buildCefrMenuItem(
               'B2',
               'Trung cao',
               b2Count,
-              const Color(0xfff59e0b),
+              DgnlHighlightPalette.tokenB2.badgeDark,
             ),
           if (c1Count > 0)
             _buildCefrMenuItem(
               'C1',
               'Cao cấp',
               c1Count,
-              const Color(0xfff97316),
+              DgnlHighlightPalette.tokenC1.badgeDark,
             ),
           if (c2Count > 0)
             _buildCefrMenuItem(
               'C2',
               'Thành thạo',
               c2Count,
-              const Color(0xffa855f7),
+              DgnlHighlightPalette.tokenC2.badgeDark,
             ),
+          if (unknownCount > 0) ...[
+            const PopupMenuDivider(height: 6),
+            _buildCefrMenuItem(
+              'unknown',
+              'Chưa định danh (Proper/Rare)',
+              unknownCount,
+              DgnlHighlightPalette.tokenUnknown.badgeDark,
+            ),
+          ],
           if (isCefrActive) ...[
             const PopupMenuDivider(height: 6),
             const PopupMenuItem<String>(

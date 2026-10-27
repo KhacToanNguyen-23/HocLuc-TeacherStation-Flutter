@@ -84,9 +84,6 @@ class StudioState extends ChangeNotifier {
   final Map<String, List<_PdfAnnotationHistoryEntry>> _pdfAnnotationRedo = {};
   final Map<String, Map<int, Map<String, BoardStroke?>>>
   _temporaryPdfAnnotationOverrides = {};
-  final Map<BoardStroke, int> _boardUndoSequence = {};
-  final Map<BoardStroke, int> _boardRedoSequence = {};
-  Map<int, List<BoardStroke>>? _redoPages;
   int _historySequence = 0;
   int _revision = 0;
   int get revision => _revision;
@@ -254,60 +251,53 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  void erase(Offset point, {List<BoardStroke>? target}) {
-    canvas.erase(point, target: target);
+  void erase(Offset point, {List<BoardStroke>? target, int? pageNumber}) {
+    final targetPage = pageNumber ?? pdfPage;
+    canvas.erase(
+      point,
+      target: target,
+      onErased: (stroke, index) {
+        if (target != null) {
+          pdf.recordAnnotationRemoved(targetPage, stroke, index);
+        }
+      },
+    );
     dirty = true;
     _revision++;
   }
 
+  bool get pdfHighlightsVisible => pdf.pdfHighlightsVisible;
+  void setPdfHighlightsVisible(bool val) => pdf.setPdfHighlightsVisible(val);
+  void togglePdfHighlightsVisible() => pdf.togglePdfHighlightsVisible();
+  void clearPdfHighlights({int? pageNumber}) =>
+      pdf.clearPdfHighlights(pageNumber: pageNumber);
+
   void undo() {
-    final history = _pdfAnnotationUndo[_pdfAnnotationHistoryKey];
-    if (history != null &&
-        history.isNotEmpty &&
-        history.last.sequence > coordinator.undoSequence) {
-      final entry = history.removeLast();
-      _applyPdfAnnotationHistory(entry, entry.before);
-      _historySequence = pdf.smartPenManager.historySequence;
-      entry.redoSequence = ++_historySequence;
-      pdf.smartPenManager.historySequence = _historySequence;
-      _pdfAnnotationRedo
-          .putIfAbsent(_pdfAnnotationHistoryKey, () => [])
-          .add(entry);
+    if (pdf.canUndoAnnotation) {
+      pdf.undoAnnotation();
+      dirty = true;
       _revision++;
-      if (entry.persistedChanged) dirty = true;
       notifyListeners();
-      return;
+    } else if (!_undoPluginAnnotation()) {
+      coordinator.undo();
     }
-    coordinator.undo();
   }
 
   void redo() {
-    final history = _pdfAnnotationRedo[_pdfAnnotationHistoryKey];
-    if (history != null &&
-        history.isNotEmpty &&
-        history.last.redoSequence > coordinator.redoSequence) {
-      final entry = history.removeLast();
-      _applyPdfAnnotationHistory(entry, entry.after);
-      _historySequence = pdf.smartPenManager.historySequence;
-      entry.sequence = ++_historySequence;
-      pdf.smartPenManager.historySequence = _historySequence;
-      _pdfAnnotationUndo
-          .putIfAbsent(_pdfAnnotationHistoryKey, () => [])
-          .add(entry);
+    if (pdf.canRedoAnnotation) {
+      pdf.redoAnnotation();
+      dirty = true;
       _revision++;
-      if (entry.persistedChanged) dirty = true;
       notifyListeners();
-      return;
+    } else if (!_redoPluginAnnotation()) {
+      coordinator.redo();
     }
-    coordinator.redo();
   }
 
   bool get canUndo =>
-      (_pdfAnnotationUndo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false) ||
-      coordinator.canUndo;
+      pdf.canUndoAnnotation || _canUndoPluginAnnotation || coordinator.canUndo;
   bool get canRedo =>
-      (_pdfAnnotationRedo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false) ||
-      coordinator.canRedo;
+      pdf.canRedoAnnotation || _canRedoPluginAnnotation || coordinator.canRedo;
   void clearBoard([int? p]) => canvas.clearPage(p);
   void clearPageStrokes([int? p]) => canvas.clearPageStrokes(p);
 
@@ -665,6 +655,12 @@ class StudioState extends ChangeNotifier {
   void addPdfDgnlPassage(PdfDgnlPassage passage) =>
       pdf.addPdfDgnlPassage(passage);
   void removePdfDgnlPassage(String id) => pdf.removePdfDgnlPassage(id);
+
+  PedagogicalHighlightPolicy get pedagogicalPolicy => pdf.pedagogicalPolicy;
+  set pedagogicalPolicy(PedagogicalHighlightPolicy policy) =>
+      pdf.setPedagogicalPolicy(policy);
+  void setPedagogicalPolicy(PedagogicalHighlightPolicy policy) =>
+      pdf.setPedagogicalPolicy(policy);
 
   // --- Document Snapshots ---
   List<ImportedDocument> get importedDocs => pdf.importedDocs;

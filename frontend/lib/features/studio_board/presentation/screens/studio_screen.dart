@@ -434,6 +434,7 @@ class _StudioScreenState extends State<StudioScreen> {
           bindings: <ShortcutActivator, VoidCallback>{
             const SingleActivator(LogicalKeyboardKey.keyS, control: true): save,
             const SingleActivator(LogicalKeyboardKey.keyS, meta: true): save,
+            const SingleActivator(LogicalKeyboardKey.f5): preview,
             const SingleActivator(LogicalKeyboardKey.escape): () {
               setState(() => showInspector = false);
             },

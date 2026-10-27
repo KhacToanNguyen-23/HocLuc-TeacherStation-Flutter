@@ -1,3 +1,6 @@
+/// Lexical certainty for a token after offline dictionary resolution.
+enum LexicalStatus { graded, recognizedUnrated, notInLexicon }
+
 /// Word token information after morphological and lexical classification.
 class WordTokenInfo {
   final String surface;
@@ -9,6 +12,10 @@ class WordTokenInfo {
   final bool isProperNoun;
   final bool isNumber;
   final bool isAcademic;
+  final LexicalStatus lexicalStatus;
+  bool get isRecognizedUnrated =>
+      lexicalStatus == LexicalStatus.recognizedUnrated;
+  final String? academicMetricLevel;
   final int syllables;
   final int startIndex;
   final int endIndex;
@@ -23,10 +30,19 @@ class WordTokenInfo {
     this.isProperNoun = false,
     this.isNumber = false,
     this.isAcademic = false,
+    bool isRecognizedUnrated = false,
+    LexicalStatus? lexicalStatus,
+    this.academicMetricLevel,
     this.syllables = 1,
     this.startIndex = 0,
     this.endIndex = 0,
-  });
+  }) : lexicalStatus =
+           lexicalStatus ??
+           (isRecognizedUnrated
+               ? LexicalStatus.recognizedUnrated
+               : cefrLevel == 'Unknown'
+               ? LexicalStatus.notInLexicon
+               : LexicalStatus.graded);
 
   Map<String, dynamic> toJson() => {
     'surface': surface,
@@ -38,6 +54,9 @@ class WordTokenInfo {
     'isProperNoun': isProperNoun,
     'isNumber': isNumber,
     'isAcademic': isAcademic,
+    'isRecognizedUnrated': isRecognizedUnrated,
+    'lexicalStatus': lexicalStatus.name,
+    'academicMetricLevel': academicMetricLevel,
     'syllables': syllables,
     'startIndex': startIndex,
     'endIndex': endIndex,
@@ -322,6 +341,22 @@ class TextProfileResult {
   final DateTime analyzedAt;
   final bool isShortText;
 
+  int get recognizedUnratedCount => tokens
+      .where((token) => token.lexicalStatus == LexicalStatus.recognizedUnrated)
+      .length;
+
+  int get notInLexiconCount => tokens
+      .where((token) => token.lexicalStatus == LexicalStatus.notInLexicon)
+      .length;
+
+  Map<LexicalStatus, int> get lexicalStatusCounts {
+    final counts = {for (final status in LexicalStatus.values) status: 0};
+    for (final token in tokens) {
+      counts[token.lexicalStatus] = counts[token.lexicalStatus]! + 1;
+    }
+    return Map.unmodifiable(counts);
+  }
+
   const TextProfileResult({
     required this.originalText,
     required this.statistics,
@@ -356,6 +391,10 @@ class TextProfileResult {
     'tokens': tokens.map((t) => t.toJson()).toList(),
     'cefrCounts': cefrCounts,
     'cefrPercentages': cefrPercentages,
+    'lexicalStatusCounts': {
+      for (final entry in lexicalStatusCounts.entries)
+        entry.key.name: entry.value,
+    },
     'readabilityMetrics': readabilityMetrics.map((r) => r.toJson()).toList(),
     'lexicalDiversity': lexicalDiversity.toJson(),
     'syntacticComplexity': syntacticComplexity.toJson(),

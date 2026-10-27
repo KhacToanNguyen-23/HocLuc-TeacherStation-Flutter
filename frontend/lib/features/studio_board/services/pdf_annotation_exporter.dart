@@ -1,5 +1,6 @@
 import 'package:teaching_companion/core/utils/frontend_logger.dart';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,8 +27,9 @@ class PdfAnnotationExporter {
 
   /// Xuất mảng byte PDF đã được ghi đè lớp TextMarkup Highlight Annotation chuẩn ISO-32000
   static Future<Uint8List?> exportHighlightedPdfBytes(
-    StudioState studio,
-  ) async {
+    StudioState studio, {
+    PedagogicalHighlightPolicy? policy,
+  }) async {
     Uint8List? sourceBytes = studio.pdfBytes;
     if (sourceBytes == null && studio.pdfFilePath != null) {
       final file = File(studio.pdfFilePath!);
@@ -39,6 +41,7 @@ class PdfAnnotationExporter {
     if (sourceBytes == null || sourceBytes.isEmpty) return null;
 
     final doc = sf.PdfDocument(inputBytes: sourceBytes);
+    final activePolicy = policy ?? studio.pedagogicalPolicy;
 
     final passages = studio.pdfDgnlPassages;
     for (final passage in passages) {
@@ -48,27 +51,33 @@ class PdfAnnotationExporter {
       final page = doc.pages[passage.pageNumber - 1];
       final pageSize = page.size;
 
-      for (final span in passage.spans) {
-        final isGrammar = span.category == 'grammar';
-        final isCollocation = span.category == 'collocation';
-        final isNestedVocab =
+      final filteredSpans = activePolicy.filterSpans(passage.spans);
+      final dedupedSpans = deduplicateSpansForRendering(filteredSpans);
+
+      for (final span in dedupedSpans) {
+        final isNestedInColloc =
             span.category == 'vocabulary' &&
-            passage.spans.any(
+            dedupedSpans.any(
               (other) =>
                   other.category == 'collocation' &&
                   _isSpanContained(span, other),
             );
+        final isNestedInGrammar =
+            span.category == 'vocabulary' &&
+            dedupedSpans.any(
+              (other) =>
+                  other.category == 'grammar' &&
+                  _isSpanContained(span, other),
+            );
 
-        sf.PdfColor highlightColor;
-        if (isGrammar) {
-          highlightColor = sf.PdfColor(137, 180, 250); // Cyan/blue
-        } else if (isCollocation) {
-          highlightColor = sf.PdfColor(134, 239, 172); // Emerald green
-        } else if (span.level == 'C1' || span.level == 'C2') {
-          highlightColor = sf.PdfColor(203, 166, 247); // Purple C1
-        } else {
-          highlightColor = sf.PdfColor(249, 226, 175); // Amber/yellow B2
-        }
+        final style = DgnlHighlightPalette.resolveRenderingStyle(
+          span: span,
+          isNestedInCollocation: isNestedInColloc,
+          isNestedInGrammar: isNestedInGrammar,
+        );
+
+        final rgb = DgnlHighlightPalette.toRgb(style.color);
+        final highlightColor = sf.PdfColor(rgb.r, rgb.g, rgb.b);
 
         for (final normR in span.normalizedRects) {
           final x = normR.left * pageSize.width;
@@ -78,25 +87,32 @@ class PdfAnnotationExporter {
 
           if (w <= 0 || h <= 0) continue;
 
-          if (isGrammar) {
+          if (style.isDashed) {
             // Grammar: Outer dashed border, 0% brush fill to keep background transparent & readable
-            final pen = sf.PdfPen(highlightColor, width: 1.5);
+            final pen = sf.PdfPen(highlightColor, width: style.borderWidth);
             pen.dashStyle = sf.PdfDashStyle.dash;
+            page.graphics.save();
+            page.graphics.setTransparency(style.borderOpacity);
             page.graphics.drawRectangle(
               pen: pen,
               bounds: Rect.fromLTWH(x - 2, y - 2, w + 4, h + 4),
             );
-          } else if (isNestedVocab) {
-            // Nested Vocab: Clean thin outline pen, zero background fill to prevent double-brush mud
-            final pen = sf.PdfPen(highlightColor, width: 1.2);
+            page.graphics.restore();
+          } else if (style.isHollow) {
+            // Nested Vocab inside Collocation: Clean thin outline pen, zero background fill to prevent double-brush mud
+            final pen = sf.PdfPen(highlightColor, width: style.borderWidth);
+            page.graphics.save();
+            page.graphics.setTransparency(style.borderOpacity);
             page.graphics.drawRectangle(
               pen: pen,
               bounds: Rect.fromLTWH(x, y, w, h),
             );
+            page.graphics.restore();
           } else {
-            // Collocation or Standalone Vocab: Soft pastel solid brush
+            // Collocation or Standalone Vocab / Vocab in Grammar:
+            // Soft pastel solid brush with centralized adaptive opacity
             page.graphics.save();
-            page.graphics.setTransparency(0.25);
+            page.graphics.setTransparency(style.fillOpacity);
             page.graphics.drawRectangle(
               brush: sf.PdfSolidBrush(highlightColor),
               bounds: Rect.fromLTWH(x, y, w, h),
@@ -113,6 +129,7 @@ class PdfAnnotationExporter {
               textMarkupAnnotationType:
                   sf.PdfTextMarkupAnnotationType.highlight,
             );
+            annotation.opacity = style.fillOpacity;
             page.annotations.add(annotation);
           }
         }
@@ -191,11 +208,79 @@ class PdfAnnotationExporter {
     return false;
   }
 
+  /// Kiểm tra xem hai span có tọa độ trùng lặp hoặc lồng nhau >= 75% hay không
+  static bool _isExactOrNearDuplicate(
+    PdfDgnlHighlightSpan a,
+    PdfDgnlHighlightSpan b,
+  ) {
+    if (identical(a, b)) return true;
+    if (a.normalizedRects.isEmpty || b.normalizedRects.isEmpty) return false;
+    for (final ra in a.normalizedRects) {
+      for (final rb in b.normalizedRects) {
+        final intersection = ra.intersect(rb);
+        if (intersection.width > 0 && intersection.height > 0) {
+          final interArea = intersection.width * intersection.height;
+          final minArea = math.min(ra.width * ra.height, rb.width * rb.height);
+          if (minArea > 0 && (interArea / minArea) >= 0.75) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Khử trùng lặp và phân tách kênh hiển thị trước khi ghi vào PDF hoặc lưu vào StudioState.
+  /// 1. Loại bỏ các span trùng lặp chính xác cùng category.
+  /// 2. Nếu hai span vocabulary chồng lấn nhau trên cùng một vùng chữ (ví dụ: 'bitter' và 'bitterness'):
+  ///    ưu tiên giữ span có độ dài ký tự lớn hơn / cụ thể hơn để tránh tô đè 2 màu từ vựng.
+  /// 3. Bảo toàn các span khác category (Grammar + Vocab, Collocation + Vocab) để phục vụ sư phạm.
+  @visibleForTesting
+  static List<PdfDgnlHighlightSpan> deduplicateSpansForRendering(
+    List<PdfDgnlHighlightSpan> spans,
+  ) {
+    final result = <PdfDgnlHighlightSpan>[];
+    for (final span in spans) {
+      // 1. Kiểm tra trùng lặp trong cùng phân loại
+      final duplicateCategoryIdx = result.indexWhere(
+        (existing) =>
+            existing.category == span.category &&
+            _isExactOrNearDuplicate(existing, span),
+      );
+      if (duplicateCategoryIdx != -1) {
+        // Trong cùng category, nếu span mới có từ cụ thể hơn, thay thế span cũ
+        if (span.text.length > result[duplicateCategoryIdx].text.length) {
+          result[duplicateCategoryIdx] = span;
+        }
+        continue;
+      }
+
+      // 2. Nếu là từ vựng (vocabulary) chồng lấn với một từ vựng khác:
+      if (span.category == 'vocabulary') {
+        final existingVocabIdx = result.indexWhere(
+          (existing) =>
+              existing.category == 'vocabulary' &&
+              _isExactOrNearDuplicate(existing, span),
+        );
+        if (existingVocabIdx != -1) {
+          if (span.text.length > result[existingVocabIdx].text.length) {
+            result[existingVocabIdx] = span;
+          }
+          continue;
+        }
+      }
+
+      result.add(span);
+    }
+    return result;
+  }
+
   /// Áp highlight thẳng lên tài liệu PDF hiện tại mà KHÔNG bật hộp thoại lưu file (Zero-dialog in-place)
   static Future<bool> applyHighlightDirectlyToPdf(
     BuildContext context,
     StudioState studio, {
     bool showFeedback = true,
+    PedagogicalHighlightPolicy? policy,
   }) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
 
@@ -218,6 +303,7 @@ class PdfAnnotationExporter {
     }
 
     try {
+      final activePolicy = policy ?? studio.pedagogicalPolicy;
       // 1. Ghi vĩnh viễn các điểm highlight vào canvas nét vẽ (BoardStroke) của PDF trong StudioState
       // Giúp highlight tồn tại vĩnh viễn trên màn hình ngay cả khi tắt extension hay đóng thẻ card
       for (final passage in studio.pdfDgnlPassages) {
@@ -225,69 +311,62 @@ class PdfAnnotationExporter {
           passage.pageNumber,
           () => [],
         );
-        for (final span in passage.spans) {
-          final isGrammar = span.category == 'grammar';
-          final isNestedVocab =
+        final filteredSpans = activePolicy.filterSpans(passage.spans);
+        final dedupedSpans = deduplicateSpansForRendering(filteredSpans);
+        for (final span in dedupedSpans) {
+          final isNestedInColloc =
               span.category == 'vocabulary' &&
-              passage.spans.any(
+              dedupedSpans.any(
                 (other) =>
                     other.category == 'collocation' &&
                     _isSpanContained(span, other),
               );
+          final isNestedInGrammar =
+              span.category == 'vocabulary' &&
+              dedupedSpans.any(
+                (other) =>
+                    other.category == 'grammar' &&
+                    _isSpanContained(span, other),
+              );
 
-          Color strokeColor;
-          if (isGrammar) {
-            strokeColor = const Color(0xff89b4fa);
-          } else if (span.category == 'collocation') {
-            strokeColor = const Color(0xff86efac);
-          } else if (span.level == 'C1' || span.level == 'C2') {
-            strokeColor = const Color(0xffcba6f7);
-          } else {
-            strokeColor = const Color(0xfff9e2af);
-          }
+          final style = DgnlHighlightPalette.resolveRenderingStyle(
+            span: span,
+            isNestedInCollocation: isNestedInColloc,
+            isNestedInGrammar: isNestedInGrammar,
+          );
 
-          final isHollow = isGrammar || isNestedVocab;
-          final strokeWidth = isGrammar ? 1.5 : (isNestedVocab ? 1.2 : 20.0);
+          final isHollow = style.isHollow;
+          final strokeWidth = isHollow ? style.borderWidth : 20.0;
+          final opacity = isHollow ? style.borderOpacity : style.fillOpacity;
 
           for (final normR in span.normalizedRects) {
             final exists = targetList.any((s) => s.rect == normR);
             if (!exists) {
-              targetList.add(
-                BoardStroke(
-                  strokeColor,
-                  strokeWidth,
-                  [
-                    Offset(normR.left, normR.top),
-                    Offset(normR.right, normR.bottom),
-                  ],
-                  rect: normR,
-                  isHollow: isHollow,
-                ),
+              final newStroke = BoardStroke(
+                style.color,
+                strokeWidth,
+                [
+                  Offset(normR.left, normR.top),
+                  Offset(normR.right, normR.bottom),
+                ],
+                id: '${passage.id}_${span.category}_${span.level}_${normR.left.toStringAsFixed(3)}_${normR.top.toStringAsFixed(3)}',
+                rect: normR,
+                isHollow: isHollow,
+                isDashed: style.isDashed,
+                text: span.text,
+                category: span.category,
+                level: span.level,
+                opacity: opacity,
               );
+              targetList.add(newStroke);
+              studio.pdf.recordAnnotationAdded(passage.pageNumber, newStroke);
             }
           }
         }
       }
 
-      final bytes = await exportHighlightedPdfBytes(studio);
-      if (bytes != null) {
-        // 2. Nếu có tệp trên ổ đĩa, ghi đè trực tiếp (in-place) không hỏi gì cả
-        if (studio.pdfFilePath != null && studio.pdfFilePath!.isNotEmpty) {
-          try {
-            final file = File(studio.pdfFilePath!);
-            if (await file.exists()) {
-              await file.writeAsBytes(bytes);
-            }
-          } catch (e) {
-            FrontendLogger.write(
-              '[PdfAnnotationExporter] In-place write error: $e',
-            );
-          }
-        }
-
-        // 3. Cập nhật thẳng vào studio.pdfBytes mà không bị reset trang 1
-        studio.updatePdfBytesInPlace(bytes);
-      }
+      // 2. Non-destructive persistence: Lưu lớp chú thích riêng biệt, tuyệt đối không ghi đè tệp gốc
+      await studio.pdf.savePersistentAnnotations();
 
       studio.dirty = true;
       studio.bumpRevision();
@@ -310,7 +389,7 @@ class PdfAnnotationExporter {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Đã áp dụng vĩnh viễn $totalSpans điểm highlight lên tài liệu (vẫn giữ nguyên khi tắt extension)!',
+                    'Đã lưu $totalSpans điểm highlight vào lớp chú thích (tệp PDF gốc được bảo toàn)!',
                     style: const TextStyle(fontSize: 12.5),
                   ),
                 ),
@@ -410,18 +489,25 @@ class PdfAnnotationExporter {
         finalPath = '$finalPath.pdf';
       }
 
-      final outFile = File(finalPath);
-      if (!await outFile.exists() || await outFile.length() == 0) {
-        await outFile.writeAsBytes(bytes);
+      if (studio.pdfFilePath != null && studio.pdfFilePath!.isNotEmpty) {
+        final srcNorm = studio.pdfFilePath!.replaceAll(r'\', '/').toLowerCase();
+        final outNorm = finalPath.replaceAll(r'\', '/').toLowerCase();
+        if (srcNorm == outNorm) {
+          messenger?.showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Không thể xuất đè lên tệp PDF gốc để bảo toàn tài liệu. Vui lòng chọn tên tệp khác.',
+              ),
+              backgroundColor: Color(0xf03b1111),
+              duration: Duration(seconds: 4),
+            ),
+          );
+          return null;
+        }
       }
 
-      // Cập nhật lại studio để stage tự động load tệp PDF mới đã ghi vĩnh viễn
-      studio.setPdfFile(finalPath, bytes);
-
-      final totalSpans = studio.pdfDgnlPassages.fold<int>(
-        0,
-        (sum, p) => sum + p.spans.length,
-      );
+      final outFile = File(finalPath);
+      await outFile.writeAsBytes(bytes);
 
       final displayFile = finalPath.replaceAll(r'\', '/').split('/').last;
 
@@ -437,7 +523,7 @@ class PdfAnnotationExporter {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Đã ghi vĩnh viễn $totalSpans điểm Highlight chuẩn ISO vào: $displayFile (Mở được trên Adobe, Foxit, Chrome)!',
+                  'Đã xuất bản sao PDF có highlight tại: $displayFile (tệp gốc không bị ảnh hưởng)!',
                   style: const TextStyle(fontSize: 12.5),
                 ),
               ),
@@ -518,12 +604,18 @@ class PdfAnnotationExporter {
                 s.rect!.height * pageSize.height,
               );
               if (s.isHollow) {
+                page.graphics.save();
+                page.graphics.setTransparency(s.color.a < 1.0 ? s.color.a : 0.85);
                 page.graphics.drawRectangle(pen: pen, bounds: r);
+                page.graphics.restore();
               } else {
+                page.graphics.save();
+                page.graphics.setTransparency(s.color.a < 1.0 ? s.color.a : 0.22);
                 page.graphics.drawRectangle(
                   brush: sf.PdfSolidBrush(sf.PdfColor(rVal, gVal, bVal)),
                   bounds: r,
                 );
+                page.graphics.restore();
               }
             } else if (s.points.length == 1) {
               final pt = Offset(
@@ -642,4 +734,3 @@ class PdfAnnotationExporter {
     StudioState studio,
   ) => _saveLecturePdfImpl(context, studio);
 }
-

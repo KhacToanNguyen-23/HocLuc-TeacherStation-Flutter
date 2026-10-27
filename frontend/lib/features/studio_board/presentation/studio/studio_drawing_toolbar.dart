@@ -39,11 +39,11 @@ class StudioDrawingToolbar extends StatelessWidget {
             children: [
               const MeetAdmissionButton(),
               for (final (name, icon, label) in [
-                ('pan', Icons.pan_tool_outlined, 'Di chuyển bảng (giữ Space)'),
-                ('pen', Icons.edit_outlined, 'Bút vẽ'),
-                ('highlight', Icons.brush_outlined, 'Bút đánh dấu'),
-                ('erase', Icons.auto_fix_normal, 'Tẩy nét'),
-                ('laser', Icons.adjust, 'Chấm Laser (Chỉ trỏ)'),
+                ('pan', Icons.pan_tool_outlined, 'Di chuyển bảng (Kéo chuột / giữ Space)'),
+                ('pen', Icons.edit_outlined, 'Bút vẽ nét trơn (P)'),
+                ('highlight', Icons.brush_outlined, 'Bút dạ quang đánh dấu (H)'),
+                ('erase', Icons.auto_fix_normal, 'Tẩy nét vẽ (E)'),
+                ('laser', Icons.adjust, 'Con trỏ Laser chỉ bài (L)'),
               ])
                 AppPressable(
                   tooltip: label,
@@ -74,11 +74,11 @@ class StudioDrawingToolbar extends StatelessWidget {
               Container(width: 24, height: 1, color: line),
               const SizedBox(height: 6),
               for (final (color, label) in [
-                (const Color(0xfff0f3ed), 'Trắng phấn'),
-                (const Color(0xffffe66d), 'Vàng phấn'),
-                (const Color(0xff70e0d0), 'Xanh phấn'),
-                (const Color(0xffff8c69), 'Cam phấn'),
-                (const Color(0xffff85a2), 'Hồng phấn'),
+                (const Color(0xfff0f3ed), 'Phấn trắng'),
+                (const Color(0xffffe66d), 'Phấn vàng'),
+                (const Color(0xff70e0d0), 'Phấn ngọc lam'),
+                (const Color(0xffff8c69), 'Phấn cam'),
+                (const Color(0xffff85a2), 'Phấn hồng'),
               ])
                 AppPressable(
                   tooltip: label,
@@ -105,7 +105,7 @@ class StudioDrawingToolbar extends StatelessWidget {
               Container(width: 24, height: 1, color: line),
               const SizedBox(height: 6),
               AppPressable(
-                tooltip: 'Hoàn tác nét',
+                tooltip: 'Hoàn tác nét vẽ (Ctrl+Z)',
                 onTap: studio.canUndo ? studio.undo : null,
                 borderRadius: BorderRadius.circular(AppRadii.control),
                 child: Container(
@@ -120,7 +120,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                 ),
               ),
               AppPressable(
-                tooltip: 'Làm lại nét',
+                tooltip: 'Làm lại nét vẽ (Ctrl+Y)',
                 onTap: studio.canRedo ? studio.redo : null,
                 borderRadius: BorderRadius.circular(AppRadii.control),
                 child: Container(
@@ -135,7 +135,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                 ),
               ),
               AppPressable(
-                tooltip: 'Xóa nét trang này',
+                tooltip: 'Xóa toàn bộ nét trang này',
                 onTap: studio.strokes.isEmpty
                     ? null
                     : () => _confirmClear(context),
@@ -165,7 +165,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                       final isActive = isPip;
 
                       return IconButton(
-                        tooltip: 'Điều khiển Webcam',
+                        tooltip: 'Điều khiển Webcam giáo viên',
                         onPressed: () => _openVerticalCameraMenu(btnContext),
                         style: IconButton.styleFrom(
                           backgroundColor: isPip
@@ -193,8 +193,8 @@ class StudioDrawingToolbar extends StatelessWidget {
               ),
               IconButton(
                 tooltip: studio.showQuestionsDrawer
-                    ? 'Đóng khay tài liệu đã nhập'
-                    : 'Mở khay tài liệu đã nhập',
+                    ? 'Đóng khay tài liệu câu hỏi'
+                    : 'Mở khay tài liệu & bài tập',
                 onPressed: studio.toggleQuestionsDrawer,
                 style: IconButton.styleFrom(
                   backgroundColor: studio.showQuestionsDrawer
@@ -212,7 +212,7 @@ class StudioDrawingToolbar extends StatelessWidget {
               IconButton(
                 tooltip: studio.showSpeakerNotes
                     ? 'Đóng ghi chú nhắc bài'
-                    : 'Mở ghi chú nhắc bài',
+                    : 'Mở ghi chú nhắc bài của giáo viên',
                 onPressed: studio.toggleSpeakerNotes,
                 style: IconButton.styleFrom(
                   backgroundColor: studio.showSpeakerNotes
@@ -269,11 +269,11 @@ class StudioDrawingToolbar extends StatelessWidget {
             children: [
               const MeetAdmissionButton(),
               for (final (name, icon, label) in [
-                ('pan', Icons.pan_tool_outlined, 'Di chuyển bảng (giữ Space)'),
-                ('pen', Icons.edit_outlined, 'Bút vẽ'),
-                ('highlight', Icons.brush_outlined, 'Bút đánh dấu'),
-                ('erase', Icons.auto_fix_normal, 'Tẩy nét'),
-                ('laser', Icons.adjust, 'Chấm Laser (Chỉ trỏ)'),
+                ('pan', Icons.pan_tool_outlined, 'Di chuyển bảng (Kéo chuột / giữ Space)'),
+                ('pen', Icons.edit_outlined, 'Bút vẽ nét trơn (P)'),
+                ('highlight', Icons.brush_outlined, 'Bút dạ quang đánh dấu (H)'),
+                ('erase', Icons.auto_fix_normal, 'Tẩy nét vẽ (E)'),
+                ('laser', Icons.adjust, 'Con trỏ Laser chỉ bài (L)'),
               ])
                 IconButton(
                   tooltip: label,
@@ -293,11 +293,11 @@ class StudioDrawingToolbar extends StatelessWidget {
               _strokeSettings(context),
               const SizedBox(width: 8),
               for (final (color, label) in [
-                (const Color(0xfff0f3ed), 'Trắng phấn'),
-                (const Color(0xffffe66d), 'Vàng phấn'),
-                (const Color(0xff70e0d0), 'Xanh phấn'),
-                (const Color(0xffff8c69), 'Cam phấn'),
-                (const Color(0xffff85a2), 'Hồng phấn'),
+                (const Color(0xfff0f3ed), 'Phấn trắng'),
+                (const Color(0xffffe66d), 'Phấn vàng'),
+                (const Color(0xff70e0d0), 'Phấn ngọc lam'),
+                (const Color(0xffff8c69), 'Phấn cam'),
+                (const Color(0xffff85a2), 'Phấn hồng'),
               ])
                 Tooltip(
                   message: label,
@@ -321,17 +321,17 @@ class StudioDrawingToolbar extends StatelessWidget {
                 ),
               const SizedBox(width: 8),
               IconButton(
-                tooltip: 'Hoàn tác nét',
+                tooltip: 'Hoàn tác nét vẽ (Ctrl+Z)',
                 onPressed: studio.canUndo ? studio.undo : null,
                 icon: const Icon(Icons.undo, size: 19),
               ),
               IconButton(
-                tooltip: 'Làm lại nét',
+                tooltip: 'Làm lại nét vẽ (Ctrl+Y)',
                 onPressed: studio.canRedo ? studio.redo : null,
                 icon: const Icon(Icons.redo, size: 19),
               ),
               IconButton(
-                tooltip: 'Xóa nét trang này',
+                tooltip: 'Xóa toàn bộ nét trang này',
                 onPressed: studio.strokes.isEmpty
                     ? null
                     : () => _confirmClear(context),
@@ -349,7 +349,7 @@ class StudioDrawingToolbar extends StatelessWidget {
                       final isActive = isPip;
 
                       return IconButton(
-                        tooltip: 'Điều khiển Webcam',
+                        tooltip: 'Điều khiển Webcam giáo viên',
                         onPressed: () => _openHorizontalCameraMenu(btnContext),
                         style: IconButton.styleFrom(
                           backgroundColor: isPip
@@ -370,8 +370,8 @@ class StudioDrawingToolbar extends StatelessWidget {
               ),
               IconButton(
                 tooltip: studio.showQuestionsDrawer
-                    ? 'Đóng khay tài liệu đã nhập'
-                    : 'Mở khay tài liệu đã nhập',
+                    ? 'Đóng khay tài liệu câu hỏi'
+                    : 'Mở khay tài liệu & bài tập',
                 onPressed: studio.toggleQuestionsDrawer,
                 style: IconButton.styleFrom(
                   backgroundColor: studio.showQuestionsDrawer
@@ -387,7 +387,7 @@ class StudioDrawingToolbar extends StatelessWidget {
               IconButton(
                 tooltip: studio.showSpeakerNotes
                     ? 'Đóng ghi chú nhắc bài'
-                    : 'Mở ghi chú nhắc bài',
+                    : 'Mở ghi chú nhắc bài của giáo viên',
                 onPressed: studio.toggleSpeakerNotes,
                 style: IconButton.styleFrom(
                   backgroundColor: studio.showSpeakerNotes
@@ -430,7 +430,9 @@ class StudioDrawingToolbar extends StatelessWidget {
   Widget _strokeSettings(BuildContext context) {
     final supported = ['pen', 'highlight', 'erase'].contains(studio.tool);
     return IconButton(
-      tooltip: 'Độ dày và xem trước nét',
+      tooltip: 'Độ dày và xem trước nét vẽ',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
       onPressed: supported
           ? () => showDialog<void>(
               context: context,

@@ -378,12 +378,12 @@ class StudioTopBar extends StatelessWidget {
                                     ),
                                   );
                                 },
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(AppRadii.control),
                                 child: const Padding(
-                                  padding: EdgeInsets.all(3),
+                                  padding: EdgeInsets.all(5),
                                   child: Icon(
                                     Icons.copy_rounded,
-                                    size: 14,
+                                    size: 15,
                                     color: AppColors.primary,
                                   ),
                                 ),
@@ -394,12 +394,12 @@ class StudioTopBar extends StatelessWidget {
                               message: 'Mở Google Meet trên tab mới',
                               child: InkWell(
                                 onTap: () => openExternalUrl(url),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(AppRadii.control),
                                 child: const Padding(
-                                  padding: EdgeInsets.all(3),
+                                  padding: EdgeInsets.all(5),
                                   child: Icon(
                                     Icons.open_in_new_rounded,
-                                    size: 14,
+                                    size: 15,
                                     color: AppColors.primary,
                                   ),
                                 ),
@@ -422,7 +422,7 @@ class StudioTopBar extends StatelessWidget {
               if (studio.view != 'board') const MeetAdmissionButton(),
               ...[
                 IconButton(
-                  tooltip: 'Bảng giảng',
+                  tooltip: 'Bảng viết tương tác',
                   iconSize: 18,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
@@ -442,7 +442,7 @@ class StudioTopBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 3),
                 IconButton(
-                  tooltip: 'Câu hỏi',
+                  tooltip: 'Khung bài tập & câu hỏi',
                   iconSize: 18,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
@@ -464,7 +464,7 @@ class StudioTopBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 3),
                 IconButton(
-                  tooltip: 'Xem khung trình bày',
+                  tooltip: 'Xem trước khung trình chiếu (F5)',
                   iconSize: 18,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
@@ -479,7 +479,7 @@ class StudioTopBar extends StatelessWidget {
                 if (width > 800 && onTogglePlugins != null) ...[
                   const SizedBox(width: 3),
                   IconButton(
-                    tooltip: 'Hoạt động & Tiện ích môn',
+                    tooltip: 'Cửa hàng tiện ích & công cụ môn học',
                     iconSize: 18,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
@@ -640,6 +640,7 @@ class StudioTopBar extends StatelessWidget {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shadowColor: AppColors.success.withValues(alpha: 0.35),
@@ -674,6 +675,7 @@ class StudioTopBar extends StatelessWidget {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shadowColor: AppColors.primary.withValues(alpha: 0.35),
@@ -775,12 +777,7 @@ class StudioTopBar extends StatelessWidget {
                           width: 145,
                           height: 38,
                           child: ElevatedButton.icon(
-                            onPressed: () {
-                              showAppModalDialog<void>(
-                                context: context,
-                                builder: (_) => const CreateClassroomDialog(),
-                              );
-                            },
+                            onPressed: () => CreateClassroomDialog.show(context),
                             icon: const Icon(
                               Icons.add_rounded,
                               size: 18,
@@ -796,6 +793,7 @@ class StudioTopBar extends StatelessWidget {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(

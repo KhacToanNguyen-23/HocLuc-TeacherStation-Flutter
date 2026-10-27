@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_board_models.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/text_profile_models.dart';
 import 'package:teaching_companion/features/studio_board/presentation/widgets/text_profiler_dialog.dart';
+import 'package:teaching_companion/features/studio_board/services/profiler/cefr_dictionary_data.dart';
 import 'package:teaching_companion/features/studio_board/services/profiler/cefr_profiler.dart';
 import 'package:teaching_companion/features/studio_board/services/profiler/lexical_diversity_calculator.dart';
 import 'package:teaching_companion/features/studio_board/services/profiler/readability_calculator.dart';
@@ -73,13 +74,86 @@ void main() {
       expect(spans[3].surface, equals('reads'));
     });
 
+    test(
+      'keeps hyphenated and Unicode-hyphenated compounds as single spans',
+      () {
+        const text = 'bitter-tasting, bitter‑tasting';
+        final spans = TextTokenizer.extractWordSpans(text);
+
+        expect(spans.map((span) => span.surface), [
+          'bitter-tasting',
+          'bitter‑tasting',
+        ]);
+        for (final span in spans) {
+          expect(text.substring(span.startIndex, span.endIndex), span.surface);
+        }
+      },
+    );
+
     test('normalizes inflected words and irregular verbs to base lemmas', () {
       expect(TextTokenizer.normalizeLemma('went'), equals('go'));
       expect(TextTokenizer.normalizeLemma('studies'), equals('study'));
       expect(TextTokenizer.normalizeLemma('running'), equals('run'));
+      expect(TextTokenizer.normalizeLemma('bitter'), equals('bitter'));
+      expect(TextTokenizer.normalizeLemma('bitterness'), equals('bitter'));
+      expect(TextTokenizer.normalizeTokenLemma('bitterness'), 'bitterness');
       expect(TextTokenizer.normalizeLemma('boxes'), equals('box'));
       expect(TextTokenizer.normalizeLemma('children'), equals('child'));
     });
+
+    test(
+      'resolves suffix variations and hyphen compounds through offline CEFR',
+      () {
+        const text = 'Bitterness, potentials, bitterly, and bitter-tasting.';
+        final profile = TextProfilerService.profile(text);
+        final tokens = {
+          for (final token in profile.tokens) token.surface: token,
+        };
+
+        expect(tokens['Bitterness']!.cefrLevel, 'Unknown');
+        expect(tokens['Bitterness']!.isRecognizedUnrated, isTrue);
+        expect(tokens['potentials']!.cefrLevel, 'B1');
+        expect(tokens['bitterly']!.cefrLevel, 'B2');
+        expect(tokens['bitter-tasting']!.cefrLevel, 'B1');
+        expect(tokens['bitter-tasting']!.lemma, 'bitter-tasting');
+        expect(profile.cefrCounts['Unknown'], 1);
+      },
+    );
+
+    test('resolves medication plurals without crossing part of speech', () {
+      const passage = 'Medications can help. Medication can help.';
+      final profile = TextProfilerService.profile(passage);
+      final medications = profile.tokens.firstWhere(
+        (token) => token.surface == 'Medications',
+      );
+      final medication = profile.tokens.firstWhere(
+        (token) => token.surface == 'Medication',
+      );
+
+      expect(medications.lemma, 'medication');
+      expect(medications.cefrLevel, 'B2');
+      expect(medications.lexicalStatus, LexicalStatus.graded);
+      expect(medication.cefrLevel, 'B2');
+      expect(TextTokenizer.lookupCandidates('medication'), ['medication']);
+      expect(
+        TextTokenizer.lookupCandidates('medications'),
+        isNot(contains('medicate')),
+      );
+    });
+
+    test(
+      'does not join an unknown compound into a different dictionary word',
+      () {
+        final profile = TextProfilerService.profile('I re-mark the answer.');
+        final compound = profile.tokens.singleWhere(
+          (token) => token.surface == 're-mark',
+        );
+
+        expect(CefrDictionaryData.lookupCefr('remark'), isNotNull);
+        expect(compound.cefrLevel, 'Unknown');
+        expect(compound.lemma, 're-mark');
+      },
+    );
 
     test('distinguishes proper nouns from regular words', () {
       expect(TextTokenizer.isProperNoun('London', 1, false), isTrue);
@@ -93,14 +167,14 @@ void main() {
       'classifies words into 6 CEFR levels accurately and isolates unknown tokens',
       () {
         const passage =
-            'A smart student reads a book. The government announced feasible and unprecedented economic measures.';
+            'A smart student reads a book. The government announced preliminary economic measures. Notwithstanding the delay, the committee agreed.';
         final spans = TextTokenizer.extractWordSpans(passage);
         final result = CefrProfiler.profileTokens(passage, spans);
 
         expect(result.counts['A1']! > 0, isTrue); // 'a', 'reads', 'book'
         expect(result.counts['B1']! > 0, isTrue); // 'government', 'economic'
-        expect(result.counts['B2']! > 0, isTrue); // 'feasible'
-        expect(result.counts['C1']! > 0, isTrue); // 'unprecedented'
+        expect(result.counts['B2']! > 0, isTrue); // 'preliminary'
+        expect(result.counts['C1']! > 0, isTrue); // 'notwithstanding'
 
         // Unknown words are NOT artificially elevated to C1/C2
         final unknownSpans = TextTokenizer.extractWordSpans(
@@ -113,6 +187,38 @@ void main() {
         expect(unknownResult.counts['Unknown'], equals(2));
         expect(unknownResult.counts['C1'], equals(0));
         expect(unknownResult.counts['C2'], equals(0));
+      },
+    );
+
+    test(
+      'keeps mid-sentence proper nouns Unknown despite common-word matches',
+      () {
+        const passage = 'I met Apple, May, and Analysis.';
+        final result = CefrProfiler.profileTokens(
+          passage,
+          TextTokenizer.extractWordSpans(passage),
+        );
+        final apple = result.tokens.singleWhere(
+          (token) => token.surface == 'Apple',
+        );
+        final may = result.tokens.singleWhere(
+          (token) => token.surface == 'May',
+        );
+        final analysis = result.tokens.singleWhere(
+          (token) => token.surface == 'Analysis',
+        );
+
+        expect(apple.isProperNoun, isTrue);
+        expect(apple.cefrLevel, 'Unknown');
+        expect(may.isProperNoun, isTrue);
+        expect(may.cefrLevel, 'Unknown');
+        expect(analysis.isProperNoun, isTrue);
+        expect(analysis.cefrLevel, 'Unknown');
+        expect(analysis.isAcademic, isFalse);
+        expect(analysis.academicMetricLevel, isNull);
+        expect(analysis.frequencyBand, 'Off-list');
+        expect(result.counts['A1'], 3); // I, met, and
+        expect(result.counts['Unknown'], 3);
       },
     );
 
@@ -260,7 +366,7 @@ Although some critics deliberately questioned the feasibility of the report, the
       final profile = TextProfilerService.profile(passage);
 
       expect(profile.statistics.totalWords >= 40, isTrue);
-      expect(profile.dominantCefrLevel, equals('B2'));
+      expect(profile.dominantCefrLevel, equals('B1'));
       expect(profile.readabilityMetrics.length, equals(6));
       expect(profile.recommendations.isNotEmpty, isTrue);
       expect(profile.examProfiles.any((e) => e.examName == 'VSTEP'), isTrue);
@@ -367,68 +473,69 @@ Although some critics deliberately questioned the feasibility of the report, the
   });
 
   group('TextProfilerDialog Widget Tests', () {
-    testWidgets('renders all tabs and supports horizontal scrolling without overflow', (tester) async {
-      tester.view.physicalSize = const Size(1024, 768);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'renders all tabs and supports horizontal scrolling without overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(1024, 768);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      const passageText = 'A comprehensive test passage for English text profiler analysis.';
-      final passage = PdfDgnlPassage(
-        id: 'test-passage-1',
-        pageNumber: 1,
-        rawText: passageText,
-        normalizedBounds: const Rect.fromLTWH(0, 0, 100, 100),
-        spans: const [],
-        metrics: const {},
-        clozeQuestions: const [],
-      );
-      final profile = TextProfilerService.profile(passageText);
+        const passageText =
+            'A comprehensive test passage for English text profiler analysis.';
+        final passage = PdfDgnlPassage(
+          id: 'test-passage-1',
+          pageNumber: 1,
+          rawText: passageText,
+          normalizedBounds: const Rect.fromLTWH(0, 0, 100, 100),
+          spans: const [],
+          metrics: const {},
+          clozeQuestions: const [],
+        );
+        final profile = TextProfilerService.profile(passageText);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: TextProfilerDialog(
-              passage: passage,
-              profile: profile,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: TextProfilerDialog(passage: passage, profile: profile),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Verify header rendered
-      expect(find.text('Hồ sơ Độ khó Ngữ liệu Tiếng Anh'), findsOneWidget);
+        // Verify header rendered
+        expect(find.text('Hồ sơ Độ khó Ngữ liệu Tiếng Anh'), findsOneWidget);
 
-      // Verify first tabs are visible
-      expect(find.text('Tổng quan'), findsOneWidget);
-      expect(find.text('Từ vựng CEFR'), findsOneWidget);
+        // Verify first tabs are visible
+        expect(find.text('Tổng quan'), findsOneWidget);
+        expect(find.text('Từ vựng CEFR'), findsOneWidget);
 
-      // Verify horizontal ListView is present
-      final listViewFinder = find.byType(ListView);
-      expect(listViewFinder, findsWidgets);
+        // Verify horizontal ListView is present
+        final listViewFinder = find.byType(ListView);
+        expect(listViewFinder, findsWidgets);
 
-      // Verify right scroll arrow is shown because content overflows
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        // Verify right scroll arrow is shown because content overflows
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
 
-      // Tap right arrow to scroll
-      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
-      await tester.pumpAndSettle();
+        // Tap right arrow to scroll
+        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+        await tester.pumpAndSettle();
 
-      // Left arrow should now appear since we scrolled right
-      expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
+        // Left arrow should now appear since we scrolled right
+        expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
 
-      // Drag tab bar left to reveal end tabs
-      await tester.drag(find.byType(ListView).first, const Offset(-800, 0));
-      await tester.pumpAndSettle();
-      expect(find.text('Chuẩn Đề thi'), findsOneWidget);
+        // Drag tab bar left to reveal end tabs
+        await tester.drag(find.byType(ListView).first, const Offset(-800, 0));
+        await tester.pumpAndSettle();
+        expect(find.text('Chuẩn Đề thi'), findsOneWidget);
 
-      // Tap on 'Chuẩn Đề thi' tab
-      await tester.tap(find.text('Chuẩn Đề thi'));
-      await tester.pumpAndSettle();
+        // Tap on 'Chuẩn Đề thi' tab
+        await tester.tap(find.text('Chuẩn Đề thi'));
+        await tester.pumpAndSettle();
 
-      // Check if exam profiles content is shown
-      expect(find.textContaining('VSTEP'), findsWidgets);
-    });
+        // Check if exam profiles content is shown
+        expect(find.textContaining('VSTEP'), findsWidgets);
+      },
+    );
   });
 }

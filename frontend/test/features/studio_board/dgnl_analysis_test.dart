@@ -191,38 +191,36 @@ void main() {
         'About 75 percent of people are sensitive to the taste of the bitter compounds phenylthiocarbamide. '
         'They are also less fond of alcoholic drinks, which are often slightly bitter.';
 
-    test('excludes basic function words from vocabulary highlights', () {
+    test('marks basic function words as non-pedagogical vocabulary spans', () {
       final res = DgnlService.fallbackAnalyze(fixturePassage);
       final vocabHighlights = res.highlights
           .where((h) => h['category'] == 'vocabulary')
           .toList();
 
+      final functionWordHighlights = vocabHighlights.where(
+        (highlight) => const {
+          'the',
+          'and',
+          'they',
+          'are',
+          'of',
+        }.contains(highlight['text'].toString().toLowerCase()),
+      );
+      expect(functionWordHighlights, isNotEmpty);
+      expect(
+        functionWordHighlights.every(
+          (highlight) =>
+              highlight['isFunctionWord'] == true &&
+              highlight['isPedagogical'] == false,
+        ),
+        isTrue,
+        reason:
+            'Function words are retained for explicit filters but are not pedagogical targets: ${functionWordHighlights.map((highlight) => '${highlight['text']}:${highlight['isFunctionWord']}/${highlight['isPedagogical']}').join(', ')}',
+      );
+
       final vocabWords = vocabHighlights
           .map((v) => v['text'].toString().toLowerCase())
           .toSet();
-
-      // Common grammatical function words must NOT be highlighted as isolated vocabulary targets
-      expect(
-        vocabWords.contains('the'),
-        isFalse,
-        reason: '"the" là mạo từ ngữ pháp, không phải từ vựng trọng tâm.',
-      );
-      expect(
-        vocabWords.contains('and'),
-        isFalse,
-        reason: '"and" là liên từ đẳng lập.',
-      );
-      expect(
-        vocabWords.contains('they'),
-        isFalse,
-        reason: '"they" là đại từ nhân xưng.',
-      );
-      expect(
-        vocabWords.contains('are'),
-        isFalse,
-        reason: '"are" là trợ động từ.',
-      );
-      expect(vocabWords.contains('of'), isFalse, reason: '"of" là giới từ.');
 
       // Content words and AWL terms MUST be preserved
       expect(

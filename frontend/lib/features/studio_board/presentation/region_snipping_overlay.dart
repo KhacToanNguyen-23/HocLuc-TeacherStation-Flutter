@@ -213,12 +213,70 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       final rawCharsText = snippetChars.map((b) => b.char).join('');
       final rawCharsLower = rawCharsText.toLowerCase();
 
+      void addSpanSafely(PdfDgnlHighlightSpan candidate) {
+        // 1. Kiểm tra trùng lặp trong cùng phân loại (cùng category)
+        for (int i = 0; i < spans.length; i++) {
+          final s = spans[i];
+          if (s.category == candidate.category) {
+            for (final ra in s.normalizedRects) {
+              for (final rb in candidate.normalizedRects) {
+                final inter = ra.intersect(rb);
+                if (inter.width > 0 && inter.height > 0) {
+                  final interArea = inter.width * inter.height;
+                  final minArea = math.min(ra.width * ra.height, rb.width * rb.height);
+                  if (minArea > 0 && (interArea / minArea) >= 0.75) {
+                    if (candidate.text.length > s.text.length) {
+                      spans[i] = candidate;
+                    }
+                    return;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // 2. Nếu hai từ vựng (vocabulary) chồng lấn nhau trên cùng một vùng chữ:
+        // Giữ lại từ cụ thể hơn / dài hơn (ví dụ 'bitterness' thay vì 'bitter')
+        if (candidate.category == 'vocabulary') {
+          for (int i = 0; i < spans.length; i++) {
+            final s = spans[i];
+            if (s.category == 'vocabulary') {
+              for (final ra in s.normalizedRects) {
+                for (final rb in candidate.normalizedRects) {
+                  final inter = ra.intersect(rb);
+                  if (inter.width > 0 && inter.height > 0) {
+                    final interArea = inter.width * inter.height;
+                    final minArea = math.min(ra.width * ra.height, rb.width * rb.height);
+                    if (minArea > 0 && (interArea / minArea) >= 0.75) {
+                      if (candidate.text.length > s.text.length) {
+                        spans[i] = candidate;
+                      }
+                      return;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        spans.add(candidate);
+      }
+
       for (final hl in analysis.highlights) {
         final hlText = hl['text']?.toString().trim() ?? '';
         final category = hl['category']?.toString() ?? 'grammar';
         final level = hl['level']?.toString() ?? 'B2';
         final type = hl['type']?.toString() ?? category.toUpperCase();
         final note = hl['note']?.toString() ?? '';
+        final isPedagogical = hl['isPedagogical'] as bool? ?? false;
+        final isAcademic = hl['isAcademic'] as bool? ?? false;
+        final isPreTeach = hl['isPreTeach'] as bool? ?? false;
+        final isFunctionWord = hl['isFunctionWord'] as bool? ?? false;
+        final isProperNoun = hl['isProperNoun'] as bool? ?? false;
+        final isNumber = hl['isNumber'] as bool? ?? false;
+        final lemma = hl['lemma'] as String?;
 
         if (hlText.isEmpty) continue;
 
@@ -226,7 +284,10 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         final escaped = RegExp.escape(hlText)
             .replaceAll(RegExp(r'\\\s+'), r'\s+')
             .replaceAll(RegExp(r'[-–—]'), r'[-–—\s\u25A1]?');
-        final matchReg = RegExp(escaped, caseSensitive: false);
+        final pattern = category == 'vocabulary'
+            ? r'\b' + escaped + r'\b'
+            : escaped;
+        final matchReg = RegExp(pattern, caseSensitive: false);
         final matches = matchReg.allMatches(rawCharsText).toList();
 
         if (matches.isNotEmpty) {
@@ -241,7 +302,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
             }
             if (matchedBoxes.isNotEmpty) {
               final lineRects = _groupCharBoxesIntoLines(matchedBoxes);
-              spans.add(
+              addSpanSafely(
                 PdfDgnlHighlightSpan(
                   text: hlText,
                   category: category,
@@ -249,6 +310,13 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                   type: type,
                   note: note,
                   normalizedRects: lineRects,
+                  isPedagogical: isPedagogical,
+                  isAcademic: isAcademic,
+                  isPreTeach: isPreTeach,
+                  isFunctionWord: isFunctionWord,
+                  isProperNoun: isProperNoun,
+                  isNumber: isNumber,
+                  lemma: lemma,
                 ),
               );
             }
@@ -265,7 +333,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
             }
             if (matchedBoxes.isNotEmpty) {
               final lineRects = _groupCharBoxesIntoLines(matchedBoxes);
-              spans.add(
+              addSpanSafely(
                 PdfDgnlHighlightSpan(
                   text: hlText,
                   category: category,
@@ -273,6 +341,13 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                   type: type,
                   note: note,
                   normalizedRects: lineRects,
+                  isPedagogical: isPedagogical,
+                  isAcademic: isAcademic,
+                  isPreTeach: isPreTeach,
+                  isFunctionWord: isFunctionWord,
+                  isProperNoun: isProperNoun,
+                  isNumber: isNumber,
+                  lemma: lemma,
                 ),
               );
             }
@@ -298,6 +373,13 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 final level = hl['level']?.toString() ?? 'B2';
                 final type = hl['type']?.toString() ?? category.toUpperCase();
                 final note = hl['note']?.toString() ?? '';
+                final isPedagogical = hl['isPedagogical'] as bool? ?? false;
+                final isAcademic = hl['isAcademic'] as bool? ?? false;
+                final isPreTeach = hl['isPreTeach'] as bool? ?? false;
+                final isFunctionWord = hl['isFunctionWord'] as bool? ?? false;
+                final isProperNoun = hl['isProperNoun'] as bool? ?? false;
+                final isNumber = hl['isNumber'] as bool? ?? false;
+                final lemma = hl['lemma'] as String?;
 
                 int findIdx = 0;
                 final hlLower = hlText.toLowerCase();
@@ -330,6 +412,13 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                         type: type,
                         note: note,
                         normalizedRects: lineRects,
+                        isPedagogical: isPedagogical,
+                        isAcademic: isAcademic,
+                        isPreTeach: isPreTeach,
+                        isFunctionWord: isFunctionWord,
+                        isProperNoun: isProperNoun,
+                        isNumber: isNumber,
+                        lemma: lemma,
                       ),
                     );
                   }

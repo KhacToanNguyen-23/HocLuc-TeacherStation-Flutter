@@ -1,4 +1,4 @@
-﻿import 'package:desktop_drop/desktop_drop.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:flutter/services.dart';
@@ -60,6 +60,34 @@ class StageContainer extends StatelessWidget {
           },
           child: Focus(
             autofocus: true,
+            onKeyEvent: (node, event) {
+              if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+              // Don't intercept single-letter shortcuts when an EditableText (TextField) is focused
+              final primary = FocusManager.instance.primaryFocus;
+              if (primary?.context?.widget is EditableText) {
+                return KeyEventResult.ignored;
+              }
+
+              final isCtrl = HardwareKeyboard.instance.isControlPressed ||
+                  HardwareKeyboard.instance.isMetaPressed;
+              if (isCtrl) return KeyEventResult.ignored;
+
+              if (event.logicalKey == LogicalKeyboardKey.keyP) {
+                studio.change(() => studio.tool = 'pen', persist: false);
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.keyH) {
+                studio.change(() => studio.tool = 'highlight', persist: false);
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.keyE) {
+                studio.change(() => studio.tool = 'erase', persist: false);
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.keyL) {
+                studio.change(() => studio.tool = 'laser', persist: false);
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
             child: DropTarget(
               onDragDone: (detail) async {
                 for (final file in detail.files) {
