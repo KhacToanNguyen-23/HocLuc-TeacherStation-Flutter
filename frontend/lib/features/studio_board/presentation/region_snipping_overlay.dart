@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import '../services/dgnl_service.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_text_selection.dart';
 
 part 'region_snipping_painter.dart';
 
@@ -186,6 +187,19 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final studio = widget.studio;
     final size = MediaQuery.of(context).size;
+    final owner = (studio.activePlugin ?? studio.floatingPlugin)?.id;
+    final target = studio.snipTarget;
+    final generation = studio.pdfContentGeneration;
+    final rawTextOnly = PluginTextSelection.acceptsSnippet(
+      (studio.activePlugin ?? studio.floatingPlugin)?.manifest,
+      target,
+    );
+    bool stillOwnsSnip() =>
+        mounted &&
+        studio.isSnippingActive &&
+        studio.snipTarget == target &&
+        (studio.activePlugin ?? studio.floatingPlugin)?.id == owner &&
+        studio.pdfContentGeneration == generation;
 
     // 1. Try accurate extraction using active PdfViewerController
     _PdfSnippetResult? pdfResult = await _extractFromActivePdfViewer(
@@ -199,13 +213,19 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         (studio.pdfBytes != null || studio.pdfFilePath != null)) {
       pdfResult = await _extractFromPdfFallback(studio, screenRect, size);
     }
+    if (!stillOwnsSnip()) return;
 
     if (pdfResult != null && pdfResult.text.trim().isNotEmpty) {
       final cleanText = pdfResult.text.replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (rawTextOnly) {
+        studio.sendSnippetToPlugin(cleanText, target: target);
+        return;
+      }
 
       // Perform DGNL analysis and Cloze generation first while overlay is active
       final analysis = await DgnlService.analyze(cleanText);
       final clozeQuestions = await DgnlService.generateCloze(cleanText);
+      if (!stillOwnsSnip()) return;
 
       // Map highlight spans to line-level bounding boxes on the PDF page
       final spans = <PdfDgnlHighlightSpan>[];
@@ -365,10 +385,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       );
 
       // 1. First add passage to PDF stage so in-document highlight appears immediately
+      if (!stillOwnsSnip()) return;
       studio.addPdfDgnlPassage(passage);
 
       // 2. Synchronize to English assistant plugin and cleanly close snipping
-      studio.sendSnippetToPlugin(cleanText);
+      studio.sendSnippetToPlugin(cleanText, target: target);
       studio.stopSnipping();
 
       if (mounted) {
@@ -417,11 +438,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       extracted = matchedTexts.join(' ');
     }
 
-    if (!mounted) return;
+    if (!stillOwnsSnip()) return;
 
     if (extracted.trim().isNotEmpty) {
       final cleanText = extracted.trim();
-      studio.sendSnippetToPlugin(cleanText);
+      studio.sendSnippetToPlugin(cleanText, target: target);
       studio.stopSnipping();
 
       messenger?.showSnackBar(
@@ -691,4 +712,3 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
     return null;
   }
 }
-

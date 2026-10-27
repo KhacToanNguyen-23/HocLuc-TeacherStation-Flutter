@@ -8,6 +8,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/classroom_meet/services/classroom_settings_service.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_event_hub.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_text_selection.dart';
 import 'grid_painter.dart';
 import 'widgets/middle_mouse_pan.dart';
 import 'stroke_canvas.dart';
@@ -74,6 +75,15 @@ class _PdfStageState extends State<PdfStage> {
   bool _lastSmartSnapEnabled = false;
   String? _lastPdfDispatchTarget;
   String? _lastPluginToolStateKey;
+  int _selectionRevision = 0;
+  String? _lastSelectionOwner;
+
+  bool get _pluginTextSelectionEnabled =>
+      widget.interactive &&
+      PluginTextSelection.accepts(
+        (widget.studio.activePlugin ?? widget.studio.floatingPlugin)?.manifest,
+        widget.studio.activeSubjectTool,
+      );
   String? _pluginRegionSubscriptionKey;
   StreamSubscription<PluginHostMessage>? _pluginRegionSubscription;
 
@@ -144,6 +154,17 @@ class _PdfStageState extends State<PdfStage> {
   }
 
   void _onStudioChanged() {
+    final studio = widget.studio;
+    final owner = _pluginTextSelectionEnabled
+        ? '${(studio.activePlugin ?? studio.floatingPlugin)!.id}:${studio.activeSubjectTool}:${studio.pdfContentGeneration}'
+        : null;
+    if (owner != _lastSelectionOwner) {
+      _lastSelectionOwner = owner;
+      _selectionRevision++;
+      if (_pdfController.isReady) {
+        unawaited(_pdfController.textSelectionDelegate.clearTextSelection());
+      }
+    }
     _syncPluginRegionSubscription();
     _dispatchActivePluginToolState();
     _dispatchCachedPdfTextToActivePlugin();

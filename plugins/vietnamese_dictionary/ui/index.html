@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ngữ văn · Từ điển tiếng Việt</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header><span class="subject">Ngữ văn</span><h1>Từ điển tiếng Việt</h1><p>Tra từ, hiểu nghĩa, đối chiếu nguồn.</p></header>
+    <label for="query">Từ hoặc cụm từ</label>
+    <form id="lookup"><div class="search"><input id="query" type="search" maxlength="200" placeholder="Ví dụ: đào thương, hồng quân…" autocomplete="off" spellcheck="false"><button type="submit">Tra nghĩa</button></div></form>
+    <div class="selection"><button id="selection" type="button" aria-pressed="false" disabled>Bật tra từ khi bôi đen</button><p id="selection-help">Bật công cụ rồi kéo chọn từ trên PDF có lớp văn bản.</p></div>
+    <span id="source-title" class="field-label">Nguồn giải nghĩa</span>
+    <details id="source-menu" class="source-menu"><summary id="source-label">Tất cả nguồn</summary><div id="source" role="group" aria-labelledby="source-title"></div></details>
+    <p id="status" role="status" aria-live="polite">Đang tải chỉ mục từ…</p>
+    <div id="suggestions" aria-label="Từ gợi ý"></div>
+    <section id="results" aria-label="Nghĩa của từ"></section>
+    <footer><details><summary>Nguồn dữ liệu và lưu ý</summary><p>VNTK · MIT (theo repository). Wiktionary / Kaikki · CC BY-SA / GFDL. MinhQND · CC BY-SA 4.0 (bộ tổng hợp; có ví dụ được bổ sung bằng AI). Các nguồn có thể trùng hoặc khác nghĩa.</p><p>“Ghi chú Ngữ văn” là nội dung biên soạn thử, cần giáo viên duyệt. Không tìm thấy từ không có nghĩa từ đó sai. Từ điển không tự chọn nghĩa đúng theo ngữ cảnh.</p><p><a href="https://github.com/vntk/dictionary" target="_blank" rel="noopener noreferrer">VNTK</a> · <a href="https://kaikki.org/viwiktionary/" target="_blank" rel="noopener noreferrer">Kaikki</a> · <a href="https://dict.minhqnd.com" target="_blank" rel="noopener noreferrer">@minhqnd</a></p></details></footer>
+  </main>
+  <script src="engine.js"></script><script src="app.js"></script>
+</body>
+</html>
