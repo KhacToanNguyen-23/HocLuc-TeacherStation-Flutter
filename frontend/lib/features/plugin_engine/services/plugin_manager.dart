@@ -233,11 +233,25 @@ class PluginManager extends ChangeNotifier {
 
   /// Dynamically discover plugins from workspace/bundled plugin directories.
   Future<void> discoverAvailablePlugins() async {
-    final searchDirs = [
+    final searchDirs = <Directory>[
       Directory('plugins'),
       Directory('../plugins'),
       Directory('../../plugins'),
+      Directory('../../../plugins'),
+      Directory('../../../../plugins'),
+      Directory('../../../../../plugins'),
     ];
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent;
+      searchDirs.addAll([
+        Directory('${exeDir.path}/plugins'),
+        Directory('${exeDir.path}/../plugins'),
+        Directory('${exeDir.path}/../../plugins'),
+        Directory('${exeDir.path}/../../../plugins'),
+        Directory('${exeDir.path}/../../../../plugins'),
+        Directory('${exeDir.path}/../../../../../plugins'),
+      ]);
+    } catch (_) {}
 
     for (final dir in searchDirs) {
       if (!dir.existsSync()) continue;
@@ -260,17 +274,30 @@ class PluginManager extends ChangeNotifier {
                   existing is InstalledPlugin &&
                   existing.manifest.version != manifest.version;
 
-              if (existing == null || isNewerVersion) {
-                final filename = hlep.uri.pathSegments
-                    .where((s) => s.isNotEmpty)
-                    .last;
-                Directory? installedDir = PluginStorageManager.instance
-                    .getInstalledDirectory(
-                      manifest.id,
-                      version: manifest.version,
-                    );
-                if (_installedPluginIds.contains(manifest.id) &&
-                    installedDir == null) {
+              final filename = hlep.uri.pathSegments
+                  .where((s) => s.isNotEmpty)
+                  .last;
+              Directory? installedDir = PluginStorageManager.instance
+                  .getInstalledDirectory(
+                    manifest.id,
+                    version: manifest.version,
+                  );
+
+              bool isBundleModified = false;
+              if (installedDir != null) {
+                try {
+                  final cachedManifest = File('${installedDir.path}/manifest.json');
+                  if (!cachedManifest.existsSync() ||
+                      hlep.lastModifiedSync().isAfter(cachedManifest.lastModifiedSync())) {
+                    isBundleModified = true;
+                  }
+                } catch (_) {}
+              }
+
+              if (existing == null || isNewerVersion || isBundleModified) {
+                if ((_installedPluginIds.contains(manifest.id) ||
+                        installedDir != null) &&
+                    (installedDir == null || isBundleModified)) {
                   installedDir = await PluginStorageManager.instance
                       .installFromZip(hlepBytes, customFilename: filename);
                 }

@@ -77,7 +77,31 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
                   : '$targetUrl?port=$port';
             }
 
+            final editing = studio.editingSticker;
+            if (editing != null) {
+              final editParams = <String, String>{
+                'editId': editing.id,
+              };
+              final meta = editing.metadata;
+              if (meta != null) {
+                if (meta['formula'] != null) editParams['formula'] = meta['formula'].toString();
+                if (meta['a'] != null) editParams['a'] = meta['a'].toString();
+                if (meta['b'] != null) editParams['b'] = meta['b'].toString();
+                if (meta['view'] != null) editParams['view'] = meta['view'].toString();
+              } else if (editing.title != null) {
+                final clean = editing.title!.replaceAll(RegExp(r'^(Đồ thị:\s*|y\s*=\s*)'), '').trim();
+                if (clean.isNotEmpty) editParams['formula'] = clean;
+              }
+              final queryParts = editParams.entries
+                  .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+                  .join('&');
+              targetUrl = targetUrl.contains('?')
+                  ? '$targetUrl&$queryParts'
+                  : '$targetUrl?$queryParts';
+            }
+
             return FlatHost(
+              key: ValueKey('flat_host_${plugin.manifest.id}_${studio.editingSticker?.id ?? "default"}'),
               url: targetUrl,
               transparentBackground: plugin.manifest.transparentBackground,
               glassPreset: studio.glassPreset,
@@ -97,6 +121,22 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
                   isPdfMode: isPdfGlass,
                   sender: sendJs,
                 );
+                final curEditing = studio.editingSticker;
+                if (curEditing != null) {
+                  final editData = {
+                    'stickerId': curEditing.id,
+                    'title': curEditing.title,
+                    'metadata': curEditing.metadata,
+                    'formula': curEditing.metadata?['formula'] ??
+                        curEditing.title?.replaceAll(RegExp(r'^(Đồ thị:\s*|y\s*=\s*)'), '').trim(),
+                    'a': curEditing.metadata?['a'],
+                    'b': curEditing.metadata?['b'],
+                    'view': curEditing.metadata?['view'],
+                  };
+                  sendJs(
+                    "window.__hocluc_load_edit && window.__hocluc_load_edit(${jsonEncode(editData)});",
+                  );
+                }
                 studio.onSnippetCapturedForPlugin = (text, target) {
                   sendJs(
                     "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)});",
@@ -109,6 +149,80 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
             );
           },
         );
+
+        if (plugin.manifest.uiPlacement == 'modal') {
+          return Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final availW = constraints.maxWidth.isFinite
+                    ? constraints.maxWidth
+                    : MediaQuery.of(context).size.width;
+                final availH = constraints.maxHeight.isFinite
+                    ? constraints.maxHeight
+                    : MediaQuery.of(context).size.height;
+
+                final maxSafeW = (availW - 48.0).clamp(400.0, 2000.0);
+                final maxSafeH = (availH - 64.0).clamp(300.0, 1400.0);
+                final dialogW = studio.pluginFloatingSize.width.clamp(400.0, maxSafeW);
+                final dialogH = studio.pluginFloatingSize.height.clamp(300.0, maxSafeH);
+
+                final centerLeft = (availW - dialogW) / 2.0;
+                final centerTop = (availH - dialogH) / 2.0;
+
+                return Stack(
+                  children: [
+                    // Backdrop overlay: Soft dark scrim exactly like NoteRenderer / Image 2
+                    Positioned.fill(
+                      child: GestureDetector(
+                        key: const Key('modal_plugin_backdrop'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: studio.closeFloatingPlugin,
+                        child: Container(
+                          color: const Color(0x66000000),
+                        ),
+                      ),
+                    ),
+                    // Fixed, dead-centered elevated modal dialog card
+                    Positioned(
+                      left: centerLeft,
+                      top: centerTop,
+                      width: dialogW,
+                      height: dialogH,
+                      child: Material(
+                        elevation: 32,
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          key: const Key('modal_plugin_container'),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x55000000),
+                                blurRadius: 40,
+                                offset: Offset(0, 16),
+                              ),
+                              BoxShadow(
+                                color: Color(0x1A000000),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: webViewContent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
+        }
 
         if (isFrameless) {
           return Positioned(
