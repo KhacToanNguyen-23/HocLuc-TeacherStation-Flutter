@@ -6,6 +6,48 @@ class MeetScreenShareScript {
   if (location.origin !== 'https://meet.google.com' || window !== window.top) return;
   var devices = navigator.mediaDevices;
   if (!devices || !devices.getDisplayMedia || window.HocLucScreenShare) return;
+  // Keep Meet's presentation companion in the existing renderer/session.
+  var companion = null;
+  var panelVisible = false;
+  function showPanel(visible) {
+    panelVisible = !!visible;
+    if (companion) companion.style.display = panelVisible ? 'block' : 'none';
+  }
+  var pip = window.documentPictureInPicture;
+  if (pip) {
+    try {
+      Object.defineProperty(pip, 'requestWindow', { configurable: true, value: function() {
+        if (!companion) {
+          companion = document.createElement('iframe');
+          companion.title = 'Google Meet — Chia sẻ';
+          companion.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;background:#202124;z-index:2147483647';
+          (document.body || document.documentElement).appendChild(companion);
+          var child = companion.contentWindow;
+          child.document.body.style.cssText = 'margin:0;width:100vw;height:100vh;overflow:auto';
+          var frame = companion;
+          var closed = false;
+          child.close = function() {
+            if (closed) return;
+            closed = true;
+            if (companion === frame) companion = null;
+            child.dispatchEvent(new Event('pagehide'));
+            frame.remove();
+          };
+        }
+        showPanel(panelVisible);
+        var event = new Event('enter');
+        Object.defineProperty(event, 'window', { value: companion.contentWindow });
+        var result = companion.contentWindow;
+        return Promise.resolve(result).then(function() {
+          pip.dispatchEvent(event);
+          return result;
+        });
+      }});
+      Object.defineProperty(pip, 'window', { configurable: true, get: function() {
+        return companion ? companion.contentWindow : null;
+      }});
+    } catch (_) { /* Unsupported runtimes retain Google's native behavior. */ }
+  }
   var streams = new Set();
   var generation = 0;
   function report() {
@@ -39,6 +81,7 @@ class MeetScreenShareScript {
     });
   };
   window.HocLucScreenShare = {
+    showPanel: showPanel,
     stop: function() {
       generation++;
       streams.forEach(function(stream) {
@@ -53,4 +96,3 @@ class MeetScreenShareScript {
 })();
 ''';
 }
-
