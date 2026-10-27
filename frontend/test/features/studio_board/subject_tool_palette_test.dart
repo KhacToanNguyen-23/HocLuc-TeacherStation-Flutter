@@ -229,7 +229,7 @@ void main() {
       expect(find.byKey(const Key('glass_preset_button')), findsOneWidget);
       expect(
         tester.getSemantics(find.byKey(const Key('glass_preset_button'))).label,
-        'Glass appearance',
+        'Độ trong suốt của thanh công cụ',
       );
       expect(
         tester.getSemantics(find.byKey(const Key('glass_preset_button'))).value,

@@ -450,47 +450,46 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
     final icon = switch (preset) {
       GlassPreset.clear => Icons.diamond_outlined,
       GlassPreset.frosted => Icons.ac_unit,
-      GlassPreset.solid => Icons.shield_outlined,
+      GlassPreset.solid => Icons.opacity,
     };
 
     return Semantics(
       key: const Key('glass_preset_button'),
       container: true,
       button: true,
-      label: 'Glass appearance',
+      label: 'Độ trong suốt của thanh công cụ',
       value: preset.label,
-      hint: 'Cycle clear, frosted, and solid glass',
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onFocusChange: (focused) {
-            if (_glassPresetFocused != focused) {
-              setState(() => _glassPresetFocused = focused);
-            }
-          },
-          onTap: () => studio.setGlassPreset(preset.next),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.fromBorderSide(
-                BorderSide(
-                  color: _glassPresetFocused
-                      ? Colors.white
-                      : AppColors.overlayMuted.withValues(alpha: 0.4),
-                  width: _glassPresetFocused ? 2 : 1.0,
+      hint: 'Nhấn để đổi giữa trong suốt, kính mờ và nền đặc',
+      child: Tooltip(
+        message: 'Độ trong suốt: ${preset.label}. Nhấn để đổi.',
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onFocusChange: (focused) {
+              if (_glassPresetFocused != focused) {
+                setState(() => _glassPresetFocused = focused);
+              }
+            },
+            onTap: () => studio.setGlassPreset(preset.next),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.fromBorderSide(
+                  BorderSide(
+                    color: _glassPresetFocused
+                        ? Colors.white
+                        : AppColors.overlayMuted.withValues(alpha: 0.4),
+                    width: _glassPresetFocused ? 2 : 1.0,
+                  ),
                 ),
               ),
-            ),
-            child: SizedBox(
-              width: 28,
-              height: 28,
-              child: Icon(
-                icon,
-                size: 13,
-                color: AppColors.overlayMuted,
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: Icon(icon, size: 13, color: AppColors.overlayMuted),
               ),
             ),
           ),
