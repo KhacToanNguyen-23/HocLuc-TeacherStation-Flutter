@@ -6,8 +6,8 @@ const path = require('node:path');
 const script = fs.readFileSync(path.join(__dirname, '../../../lib/features/classroom_meet/services/meet_bridge_script.dart'), 'utf8').match(/r'''([\s\S]*?)'''/)[1];
 
 // Same node:vm pattern as the screen-share harness. No network or real Meet.
-function fixture({prepare = true, overflow = false, hiddenDirect = false, delayedMenu = false, delayedInput = false, chatLabel = 'In-call messages', menuLabel = 'More options', englishEditable = false, directExpanded = false, directPressed = false, menuExpanded = false} = {}) {
-  let now = 1000, joined = true, inputPresent = true;
+function fixture({prepare = true, overflow = false, hiddenDirect = false, delayedMenu = false, delayedInput = false, chatLabel = 'In-call messages', menuLabel = 'More options', englishEditable = false, directExpanded = false, directPressed = false, menuExpanded = false, joinedInitially = true, hangupVisible = true, hangupConnected = true, hiddenHangupFirst = false, hangupStyle = {visibility: 'visible', display: 'block'}, bodyText = ''} = {}) {
+  let now = 1000, joined = joinedInitially, inputPresent = true;
   const nodes = [], messages = [];
   let mutations;
   const intervals = [];
@@ -27,12 +27,13 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
   if (englishEditable) { input.isContentEditable = true; input.attrs['aria-label'] = 'Send a message'; }
   let clicks = 0;
   const send = Object.assign(node(), {click() { clicks++; input.value = ''; }});
-  const leave = node();
+  const leave = Object.assign(node({'aria-label': 'Leave call'}), {isConnected: hangupConnected, getClientRects() { return hangupVisible ? [{}] : []; }});
+  const hiddenLeave = Object.assign(node({'aria-label': 'Leave call'}), {getClientRects() { return []; }});
   const chatButton = Object.assign(node({'aria-label': chatLabel, 'aria-expanded': String(directExpanded), 'aria-pressed': String(directPressed)}), {click() { chatClicks++; if (!delayedInput) inputPresent = !inputPresent; }});
   const hiddenChatButton = Object.assign(node({'aria-label': 'Chat with everyone'}), {getClientRects() { return []; }, click() { hiddenClicks++; }});
   const menuButton = Object.assign(node({'aria-label': menuLabel, 'aria-expanded': String(menuExpanded)}), {click() { menuClicks++; if (!delayedMenu) menuOpen = !menuOpen; }});
   const context = vm.createContext({
-    document: {body: {innerText: ''},
+    document: {body: {innerText: bodyText},
       querySelector(s) {
         if (s.startsWith('button[aria-label*="rời khỏi"')) return joined ? leave : null;
         if (s.startsWith('textarea')) return inputPresent && (!englishEditable || s.includes('[contenteditable="true"][aria-label*="message" i]')) ? input : null;
@@ -42,6 +43,7 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
         return null;
       },
       querySelectorAll(s) {
+        if (s.startsWith('button[aria-label*="rời khỏi"')) return joined ? [...(hiddenHangupFirst ? [hiddenLeave] : []), leave] : [];
         if (s.startsWith('[data-message-text]')) return nodes;
         if (s.startsWith('button,')) return overflow ? [hiddenChatButton, menuButton, ...(menuOpen ? [chatButton] : [])] : [chatButton];
         return [];
@@ -52,6 +54,7 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
     MutationObserver: class { constructor(fn) { mutations = fn; } observe() {} },
     setInterval(fn) { intervals.push(fn); }, clearInterval() {}, setTimeout() { throw Error('Unexpected retry'); },
     Event: class {}, console,
+    getComputedStyle() { return hangupStyle; },
     Date: class extends Date { static now() { return now; } },
   });
   context.window = context;
@@ -471,5 +474,57 @@ test('a visible close-chat or chat-settings button is never treated as an opener
     const f = fixture({prepare: false, chatLabel}); f.closeInput();
     f.call('beginTutorObservation'); f.mutations(); f.tick(300);
     assert.equal(f.chatClicks(), 0);
+  }
+});
+
+test('initial bridge installation reports READY before an already joined call without clicks', () => {
+  const f = fixture({prepare: false});
+  assert.deepEqual(f.messages.map(m => m.type), ['MEET_BRIDGE_READY', 'MEET_JOINED']);
+  assert.equal(f.messages[0].documentId, f.messages[1].documentId);
+  assert.equal(f.chatClicks(), 0);
+  assert.equal(f.panels().menuClicks, 0);
+  assert.equal(f.peopleClicks(), 0);
+});
+
+test('retained bridge reinjection resyncs READY then Joined with stable identity and current lease', () => {
+  const f = fixture();
+  const before = f.messages.length;
+  vm.runInContext(script, f.context);
+  const resync = f.messages.slice(before);
+  assert.deepEqual(resync.map(m => m.type), ['MEET_BRIDGE_READY', 'MEET_JOINED']);
+  assert.ok(resync.every(m => m.documentId === f.command.documentId && m.url === f.command.url));
+  assert.equal(f.call('beginTutorObservation').status, 'READY');
+  f.echo(false, 'after-resync', 'new question');
+  assert.equal(f.messages.at(-1).payload.observationId, f.command.observationId);
+  assert.equal(f.messages.at(-1).payload.isTutorEligible, true);
+  assert.equal(f.chatClicks(), 0);
+  assert.equal(f.panels().menuClicks, 0);
+});
+
+test('unrelated waiting text cannot veto a visible connected hangup control', () => {
+  for (const bodyText of ['Student: asking to join means what?', 'Chat: wait until the host replies.', 'vui lòng đợi cho đến khi người tổ chức']) {
+    const f = fixture({prepare: false, bodyText, hiddenHangupFirst: true});
+    assert.equal(f.messages.at(-1).type, 'MEET_JOINED');
+    f.ready();
+    assert.equal(f.call('beginTutorObservation').status, 'READY');
+  }
+});
+
+test('prejoin without a genuine hangup does not report Joined or enable observation', () => {
+  const f = fixture({prepare: false, joinedInitially: false, bodyText: 'Asking to join. Wait until the host lets you in.'});
+  assert.deepEqual(f.messages.map(m => m.type), ['MEET_BRIDGE_READY']);
+  assert.equal(f.context.MeetBridge.attemptAutoJoin(), false);
+  assert.equal(f.call('beginTutorObservation').status, 'NOT_READY');
+  f.context.MeetBridge.reportCallState();
+  assert.equal(f.messages.some(m => m.type === 'MEET_JOINED'), false);
+});
+
+test('hidden or detached hangup controls are not evidence that the teacher joined', () => {
+  for (const state of [{hangupVisible: false}, {hangupConnected: false}, {hangupStyle: {visibility: 'hidden', display: 'block'}}, {hangupStyle: {visibility: 'visible', display: 'none'}}]) {
+    const f = fixture({prepare: false, ...state});
+    assert.deepEqual(f.messages.map(m => m.type), ['MEET_BRIDGE_READY']);
+    assert.equal(f.call('beginTutorObservation').status, 'NOT_READY');
+    f.context.MeetBridge.reportCallState();
+    assert.equal(f.messages.some(m => m.type === 'MEET_JOINED'), false);
   }
 });

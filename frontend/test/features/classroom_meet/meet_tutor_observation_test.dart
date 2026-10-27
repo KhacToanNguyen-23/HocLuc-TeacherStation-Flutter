@@ -51,6 +51,68 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
+    'admission bridge restart preserves joined Meet and active tutor lease',
+    () async {
+      final service = MeetAutomationService.forTesting(
+        executeScript: (script) async {
+          if (script.contains('.cancelTutor(') ||
+              script.contains('.endTutorObservation(')) {
+            return 'false';
+          }
+          return reply(command(script), 'READY');
+        },
+      );
+      connect(service);
+      expect(await service.beginTutorObservation(), true);
+      for (final id in ['admission-one', 'admission-two']) {
+        service.handleWebMessageForTesting({
+          'type': 'ADMISSION_BRIDGE_READY',
+          'documentId': id,
+          'url': room,
+        });
+      }
+      expect(service.isHostJoined, true);
+      expect(service.isTutorObservationReady, true);
+      service.dispose();
+    },
+  );
+
+  test(
+    'retained document resync restores joined state after a local reset',
+    () {
+      final service = MeetAutomationService.forTesting();
+      connect(service);
+      expect(service.isHostJoined, true);
+      service.clearMeetingEvents();
+      expect(service.isHostJoined, false);
+      // A joined event alone cannot bypass the document identity handshake.
+      service.handleWebMessageForTesting({
+        'type': 'MEET_JOINED',
+        'documentId': 'doc',
+        'url': room,
+        'payload': {'url': room},
+      });
+      expect(service.isHostJoined, false);
+      connect(service);
+      expect(service.isHostJoined, true);
+      service.dispose();
+    },
+  );
+
+  test('invalid bridge readiness cannot mark another room as connected', () {
+    final service = MeetAutomationService.forTesting();
+    service.setMeetingUrl(room);
+    service.handleWebMessageForTesting({
+      'type': 'MEET_BRIDGE_READY',
+      'documentId': 'other',
+      'url': 'https://meet.google.com/xyz-abcd-efg',
+    });
+    expect(service.isBridgeReady, false);
+    expect(service.isHostJoined, false);
+    service.dispose();
+  });
+
+  test(
     'one enable waits for chat and answers new messages without any mounted Meet panel',
     () async {
       var prepares = 0, sends = 0;

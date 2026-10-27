@@ -514,7 +514,7 @@ class MeetAutomationService extends ChangeNotifier {
         if (documentId == null || documentId.isEmpty) return;
         if (_admissionDocumentId != null &&
             _admissionDocumentId != documentId) {
-          _resetAdmissions();
+          _resetAdmissionQueue();
         }
         _admissionDocumentId = documentId;
         notifyListeners();
@@ -629,16 +629,19 @@ class MeetAutomationService extends ChangeNotifier {
         _isScreenSharing = active;
         notifyListeners();
       } else if (type == 'MEET_BRIDGE_READY') {
-        if (data['documentId'] is String && _isCurrentMeetMessage(data)) {
-          if (_tutorDocumentId != data['documentId']) {
-            if (_tutorDocumentId != null) stopTutorObservation();
-            _invalidateTutor();
-            _tutorObservationReady = false;
-            _hostJoined = false;
-          }
-          _tutorDocumentId = data['documentId'] as String;
-          _tutorDocumentUrl = data['url'] as String;
+        if (data['documentId'] is! String ||
+            (data['documentId'] as String).isEmpty ||
+            !_isCurrentMeetMessage(data)) {
+          return;
         }
+        if (_tutorDocumentId != data['documentId']) {
+          if (_tutorDocumentId != null) stopTutorObservation();
+          _invalidateTutor();
+          _tutorObservationReady = false;
+          _hostJoined = false;
+        }
+        _tutorDocumentId = data['documentId'] as String;
+        _tutorDocumentUrl = data['url'] as String;
         _isBridgeReady = true;
         notifyListeners();
       } else if (type == 'MEET_JOINED') {

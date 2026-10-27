@@ -110,6 +110,12 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
     _tutorDocumentId = null;
     _tutorDocumentUrl = null;
     _hostJoined = false;
+    _resetAdmissionQueue();
+  }
+
+  // The admission adapter has its own document identity. Reinstalling that
+  // adapter must not discard the retained Meet/tutor handshake or active lease.
+  void _resetAdmissionQueue() {
     _admissionGeneration++;
     _admissionBatch = null;
     for (final attempt in _admissionAttempts.values) {
@@ -192,7 +198,10 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
     if (!ready && epoch == _tutorPreparationEpoch) {
       _tutorObservationError = _hostJoined
           ? 'AI chưa kết nối được với cuộc trò chuyện Meet. Vui lòng thử lại.'
-          : 'Vào phòng Meet trong ứng dụng trước khi bật AI.';
+          : 'Chưa đồng bộ được trạng thái cuộc gọi Meet. Vui lòng thử bật AI lại.';
+      FrontendLogger.write(
+        '[MeetAutomation] Tutor preparation timeout: joined=$_hostJoined, bridge=$_isBridgeReady, document=${_tutorDocumentId != null}',
+      );
       stopTutorObservation();
     }
     return ready;
