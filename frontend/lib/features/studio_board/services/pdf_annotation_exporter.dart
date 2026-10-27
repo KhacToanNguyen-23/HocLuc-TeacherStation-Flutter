@@ -1,5 +1,7 @@
 import 'package:teaching_companion/core/utils/frontend_logger.dart';
+
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -64,8 +66,6 @@ class PdfAnnotationExporter {
           highlightColor = sf.PdfColor(137, 180, 250); // Cyan/blue
         } else if (isCollocation) {
           highlightColor = sf.PdfColor(134, 239, 172); // Emerald green
-        } else if (span.level == 'C1' || span.level == 'C2') {
-          highlightColor = sf.PdfColor(203, 166, 247); // Purple C1
         } else {
           highlightColor = sf.PdfColor(249, 226, 175); // Amber/yellow B2
         }
@@ -240,8 +240,6 @@ class PdfAnnotationExporter {
             strokeColor = const Color(0xff89b4fa);
           } else if (span.category == 'collocation') {
             strokeColor = const Color(0xff86efac);
-          } else if (span.level == 'C1' || span.level == 'C2') {
-            strokeColor = const Color(0xffcba6f7);
           } else {
             strokeColor = const Color(0xfff9e2af);
           }
@@ -642,4 +640,3 @@ class PdfAnnotationExporter {
     StudioState studio,
   ) => _saveLecturePdfImpl(context, studio);
 }
-

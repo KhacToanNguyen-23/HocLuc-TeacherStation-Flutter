@@ -1,10 +1,14 @@
 import 'package:teaching_companion/core/utils/frontend_logger.dart';
+
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
+
 import '../services/dgnl_service.dart';
+
 import 'package:teaching_companion/features/plugin_engine/services/plugin_text_selection.dart';
 
 part 'region_snipping_painter.dart';
@@ -236,7 +240,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       for (final hl in analysis.highlights) {
         final hlText = hl['text']?.toString().trim() ?? '';
         final category = hl['category']?.toString() ?? 'grammar';
-        final level = hl['level']?.toString() ?? 'B2';
         final type = hl['type']?.toString() ?? category.toUpperCase();
         final note = hl['note']?.toString() ?? '';
 
@@ -265,7 +268,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 PdfDgnlHighlightSpan(
                   text: hlText,
                   category: category,
-                  level: level,
                   type: type,
                   note: note,
                   normalizedRects: lineRects,
@@ -289,7 +291,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 PdfDgnlHighlightSpan(
                   text: hlText,
                   category: category,
-                  level: level,
                   type: type,
                   note: note,
                   normalizedRects: lineRects,
@@ -315,7 +316,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 final hlText = hl['text']?.toString().trim() ?? '';
                 if (hlText.isEmpty) continue;
                 final category = hl['category']?.toString() ?? 'grammar';
-                final level = hl['level']?.toString() ?? 'B2';
                 final type = hl['type']?.toString() ?? category.toUpperCase();
                 final note = hl['note']?.toString() ?? '';
 
@@ -346,7 +346,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                       PdfDgnlHighlightSpan(
                         text: hlText,
                         category: category,
-                        level: level,
                         type: type,
                         note: note,
                         normalizedRects: lineRects,
@@ -376,12 +375,10 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
           'total_words': analysis.totalWords,
           'content_words': analysis.contentWords,
           'lexical_density': analysis.lexicalDensity,
-          'cefr_profile': analysis.cefrProfile,
           'evaluation': analysis.evaluation,
           'status': analysis.status,
         },
         clozeQuestions: clozeQuestions,
-        textProfile: analysis.textProfile,
       );
 
       // 1. First add passage to PDF stage so in-document highlight appears immediately
@@ -405,7 +402,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Đã highlight trực tiếp trên đề (Trang ${pdfResult.pageNumber}): ${spans.length} điểm Ngữ pháp, Collocations & CEFR B2/C1!',
+                    'Đã highlight trực tiếp trên đề (Trang ${pdfResult.pageNumber}): ${spans.length} điểm Ngữ pháp, Collocations!',
                     style: const TextStyle(fontSize: 12.5),
                   ),
                 ),

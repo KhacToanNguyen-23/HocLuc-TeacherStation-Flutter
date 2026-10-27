@@ -1824,73 +1824,13 @@
         "priority": "P1"
     },
     {
-        "id": "phase-01-profiling-data-models-and-deterministic-engine",
-        "title": "Text Profiling Data Models & Deterministic Engine",
-        "status": "not_started",
-        "evidence": "",
-        "user_visible_behavior": "Typed data structures and deterministic token/syllable/sentence parsing for English text profiler.",
-        "verification_command": "flutter test test/features/studio_board/text_profiler_test.dart",
-        "notes": "Covers core profiling models and offline tokenizer.",
+        "id": "meet-ai-tutor-mvp",
+        "title": "Trợ giảng tự trả lời chat Meet theo nguồn bài học",
+        "user_visible_behavior": "Trợ giảng phản hồi mọi tin học sinh mới nhận khi đang bật: trả lời, báo ngoài phạm vi, thông báo API/kết quả lỗi, đổi bài hoặc quá tải; không cần duyệt thủ công.",
+        "verification_command": "flutter test test/features/meet_tutor test/features/classroom_meet/meet_tutor_delivery_test.dart; node --test frontend/test/features/classroom_meet/meet_tutor_bridge.test.cjs; mvn -f backend/api/pom.xml test",
+        "status": "active",
+        "evidence": "2026-10-26 isolated develop delivery: full Flutter 618 passed; backend 161 passed and JAR packaged; architecture 12/12; analyzer no issues; tutor DOM 14 passed; 3 plugin packages validated. GitHub CI and live provider/Meet acceptance tracked separately.",
+        "notes": "2026-10-26: explicit low-confidence inference auto-sends with uncertainty label; grounded answers retain exact citations. No audio/OCR. Live classroom and held-out semantic quality remain to verify.",
         "priority": "P1"
-    },
-    {
-        "id": "phase-02-cefr-vocabulary-profiler-and-coverage",
-        "title": "CEFR Vocabulary Profiler & K1-K3 Frequency Coverage",
-        "status": "not_started",
-        "evidence": "",
-        "user_visible_behavior": "6-level CEFR word classification (A1-C2), proper noun/number/unknown isolation, K1-K3 frequency bands, and pre-teach vocabulary list.",
-        "verification_command": "flutter test test/features/studio_board/text_profiler_test.dart",
-        "notes": "Covers CEFR lexicon and frequency coverage.",
-        "priority": "P1"
-    },
-    {
-        "id": "phase-03-readability-lexical-diversity-syntactic-complexity",
-        "title": "Readability (6 Metrics), Lexical Diversity & Syntactic Complexity",
-        "status": "not_started",
-        "evidence": "",
-        "user_visible_behavior": "Flesch, Flesch-Kincaid, Gunning Fog, SMOG, Coleman-Liau, ARI metrics, TTR/MATTR/MTLD lexical diversity, and sentence complexity breakdown.",
-        "verification_command": "flutter test test/features/studio_board/text_profiler_test.dart",
-        "notes": "Covers standard readability and syntactic analysis.",
-        "priority": "P1"
-    },
-    {
-        "id": "phase-04-pedagogical-recommendations-and-vstep-profile",
-        "title": "Pedagogical Recommendations & VSTEP Exam Profiler",
-        "status": "not_started",
-        "evidence": "",
-        "user_visible_behavior": "Traceable teaching suggestions and VSTEP (B1/B2/C1) and THPT/ĐGNL exam benchmark alignment.",
-        "verification_command": "flutter test test/features/studio_board/text_profiler_test.dart",
-        "notes": "Covers teacher recommendations and exam profiling.",
-        "priority": "P1"
-    },
-    {
-        "id": "phase-05-frontend-text-profiler-dashboard-and-pdf-overlay",
-        "title": "Frontend Text Profiler Dashboard & PDF Overlay Integration",
-        "status": "not_started",
-        "evidence": "",
-        "user_visible_behavior": "Teacher opens Text Profiler dashboard from scanned PDF passage, explores 6 CEFR color highlights, and inspects individual words.",
-        "verification_command": "flutter test test/architecture_test.dart",
-        "notes": "Covers interactive UI dialog and PDF overlay integration.",
-        "priority": "P1"
-    },
-    {
-        "id": "phase-06-python-sidecar-sync-and-testing-ci-gate",
-        "title": "Python Sidecar Sync, Unit Tests & CI Gate Verification",
-        "status": "not_started",
-        "evidence": "",
-        "user_visible_behavior": "Python engine endpoints synchronized, plugin packaged to .hlep, unit tests passing, and architecture CI gates clean.",
-        "verification_command": "node scripts/validate_plugins.mjs && flutter test test/architecture_test.dart && flutter analyze --no-fatal-infos",
-        "notes": "Covers full plugin packaging and CI verification.",
-        "priority": "P1"
-    },
-{
-  "id": "meet-ai-tutor-mvp",
-  "title": "Trợ giảng tự trả lời chat Meet theo nguồn bài học",
-  "user_visible_behavior": "Trợ giảng phản hồi mọi tin học sinh mới nhận khi đang bật: trả lời, báo ngoài phạm vi, thông báo API/kết quả lỗi, đổi bài hoặc quá tải; không cần duyệt thủ công.",
-  "verification_command": "flutter test test/features/meet_tutor test/features/classroom_meet/meet_tutor_delivery_test.dart; node --test frontend/test/features/classroom_meet/meet_tutor_bridge.test.cjs; mvn -f backend/api/pom.xml test",
-  "status": "active",
-  "evidence": "2026-10-26 isolated develop delivery: full Flutter 618 passed; backend 161 passed and JAR packaged; architecture 12/12; analyzer no issues; tutor DOM 14 passed; 3 plugin packages validated. GitHub CI and live provider/Meet acceptance tracked separately.",
-  "notes": "2026-10-26: explicit low-confidence inference auto-sends with uncertainty label; grounded answers retain exact citations. No audio/OCR. Live classroom and held-out semantic quality remain to verify.",
-  "priority": "P1"
-}
+    }
 ]
