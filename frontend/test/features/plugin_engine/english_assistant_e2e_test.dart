@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_storage_manager.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_web_server.dart';
 import 'package:teaching_companion/features/studio_board/presentation/board_sticker_card.dart';
 import 'package:teaching_companion/features/studio_board/presentation/subject_tool_palette.dart';
 import 'package:teaching_companion/features/studio_board/presentation/stage_container.dart';
@@ -49,10 +51,25 @@ List<int> createEnglishAssistantZip() {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  late Directory tempInstallDirectory;
   group('Phase 05: English Assistant End-to-End Tests', () {
-    setUp(() {
-      TestWidgetsFlutterBinding.ensureInitialized();
+    setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      tempInstallDirectory = await Directory.systemTemp.createTemp(
+        'hocluc_english_e2e_',
+      );
+      PluginStorageManager.instance.setBaseDirectoryForTesting(
+        tempInstallDirectory,
+      );
+      PluginManager.instance.resetForTesting();
+    });
+    tearDown(() async {
+      await PluginWebServer.instance.stop();
+      PluginManager.instance.resetForTesting();
+      if (tempInstallDirectory.existsSync()) {
+        await tempInstallDirectory.delete(recursive: true);
+      }
     });
     test(
       '1. Install english_assistant.hlep and verify manifest & files',
@@ -189,7 +206,6 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
 
         final studio = StudioState();
-        PluginManager.instance.uninstallPlugin('com.hocluc.plugin.english');
 
         await tester.pumpWidget(
           MaterialApp(
@@ -216,12 +232,18 @@ void main() {
         await tester.tap(find.textContaining('Cài đặt Plugin Mẫu'));
         await tester.pumpAndSettle();
 
-        // Plugin should now be installed
+        // Sample installation is subject-agnostic. Filesystem enumeration
+        // order differs across platforms, so English is not guaranteed first.
+        final installed = PluginManager.instance.installedPlugins;
+        expect(installed, hasLength(1));
+        final sample = PluginManager.instance.getPlugin(installed.single.id);
+        expect(sample, isNotNull);
+        expect(sample!.installDirectory, isNotNull);
         expect(
-          PluginManager.instance.getPlugin('com.hocluc.plugin.english'),
-          isNotNull,
+          File('${sample.installDirectory!.path}/manifest.json').existsSync(),
+          isTrue,
         );
-        expect(find.text('Trợ giảng Tiếng Anh'), findsOneWidget);
+        expect(find.text(sample.manifest.name), findsOneWidget);
       },
     );
 
