@@ -125,9 +125,29 @@ class MeetBridgeScript {
   }
   var tutorAttempt = null;
   var uncertainTutorTexts = new Set();
+  function visibleChatElement(node) {
+    if (!node || !node.isConnected || node.hidden || !node.getClientRects().length || node.closest('[hidden], [aria-hidden="true"]')) return false;
+    var style = window.getComputedStyle ? window.getComputedStyle(node) : null;
+    return !style || (style.visibility !== 'hidden' && style.visibility !== 'collapse' && style.display !== 'none');
+  }
   function chatInput() {
-    var input = document.querySelector('textarea[name="chatTextInput"], textarea[aria-label*="tin nhắn" i], textarea[aria-label*="message" i], [contenteditable="true"][aria-label*="tin nhắn" i], [contenteditable="true"][aria-label*="message" i]');
-    return input && input.isConnected && input.getClientRects().length ? input : null;
+    return Array.from(document.querySelectorAll('textarea[name="chatTextInput"], textarea[aria-label*="tin nhắn" i], textarea[aria-label*="message" i], textarea[aria-label="Gửi thư" i], textarea[placeholder="Gửi thư" i], [contenteditable="true"][aria-label*="tin nhắn" i], [contenteditable="true"][aria-label*="message" i], [contenteditable="true"][aria-label="Gửi thư" i]')).find(visibleChatElement) || null;
+  }
+  function chatSendAction() {
+    return Array.from(document.querySelectorAll('button, [role="button"]')).find(function(node) {
+      var label = (node.getAttribute('aria-label') || node.getAttribute('data-tooltip') || node.innerText || node.textContent || '').replace(/\s+/g, ' ').trim();
+      // Disabled while empty is normal: inspect enabled state after the input
+      // event, but never substitute permission or emoji controls for Send.
+      return visibleChatElement(node) && /^(?:gửi thư|gửi tin nhắn|gửi|send|send message|send a message)(?:\s*\([^)]*\))?$/i.test(label);
+    }) || null;
+  }
+  function writeChatInput(input, text) {
+    if (input.isContentEditable) input.textContent = text;
+    else {
+      var setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value');
+      if (setter && setter.set) setter.set.call(input, text); else input.value = text;
+    }
+    input.dispatchEvent(new Event('input', {bubbles: true}));
   }
   var tutorObservationWanted = false;
   var tutorObservationId = null;
@@ -281,12 +301,7 @@ class MeetBridgeScript {
   }
   function clearTutorDraft(input, text) {
     if (!input || (input.isContentEditable ? input.textContent : input.value) !== text) return;
-    if (input.isContentEditable) input.textContent = '';
-    else {
-      var setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value');
-      if (setter && setter.set) setter.set.call(input, ''); else input.value = '';
-    }
-    input.dispatchEvent(new Event('input', {bubbles: true}));
+    writeChatInput(input, '');
   }
   function sendTutor(command) {
     if (!command || !tutorObservationWanted || !command.observationId || command.observationId !== tutorObservationId || tutorEndedObservations.has(command.observationId)) return JSON.stringify({status: 'NOT_READY'});
@@ -295,18 +310,16 @@ class MeetBridgeScript {
     if (uncertainTutorTexts.has(command.text.trim())) return JSON.stringify({status: 'UNCONFIRMED'});
     var input = chatInput();
     // No delayed click/retry: a closed panel or a teacher draft fails safely.
-    if (!input || input.disabled || input.readOnly || (input.value || input.textContent || '')) return JSON.stringify({status: 'INPUT_BUSY'});
-    var send = document.querySelector('button[aria-label*="gửi" i], button[aria-label*="send" i], [data-tooltip*="gửi" i]');
+    if (!input || input.disabled || input.readOnly || input.getAttribute('aria-disabled') === 'true' || (input.value || input.textContent || '')) return JSON.stringify({status: 'INPUT_BUSY'});
+    var send = chatSendAction();
     if (!send) return JSON.stringify({status: 'NOT_READY'});
     tutorAttempt = Object.assign({}, command, {text: command.text.trim(), deadline: Math.min(command.expiresAt, Date.now() + Math.min(command.timeoutMs || 10000, 10000)), baseline: new Set(Array.from(seenMessageIds).concat(chatNodes().map(messageId)))});
-    if (input.isContentEditable) input.textContent = tutorAttempt.text;
-    else {
-      var setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value');
-      if (setter && setter.set) setter.set.call(input, tutorAttempt.text);
-      else input.value = tutorAttempt.text;
-    }
-    input.dispatchEvent(new Event('input', {bubbles: true}));
-    if (!tutorContext(command) || Date.now() >= tutorAttempt.deadline || send.disabled || !input.isConnected || !send.isConnected) {
+    writeChatInput(input, tutorAttempt.text);
+    if (!tutorContext(command) || !tutorObservationWanted || command.observationId !== tutorObservationId ||
+        tutorEndedObservations.has(command.observationId) || tutorAttempt.cancelled || Date.now() >= tutorAttempt.deadline ||
+        send.disabled || send.getAttribute('aria-disabled') === 'true' || input.disabled || input.readOnly ||
+        input.getAttribute('aria-disabled') === 'true' || !visibleChatElement(input) || !visibleChatElement(send) ||
+        chatInput() !== input || (input.isContentEditable ? input.textContent : input.value) !== tutorAttempt.text) {
       clearTutorDraft(input, tutorAttempt.text);
       tutorAttempt = null;
       return JSON.stringify({status: 'NOT_READY'});
@@ -517,7 +530,7 @@ class MeetBridgeScript {
     sendChat: function(message) {
       if (!message || !message.trim()) return false;
 
-      var input = document.querySelector('textarea[name="chatTextInput"], textarea[aria-label*="tin nhắn" i], textarea[aria-label*="message" i], [contenteditable="true"][aria-label*="tin nhắn" i]');
+      var input = chatInput();
       if (!input) {
         var chatPanelBtn = document.querySelector('button[aria-label*="trò chuyện" i], button[aria-label*="chat" i]');
         if (chatPanelBtn) {
@@ -528,11 +541,11 @@ class MeetBridgeScript {
         return false;
       }
 
-      input.value = message;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-
-      var sendBtn = document.querySelector('button[aria-label*="gửi" i], button[aria-label*="send" i], [data-tooltip*="gửi" i]');
-      if (sendBtn) {
+      if (input.disabled || input.readOnly || input.getAttribute('aria-disabled') === 'true') return false;
+      var sendBtn = chatSendAction();
+      if (!sendBtn) return false;
+      writeChatInput(input, message);
+      if (!sendBtn.disabled && sendBtn.getAttribute('aria-disabled') !== 'true' && visibleChatElement(sendBtn) && chatInput() === input) {
         sendBtn.click();
         return true;
       }

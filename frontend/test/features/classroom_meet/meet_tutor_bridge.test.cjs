@@ -6,7 +6,7 @@ const path = require('node:path');
 const script = fs.readFileSync(path.join(__dirname, '../../../lib/features/classroom_meet/services/meet_bridge_script.dart'), 'utf8').match(/r'''([\s\S]*?)'''/)[1];
 
 // Same node:vm pattern as the screen-share harness. No network or real Meet.
-function fixture({prepare = true, overflow = false, hiddenDirect = false, delayedMenu = false, delayedInput = false, chatLabel = 'In-call messages', menuLabel = 'More options', englishEditable = false, directExpanded = false, directPressed = false, menuExpanded = false, joinedInitially = true, hangupVisible = true, hangupConnected = true, hiddenHangupFirst = false, hangupStyle = {visibility: 'visible', display: 'block'}, bodyText = ''} = {}) {
+function fixture({prepare = true, overflow = false, hiddenDirect = false, delayedMenu = false, delayedInput = false, chatLabel = 'In-call messages', menuLabel = 'More options', englishEditable = false, directExpanded = false, directPressed = false, menuExpanded = false, joinedInitially = true, hangupVisible = true, hangupConnected = true, hiddenHangupFirst = false, hangupStyle = {visibility: 'visible', display: 'block'}, bodyText = '', composerAlias = 'legacy', hiddenInputFirst = false, hiddenSendFirst = false, sendControlTraps = false, sendLabel = 'Send', sendStartsDisabled = false, enableSendOnInput = false, sendAriaDisabled = false} = {}) {
   let now = 1000, joined = joinedInitially, inputPresent = true;
   const nodes = [], messages = [];
   let mutations;
@@ -23,10 +23,20 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
     },
     querySelector() { return null; },
   });
-  let input = Object.assign(node(), {value: '', dispatchEvent() {}});
+  let input = Object.assign(node(), {value: '', dispatchEvent() { if (enableSendOnInput) send.disabled = false; }});
+  if (composerAlias === 'mail-aria') input.attrs['aria-label'] = 'Gửi thư';
+  if (composerAlias === 'mail-placeholder') input.attrs.placeholder = 'Gửi thư';
+  const hiddenInput = Object.assign(node(), {value: 'hidden draft', getClientRects() { return []; }, dispatchEvent() { throw Error('hidden composer modified'); }});
   if (englishEditable) { input.isContentEditable = true; input.attrs['aria-label'] = 'Send a message'; }
   let clicks = 0;
-  const send = Object.assign(node(), {click() { clicks++; input.value = ''; }});
+  const send = Object.assign(node({'aria-label': sendLabel, 'aria-disabled': String(sendAriaDisabled)}), {disabled: sendStartsDisabled, click() { clicks++; input.value = ''; }});
+  let permissionClicks = 0, emojiClicks = 0, hiddenSendClicks = 0;
+  const permission = Object.assign(node({'aria-label': 'Cho phép người tham gia gửi tin nhắn'}), {disabled: true, click() {permissionClicks++;}});
+  const emoji = Object.assign(node({'aria-label': 'Gửi biểu tượng cảm xúc'}), {click() {emojiClicks++;}});
+  const hiddenSend = Object.assign(node({'aria-label': sendLabel}), {getClientRects() {return [];}, click() {hiddenSendClicks++;}});
+  const composerMatches = s => englishEditable ? s.includes('[contenteditable="true"][aria-label*="message" i]') :
+    composerAlias === 'mail-aria' ? s.includes('textarea[aria-label="Gửi thư" i]') :
+    composerAlias === 'mail-placeholder' ? s.includes('textarea[placeholder="Gửi thư" i]') : composerAlias === 'legacy';
   const leave = Object.assign(node({'aria-label': 'Leave call'}), {isConnected: hangupConnected, getClientRects() { return hangupVisible ? [{}] : []; }});
   const hiddenLeave = Object.assign(node({'aria-label': 'Leave call'}), {getClientRects() { return []; }});
   const chatButton = Object.assign(node({...(!chatLabel.includes('\n') ? {'aria-label': chatLabel} : {}), 'aria-expanded': String(directExpanded), 'aria-pressed': String(directPressed)}, chatLabel), {click() { chatClicks++; if (!delayedInput) inputPresent = !inputPresent; }});
@@ -36,13 +46,15 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
     document: {body: {innerText: bodyText},
       querySelector(s) {
         if (s.startsWith('button[aria-label*="rời khỏi"')) return joined ? leave : null;
-        if (s.startsWith('textarea')) return inputPresent && (!englishEditable || s.includes('[contenteditable="true"][aria-label*="message" i]')) ? input : null;
-        if (s.startsWith('button[aria-label*="gửi"')) return send;
+        if (s.startsWith('textarea')) return inputPresent && composerMatches(s) ? hiddenInputFirst ? hiddenInput : input : null;
+        if (s.startsWith('button[aria-label*="gửi"')) return sendControlTraps ? permission : hiddenSendFirst ? hiddenSend : send;
         if (s.startsWith('button[aria-label*="trò chuyện"')) return hiddenDirect ? hiddenChatButton : overflow ? null : chatButton;
         if (s.startsWith('button[aria-label*="mọi người"')) return {click() { peopleClicks++; inputPresent = false; menuOpen = false; }};
         return null;
       },
       querySelectorAll(s) {
+        if (s.startsWith('textarea')) return inputPresent && composerMatches(s) ? [...(hiddenInputFirst ? [hiddenInput] : []), input] : [];
+        if (s === 'button, [role="button"]') return [...(sendControlTraps ? [permission] : []), ...(hiddenSendFirst ? [hiddenSend] : []), send, ...(sendControlTraps ? [emoji] : [])];
         if (s.startsWith('button[aria-label*="rời khỏi"')) return joined ? [...(hiddenHangupFirst ? [hiddenLeave] : []), leave] : [];
         if (s.startsWith('[data-message-text]')) return nodes;
         if (s.startsWith('button,')) return overflow ? [hiddenChatButton, menuButton, ...(menuOpen ? [chatButton] : [])] : [chatButton];
@@ -68,7 +80,8 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
   function tick(ms = 300) { now += ms; intervals.forEach(fn => fn()); }
   function ready(arg = command) { call('beginTutorObservation', arg); tick(); assert.equal(call('beginTutorObservation', arg).status, 'READY'); }
   if (prepare) ready();
-  return {context, input, send, nodes, messages, command, call, echo, ready, tick, chatClicks: () => chatClicks, peopleClicks: () => peopleClicks,
+  return {context, input, hiddenInput, send, nodes, messages, command, call, echo, ready, tick, chatClicks: () => chatClicks, peopleClicks: () => peopleClicks,
+    sendTraps: () => ({permissionClicks, emojiClicks, hiddenSendClicks}),
     panels: () => ({chatClicks, peopleClicks, menuClicks, hiddenClicks, menuOpen}), showMenu: () => {menuOpen = true;}, openInput: () => {inputPresent = true;},
     mutations: () => mutations(), clicks: () => clicks++, count: () => clicks,
     leave: () => {joined = false;}, remountInput: () => { input = Object.assign(node(), {value: 'teacher draft', dispatchEvent() {}}); inputPresent = true; }, closeInput: () => {inputPresent = false;}, expire: () => {now += 1001;}};
@@ -539,5 +552,105 @@ test('hidden or detached hangup controls are not evidence that the teacher joine
     assert.equal(f.call('beginTutorObservation').status, 'NOT_READY');
     f.context.MeetBridge.reportCallState();
     assert.equal(f.messages.some(m => m.type === 'MEET_JOINED'), false);
+  }
+});
+
+test('live Gửi thư textarea and exact send action work despite host-setting and emoji traps', () => {
+  const f = fixture({composerAlias: 'mail-aria', sendLabel: 'Gửi thư', sendControlTraps: true, sendStartsDisabled: true, enableSendOnInput: true});
+  assert.equal(f.input.getAttribute('name'), null);
+  assert.equal(f.send.disabled, true);
+  assert.equal(f.call('sendTutor').status, 'PENDING');
+  assert.equal(f.send.disabled, false);
+  assert.equal(f.count(), 1);
+  assert.deepEqual(f.sendTraps(), {permissionClicks: 0, emojiClicks: 0, hiddenSendClicks: 0});
+  f.echo(true, 'mail-self', 'hello');
+  assert.equal(f.call('tutorStatus').status, 'CONFIRMED');
+});
+
+test('Gửi thư placeholder and hidden duplicate composers/send buttons resolve to visible controls', () => {
+  const f = fixture({composerAlias: 'mail-placeholder', sendLabel: 'Gửi thư', hiddenInputFirst: true, hiddenSendFirst: true, sendControlTraps: true});
+  assert.equal(f.call('sendTutor').status, 'PENDING');
+  assert.equal(f.hiddenInput.value, 'hidden draft');
+  assert.equal(f.count(), 1);
+  assert.deepEqual(f.sendTraps(), {permissionClicks: 0, emojiClicks: 0, hiddenSendClicks: 0});
+});
+
+test('disabled and aria-disabled actual send controls never click a substitute or retry', () => {
+  for (const state of [{sendStartsDisabled: true}, {sendAriaDisabled: true}]) {
+    const f = fixture({composerAlias: 'mail-aria', sendLabel: 'Gửi thư', sendControlTraps: true, ...state});
+    assert.equal(f.call('sendTutor').status, 'NOT_READY');
+    assert.equal(f.count(), 0);
+    assert.equal(f.input.value, '');
+    assert.deepEqual(f.sendTraps(), {permissionClicks: 0, emojiClicks: 0, hiddenSendClicks: 0});
+    f.tick(1000);
+    assert.equal(f.count(), 0);
+  }
+});
+
+test('manual chat reuses Gửi thư composer and exact send control selection', () => {
+  for (const composerAlias of ['mail-aria', 'mail-placeholder']) {
+    const f = fixture({prepare: false, composerAlias, sendLabel: 'Gửi thư', hiddenInputFirst: true, hiddenSendFirst: true, sendControlTraps: true, sendStartsDisabled: true, enableSendOnInput: true});
+    assert.equal(f.context.MeetBridge.sendChat('teacher message'), true);
+    assert.equal(f.count(), 1);
+    assert.equal(f.hiddenInput.value, 'hidden draft');
+    assert.deepEqual(f.sendTraps(), {permissionClicks: 0, emojiClicks: 0, hiddenSendClicks: 0});
+  }
+});
+
+test('manual chat returns false for genuinely disabled or aria-disabled send controls', () => {
+  for (const state of [{sendStartsDisabled: true}, {sendAriaDisabled: true}]) {
+    const f = fixture({prepare: false, composerAlias: 'mail-aria', sendLabel: 'Gửi thư', sendControlTraps: true, ...state});
+    assert.equal(f.context.MeetBridge.sendChat('teacher message'), false);
+    assert.equal(f.count(), 0);
+    assert.deepEqual(f.sendTraps(), {permissionClicks: 0, emojiClicks: 0, hiddenSendClicks: 0});
+  }
+});
+
+test('unknown textarea does not become a generic composer fallback', () => {
+  const f = fixture({prepare: false, composerAlias: 'unknown'});
+  assert.equal(f.call('beginTutorObservation').status, 'PENDING');
+  f.tick(300);
+  assert.equal(f.call('beginTutorObservation').status, 'PENDING');
+  assert.equal(f.call('sendTutor').status, 'NOT_READY');
+  assert.equal(f.count(), 0);
+});
+
+test('supported exact send labels remain compatible without selecting permission or emoji actions', () => {
+  for (const sendLabel of ['Gửi', 'Gửi tin nhắn', 'Send', 'Send message', 'Send a message', 'Send (Enter)']) {
+    const f = fixture({sendLabel, sendControlTraps: true});
+    assert.equal(f.call('sendTutor').status, 'PENDING');
+    assert.equal(f.count(), 1);
+    assert.deepEqual(f.sendTraps(), {permissionClicks: 0, emojiClicks: 0, hiddenSendClicks: 0});
+  }
+});
+
+test('permission and emoji controls alone are never substituted for a missing send action', () => {
+  const f = fixture({sendLabel: 'Other action', sendControlTraps: true});
+  assert.equal(f.call('sendTutor').status, 'NOT_READY');
+  assert.equal(f.context.MeetBridge.sendChat('teacher message'), false);
+  assert.equal(f.input.value, '');
+  assert.equal(f.count(), 0);
+  assert.deepEqual(f.sendTraps(), {permissionClicks: 0, emojiClicks: 0, hiddenSendClicks: 0});
+});
+
+test('manual English contenteditable chat writes textContent through the shared helper', () => {
+  const f = fixture({prepare: false, englishEditable: true, sendControlTraps: true});
+  assert.equal(f.context.MeetBridge.sendChat('teacher message'), true);
+  assert.equal(f.input.textContent, 'teacher message');
+  assert.equal(f.count(), 1);
+});
+
+test('synchronous pause, cancellation or teacher draft edits during input dispatch prevent AI send', () => {
+  for (const change of ['pause', 'cancel', 'teacher-draft']) {
+    const f = fixture({composerAlias: 'mail-aria', sendLabel: 'Gửi thư', sendControlTraps: true});
+    f.input.dispatchEvent = () => {
+      if (change === 'pause') f.context.MeetBridge.endTutorObservation(f.command);
+      if (change === 'cancel') f.context.MeetBridge.cancelTutor(f.command);
+      if (change === 'teacher-draft') f.input.value = 'teacher changed draft';
+    };
+    assert.equal(f.call('sendTutor').status, 'NOT_READY');
+    assert.equal(f.count(), 0);
+    assert.equal(f.input.value, change === 'teacher-draft' ? 'teacher changed draft' : '');
+    assert.deepEqual(f.sendTraps(), {permissionClicks: 0, emojiClicks: 0, hiddenSendClicks: 0});
   }
 });
