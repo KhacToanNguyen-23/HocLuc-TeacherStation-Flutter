@@ -106,21 +106,60 @@ class MeetBridgeScript {
     var nativeId = row.getAttribute('data-message-id');
     if (nativeId) return documentId + ':' + nativeId;
     var sender = node.getAttribute('data-sender-name') || (node.closest('[data-sender-name]') || node).getAttribute('data-sender-name') || '';
-    var text = (node.getAttribute('data-message-text') || node.innerText || '').trim();
+    var text = chatText(node);
     // Conservative fallback survives DOM remounts; identical repeats may be dropped.
     return documentId + ':fallback:' + JSON.stringify([sender, text]);
   }
   function isSelfMessage(node) {
     // Names (including "You") are user-controlled and are never identity proof.
+    var body = modernMessageBody(node);
+    var ownBubble = body && body.closest('.jO4O1.chmVPb');
+    if (ownBubble && ownBubble.closest('[data-message-id]') === node) return true;
     var row = node.closest('[data-is-self], [data-self], [data-sender-id]');
     if (!row) return false;
     if (row.getAttribute('data-is-self') === 'true' || row.getAttribute('data-self') === 'true') return true;
     var self = document.querySelector('[data-participant-id][data-is-self="true"], [data-participant-id][data-self="true"]');
     return !!self && !!row.getAttribute('data-sender-id') && row.getAttribute('data-sender-id') === self.getAttribute('data-participant-id');
   }
+  function modernMessageBody(node) {
+    // Pin/hover controls also carry data-message-id, but are not message rows.
+    if (node.tagName === 'BUTTON' || node.getAttribute('role') === 'button' || node.getAttribute('data-message-id') === null) return null;
+    var body = node.querySelector('[jsname="dTKtvb"]');
+    return body && body.closest('[data-message-id]') === node ? body : null;
+  }
+  function chatText(node) {
+    var body = modernMessageBody(node);
+    return (body ? body.innerText || body.textContent || '' : node.getAttribute('data-message-text') || node.innerText || '').trim();
+  }
+  function chatSender(node) {
+    var sender = node.getAttribute('data-sender-name') || (node.closest('[data-sender-name]') || node).getAttribute('data-sender-name') || '';
+    if (!sender && modernMessageBody(node)) {
+      // Observed Meet groups put one author header above one or more message
+      // rows. Stay in nearby ancestry and reject ambiguous multi-author groups.
+      var group = node.parentElement;
+      for (var depth = 0; group && group !== document.body && depth < 3; depth++, group = group.parentElement) {
+        var headers = group.querySelectorAll('.HNucUd .poVWob');
+        if (headers.length > 1) break;
+        if (headers.length === 1) { sender = (headers[0].innerText || headers[0].textContent || '').trim(); break; }
+      }
+    }
+    if (!sender) {
+      var header = node.parentElement ? node.parentElement.querySelector('[data-self-name], .name, strong, b') : null;
+      if (header) sender = (header.innerText || '').trim();
+    }
+    return sender || (isSelfMessage(node) ? 'Tôi (Giáo viên)' : 'Học sinh');
+  }
   function chatNodes() {
-    return Array.from(document.querySelectorAll('[data-message-text], div[data-sender-name]')).filter(function(node) {
-      return !node.querySelector('[data-message-text]');
+    var ids = new Set();
+    return Array.from(document.querySelectorAll('[data-message-text], div[data-sender-name], [data-message-id]')).filter(function(node) {
+      var supported = modernMessageBody(node) ||
+        (node.getAttribute('data-message-text') !== null || node.getAttribute('data-sender-name') !== null) &&
+        !node.querySelector('[data-message-text]') && !node.querySelector('[data-message-id] [jsname="dTKtvb"]');
+      if (!supported) return false;
+      var id = messageId(node);
+      if (ids.has(id)) return false;
+      ids.add(id);
+      return true;
     });
   }
   var tutorAttempt = null;
@@ -178,25 +217,56 @@ class MeetBridgeScript {
   function expandedTutorAction(node) {
     return node.getAttribute('aria-expanded') === 'true' || node.getAttribute('aria-pressed') === 'true';
   }
+  function collapsedTutorAction(node) {
+    return node && !expandedTutorAction(node) &&
+      (node.getAttribute('aria-expanded') === 'false' || node.getAttribute('aria-pressed') === 'false');
+  }
   function openTutorChat() {
-    if (!tutorOpening) tutorOpening = {menuClicked: false, chatClicked: false};
-    if (tutorOpening.chatClicked) return;
+    if (!tutorOpening) tutorOpening = {menuClicked: false, chatClicked: false, menuWasExpanded: false, chatWasExpanded: false};
     var direct = document.querySelector('button[aria-label*="trò chuyện" i], button[aria-label*="chat" i]');
     // Meet's overflow item includes the Material icon text "chat" on its own
     // line before the localized action name. Keep the remaining name exact.
     var chatName = /^(?:chat\s+)?(?:chat|trò chuyện|in-call messages|chat with everyone|send a message to everyone|tin nhắn trong cuộc gọi|trò chuyện với mọi người|gửi tin nhắn cho mọi người)(?:\s*\([^)]*\))?$/i;
     var action = visibleTutorAction(direct) && chatName.test((direct.getAttribute('aria-label') || '').trim()) ? direct : namedTutorAction(chatName);
+    var menu = namedTutorAction(/^(?:more options|tùy chọn khác|tuỳ chọn khác|các tùy chọn khác|thêm tùy chọn)(?:\s*\([^)]*\))?$/i);
+    if (menu && menu === tutorOpening.menuNode && expandedTutorAction(menu)) tutorOpening.menuWasExpanded = true;
+    if (tutorOpening.chatClicked) {
+      var previous = tutorOpening.chatNode;
+      if (previous && expandedTutorAction(previous)) tutorOpening.chatWasExpanded = true;
+      if (menu && collapsedTutorAction(menu)) tutorOpening.menuDismissedAfterChat = true;
+      // Responsive Meet can replace the toolbar or dismiss an opening action
+      // before mounting the composer. Rearm only on actual DOM/state evidence,
+      // after a grace period; elapsed time alone never repeats an opening click.
+      var changed = previous && !visibleChatElement(previous) ||
+        action && action !== previous ||
+        tutorOpening.chatWasExpanded && collapsedTutorAction(previous) ||
+        tutorOpening.menuDismissedAfterChat && menu && expandedTutorAction(menu) && action;
+      if (!changed || Date.now() - tutorOpening.chatAt < 1000) return;
+      tutorOpening.chatClicked = false;
+      tutorOpening.chatWasExpanded = false;
+      tutorOpening.menuDismissedAfterChat = false;
+    }
     if (action) {
       tutorOpening.chatClicked = true;
+      tutorOpening.chatNode = action;
+      tutorOpening.chatAt = Date.now();
+      tutorOpening.chatWasExpanded = expandedTutorAction(action);
       if (!expandedTutorAction(action)) action.click();
       return;
     }
+    if (tutorOpening.menuClicked && Date.now() - tutorOpening.menuAt >= 1000 &&
+        (menu && menu !== tutorOpening.menuNode || tutorOpening.menuWasExpanded && collapsedTutorAction(menu))) {
+      tutorOpening.menuClicked = false;
+      tutorOpening.menuWasExpanded = false;
+    }
     if (!tutorOpening.menuClicked) {
-      var menu = namedTutorAction(/^(?:more options|tùy chọn khác|tuỳ chọn khác|các tùy chọn khác|thêm tùy chọn)(?:\s*\([^)]*\))?$/i);
       if (menu) {
         // Record the transition before clicking: its DOM mutations can reenter
         // observation. Never toggle the menu again while its contents load.
         tutorOpening.menuClicked = true;
+        tutorOpening.menuNode = menu;
+        tutorOpening.menuAt = Date.now();
+        tutorOpening.menuWasExpanded = expandedTutorAction(menu);
         if (!expandedTutorAction(menu)) menu.click();
       }
     }
@@ -216,7 +286,7 @@ class MeetBridgeScript {
     tutorOpening = null;
     if (tutorObservationReady) return;
     var signature = JSON.stringify(chatNodes().map(function(node) {
-      return [messageId(node), node.getAttribute('data-message-text') || node.innerText || ''];
+      return [messageId(node), chatText(node)];
     }));
     if (input !== tutorStableInput || signature !== tutorStableSignature) {
       tutorStableInput = input;
@@ -294,7 +364,7 @@ class MeetBridgeScript {
     }
     var confirmed = chatNodes().some(function(node) {
       return !tutorAttempt.baseline.has(messageId(node)) && isSelfMessage(node) &&
-        (node.getAttribute('data-message-text') || node.innerText || '').trim() === tutorAttempt.text;
+        chatText(node) === tutorAttempt.text;
     });
     if (confirmed) tutorAttempt.confirmed = true;
     return JSON.stringify({status: confirmed ? 'CONFIRMED' : 'PENDING', requestId: command.requestId, documentId: documentId, url: window.location.href});
@@ -341,18 +411,8 @@ class MeetBridgeScript {
       tutorDeferredRows.clear();
     }
     messageNodes.forEach(function(node) {
-      var text = (node.getAttribute('data-message-text') || node.innerText || '').trim();
-      var sender = node.getAttribute('data-sender-name') || '';
-      
-      if (!sender) {
-        var parent = node.closest('[data-sender-name]');
-        if (parent) sender = parent.getAttribute('data-sender-name') || '';
-      }
-      if (!sender) {
-        var header = node.parentElement ? node.parentElement.querySelector('[data-self-name], .name, strong, b') : null;
-        if (header) sender = (header.innerText || '').trim();
-      }
-      if (!sender) sender = 'Học sinh';
+      var text = chatText(node);
+      var sender = chatSender(node);
 
       if (!text) return;
 

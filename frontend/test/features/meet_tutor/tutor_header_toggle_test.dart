@@ -146,4 +146,63 @@ void main() {
     expect(controller.enabled, isFalse);
     expect(find.byIcon(Icons.toggle_off_outlined), findsOneWidget);
   });
+
+  testWidgets('chat recovery is pending rather than blue active and can stop', (
+    tester,
+  ) async {
+    controller.configure(config);
+    await mount(tester);
+    controller.setEnabled(true);
+    ready.complete(true);
+    await tester.pump();
+    controller.syncMeeting('room', true, [], observationReady: false);
+    await tester.pump();
+    expect(controller.enabled, isTrue);
+    expect(controller.recovering, isTrue);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byIcon(Icons.toggle_on_rounded), findsNothing);
+    final button = tester.widget<IconButton>(find.byType(IconButton));
+    expect(button.style!.backgroundColor!.resolve({}), AppColors.selected);
+    expect(button.tooltip, contains('chưa nhận được câu hỏi mới'));
+    await tester.tap(find.byType(IconButton));
+    await tester.pump();
+    expect(controller.enabled, isFalse);
+    expect(controller.recovering, isFalse);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byIcon(Icons.toggle_off_outlined), findsOneWidget);
+  });
+
+  testWidgets('chat readiness restores blue active control without toggling', (
+    tester,
+  ) async {
+    controller.configure(config);
+    await mount(tester);
+    controller.setEnabled(true);
+    ready.complete(true);
+    await tester.pump();
+    controller.syncMeeting('room', true, [], observationReady: false);
+    await tester.pump();
+    controller.syncMeeting('room', true, [], observationReady: true);
+    await tester.pump();
+    expect(controller.enabled, isTrue);
+    expect(controller.recovering, isFalse);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byIcon(Icons.toggle_on_rounded), findsOneWidget);
+  });
+
+  testWidgets(
+    'a newer chat loss is not overwritten by delayed enable success',
+    (tester) async {
+      controller.configure(config);
+      await mount(tester);
+      controller.setEnabled(true);
+      controller.syncMeeting('room', true, [], observationReady: false);
+      ready.complete(true);
+      await tester.pump();
+      expect(controller.enabled, isTrue);
+      expect(controller.recovering, isTrue);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.toggle_on_rounded), findsNothing);
+    },
+  );
 }

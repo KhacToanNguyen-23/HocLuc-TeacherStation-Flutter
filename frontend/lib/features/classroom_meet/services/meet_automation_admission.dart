@@ -252,8 +252,11 @@ extension MeetAutomationAdmissionAndControlsExt on MeetAutomationService {
               response['documentId'] == doc &&
               response['url'] == url &&
               response['observationId'] == id) {
-            _tutorObservationReady = true;
-            return true;
+            if (!_tutorObservationReady) {
+              _tutorObservationReady = true;
+              notifyListeners();
+            }
+            return current() && _tutorObservationReady;
           }
           if (response is Map && response['status'] == 'READY') return false;
         } catch (_) {

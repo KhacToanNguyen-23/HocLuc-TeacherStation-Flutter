@@ -72,6 +72,22 @@ void main() {
       expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
     },
   );
+  testWidgets('recovery keeps intent on without claiming chat is ready', (
+    tester,
+  ) async {
+    controller.setEnabled(true);
+    controller.syncMeeting('room', true, [], observationReady: false);
+    await mount(tester);
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    expect(find.text('Đang kết nối lại chat Meet…'), findsOneWidget);
+    expect(find.text('Chờ kết nối chat'), findsOneWidget);
+    expect(find.text('Sẵn sàng'), findsNothing);
+    expect(find.textContaining('chưa nhận được câu hỏi mới'), findsOneWidget);
+    await tester.tap(find.byType(Switch));
+    await tester.pump();
+    expect(controller.enabled, isFalse);
+    expect(controller.recovering, isFalse);
+  });
   testWidgets('narrow status panel remains accessible and fits', (
     tester,
   ) async {

@@ -234,6 +234,8 @@ void main() {
         },
       );
       connect(service);
+      final readiness = <bool>[];
+      service.addListener(() => readiness.add(service.isTutorObservationReady));
       expect(await service.beginTutorObservation(), isTrue);
       service.handleWebMessageForTesting({
         'type': 'TUTOR_OBSERVATION_STATE',
@@ -248,6 +250,8 @@ void main() {
       expect(await service.sendTutorMessage('Recovered reply'), isTrue);
       expect(sends, 1);
       expect(service.isTutorObservationReady, isTrue);
+      // Mock transport returns READY without emitting a readiness web message.
+      expect(readiness, [true, false, true]);
       service.dispose();
     },
   );

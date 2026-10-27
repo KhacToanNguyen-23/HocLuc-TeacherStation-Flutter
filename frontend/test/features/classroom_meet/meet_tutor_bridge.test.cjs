@@ -40,15 +40,22 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
   const leave = Object.assign(node({'aria-label': 'Leave call'}), {isConnected: hangupConnected, getClientRects() { return hangupVisible ? [{}] : []; }});
   const hiddenLeave = Object.assign(node({'aria-label': 'Leave call'}), {getClientRects() { return []; }});
   const chatButton = Object.assign(node({...(!chatLabel.includes('\n') ? {'aria-label': chatLabel} : {}), 'aria-expanded': String(directExpanded), 'aria-pressed': String(directPressed)}, chatLabel), {click() { chatClicks++; if (!delayedInput) inputPresent = !inputPresent; }});
+  let activeChatButton = chatButton;
   const hiddenChatButton = Object.assign(node({'aria-label': 'Chat with everyone'}), {getClientRects() { return []; }, click() { hiddenClicks++; }});
-  const menuButton = Object.assign(node({'aria-label': menuLabel, 'aria-expanded': String(menuExpanded)}), {click() { menuClicks++; if (!delayedMenu) menuOpen = !menuOpen; }});
+  function newMenuButton(expanded = false) {
+    return Object.assign(node({'aria-label': menuLabel, 'aria-expanded': String(expanded)}), {click() {
+      menuClicks++;
+      if (!delayedMenu) { menuOpen = !menuOpen; this.attrs['aria-expanded'] = String(menuOpen); }
+    }});
+  }
+  let menuButton = newMenuButton(menuExpanded);
   const context = vm.createContext({
     document: {body: {innerText: bodyText},
       querySelector(s) {
         if (s.startsWith('button[aria-label*="rời khỏi"')) return joined ? leave : null;
         if (s.startsWith('textarea')) return inputPresent && composerMatches(s) ? hiddenInputFirst ? hiddenInput : input : null;
         if (s.startsWith('button[aria-label*="gửi"')) return sendControlTraps ? permission : hiddenSendFirst ? hiddenSend : send;
-        if (s.startsWith('button[aria-label*="trò chuyện"')) return hiddenDirect ? hiddenChatButton : overflow ? null : chatButton;
+        if (s.startsWith('button[aria-label*="trò chuyện"')) return hiddenDirect ? hiddenChatButton : overflow ? null : activeChatButton;
         if (s.startsWith('button[aria-label*="mọi người"')) return {click() { peopleClicks++; inputPresent = false; menuOpen = false; }};
         return null;
       },
@@ -57,7 +64,7 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
         if (s === 'button, [role="button"]') return [...(sendControlTraps ? [permission] : []), ...(hiddenSendFirst ? [hiddenSend] : []), send, ...(sendControlTraps ? [emoji] : [])];
         if (s.startsWith('button[aria-label*="rời khỏi"')) return joined ? [...(hiddenHangupFirst ? [hiddenLeave] : []), leave] : [];
         if (s.startsWith('[data-message-text]')) return nodes;
-        if (s.startsWith('button,')) return overflow ? [hiddenChatButton, menuButton, ...(menuOpen ? [chatButton] : [])] : [chatButton];
+        if (s.startsWith('button,')) return overflow ? [hiddenChatButton, menuButton, ...(menuOpen ? [activeChatButton] : [])] : [activeChatButton];
         return [];
       },
     },
@@ -77,12 +84,41 @@ function fixture({prepare = true, overflow = false, hiddenDirect = false, delaye
     const n = node({'data-message-id': id, 'data-message-text': text, 'data-sender-name': sender, ...(self ? {'data-is-self': 'true'} : {})}, text);
     nodes.push(n); mutations(); return n;
   }
+  function modern(id, text, sender = 'Học sinh A', {ambiguousHeader = false, self = false, pin = false} = {}) {
+    const body = node({'jsname': 'dTKtvb'}, text);
+    const message = node({'data-message-id': id}, `${sender}\n13:18\n${text}\nPin message`);
+    message.querySelector = selector => selector === '[jsname="dTKtvb"]' ? body : null;
+    const bubble = {closest(selector) {return selector === '[data-message-id]' ? message : null;}};
+    body.closest = selector => selector === '[data-message-id]' ? message : selector === '.jO4O1.chmVPb' && self ? bubble : null;
+    const header = node({}, sender);
+    const authorGroup = {
+      parentElement: context.document.body,
+      querySelector() {return null;},
+      querySelectorAll(selector) {return selector === '.HNucUd .poVWob' && !self ? [header, ...(ambiguousHeader ? [node({}, 'Other author')] : [])] : [];},
+    };
+    message.parentElement = {parentElement: authorGroup, querySelector() {return null;}, querySelectorAll() {return [];}};
+    nodes.push(message);
+    if (pin) nodes.push(Object.assign(node({'data-message-id': id, 'role': 'button'}, 'Pin message'), {tagName: 'BUTTON'}));
+    mutations(); return message;
+  }
   function tick(ms = 300) { now += ms; intervals.forEach(fn => fn()); }
   function ready(arg = command) { call('beginTutorObservation', arg); tick(); assert.equal(call('beginTutorObservation', arg).status, 'READY'); }
   if (prepare) ready();
-  return {context, input, hiddenInput, send, nodes, messages, command, call, echo, ready, tick, chatClicks: () => chatClicks, peopleClicks: () => peopleClicks,
+  return {context, input, hiddenInput, send, nodes, messages, command, call, echo, modern, ready, tick, chatClicks: () => chatClicks, peopleClicks: () => peopleClicks,
     sendTraps: () => ({permissionClicks, emojiClicks, hiddenSendClicks}),
-    panels: () => ({chatClicks, peopleClicks, menuClicks, hiddenClicks, menuOpen}), showMenu: () => {menuOpen = true;}, openInput: () => {inputPresent = true;},
+    panels: () => ({chatClicks, peopleClicks, menuClicks, hiddenClicks, menuOpen}),
+    showMenu: () => {menuOpen = true; menuButton.attrs['aria-expanded'] = 'true';},
+    dismissMenu: () => {menuOpen = false; menuButton.attrs['aria-expanded'] = 'false';},
+    remountMenu: () => {menuButton.isConnected = false; menuButton = newMenuButton(); menuOpen = false;},
+    resizeToOverflow: () => {
+      activeChatButton.isConnected = false; overflow = true; menuOpen = false;
+      menuButton.attrs['aria-expanded'] = 'false';
+      activeChatButton = Object.assign(node({'role': 'menuitem', 'aria-label': chatLabel}), {click() {
+        chatClicks++; menuOpen = false; menuButton.attrs['aria-expanded'] = 'false';
+        if (!delayedInput) inputPresent = true;
+      }});
+    },
+    openInput: () => {inputPresent = true;},
     mutations: () => mutations(), clicks: () => clicks++, count: () => clicks,
     leave: () => {joined = false;}, remountInput: () => { input = Object.assign(node(), {value: 'teacher draft', dispatchEvent() {}}); inputPresent = true; }, closeInput: () => {inputPresent = false;}, expire: () => {now += 1001;}};
 }
@@ -283,7 +319,7 @@ test('new lease baselines pending history and stale end cannot stop the current 
   f.ready(first);
   assert.equal(f.call('beginTutorObservation', second).status, 'PENDING');
   f.echo(false, 'between', 'history for new lease');
-  assert.equal(f.messages.at(-1).payload.isTutorEligible, false);
+  assert.equal(f.messages.filter(m => m.type === 'CHAT_MESSAGE').at(-1).payload.isTutorEligible, false);
   assert.equal(f.context.MeetBridge.endTutorObservation(first), false);
   f.tick(260);
   assert.equal(f.call('beginTutorObservation', second).status, 'READY');
@@ -653,4 +689,123 @@ test('synchronous pause, cancellation or teacher draft edits during input dispat
     assert.equal(f.input.value, change === 'teacher-draft' ? 'teacher changed draft' : '');
     assert.deepEqual(f.sendTraps(), {permissionClicks: 0, emojiClicks: 0, hiddenSendClicks: 0});
   }
+});
+
+test('responsive toolbar replacement rearms a latched chat opener and preserves its lease', () => {
+  const f = fixture({prepare: false, delayedInput: true});
+  const lease = {...f.command, observationId: 'responsive', expiresAt: 10000};
+  f.ready(lease);
+  const old = f.echo(false, 'old-before-resize', 'historical question');
+  f.closeInput(); f.mutations();
+  assert.equal(f.chatClicks(), 1);
+  f.resizeToOverflow(); f.tick(500);
+  assert.equal(f.panels().menuClicks, 0);
+  f.tick(600); f.mutations();
+  assert.equal(f.panels().menuClicks, 1);
+  assert.equal(f.chatClicks(), 2);
+  f.echo(false, 'during-resize', 'new question during resize');
+  f.openInput(); f.mutations(); f.tick(300);
+  assert.equal(f.call('beginTutorObservation', lease).status, 'READY');
+  const chats = f.messages.filter(m => m.type === 'CHAT_MESSAGE');
+  assert.equal(chats.filter(m => m.payload.text === 'historical question').length, 1);
+  assert.equal(chats.at(-1).payload.text, 'new question during resize');
+  assert.equal(chats.at(-1).payload.observationId, 'responsive');
+  assert.equal(chats.at(-1).payload.isTutorEligible, true);
+  f.nodes.length = 0; f.nodes.push(old); f.mutations();
+  assert.equal(f.messages.filter(m => m.type === 'CHAT_MESSAGE').length, chats.length);
+});
+
+test('dismissed or remounted overflow can reopen after cooldown while unchanged slow menus do not repeat', () => {
+  for (const transition of ['dismiss', 'remount']) {
+    const f = fixture({prepare: false, overflow: true, delayedMenu: true, chatLabel: 'Unrelated item'}); f.closeInput();
+    const lease = {...f.command, observationId: transition, expiresAt: 10000};
+    f.call('beginTutorObservation', lease);
+    assert.equal(f.panels().menuClicks, 1);
+    f.tick(1200);
+    assert.equal(f.panels().menuClicks, 1);
+    if (transition === 'dismiss') { f.showMenu(); f.mutations(); f.dismissMenu(); }
+    else f.remountMenu();
+    f.mutations();
+    assert.equal(f.panels().menuClicks, 2);
+    f.tick(2000);
+    assert.equal(f.panels().menuClicks, 2);
+    f.context.MeetBridge.endTutorObservation(lease);
+    f.remountMenu(); f.tick(2000);
+    assert.equal(f.panels().menuClicks, 2);
+  }
+});
+
+test('modern Meet message rows extract only body text and their local author header', () => {
+  const f = fixture();
+  const id = 'spaces/fixture-space/messages/example-question';
+  f.modern(id, 'Nội dung bài này có nghĩa là gì ạ?', 'Học sinh A');
+  f.mutations();
+  const chats = f.messages.filter(m => m.type === 'CHAT_MESSAGE');
+  assert.equal(chats.length, 1);
+  assert.equal(chats[0].payload.id, `${f.command.documentId}:${id}`);
+  assert.equal(chats[0].payload.text, 'Nội dung bài này có nghĩa là gì ạ?');
+  assert.equal(chats[0].payload.sender, 'Học sinh A');
+  assert.equal(chats[0].payload.isTutorEligible, true);
+  assert.equal(chats[0].payload.isSelf, false);
+});
+
+test('modern rows retain first-baseline and deferred-recovery semantics without history replay', () => {
+  const f = fixture({prepare: false});
+  const old = f.modern('spaces/fixture-space/messages/history', 'old question');
+  assert.equal(f.messages.filter(m => m.type === 'CHAT_MESSAGE').at(-1).payload.isTutorEligible, false);
+  f.ready();
+  f.closeInput(); f.mutations();
+  f.modern('spaces/fixture-space/messages/during-recovery', 'new question while recovering');
+  f.openInput(); f.mutations(); f.tick(300);
+  const chats = f.messages.filter(m => m.type === 'CHAT_MESSAGE');
+  assert.equal(chats.length, 2);
+  assert.equal(chats[1].payload.text, 'new question while recovering');
+  assert.equal(chats[1].payload.isTutorEligible, true);
+  f.nodes.length = 0; f.nodes.push(old); f.mutations();
+  assert.equal(f.messages.filter(m => m.type === 'CHAT_MESSAGE').length, 2);
+});
+
+test('modern display names You or Bạn never prove a self-authored echo', () => {
+  for (const sender of ['You', 'Bạn']) {
+    const f = fixture(); f.call('sendTutor');
+    f.modern('spaces/fixture-space/messages/unknown-author', 'hello', sender);
+    assert.equal(f.messages.filter(m => m.type === 'CHAT_MESSAGE').at(-1).payload.isSelf, false);
+    assert.equal(f.call('tutorStatus').status, 'PENDING');
+  }
+});
+
+test('native message IDs without a supported body and ambiguous author groups fail conservatively', () => {
+  const f = fixture();
+  f.nodes.push({getAttribute(key) {return key === 'data-message-id' ? 'unsupported-native-row' : null;}, querySelector() {return null;}});
+  f.mutations();
+  assert.equal(f.messages.filter(m => m.type === 'CHAT_MESSAGE').length, 0);
+  f.modern('spaces/fixture-space/messages/ambiguous-author', 'question', 'Học sinh A', {ambiguousHeader: true});
+  assert.equal(f.messages.filter(m => m.type === 'CHAT_MESSAGE').at(-1).payload.sender, 'Học sinh');
+});
+
+test('observed modern self bubble confirms only its own fresh exact body, ignoring nested pin controls', () => {
+  const f = fixture();
+  assert.equal(f.call('sendTutor').status, 'PENDING');
+  f.modern('spaces/fixture-space/messages/student-copy', 'hello', 'You', {pin: true});
+  assert.equal(f.call('tutorStatus').status, 'PENDING');
+  f.modern('spaces/fixture-space/messages/teacher-self', 'hello', '', {self: true, pin: true});
+  assert.equal(f.call('tutorStatus').status, 'CONFIRMED');
+  const chats = f.messages.filter(m => m.type === 'CHAT_MESSAGE');
+  assert.equal(chats.length, 2);
+  assert.equal(chats[0].payload.isSelf, false);
+  assert.equal(chats[1].payload.isSelf, true);
+  assert.equal(chats[1].payload.sender, 'Tôi (Giáo viên)');
+  assert.equal(chats[1].payload.text, 'hello');
+  f.mutations();
+  assert.equal(f.messages.filter(m => m.type === 'CHAT_MESSAGE').length, 2);
+});
+
+test('historical modern self rows and different text cannot confirm a fresh send', () => {
+  const f = fixture();
+  f.modern('spaces/fixture-space/messages/old-self', 'hello', '', {self: true});
+  assert.equal(f.call('sendTutor').status, 'PENDING');
+  f.modern('spaces/fixture-space/messages/different-self', 'other text', '', {self: true});
+  assert.equal(f.call('tutorStatus').status, 'PENDING');
+  f.modern('spaces/fixture-space/messages/fresh-self', 'hello', '', {self: true});
+  assert.equal(f.call('tutorStatus').status, 'CONFIRMED');
 });

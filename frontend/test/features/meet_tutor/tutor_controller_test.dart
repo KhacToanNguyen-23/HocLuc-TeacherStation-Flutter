@@ -79,6 +79,38 @@ void main() {
   tearDown(() => controller.dispose());
 
   test(
+    'readiness changes preserve queued questions and the single worker',
+    () async {
+      gateway.pending = Completer<TutorResult>();
+      final first = question('first');
+      final second = question('second');
+      controller.syncMeeting('room1', true, [first]);
+      await settle();
+      expect(gateway.calls, 1);
+      controller.syncMeeting('room1', true, [first], observationReady: false);
+      expect(controller.enabled, isTrue);
+      expect(controller.recovering, isTrue);
+      controller.syncMeeting('room1', true, [
+        first,
+        second,
+      ], observationReady: true);
+      controller.syncMeeting('room1', true, [
+        first,
+        second,
+      ], observationReady: true);
+      expect(gateway.calls, 1);
+      expect(controller.queued, 1);
+      gateway.pending!.complete(supported);
+      await settle();
+      expect(gateway.calls, 2);
+      expect(sent.length, 2);
+      expect(controller.queued, 0);
+      expect(controller.recovering, isFalse);
+      expect(controller.busy, isFalse);
+    },
+  );
+
+  test(
     'proven pre-dispatch cancellation gets a changed-context notice without retrying old answer',
     () async {
       final release = Completer<void>();

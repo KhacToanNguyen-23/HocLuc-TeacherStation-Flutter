@@ -35,6 +35,12 @@ class TutorController extends ChangeNotifier {
   TutorConfig? config;
   bool enabled = false;
   bool starting = false;
+  bool observationReady = false;
+  int _observationVersion = 0;
+  bool get recovering => enabled && !observationReady;
+  String get displayStatus => recovering
+      ? 'Đang kết nối lại chat Meet; chưa nhận được câu hỏi mới.'
+      : status;
   bool busy = false;
   bool _disposed = false;
   bool _joined = false;
@@ -66,10 +72,12 @@ class TutorController extends ChangeNotifier {
       return;
     }
     enabled = value;
+    observationReady = value;
     notifyListeners();
   }
 
   Future<void> _prepare(int generation) async {
+    final observationVersion = _observationVersion;
     bool ready;
     try {
       ready = await prepareObservation!();
@@ -79,6 +87,10 @@ class TutorController extends ChangeNotifier {
     if (_disposed || generation != _generation) return;
     starting = false;
     enabled = ready && _joined;
+    // A newer loss event can arrive after the READY response was produced.
+    observationReady =
+        enabled &&
+        (observationVersion == _observationVersion || observationReady);
     status = enabled
         ? 'Đang theo dõi câu hỏi mới.'
         : (preparationError?.call() ??
@@ -102,13 +114,19 @@ class TutorController extends ChangeNotifier {
     stopObservation?.call();
     activationError = null;
     enabled = false;
+    observationReady = false;
     starting = false;
     _queue.clear();
     status = message;
     if (!_disposed) notifyListeners();
   }
 
-  void syncMeeting(String? room, bool joined, List<MeetChatMessage> messages) {
+  void syncMeeting(
+    String? room,
+    bool joined,
+    List<MeetChatMessage> messages, {
+    bool observationReady = true,
+  }) {
     if (_room != room || (_joined && !joined)) {
       _room = room;
       _seen.clear();
@@ -118,6 +136,10 @@ class TutorController extends ChangeNotifier {
       _seen.addAll(messages.map((m) => m.id));
     }
     _joined = joined;
+    final ready = joined && observationReady;
+    _observationVersion++;
+    final readinessChanged = this.observationReady != ready;
+    this.observationReady = ready;
     for (final message in messages) {
       if (!_seen.add(message.id)) continue;
       if (!enabled ||
@@ -168,6 +190,7 @@ class TutorController extends ChangeNotifier {
       _seen.removeWhere((id) => !current.contains(id));
     }
     if (!busy && enabled && _queue.isNotEmpty) unawaited(_drain());
+    if (readinessChanged && !_disposed) notifyListeners();
   }
 
   void _review(MeetChatMessage message, String reason) {

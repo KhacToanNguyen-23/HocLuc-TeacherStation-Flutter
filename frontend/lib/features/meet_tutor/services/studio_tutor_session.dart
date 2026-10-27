@@ -54,6 +54,7 @@ class StudioTutorSession {
       _meet.meetingUrl,
       _meet.isHostJoined,
       _meet.messages,
+      observationReady: _meet.isTutorObservationReady,
     );
   }
 

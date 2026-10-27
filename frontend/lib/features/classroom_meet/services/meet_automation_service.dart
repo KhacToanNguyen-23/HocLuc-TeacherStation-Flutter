@@ -581,7 +581,11 @@ class MeetAutomationService extends ChangeNotifier {
             payload['observationId'] == _tutorObservationId &&
             data['documentId'] == _tutorDocumentId &&
             _isCurrentMeetMessage(data)) {
-          _tutorObservationReady = payload['ready'] == true && _hostJoined;
+          final ready = payload['ready'] == true && _hostJoined;
+          if (_tutorObservationReady != ready) {
+            _tutorObservationReady = ready;
+            notifyListeners();
+          }
         }
         return;
       }

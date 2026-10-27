@@ -62,20 +62,24 @@ class _TutorHeaderToggleState extends State<TutorHeaderToggle> {
     builder: (context, _) {
       final active = controller.enabled;
       final starting = controller.starting;
-      final color = active
+      final recovering = controller.recovering;
+      final waiting = starting || recovering;
+      final color = active && !recovering
           ? Colors.white
-          : starting
+          : waiting
           ? AppColors.primary
           : AppColors.textSecondary;
-      final background = active
+      final background = active && !recovering
           ? AppColors.primary
-          : starting
+          : waiting
           ? AppColors.selected
           : AppColors.surfaceMuted;
       final tooltip = controller.config == null
           ? 'Trợ giảng chưa sẵn sàng'
           : starting
           ? 'Đang bật AI — nhấn để hủy'
+          : recovering
+          ? '${controller.displayStatus}\nNhấn để tắt AI và hủy kết nối lại.'
           : active
           ? 'Tắt AI: ngừng tự đọc và trả lời câu hỏi Meet'
           : 'Bật AI: tự đọc và trả lời câu hỏi, không cần mở panel Meet\n${controller.status}';
@@ -116,7 +120,7 @@ class _TutorHeaderToggleState extends State<TutorHeaderToggle> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 1),
                     color: background,
-                    child: starting
+                    child: waiting
                         ? SizedBox(
                             width: 14,
                             height: 14,

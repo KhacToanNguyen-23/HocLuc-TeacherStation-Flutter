@@ -94,6 +94,40 @@ function html({placeholderOnly = false, hiddenLegacy = true, english = false, di
       assert.equal(await page.evaluate(()=>window.sends+window.traps),0);
       passed.push('An unrelated textarea is never treated as Meet chat'); await page.close();
     }
+    {
+      const page=await fixture();
+      await page.evaluate(()=>{
+        window.modernRow=(id,text,self=false)=>{
+          const group=document.createElement('div'); group.className='eWHPEf';
+          group.innerHTML='<div class="aops0b"><div class="HNucUd">'+(self?'':'<div class="poVWob">You</div>')+'<div jsname="biJjHb" class="MuzmKe">10:00</div></div><div class="beTDc"><div class="RLrADb" data-message-id="'+id+'"><div class="jO4O1 '+(self?'chmVPb':'')+'"><div class="ptNLrf"><div jsname="dTKtvb"></div><div>Hover to pin this message</div><button data-message-id="'+id+'" aria-label="Pin message">Pin</button></div></div></div></div></div>';
+          group.querySelector('[jsname="dTKtvb"]').textContent=text;
+          return group;
+        };
+        document.getElementById('messages').appendChild(window.modernRow('student-1','What does this mean?'));
+      });
+      await page.waitForFunction(()=>window.bridgeMessages.some(m=>m.type==='CHAT_MESSAGE'&&m.payload.text==='What does this mean?'));
+      const rows=await page.evaluate(()=>window.bridgeMessages.filter(m=>m.type==='CHAT_MESSAGE'));
+      assert.equal(rows.length,1,'nested pin ID must not duplicate the row');
+      assert.equal(rows[0].payload.sender,'You');
+      assert.equal(rows[0].payload.isSelf,false,'student display name is not identity');
+      assert.equal(rows[0].payload.isTutorEligible,true);
+      await page.evaluate(()=>{
+        const input=document.getElementById('composer');
+        document.getElementById('send').onclick=()=>{
+          window.sends++;
+          document.getElementById('messages').appendChild(window.modernRow('self-modern',input.value,true));
+          input.value='';
+        };
+      });
+      const result=await page.evaluate(()=>JSON.parse(window.MeetBridge.sendTutor(window.command)));
+      assert.equal(result.status,'CONFIRMED','actual modern own-bubble marker confirms delivery');
+      assert.equal(await page.evaluate(()=>window.sends),1);
+      await page.waitForFunction(()=>window.bridgeMessages.some(m=>m.type==='CHAT_MESSAGE'&&m.payload.isSelf));
+      const own=await page.evaluate(()=>window.bridgeMessages.find(m=>m.type==='CHAT_MESSAGE'&&m.payload.isSelf));
+      assert.equal(own.payload.text,'Fixture reply.');
+      passed.push('Modern message rows read exact body once, preserve student identity and confirm own bubble');
+      await page.close();
+    }
     console.log(JSON.stringify({passed:passed.length,fixtures:passed,liveGoogleValidated:false},null,2));
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

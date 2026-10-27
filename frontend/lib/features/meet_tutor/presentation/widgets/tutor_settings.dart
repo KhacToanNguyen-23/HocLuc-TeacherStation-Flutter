@@ -37,19 +37,27 @@ class TutorSettings extends StatelessWidget {
               Text(
                 controller.starting
                     ? 'Đang bật AI…'
+                    : controller.recovering
+                    ? 'Đang kết nối lại chat Meet…'
                     : controller.enabled
                     ? 'Đang bật tự trả lời'
                     : 'Tạm dừng tự trả lời',
               ),
             ],
           ),
-          Text(controller.status),
+          Text(controller.displayStatus),
           const SizedBox(height: 8),
           Wrap(
             spacing: 12,
             runSpacing: 4,
             children: [
-              Text(controller.busy ? 'Đang xử lý' : 'Sẵn sàng'),
+              Text(
+                controller.recovering
+                    ? 'Chờ kết nối chat'
+                    : controller.busy
+                    ? 'Đang xử lý'
+                    : 'Sẵn sàng',
+              ),
               Text('Đang chờ: ${controller.queued}'),
               Text('Đã gửi: ${controller.sentCount}'),
             ],
