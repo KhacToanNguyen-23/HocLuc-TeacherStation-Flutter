@@ -726,6 +726,44 @@ void main() {
       expect(studio.isPdfMode, isFalse);
     });
 
+    testWidgets(
+      'PDF opacity control changes the rendered surface for every preset',
+      (tester) async {
+        studio.openPlugin(dummyPlugin);
+        studio.setPdfMode(true);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Stack(children: [SubjectToolPalette(studio: studio)]),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        Color background() => tester
+            .widget<LiquidGlassContainer>(
+              find.byKey(const Key('subject_tool_palette_surface')),
+            )
+            .backgroundColor!;
+        final frosted = background();
+        await tester.tap(find.byKey(const Key('glass_preset_button')));
+        await tester.pumpAndSettle();
+        final solid = background();
+        await tester.tap(find.byKey(const Key('glass_preset_button')));
+        await tester.pumpAndSettle();
+        final clear = background();
+        expect(clear.a, lessThan(frosted.a));
+        expect(frosted.a, lessThan(solid.a));
+        for (final surface in [clear, frosted, solid]) {
+          final overPdf = Color.alphaBlend(surface, Colors.white);
+          expect(
+            _contrastRatio(Colors.white, overPdf),
+            greaterThanOrEqualTo(4.5),
+          );
+        }
+      },
+    );
+
     testWidgets('PDF mode applies high-contrast frosted glass surface and soft shadow', (
       tester,
     ) async {
@@ -744,7 +782,7 @@ void main() {
       final topDock = tester.widget<LiquidGlassContainer>(
         find.byKey(const Key('subject_tool_palette_surface')),
       );
-      expect(topDock.backgroundColor, const Color(0xf2111a16));
+      expect(topDock.backgroundColor, const Color(0xff111a16).withValues(alpha: 0.80));
       expect(topDock.boxShadow, isNotNull);
       expect(topDock.boxShadow!.isNotEmpty, isTrue);
 
@@ -755,7 +793,7 @@ void main() {
           matching: find.byType(LiquidGlassContainer),
         ).first,
       );
-      expect(toolGlass.backgroundColor, const Color(0xf2111a16));
+      expect(toolGlass.backgroundColor, const Color(0xff111a16).withValues(alpha: 0.80));
       expect(toolGlass.boxShadow, isNotNull);
       expect(toolGlass.boxShadow!.isNotEmpty, isTrue);
 
