@@ -37,8 +37,11 @@ part 'studio_state_plugin_facade.dart';
 /// Backward-compatible Facade coordinating all board sub-systems:
 /// Canvas Drawing, PDF & Smart Pen, WASAPI Audio, and Plugin Host Bridge.
 class StudioState extends ChangeNotifier {
-  StudioState({LocalService? service}) {
-    coordinator = StudioWorkspaceCoordinator(service: service);
+  StudioState({LocalService? service, PdfSmartPenController? pdfController}) {
+    coordinator = StudioWorkspaceCoordinator(
+      service: service,
+      pdf: pdfController,
+    );
     coordinator.addListener(_onCoordinatorChanged);
   }
 

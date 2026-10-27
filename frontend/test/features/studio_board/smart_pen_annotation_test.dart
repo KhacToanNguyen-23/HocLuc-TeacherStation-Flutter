@@ -1,10 +1,13 @@
 import 'dart:math' as math;
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
+import 'package:teaching_companion/features/studio_board/services/pdf_annotation_storage_service.dart';
+import 'package:teaching_companion/features/studio_board/services/controllers/pdf_smart_pen_controller.dart';
 import 'package:teaching_companion/features/studio_board/presentation/stroke_canvas.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 
@@ -1519,12 +1522,23 @@ void main() {
   testWidgets('temporary-only ink does not enable PDF export action', (
     tester,
   ) async {
+    final tempDir = Directory.systemTemp.createTempSync(
+      'smart_pen_export_test_',
+    );
+    addTearDown(() {
+      if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+    });
     final source = sf.PdfDocument();
     source.pages.add();
     final sourceBytes = source.saveSync();
     source.dispose();
 
-    final studio = StudioState()..pdfBytes = Uint8List.fromList(sourceBytes);
+    final pdfController = PdfSmartPenController(
+      storageServiceFactory: () =>
+          PdfAnnotationStorageService(customStorageDirectory: tempDir),
+    );
+    final studio = StudioState(pdfController: pdfController)
+      ..pdfBytes = Uint8List.fromList(sourceBytes);
     addTearDown(studio.dispose);
     studio.setSaveAnswerCirclesEnabled(false);
     studio.toggleSmartPenAnswer(
@@ -1556,12 +1570,13 @@ void main() {
       _selection(page: 1, label: 'B', group: 'q-export-availability'),
       _pageSize,
     );
-    final persistedResult =
-        await PdfAnnotationExporter.applyHighlightDirectlyToPdf(
-          context,
-          studio,
-          showFeedback: false,
-        );
+    final persistedResult = await tester.runAsync(
+      () => PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+        context,
+        studio,
+        showFeedback: false,
+      ),
+    );
     expect(persistedResult, isTrue);
   });
 
