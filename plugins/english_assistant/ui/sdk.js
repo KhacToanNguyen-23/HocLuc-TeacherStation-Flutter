@@ -364,6 +364,22 @@
       set: function (key, value) {
         return sendRpc('storage:set', { key, value });
       }
+    },
+
+    // Đóng cửa sổ plugin modal / floating
+    close: function () {
+      return sendRpc('window:close', {});
+    },
+
+    window: {
+      close: function () {
+        return sendRpc('window:close', {});
+      }
+    },
+
+    onMessage: function (handler) {
+      if (typeof handler !== 'function') return function () {};
+      return HocLuc.onHostEvent('message', handler);
     }
   };
 

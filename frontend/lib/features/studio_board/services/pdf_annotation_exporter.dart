@@ -128,7 +128,7 @@ class PdfAnnotationExporter {
               Rect.fromLTWH(x, y, w, h),
               span.text,
               highlightColor,
-              author: 'Học Lực - Trợ giảng Tiếng Anh',
+              author: 'HocLuc Teacher Station',
               subject: '[${span.type}] ${span.note}',
               textMarkupAnnotationType:
                   sf.PdfTextMarkupAnnotationType.highlight,

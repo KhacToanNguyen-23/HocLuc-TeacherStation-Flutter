@@ -1,10 +1,14 @@
 .run/
 .packaging/
-dist/
+/dist/
+!plugins/**/dist/
 backend/*/target/
 backend/*/data/
 backend/whiteboard-host/node_modules/
 backend/whiteboard-host/dist/
+plugins/**/node_modules/
+plugins/**/.cache/
+node_modules/
 frontend/build/
 frontend/.dart_tool/
 plugins/english_assistant/engine/dart/.dart_tool/

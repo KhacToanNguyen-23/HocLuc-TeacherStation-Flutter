@@ -110,6 +110,9 @@ class PluginManifest {
     this.iconPath = 'icon.png',
     this.uiEntry = 'ui/index.html',
     this.uiPlacement = 'drawer_panel',
+    this.uiRuntime = 'webview',
+    this.logicEntry,
+    this.uiLayout,
     this.uiDefaultWidth = 420.0,
     this.uiDefaultHeight = 560.0,
     this.resizable = true,
@@ -134,6 +137,9 @@ class PluginManifest {
   final String iconPath;
   final String uiEntry;
   final String uiPlacement;
+  final String uiRuntime;
+  final String? logicEntry;
+  final String? uiLayout;
   final double uiDefaultWidth;
   final double uiDefaultHeight;
   final bool resizable;
@@ -147,6 +153,8 @@ class PluginManifest {
   final PluginBackend? backend;
   final List<String> permissions;
   final List<PluginToolContribution> contributesTools;
+
+  bool get isNativeRuntime => uiRuntime == 'native';
 
   double get defaultWidth => uiDefaultWidth;
   double get defaultHeight => uiDefaultHeight;
@@ -162,6 +170,17 @@ class PluginManifest {
         json['placement'] as String? ??
         ui['placement'] as String? ??
         'drawer_panel';
+    final uiRuntime =
+        json['runtime'] as String? ??
+        ui['runtime'] as String? ??
+        'webview';
+    final logicEntry =
+        json['logic_entry'] as String? ??
+        (json['logic'] is Map ? json['logic']['entry'] as String? : null) ??
+        ui['logic_entry'] as String?;
+    final uiLayout =
+        json['layout'] as String? ??
+        ui['layout'] as String?;
     final uiDefaultWidth =
         (json['default_width'] as num?)?.toDouble() ??
         (ui['default_width'] as num?)?.toDouble() ??
@@ -213,6 +232,9 @@ class PluginManifest {
       iconPath: iconPath,
       uiEntry: uiEntry,
       uiPlacement: uiPlacement,
+      uiRuntime: uiRuntime,
+      logicEntry: logicEntry,
+      uiLayout: uiLayout,
       uiDefaultWidth: uiDefaultWidth,
       uiDefaultHeight: uiDefaultHeight,
       resizable: resizable,
@@ -245,6 +267,9 @@ class PluginManifest {
     'ui': {
       'entry': uiEntry,
       'placement': uiPlacement,
+      'runtime': uiRuntime,
+      if (logicEntry != null) 'logic_entry': logicEntry,
+      if (uiLayout != null) 'layout': uiLayout,
       'default_width': uiDefaultWidth,
       'default_height': uiDefaultHeight,
       'resizable': resizable,

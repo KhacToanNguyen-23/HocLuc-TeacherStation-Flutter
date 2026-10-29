@@ -464,8 +464,7 @@ class PdfAnnotationStorageService {
   bool detectLegacyBakedPdf(Uint8List bytes) {
     if (bytes.isEmpty) return false;
     final text = latin1.decode(bytes, allowInvalid: true);
-    return text.contains('Học Lực - Trợ giảng Tiếng Anh') ||
-        text.contains('/Highlight') && text.contains('/Subtype /Highlight');
+    return text.contains('/Highlight') && text.contains('/Subtype /Highlight');
   }
 
   Future<void> _writeAtomically(

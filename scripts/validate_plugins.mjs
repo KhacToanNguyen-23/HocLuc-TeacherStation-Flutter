@@ -27,7 +27,7 @@ const VALID_TOOL_ACTIONS = new Set([
   'rpc_event',
 ]);
 const REQUIRED_MANIFEST_SCHEMA = 'https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json';
-const FIXED_PORT_PATTERN = /(?:18888|\bport\s*[:=]\s*\d{2,5}\b|\|\|\s*['"]\d{2,5}['"])/i;
+const FIXED_PORT_PATTERN = /(?::18888\b|(?<![\d.])18888(?![\d.])|\b(?:localhost|127\.0\.0\.1):\d{2,5}\b|\bport\s*[:=]\s*\d{2,5}\b|\bport\s*\|\|\s*['"]\d{2,5}['"])/i;
 
 const IGNORED_DIRS = new Set([
   '__pycache__',
@@ -39,6 +39,7 @@ const IGNORED_DIRS = new Set([
   'test',
   'tests',
   '.git',
+  '.cache',
 ]);
 
 const TEXT_EXTENSIONS = new Set([
@@ -203,7 +204,30 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
     const backendEntryRel = manifest.backend.entry || manifest.backendExecutable;
     if (backendEntryRel) {
       const backendEntryPath = path.join(dirPath, backendEntryRel);
-      if (!fs.existsSync(backendEntryPath)) {
+      const developmentEntryRel = manifest.backend.development_entry;
+      let hasDevelopmentEntry = false;
+      if (
+        sourceOnly &&
+        typeof developmentEntryRel === 'string' &&
+        developmentEntryRel.toLowerCase().endsWith('.dart')
+      ) {
+        try {
+          const pluginRoot = fs.realpathSync(dirPath);
+          const developmentEntryPath = fs.realpathSync(
+            path.resolve(dirPath, developmentEntryRel),
+          );
+          const relativeEntryPath = path.relative(pluginRoot, developmentEntryPath);
+          const isInsidePlugin = relativeEntryPath === '' ||
+            (relativeEntryPath !== '..' &&
+              !relativeEntryPath.startsWith(`..${path.sep}`) &&
+              !path.isAbsolute(relativeEntryPath));
+          hasDevelopmentEntry = isInsidePlugin &&
+            fs.statSync(developmentEntryPath).isFile();
+        } catch (_) {
+          hasDevelopmentEntry = false;
+        }
+      }
+      if (!fs.existsSync(backendEntryPath) && !hasDevelopmentEntry) {
         errors.push({
           plugin: pluginName,
           code: 'MISSING_BACKEND_ENTRY',

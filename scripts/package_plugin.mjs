@@ -120,7 +120,7 @@ function createZip(sourceDir, outputFile) {
       const fullPath = path.join(dir, entry.name);
       const relPath = path.join(relative, entry.name).replace(/\\/g, '/');
       if (entry.isDirectory()) {
-      if (['__pycache__', '.venv', '.dart_tool', 'node_modules', 'build', 'coverage', 'test', 'tests', '.git'].includes(entry.name)) {
+        if (['__pycache__', '.venv', '.dart_tool', 'node_modules', 'build', 'coverage', 'test', 'tests', '.git', '.cache'].includes(entry.name)) {
           continue;
         }
         if (relPath === 'engine/tests' || relPath.startsWith('engine/tests/') ||

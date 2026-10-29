@@ -91,12 +91,32 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
                 if (meta['b'] != null) {
                   editParams['b'] = meta['b'].toString();
                 }
-                if (meta['view'] != null) {
-                  editParams['view'] = meta['view'].toString();
+                final bounds = meta['integralBounds'];
+                if (bounds is Map) {
+                  if (bounds['a'] != null) {
+                    editParams['a'] = bounds['a'].toString();
+                  }
+                  if (bounds['b'] != null) {
+                    editParams['b'] = bounds['b'].toString();
+                  }
+                }
+                final view = meta['activeView'] ?? meta['view'];
+                if (view != null) editParams['view'] = view.toString();
+                if (meta['curveColor'] != null) {
+                  editParams['color'] = meta['curveColor'].toString();
+                }
+                if (meta['geom3dPreset'] != null) {
+                  editParams['preset'] = meta['geom3dPreset'].toString();
+                }
+                if (meta['geom3dProblemText'] != null) {
+                  editParams['problem'] = meta['geom3dProblemText'].toString();
                 }
               } else if (editing.title != null) {
                 final clean = editing.title!
-                    .replaceAll(RegExp(r'^(Đồ thị:\s*|y\s*=\s*)'), '')
+                    .replaceAll(
+                      RegExp(r'^(Đồ thị:\s*|Bảng biến thiên:\s*|y\s*=\s*)'),
+                      '',
+                    )
                     .trim();
                 if (clean.isNotEmpty) editParams['formula'] = clean;
               }
@@ -143,11 +163,18 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
                     'formula':
                         curEditing.metadata?['formula'] ??
                         curEditing.title
-                            ?.replaceAll(RegExp(r'^(Đồ thị:\s*|y\s*=\s*)'), '')
+                            ?.replaceAll(
+                              RegExp(
+                                r'^(Đồ thị:\s*|Bảng biến thiên:\s*|y\s*=\s*)',
+                              ),
+                              '',
+                            )
                             .trim(),
                     'a': curEditing.metadata?['a'],
                     'b': curEditing.metadata?['b'],
-                    'view': curEditing.metadata?['view'],
+                    'view':
+                        curEditing.metadata?['activeView'] ??
+                        curEditing.metadata?['view'],
                   };
                   sendJs(
                     "window.__hocluc_load_edit && window.__hocluc_load_edit(${jsonEncode(editData)});",
