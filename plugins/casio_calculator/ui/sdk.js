@@ -37,23 +37,28 @@
   function sendRpc(action, payload) {
     return new Promise((resolve, reject) => {
       const id = generateRequestId();
-      const message = { id, action, payload: payload || {} };
+      const message = {
+        id,
+        action,
+        payload: payload || {},
+        host_generation: Number(window.__HocLucHostGeneration) || 0,
+      };
 
-      pendingRequests.set(id, { resolve, reject });
-
-      // Fallback timeout sau 8 giây nếu host không phản hồi
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         if (pendingRequests.has(id)) {
           pendingRequests.delete(id);
           reject(new Error(`[HocLucSDK] Timeout waiting for host action '${action}'`));
         }
       }, 8000);
+      pendingRequests.set(id, { resolve, reject, timeoutId });
 
+      // Fallback timeout sau 8 giây nếu host không phản hồi
       if (isHostAvailable()) {
         try {
           window.chrome.webview.postMessage(JSON.stringify(message));
         } catch (err) {
           pendingRequests.delete(id);
+          clearTimeout(timeoutId);
           reject(err);
         }
       } else {
@@ -72,6 +77,7 @@
     if (!pending) return;
 
     pendingRequests.delete(response.id);
+    clearTimeout(pending.timeoutId);
     if (response.success) {
       pending.resolve(response.data);
     } else {
@@ -103,8 +109,179 @@
     }
   }
 
+  const glassRegions = new Map();
+
+  function postGlassAction(action, payload) {
+    return sendRpc(action, payload).catch((error) => {
+      console.warn('[HocLucSDK] Glass region request failed:', error);
+      return null;
+    });
+  }
+
+  function scheduleGlassMeasurement(region) {
+    if (region.disposed || region.frame !== null) return;
+    const requestFrame = window.requestAnimationFrame ||
+      ((callback) => window.setTimeout(callback, 16));
+    region.frame = requestFrame(() => {
+      region.frame = null;
+      measureGlassRegion(region);
+    });
+  }
+
+  function measureGlassRegion(region) {
+    if (region.disposed) return;
+    const element = region.element;
+    if (!element || element.isConnected === false) {
+      unregisterGlassRegion(region.id);
+      return;
+    }
+
+    let rect;
+    try {
+      rect = element.getBoundingClientRect();
+    } catch (_) {
+      unregisterGlassRegion(region.id);
+      return;
+    }
+    const rootElement = document.documentElement || {};
+    const viewport = {
+      width: Number(rootElement.clientWidth || window.innerWidth),
+      height: Number(rootElement.clientHeight || window.innerHeight),
+    };
+    let visibleStyle = true;
+    let effectiveOpacity = 1;
+    try {
+      if (window.getComputedStyle) {
+        for (let current = element; current; current = current.parentElement) {
+          const style = window.getComputedStyle(current) || {};
+          const opacity = Number(style.opacity);
+          if (style.display === 'none' || style.visibility === 'hidden' ||
+              style.visibility === 'collapse' || (Number.isFinite(opacity) && opacity <= 0)) {
+            visibleStyle = false;
+            break;
+          }
+          if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
+        }
+      }
+    } catch (_) {}
+    const visible = !!rect &&
+      Number.isFinite(rect.x) && Number.isFinite(rect.y) &&
+      Number.isFinite(rect.width) && Number.isFinite(rect.height) &&
+      rect.width > 0 && rect.height > 0 &&
+      visibleStyle && effectiveOpacity > 0;
+    if (isHostAvailable() && !(Number(window.__HocLucHostGeneration) > 0)) {
+      // Navigation completion assigns the document generation and explicitly
+      // refreshes regions. Keep this measurement retryable until then.
+      return;
+    }
+    const payload = {
+      region_id: region.id,
+      bounds: {
+        x: Number(rect && rect.x) || 0,
+        y: Number(rect && rect.y) || 0,
+        width: Number(rect && rect.width) || 0,
+        height: Number(rect && rect.height) || 0,
+      },
+      viewport,
+      visible,
+    };
+    const signature = JSON.stringify(payload);
+    if (signature === region.lastSignature) return;
+    region.lastSignature = signature;
+    const action = region.registered ? 'glass:update' : 'glass:register';
+    region.registered = true;
+    postGlassAction(action, payload);
+  }
+
+  function unregisterGlassRegion(regionId) {
+    const region = glassRegions.get(regionId);
+    if (!region) return Promise.resolve(false);
+    glassRegions.delete(regionId);
+    region.disposed = true;
+    if (region.frame !== null) {
+      const cancelFrame = window.cancelAnimationFrame || window.clearTimeout;
+      if (cancelFrame) cancelFrame(region.frame);
+    }
+    if (region.resizeObserver) region.resizeObserver.disconnect();
+    if (region.mutationObserver) region.mutationObserver.disconnect();
+    window.removeEventListener('scroll', region.onViewportChange, true);
+    window.removeEventListener('resize', region.onViewportChange);
+    if (!region.registered) return Promise.resolve(false);
+    return postGlassAction('glass:unregister', { region_id: regionId });
+  }
+
+  function registerGlassRegion(regionId, element) {
+    if (typeof regionId !== 'string' || !/^[A-Za-z0-9_.:-]{1,128}$/.test(regionId)) {
+      throw new TypeError('glass.registerRegion requires a valid region ID');
+    }
+    if (!element || typeof element.getBoundingClientRect !== 'function') {
+      throw new TypeError('glass.registerRegion requires a DOM element');
+    }
+    if (glassRegions.has(regionId)) unregisterGlassRegion(regionId);
+
+    const region = {
+      id: regionId,
+      element,
+      frame: null,
+      registered: false,
+      disposed: false,
+      lastSignature: null,
+      resizeObserver: null,
+      mutationObserver: null,
+      onViewportChange: null,
+    };
+    region.onViewportChange = () => scheduleGlassMeasurement(region);
+    if (typeof ResizeObserver === 'function') {
+      region.resizeObserver = new ResizeObserver(region.onViewportChange);
+      region.resizeObserver.observe(element);
+    }
+    if (typeof MutationObserver === 'function') {
+      region.mutationObserver = new MutationObserver(region.onViewportChange);
+      const mutationRoot = element.parentElement || document.documentElement;
+      if (mutationRoot) {
+        region.mutationObserver.observe(mutationRoot, {
+          attributes: true,
+          childList: true,
+          subtree: true,
+        });
+      }
+      for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+        if (ancestor === mutationRoot) continue;
+        region.mutationObserver.observe(ancestor, { attributes: true });
+      }
+    }
+    window.addEventListener('scroll', region.onViewportChange, true);
+    window.addEventListener('resize', region.onViewportChange);
+    glassRegions.set(regionId, region);
+    scheduleGlassMeasurement(region);
+    return () => glassRegions.get(regionId) === region
+      ? unregisterGlassRegion(regionId)
+      : Promise.resolve(false);
+  }
+
+  function updateGlassRegion(regionId) {
+    const region = glassRegions.get(regionId);
+    if (!region) return Promise.resolve(false);
+    region.lastSignature = null;
+    scheduleGlassMeasurement(region);
+    return Promise.resolve(true);
+  }
+
+  function refreshGlassRegions() {
+    glassRegions.forEach((region) => {
+      region.lastSignature = null;
+      scheduleGlassMeasurement(region);
+    });
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => {
+      Array.from(glassRegions.keys()).forEach(unregisterGlassRegion);
+    });
+  }
+
   const HocLuc = {
-    version: '2.0.0',
+    version: '2.2.0',
 
     // Lấy thông tin ứng dụng host
     getContext: function () {
@@ -122,6 +299,13 @@
     },
 
     __dispatchHostEvent: dispatchHostEvent,
+
+    glass: {
+      registerRegion: registerGlassRegion,
+      updateRegion: updateGlassRegion,
+      unregisterRegion: unregisterGlassRegion,
+      refreshRegions: refreshGlassRegions
+    },
 
     // Các tương tác với Bảng phấn và Tài liệu
     board: {
@@ -180,6 +364,22 @@
       set: function (key, value) {
         return sendRpc('storage:set', { key, value });
       }
+    },
+
+    // Đóng cửa sổ plugin modal / floating
+    close: function () {
+      return sendRpc('window:close', {});
+    },
+
+    window: {
+      close: function () {
+        return sendRpc('window:close', {});
+      }
+    },
+
+    onMessage: function (handler) {
+      if (typeof handler !== 'function') return function () {};
+      return HocLuc.onHostEvent('message', handler);
     }
   };
 
