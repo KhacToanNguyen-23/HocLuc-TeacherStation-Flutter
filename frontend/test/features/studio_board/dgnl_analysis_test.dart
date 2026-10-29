@@ -1,26 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teaching_companion/features/studio_board/services/dgnl_service.dart';
-import 'package:teaching_companion/features/studio_board/services/profiler/dgnl_collocation_data.dart';
+import 'package:teaching_companion/features/studio_board/services/dgnl_collocation_data.dart';
 
 void main() {
   group('Passive Voice False Positive & Detection Tests', () {
-    test(
-      'Negative: "They are often slightly sensitive." produces NO passive voice',
-      () {
-        final res = DgnlService.fallbackAnalyze(
-          'They are often slightly sensitive.',
-        );
-        final passives = res.highlights
-            .where((h) => h['type'] == 'Câu bị động (Passive Voice)')
-            .toList();
-        expect(
-          passives,
-          isEmpty,
-          reason:
-              'Trạng từ "often" kết thúc bằng -en không được bị nhận diện nhầm thành phân từ 2.',
-        );
-      },
-    );
+    test('Negative: "They are often slightly sensitive." produces NO passive voice', () {
+      final res = DgnlService.fallbackAnalyze(
+        'They are often slightly sensitive.',
+      );
+      final passives = res.highlights
+          .where((h) => h['type'] == 'Câu bị động (Passive Voice)')
+          .toList();
+      expect(
+        passives,
+        isEmpty,
+        reason: 'Trạng từ "often" kết thúc bằng -en không được bị nhận diện nhầm thành phân từ 2.',
+      );
+    });
 
     test('Negative: "They are happy." produces NO passive voice', () {
       final res = DgnlService.fallbackAnalyze('They are happy.');
@@ -71,19 +67,16 @@ void main() {
       },
     );
 
-    test(
-      'Positive: "The results have been published." identifies "been published"',
-      () {
-        final res = DgnlService.fallbackAnalyze(
-          'The results have been published.',
-        );
-        final passives = res.highlights
-            .where((h) => h['type'] == 'Câu bị động (Passive Voice)')
-            .toList();
-        expect(passives, isNotEmpty);
-        expect(passives.first['text'], equals('been published'));
-      },
-    );
+    test('Positive: "The results have been published." identifies "been published"', () {
+      final res = DgnlService.fallbackAnalyze(
+        'The results have been published.',
+      );
+      final passives = res.highlights
+          .where((h) => h['type'] == 'Câu bị động (Passive Voice)')
+          .toList();
+      expect(passives, isNotEmpty);
+      expect(passives.first['text'], equals('been published'));
+    });
 
     test(
       'Positive with adverb: "These methods are often used in laboratories."',
@@ -185,53 +178,11 @@ void main() {
     });
   });
 
-  group('Vocabulary Filtering & Clean Layer Tests', () {
+  group('Grammar and Collocation Layer Tests', () {
     const fixturePassage =
         'People have varying capacities for tasting bitterness, and the differences appear to be genetic. '
         'About 75 percent of people are sensitive to the taste of the bitter compounds phenylthiocarbamide. '
         'They are also less fond of alcoholic drinks, which are often slightly bitter.';
-
-    test('marks basic function words as non-pedagogical vocabulary spans', () {
-      final res = DgnlService.fallbackAnalyze(fixturePassage);
-      final vocabHighlights = res.highlights
-          .where((h) => h['category'] == 'vocabulary')
-          .toList();
-
-      final functionWordHighlights = vocabHighlights.where(
-        (highlight) => const {
-          'the',
-          'and',
-          'they',
-          'are',
-          'of',
-        }.contains(highlight['text'].toString().toLowerCase()),
-      );
-      expect(functionWordHighlights, isNotEmpty);
-      expect(
-        functionWordHighlights.every(
-          (highlight) =>
-              highlight['isFunctionWord'] == true &&
-              highlight['isPedagogical'] == false,
-        ),
-        isTrue,
-        reason:
-            'Function words are retained for explicit filters but are not pedagogical targets: ${functionWordHighlights.map((highlight) => '${highlight['text']}:${highlight['isFunctionWord']}/${highlight['isPedagogical']}').join(', ')}',
-      );
-
-      final vocabWords = vocabHighlights
-          .map((v) => v['text'].toString().toLowerCase())
-          .toSet();
-
-      // Content words and AWL terms MUST be preserved
-      expect(
-        vocabWords.contains('capacities') || vocabWords.contains('varying'),
-        isTrue,
-      );
-      expect(
-        vocabWords.contains('genetic') || vocabWords.contains('sensitive'),
-        isTrue,
-      );
-    });
 
     test('preserves exact character offsets for PDF highlighting', () {
       final res = DgnlService.fallbackAnalyze(fixturePassage);
@@ -246,36 +197,7 @@ void main() {
           equals(
             hl['text'].toString().toLowerCase().replaceAll(RegExp(r'\s+'), ' '),
           ),
-          reason:
-              'Tọa độ ký tự [start:end] phải khớp chính xác với đoạn văn bản gốc.',
-        );
-      }
-    });
-
-    test('classifies pedagogical vs non-pedagogical vocabulary clearly', () {
-      final res = DgnlService.fallbackAnalyze(fixturePassage);
-      final vocabHighlights = res.highlights
-          .where((h) => h['category'] == 'vocabulary')
-          .toList();
-
-      final pedagogicalVocab = vocabHighlights
-          .where((v) => v['isPedagogical'] == true)
-          .toList();
-      expect(pedagogicalVocab, isNotEmpty);
-
-      // All pedagogical vocabulary should be B1, B2, C1, C2, or AWL
-      for (final pv in pedagogicalVocab) {
-        final lvl = pv['level'] as String;
-        final isAwl = pv['isAcademic'] == true;
-        final isPreTeach = pv['isPreTeach'] == true;
-        expect(
-          lvl == 'B1' ||
-              lvl == 'B2' ||
-              lvl == 'C1' ||
-              lvl == 'C2' ||
-              isAwl ||
-              isPreTeach,
-          isTrue,
+          reason: 'Tọa độ ký tự [start:end] phải khớp chính xác với đoạn văn bản gốc.',
         );
       }
     });

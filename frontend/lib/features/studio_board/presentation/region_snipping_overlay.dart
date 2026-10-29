@@ -1,10 +1,15 @@
 import 'package:teaching_companion/core/utils/frontend_logger.dart';
+
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
+
 import '../services/dgnl_service.dart';
+
+import 'package:teaching_companion/features/plugin_engine/services/plugin_text_selection.dart';
 
 part 'region_snipping_painter.dart';
 
@@ -186,6 +191,19 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final studio = widget.studio;
     final size = MediaQuery.of(context).size;
+    final owner = (studio.activePlugin ?? studio.floatingPlugin)?.id;
+    final target = studio.snipTarget;
+    final generation = studio.pdfContentGeneration;
+    final rawTextOnly = PluginTextSelection.acceptsSnippet(
+      (studio.activePlugin ?? studio.floatingPlugin)?.manifest,
+      target,
+    );
+    bool stillOwnsSnip() =>
+        mounted &&
+        studio.isSnippingActive &&
+        studio.snipTarget == target &&
+        (studio.activePlugin ?? studio.floatingPlugin)?.id == owner &&
+        studio.pdfContentGeneration == generation;
 
     // 1. Try accurate extraction using active PdfViewerController
     _PdfSnippetResult? pdfResult = await _extractFromActivePdfViewer(
@@ -199,13 +217,19 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         (studio.pdfBytes != null || studio.pdfFilePath != null)) {
       pdfResult = await _extractFromPdfFallback(studio, screenRect, size);
     }
+    if (!stillOwnsSnip()) return;
 
     if (pdfResult != null && pdfResult.text.trim().isNotEmpty) {
       final cleanText = pdfResult.text.replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (rawTextOnly) {
+        studio.sendSnippetToPlugin(cleanText, target: target);
+        return;
+      }
 
       // Perform DGNL analysis and Cloze generation first while overlay is active
       final analysis = await DgnlService.analyze(cleanText);
       final clozeQuestions = await DgnlService.generateCloze(cleanText);
+      if (!stillOwnsSnip()) return;
 
       // Map highlight spans to line-level bounding boxes on the PDF page
       final spans = <PdfDgnlHighlightSpan>[];
@@ -267,7 +291,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       for (final hl in analysis.highlights) {
         final hlText = hl['text']?.toString().trim() ?? '';
         final category = hl['category']?.toString() ?? 'grammar';
-        final level = hl['level']?.toString() ?? 'B2';
         final type = hl['type']?.toString() ?? category.toUpperCase();
         final note = hl['note']?.toString() ?? '';
         final isPedagogical = hl['isPedagogical'] as bool? ?? false;
@@ -306,7 +329,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 PdfDgnlHighlightSpan(
                   text: hlText,
                   category: category,
-                  level: level,
                   type: type,
                   note: note,
                   normalizedRects: lineRects,
@@ -337,7 +359,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 PdfDgnlHighlightSpan(
                   text: hlText,
                   category: category,
-                  level: level,
                   type: type,
                   note: note,
                   normalizedRects: lineRects,
@@ -370,7 +391,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 final hlText = hl['text']?.toString().trim() ?? '';
                 if (hlText.isEmpty) continue;
                 final category = hl['category']?.toString() ?? 'grammar';
-                final level = hl['level']?.toString() ?? 'B2';
                 final type = hl['type']?.toString() ?? category.toUpperCase();
                 final note = hl['note']?.toString() ?? '';
                 final isPedagogical = hl['isPedagogical'] as bool? ?? false;
@@ -408,7 +428,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                       PdfDgnlHighlightSpan(
                         text: hlText,
                         category: category,
-                        level: level,
                         type: type,
                         note: note,
                         normalizedRects: lineRects,
@@ -445,19 +464,18 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
           'total_words': analysis.totalWords,
           'content_words': analysis.contentWords,
           'lexical_density': analysis.lexicalDensity,
-          'cefr_profile': analysis.cefrProfile,
           'evaluation': analysis.evaluation,
           'status': analysis.status,
         },
         clozeQuestions: clozeQuestions,
-        textProfile: analysis.textProfile,
       );
 
       // 1. First add passage to PDF stage so in-document highlight appears immediately
+      if (!stillOwnsSnip()) return;
       studio.addPdfDgnlPassage(passage);
 
       // 2. Synchronize to English assistant plugin and cleanly close snipping
-      studio.sendSnippetToPlugin(cleanText);
+      studio.sendSnippetToPlugin(cleanText, target: target);
       studio.stopSnipping();
 
       if (mounted) {
@@ -473,7 +491,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Đã highlight trực tiếp trên đề (Trang ${pdfResult.pageNumber}): ${spans.length} điểm Ngữ pháp, Collocations & CEFR B2/C1!',
+                    'Đã highlight trực tiếp trên đề (Trang ${pdfResult.pageNumber}): ${spans.length} điểm Ngữ pháp, Collocations!',
                     style: const TextStyle(fontSize: 12.5),
                   ),
                 ),
@@ -506,11 +524,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       extracted = matchedTexts.join(' ');
     }
 
-    if (!mounted) return;
+    if (!stillOwnsSnip()) return;
 
     if (extracted.trim().isNotEmpty) {
       final cleanText = extracted.trim();
-      studio.sendSnippetToPlugin(cleanText);
+      studio.sendSnippetToPlugin(cleanText, target: target);
       studio.stopSnipping();
 
       messenger?.showSnackBar(
@@ -780,4 +798,3 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
     return null;
   }
 }
-

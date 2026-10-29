@@ -40,7 +40,7 @@ async function installClick(page, id, evidence = true) {
     };
   }, {id, evidence});
 }
-async function run(browser, name, body, test, full = false) {
+async function run(browser, name, body, test, full = false, url = 'https://meet.google.com/abc-defg-hij') {
   const page = await browser.newPage();
   await page.clock.install();
   await page.addInitScript(() => {
@@ -49,15 +49,60 @@ async function run(browser, name, body, test, full = false) {
     window.chrome.webview = {postMessage: raw => window.__messages.push(JSON.parse(raw))};
     window.__meetManualJoin = true;
   });
-  await page.route('https://meet.google.com/**', route => route.fulfill({contentType:'text/html', body:
+  await page.route('**/*', route => route.fulfill({contentType:'text/html', body:
     `<html><head><meta charset="utf-8"><style>section{padding:12px}button{margin:4px;padding:8px}span{padding:4px}</style></head><body>${body}</body></html>`}));
-  await page.goto('https://meet.google.com/abc-defg-hij');
+  await page.goto(url);
   await page.evaluate(admission + (full ? legacy : ''));
   try { await test(page); results.push(name); } finally { await page.close(); }
 }
 (async () => {
   const browser = await chromium.launch({channel:'msedge', headless:true});
   try {
+    for (const url of ['https://meet.google.com/abc-defg-hij', 'https://meet.google.com/meet/abc-defg-hij?authuser=0']) {
+      await run(browser, `strict Meet route preserves raw URL, selected identity and confirmation: ${url}`, '<button aria-label="Leave call">Leave call</button>' + row('a','Minh','a@example.com') + row('b','Minh','b@example.com'), async page => {
+        const pending = await queue(page);
+        assert.equal(pending.requests.length, 2);
+        const before = await page.evaluate(() => window.__messages.find(m => m.type === 'ADMISSION_BRIDGE_READY'));
+        assert.equal(before.url, url);
+        await page.evaluate(admission);
+        const repeated = await page.evaluate(() => window.__messages.filter(m => m.type === 'ADMISSION_BRIDGE_READY').at(-1));
+        assert.equal(repeated.documentId, before.documentId);
+        assert.deepEqual((await queue(page)).requests.map(r => r.id), pending.requests.map(r => r.id));
+        await installClick(page, 'b');
+        const selected = pending.requests[1].id;
+        assert.equal((await action(page, selected, 'targeted-new-route', 'other-document')).status, 'STALE_DOCUMENT');
+        assert.deepEqual(await page.evaluate(() => window.__clicks), []);
+        assert.equal((await action(page, selected, 'targeted-new-route')).status, 'PENDING');
+        await page.clock.fastForward(200);
+        assert.deepEqual(await page.evaluate(() => window.__clicks), ['b']);
+        const confirmation = await page.evaluate(() => window.__messages.find(m => m.type === 'ADMISSION_RESULT'));
+        assert.equal(confirmation.url, url);
+        assert.equal(confirmation.documentId, before.documentId);
+        assert.equal(confirmation.payload.requestId, selected);
+        assert.equal(confirmation.payload.attemptId, 'targeted-new-route');
+        assert.equal(confirmation.payload.status, 'CONFIRMED');
+        assert.deepEqual((await queue(page)).requests.map(r => r.id), [pending.requests[0].id]);
+        assert.ok(await page.evaluate(url => window.__messages.every(m => m.url === url), url));
+      }, true, url);
+    }
+    for (const url of [
+      'https://meet.google.com/meet/abc-defg-hij/extra',
+      'https://meet.google.com/abc-defg-hij/extra',
+      'https://meet.google.com/meet/abc-defg-hij/',
+      'https://meet.google.com/meet/invalid',
+      'https://meet.google.com/other/abc-defg-hij',
+      'https://meet.google.com.evil.example/meet/abc-defg-hij',
+      'https://example.com/meet/abc-defg-hij',
+      'http://meet.google.com/meet/abc-defg-hij',
+      'https://meet.google.com:444/meet/abc-defg-hij',
+    ]) {
+      await run(browser, `unsupported origin or path cannot install admission bridge: ${url}`, row('a','Alice'), async page => {
+        assert.equal(await page.evaluate(() => typeof window.MeetAdmissionBridge), 'undefined');
+        await page.clock.fastForward(2000);
+        assert.deepEqual(await page.evaluate(() => window.__messages), []);
+        assert.deepEqual(await page.evaluate(() => window.__clicks), []);
+      }, false, url);
+    }
     await run(browser, 'in-call requests wait for teacher; explicit snapshot admits both with evidence', '<button aria-label="Leave call">Leave call</button><button id="permission">Allow</button>' + row('a','Alice') + row('b','Bob'), async page => {
       await installClick(page, 'a');
       await installClick(page, 'b');

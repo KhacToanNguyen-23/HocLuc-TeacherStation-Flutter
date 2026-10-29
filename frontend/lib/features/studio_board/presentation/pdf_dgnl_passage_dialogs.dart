@@ -62,8 +62,9 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
         .clamp(8.0, math.max(8.0, pageRect.width - cardWidth - 8))
         .toDouble();
 
-    final token = DgnlHighlightPalette.tokenForSpan(activeSpan);
-    final categoryColor = token.badgeDark;
+    final categoryColor = activeSpan.category == 'collocation'
+        ? const Color(0xff86efac)
+        : const Color(0xff89b4fa);
 
     return Positioned(
       left: cardLeft,
@@ -88,7 +89,7 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
             color: const Color(0xf8111a15),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: categoryColor.withValues(alpha: 0.85),
+              color: categoryColor.withValues(alpha: 0.8),
               width: 1.5,
             ),
             boxShadow: const [
@@ -137,18 +138,16 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: token.fill.withValues(alpha: 0.16),
+                      color: categoryColor.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: categoryColor.withValues(alpha: 0.7),
+                        color: categoryColor.withValues(alpha: 0.6),
                       ),
                     ),
                     child: Text(
                       activeSpan.category == 'grammar'
                           ? 'GRAMMAR'
-                          : (activeSpan.category == 'collocation'
-                                ? 'COLLOCATION'
-                                : activeSpan.level),
+                          : 'COLLOCATION',
                       style: TextStyle(
                         color: categoryColor,
                         fontSize: 10,
@@ -158,44 +157,41 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Tooltip(
-                    message: 'Lưu điểm highlight vào tài liệu (có thể tẩy xóa và bảo toàn tệp gốc)',
-                    child: InkWell(
-                      onTap: () =>
-                          PdfAnnotationExporter.applyHighlightDirectlyToPdf(
-                            context,
-                            studio,
+                  InkWell(
+                    onTap: () =>
+                        PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+                          context,
+                          studio,
+                        ),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0x2889b4fa),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0x6689b4fa)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.draw_rounded,
+                            size: 11,
+                            color: Color(0xff89b4fa),
                           ),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: DgnlHighlightPalette.tokenGrammar.badgeDark.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: DgnlHighlightPalette.tokenGrammar.badgeDark.withValues(alpha: 0.5)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.draw_rounded,
-                              size: 11,
-                              color: DgnlHighlightPalette.tokenGrammar.badgeDark,
+                          SizedBox(width: 3),
+                          Text(
+                            'Áp lên file',
+                            style: TextStyle(
+                              color: Color(0xff89b4fa),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'Áp lên file',
-                              style: TextStyle(
-                                color: DgnlHighlightPalette.tokenGrammar.badgeDark,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -397,7 +393,7 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
           border: isDashed
               ? null
               : Border.all(
-                  color: isSelected ? color : color.withValues(alpha: 0.7),
+                  color: isSelected ? color : color.withValues(alpha: 0.6),
                   width: isSelected ? 1.4 : 1.0,
                 ),
         ),
@@ -435,276 +431,6 @@ extension _PdfDgnlPassageDialogsExt on _PdfDgnlPassageOverlayState {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCefrDropdownChip({
-    required int pedagogicalCount,
-    required int totalCefrCount,
-    required int a1Count,
-    required int a2Count,
-    required int b1Count,
-    required int b2Count,
-    required int c1Count,
-    required int c2Count,
-    int unknownCount = 0,
-  }) {
-    final active = _activeCategoryFilter;
-    final isCefrActive =
-        active == 'vocabulary' ||
-        active == 'vocabulary_all' ||
-        active == 'unknown' ||
-        active == 'A1' ||
-        active == 'A2' ||
-        active == 'B1' ||
-        active == 'B2' ||
-        active == 'C1' ||
-        active == 'C2';
-
-    final token = DgnlHighlightPalette.tokenForCategory(
-      active ?? 'vocabulary',
-      active,
-    );
-    final activeColor = token.badgeDark;
-    final displayLabel = switch (active) {
-      'A1' => 'A1 ($a1Count)',
-      'A2' => 'A2 ($a2Count)',
-      'B1' => 'B1 ($b1Count)',
-      'B2' => 'B2 ($b2Count)',
-      'C1' => 'C1 ($c1Count)',
-      'C2' => 'C2 ($c2Count)',
-      'unknown' => 'Unknown ($unknownCount)',
-      'vocabulary_all' => 'Tất cả từ ($totalCefrCount)',
-      _ => 'CEFR ($pedagogicalCount/$totalCefrCount)',
-    };
-
-    return Theme(
-      data: Theme.of(context).copyWith(cardColor: const Color(0xf6181825)),
-      child: PopupMenuButton<String>(
-        tooltip: 'Lọc cấp độ từ vựng CEFR',
-        offset: const Offset(0, 24),
-        color: const Color(0xf6181825),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: Color(0xff45475a), width: 1),
-        ),
-        onSelected: (val) {
-          setState(() {
-            if (val == 'clear' || _activeCategoryFilter == val) {
-              _activeCategoryFilter = null;
-            } else {
-              _activeCategoryFilter = val;
-            }
-            _activeSpanIndex = 0;
-          });
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem<String>(
-            value: 'vocabulary',
-            height: 32,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.auto_awesome_outlined,
-                  size: 14,
-                  color: DgnlHighlightPalette.tokenAllVocab.badgeDark,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Từ vựng Trọng tâm B1-C2 ($pedagogicalCount)',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (_activeCategoryFilter == 'vocabulary') ...[
-                  const Spacer(),
-                  Icon(Icons.check, size: 14, color: DgnlHighlightPalette.tokenAllVocab.badgeDark),
-                ],
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'vocabulary_all',
-            height: 32,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.menu_book_outlined,
-                  size: 14,
-                  color: DgnlHighlightPalette.tokenFocused.badgeDark,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Tất cả từ vựng A1-C2 ($totalCefrCount)',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (_activeCategoryFilter == 'vocabulary_all') ...[
-                  const Spacer(),
-                  Icon(Icons.check, size: 14, color: DgnlHighlightPalette.tokenFocused.badgeDark),
-                ],
-              ],
-            ),
-          ),
-          const PopupMenuDivider(height: 6),
-          if (a1Count > 0)
-            _buildCefrMenuItem(
-              'A1',
-              'Cơ bản',
-              a1Count,
-              DgnlHighlightPalette.tokenA1.badgeDark,
-            ),
-          if (a2Count > 0)
-            _buildCefrMenuItem(
-              'A2',
-              'Sơ cấp',
-              a2Count,
-              DgnlHighlightPalette.tokenA2.badgeDark,
-            ),
-          if (b1Count > 0)
-            _buildCefrMenuItem(
-              'B1',
-              'Trung cấp',
-              b1Count,
-              DgnlHighlightPalette.tokenB1.badgeDark,
-            ),
-          if (b2Count > 0)
-            _buildCefrMenuItem(
-              'B2',
-              'Trung cao',
-              b2Count,
-              DgnlHighlightPalette.tokenB2.badgeDark,
-            ),
-          if (c1Count > 0)
-            _buildCefrMenuItem(
-              'C1',
-              'Cao cấp',
-              c1Count,
-              DgnlHighlightPalette.tokenC1.badgeDark,
-            ),
-          if (c2Count > 0)
-            _buildCefrMenuItem(
-              'C2',
-              'Thành thạo',
-              c2Count,
-              DgnlHighlightPalette.tokenC2.badgeDark,
-            ),
-          if (unknownCount > 0) ...[
-            const PopupMenuDivider(height: 6),
-            _buildCefrMenuItem(
-              'unknown',
-              'Chưa định danh (Proper/Rare)',
-              unknownCount,
-              DgnlHighlightPalette.tokenUnknown.badgeDark,
-            ),
-          ],
-          if (isCefrActive) ...[
-            const PopupMenuDivider(height: 6),
-            const PopupMenuItem<String>(
-              value: 'clear',
-              height: 28,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.filter_alt_off_outlined,
-                    size: 13,
-                    color: Color(0xfff38ba8),
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Bỏ lọc CEFR',
-                    style: TextStyle(fontSize: 10.5, color: Color(0xfff38ba8)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
-          decoration: BoxDecoration(
-            color: isCefrActive
-                ? activeColor.withValues(alpha: 0.3)
-                : activeColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: isCefrActive
-                  ? activeColor
-                  : activeColor.withValues(alpha: 0.6),
-              width: isCefrActive ? 1.4 : 1.0,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: activeColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 3.5),
-              Text(
-                displayLabel,
-                style: TextStyle(
-                  color: activeColor,
-                  fontSize: 10,
-                  fontWeight: isCefrActive ? FontWeight.bold : FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 1),
-              Icon(Icons.arrow_drop_down, size: 13, color: activeColor),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  PopupMenuItem<String> _buildCefrMenuItem(
-    String level,
-    String levelName,
-    int count,
-    Color color,
-  ) {
-    final isSelected = _activeCategoryFilter == level;
-    return PopupMenuItem<String>(
-      value: level,
-      height: 30,
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            level,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '· $levelName ($count)',
-            style: const TextStyle(fontSize: 10.5, color: Color(0xffcdd6f4)),
-          ),
-          if (isSelected) ...[
-            const Spacer(),
-            Icon(Icons.check, size: 14, color: color),
-          ],
-        ],
       ),
     );
   }

@@ -33,6 +33,8 @@ class PluginToolContribution {
     this.target,
     this.widgetKey,
     this.pdfTapMode = false,
+    this.textSelectionMode = false,
+    this.snipTextOnly = false,
     this.capturesBoardInput = false,
     this.settingKey,
     this.defaultValue = false,
@@ -49,6 +51,12 @@ class PluginToolContribution {
 
   /// Declares that this contributed tool owns PDF tap gestures while active.
   final bool pdfTapMode;
+
+  /// Allows native PDF text selection while this declared toggle is active.
+  final bool textSelectionMode;
+
+  /// Delivers extracted text without host-side analysis or PDF annotations.
+  final bool snipTextOnly;
   final bool capturesBoardInput;
   final String? settingKey;
   final bool defaultValue;
@@ -63,6 +71,8 @@ class PluginToolContribution {
       target: json['target']?.toString(),
       widgetKey: json['key']?.toString(),
       pdfTapMode: json['pdf_tap_mode'] == true,
+      textSelectionMode: json['text_selection_mode'] == true,
+      snipTextOnly: json['snip_text_only'] == true,
       capturesBoardInput: json['captures_board_input'] == true,
       settingKey: json['setting_key']?.toString(),
       defaultValue: json['default_value'] == true,
@@ -78,6 +88,8 @@ class PluginToolContribution {
     if (target != null) 'target': target,
     if (widgetKey != null) 'key': widgetKey,
     if (pdfTapMode) 'pdf_tap_mode': true,
+    if (textSelectionMode) 'text_selection_mode': true,
+    if (snipTextOnly) 'snip_text_only': true,
     if (capturesBoardInput) 'captures_board_input': true,
     if (settingKey != null) 'setting_key': settingKey,
     if (settingKey != null) 'default_value': defaultValue,

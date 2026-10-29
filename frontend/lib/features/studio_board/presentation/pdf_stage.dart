@@ -9,7 +9,9 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/classroom_meet/services/classroom_settings_service.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_event_hub.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_text_selection.dart';
 import 'grid_painter.dart';
+import 'widgets/middle_mouse_pan.dart';
 import 'stroke_canvas.dart';
 import 'smart_chalk_overlay.dart';
 import 'pdf_dgnl_passage_overlay.dart';
@@ -75,6 +77,15 @@ class _PdfStageState extends State<PdfStage> {
   bool _lastBoardOptimization = true;
   String? _lastPdfDispatchTarget;
   String? _lastPluginToolStateKey;
+  int _selectionRevision = 0;
+  String? _lastSelectionOwner;
+
+  bool get _pluginTextSelectionEnabled =>
+      widget.interactive &&
+      PluginTextSelection.accepts(
+        (widget.studio.activePlugin ?? widget.studio.floatingPlugin)?.manifest,
+        widget.studio.activeSubjectTool,
+      );
   String? _pluginRegionSubscriptionKey;
   StreamSubscription<PluginHostMessage>? _pluginRegionSubscription;
 
@@ -147,6 +158,17 @@ class _PdfStageState extends State<PdfStage> {
   }
 
   void _onStudioChanged() {
+    final studio = widget.studio;
+    final owner = _pluginTextSelectionEnabled
+        ? '${(studio.activePlugin ?? studio.floatingPlugin)!.id}:${studio.activeSubjectTool}:${studio.pdfContentGeneration}'
+        : null;
+    if (owner != _lastSelectionOwner) {
+      _lastSelectionOwner = owner;
+      _selectionRevision++;
+      if (_pdfController.isReady) {
+        unawaited(_pdfController.textSelectionDelegate.clearTextSelection());
+      }
+    }
     _syncPluginRegionSubscription();
     _dispatchActivePluginToolState();
     _dispatchCachedPdfTextToActivePlugin();
@@ -686,7 +708,17 @@ class _PdfStageState extends State<PdfStage> {
   Uint8List? _cachedPdfBytes;
 
   Widget _buildPdfView() {
-    return _getPdfViewerWidget();
+    return MiddleMousePan(
+      enabled: widget.interactive,
+      onPan: (delta) {
+        if (!_pdfController.isReady) return;
+        final matrix = _pdfController.value.clone();
+        matrix.setEntry(0, 3, matrix.entry(0, 3) + delta.dx);
+        matrix.setEntry(1, 3, matrix.entry(1, 3) + delta.dy);
+        _pdfController.value = matrix;
+      },
+      child: _getPdfViewerWidget(),
+    );
   }
 }
 

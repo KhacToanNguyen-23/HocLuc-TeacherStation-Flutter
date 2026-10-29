@@ -385,7 +385,7 @@ void main() {
           StudioDocumentDrawer,
         ], compare: false);
         board.setQuestionsDrawer(false);
-        await tester.tap(find.byTooltip('Thiết bị và API AI'));
+        await tester.tap(find.byTooltip('Thiết bị và trợ giảng'));
         await tester.pumpAndSettle();
         await inspect('studio-inspector', [
           StageContainer,

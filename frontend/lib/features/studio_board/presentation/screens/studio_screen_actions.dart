@@ -304,6 +304,7 @@ extension _StudioScreenActionsExt on _StudioScreenState {
         if (mounted) message('Chưa thể tạm rời phòng: $e');
         return;
       }
+      _tutorSession.controller.setEnabled(false);
       if (widget.teachingTarget != null) {
         await MeetAutomationService().stopScreenSharing();
         if (mounted) {
@@ -357,9 +358,12 @@ extension _StudioScreenActionsExt on _StudioScreenState {
     }
   }
 
-  Future<void> openInspector() async {
+  Future<void> openInspector({int? initialTab}) async {
     if (showInspectorModal) return;
-    setState(() => showInspectorModal = true);
+    setState(() {
+      showInspectorModal = true;
+      if (initialTab != null) _inspectorInitialTab = initialTab;
+    });
     try {
       await showModalBottomSheet<void>(
         context: context,
@@ -367,6 +371,8 @@ extension _StudioScreenActionsExt on _StudioScreenState {
         builder: (context) => SizedBox(
           height: 520,
           child: StudioInspectorPanel(
+            tutor: _tutorSession.controller,
+            initialTab: _inspectorInitialTab,
             studio: studio,
             notesController: notes,
             questionController: question,
@@ -387,4 +393,3 @@ extension _StudioScreenActionsExt on _StudioScreenState {
     return StageContainer(studio: studio, interactive: interactive);
   }
 }
-
