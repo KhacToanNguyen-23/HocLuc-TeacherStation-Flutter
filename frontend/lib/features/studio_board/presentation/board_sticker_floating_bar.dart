@@ -55,29 +55,6 @@ class BoardStickerFloatingBar extends StatelessWidget {
     );
   }
 
-  Widget _buildViewPill(String name, {bool isSelected = false, VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF1F5F9) : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
-          border: isSelected ? Border.all(color: const Color(0xFFCBD5E1), width: 0.8) : null,
-        ),
-        child: Text(
-          name,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? const Color(0xFF0F172A) : const Color(0xFF64748B),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildPillDivider() {
     return Container(
       width: 1,
@@ -93,10 +70,10 @@ class BoardStickerFloatingBar extends StatelessWidget {
       color: Colors.transparent,
       child: Container(
         height: 38.0,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
           boxShadow: const [
             BoxShadow(
@@ -111,40 +88,6 @@ class BoardStickerFloatingBar extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // [ 🎓 Phát quay ]
-              _buildPillAction(
-                icon: Icons.school_outlined,
-                label: 'Phát quay',
-                color: const Color(0xFF0F172A),
-                onTap: onToggleRevolve ?? onEdit,
-              ),
-              _buildPillDivider(),
-
-              // [ Góc nhìn: Sách GK | Trước | Trên | Bên | Xoay 3D ]
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Góc nhìn: ',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                  _buildViewPill('Sách GK', isSelected: true, onTap: onEdit),
-                  const SizedBox(width: 2),
-                  _buildViewPill('Trước', onTap: onEdit),
-                  const SizedBox(width: 2),
-                  _buildViewPill('Trên', onTap: onEdit),
-                  const SizedBox(width: 2),
-                  _buildViewPill('Bên', onTap: onEdit),
-                  const SizedBox(width: 2),
-                  _buildViewPill('Xoay 3D', onTap: onToggleRevolve ?? onEdit),
-                ],
-              ),
-              _buildPillDivider(),
-
               // [ ✎ Sửa ]
               _buildPillAction(
                 icon: Icons.edit_outlined,
@@ -152,14 +95,7 @@ class BoardStickerFloatingBar extends StatelessWidget {
                 color: const Color(0xFF0F172A),
                 onTap: onEdit,
               ),
-
-              // [ 📄 Sao chép ]
-              _buildPillAction(
-                icon: Icons.content_copy_outlined,
-                label: 'Sao chép',
-                color: const Color(0xFF0F172A),
-                onTap: onDuplicate,
-              ),
+              _buildPillDivider(),
 
               // [ ⧉ Nhân bản ]
               _buildPillAction(
@@ -168,14 +104,7 @@ class BoardStickerFloatingBar extends StatelessWidget {
                 color: const Color(0xFF0F172A),
                 onTap: onDuplicate,
               ),
-
-              // [ ✂ Cắt ]
-              _buildPillAction(
-                icon: Icons.content_cut_outlined,
-                label: 'Cắt',
-                color: const Color(0xFF0F172A),
-                onTap: onDelete,
-              ),
+              _buildPillDivider(),
 
               // [ 🗑 Xóa ]
               _buildPillAction(

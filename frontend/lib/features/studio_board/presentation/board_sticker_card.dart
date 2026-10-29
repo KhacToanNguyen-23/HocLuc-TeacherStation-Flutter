@@ -428,8 +428,8 @@ class BoardStickerCard extends StatelessWidget {
               Positioned(
                 top: isCloseToTop ? null : -46,
                 bottom: isCloseToTop ? -46 : null,
-                left: (boxW - 360.0) / 2,
-                width: 360.0,
+                left: (boxW - 220.0) / 2,
+                width: 220.0,
                 height: 38.0,
                 child: BoardStickerFloatingBar(
                   sticker: sticker,
@@ -597,28 +597,49 @@ class BoardStickerCard extends StatelessWidget {
           child: SvgPicture.string(
             sticker.svgContent!,
             fit: BoxFit.contain,
+            placeholderBuilder: (context) => const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('[BoardStickerCard] SvgPicture.string error: $error. Falling back to imageBase64.');
+              return _buildFallbackImage(availableHeight);
+            },
           ),
         ),
       );
     }
 
+    return _buildFallbackImage(availableHeight);
+  }
+
+  Widget _buildFallbackImage(double? availableHeight) {
     if (sticker.imageBase64 != null && sticker.imageBase64!.isNotEmpty) {
       final rawBase64 = sticker.imageBase64!;
       final isSvg = rawBase64.contains('image/svg+xml');
       final base64Data =
           rawBase64.contains(',') ? rawBase64.split(',').last : rawBase64;
       try {
-        final bytes = base64Decode(base64Data);
+        final sanitized = base64Data.replaceAll(RegExp(r'\s+'), '');
+        final bytes = base64Decode(sanitized);
         return Container(
           height: availableHeight,
           padding: const EdgeInsets.all(4),
           alignment: Alignment.center,
           child: isSvg
               ? SvgPicture.memory(bytes, fit: BoxFit.contain)
-              : Image.memory(bytes, fit: BoxFit.contain),
+              : Image.memory(
+                  bytes,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const SizedBox.shrink(),
+                ),
         );
-      } catch (_) {
-        // Fallback to text if decoding fails
+      } catch (e) {
+        debugPrint('[BoardStickerCard] base64 decode error: $e');
       }
     }
 

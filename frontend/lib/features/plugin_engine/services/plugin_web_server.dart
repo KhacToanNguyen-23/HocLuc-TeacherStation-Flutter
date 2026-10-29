@@ -193,9 +193,14 @@ class PluginWebServer {
     Directory installedDir,
   ) async {
     _setContentType(response, targetFile.path);
-    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
+    final normalizedPath = targetFile.path.replaceAll('\\', '/').toLowerCase();
+    if (normalizedPath.contains('/vendor/')) {
+      response.headers.set('Cache-Control', 'public, max-age=86400, immutable');
+    } else {
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+    }
     final lower = targetFile.path.toLowerCase();
     if (lower.endsWith('.html') || lower.endsWith('.htm')) {
       final manifest = PluginStorageManager.instance.loadManifestFromDir(
@@ -203,8 +208,7 @@ class PluginWebServer {
       );
       var html = await targetFile.readAsString();
       if ((manifest == null || manifest.injectSdk) &&
-          !html.contains('hocluc-plugin-sdk.js') &&
-          !html.contains('sdk.js')) {
+          !html.contains('hocluc-plugin-sdk.js')) {
         const sdkTag =
             '<script src="/__hocluc_sdk__/hocluc-plugin-sdk.js"></script>';
         if (html.contains('</head>')) {

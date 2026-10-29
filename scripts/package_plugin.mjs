@@ -69,7 +69,7 @@ function createZip(sourceDir, outputFile) {
       const fullPath = path.join(dir, entry.name);
       const relPath = path.join(relative, entry.name).replace(/\\/g, '/');
       if (entry.isDirectory()) {
-        if (entry.name === '__pycache__' || entry.name === '.venv' || entry.name === 'node_modules') {
+        if (entry.name === '__pycache__' || entry.name === '.venv' || entry.name === 'node_modules' || entry.name === '.cache') {
           continue;
         }
         if (relPath === 'engine/tests' || relPath.startsWith('engine/tests/') ||
