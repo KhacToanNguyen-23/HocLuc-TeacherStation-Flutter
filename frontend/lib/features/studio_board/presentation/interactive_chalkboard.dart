@@ -204,7 +204,6 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
                                       onEdit: () => _handleEdit(s),
                                     ),
                                   ),
-                                ),
                               // Canva Selection Overlay Layer: Top-most Floating Action Bar
                               if (selSticker != null)
                                 Positioned(
