@@ -654,7 +654,7 @@ class _SubjectToolPaletteState extends State<SubjectToolPalette>
           : null,
       child: Tooltip(
         message:
-            'Áp lớp Highlight chuẩn trực tiếp vào file PDF đang mở (không cần lưu tệp mới)',
+            'Lưu lớp Highlight chuẩn vào tài liệu (có thể tẩy xóa và bảo toàn tệp gốc)',
         child: Material(
           color: Colors.transparent,
           child: InkWell(

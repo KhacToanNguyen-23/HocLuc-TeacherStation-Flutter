@@ -16,6 +16,7 @@ class InstalledPlugin extends SubjectPlugin {
     this.sourceFilename = '',
     this.sourceFile,
     this.catalogItem,
+    this.isDevelopmentSource = false,
   });
 
   final PluginManifest manifest;
@@ -23,6 +24,7 @@ class InstalledPlugin extends SubjectPlugin {
   final String sourceFilename;
   final File? sourceFile;
   final PluginCatalogItem? catalogItem;
+  final bool isDevelopmentSource;
 
   /// Returns local icon file from extracted plugin folder if available.
   File? get iconFile {
@@ -203,6 +205,7 @@ class PluginManager extends ChangeNotifier {
             sourceFile: existing.sourceFile,
             sourceFilename: existing.sourceFilename,
             catalogItem: item,
+            isDevelopmentSource: existing.isDevelopmentSource,
           );
           if (_installedPackages.containsKey(item.id)) {
             _installedPackages[item.id] = _registry[item.id] as InstalledPlugin;
@@ -232,26 +235,24 @@ class PluginManager extends ChangeNotifier {
   }
 
   /// Dynamically discover plugins from workspace/bundled plugin directories.
-  Future<void> discoverAvailablePlugins() async {
+  /// In debug mode, unpacked plugin sources override archives so UI and
+  /// manifest edits can be exercised without rebuilding a `.hlep` package.
+  Future<void> discoverAvailablePlugins({
+    @visibleForTesting List<Directory>? standardDirectories,
+  }) async {
     final searchDirs = <Directory>[
-      Directory('plugins'),
-      Directory('../plugins'),
-      Directory('../../plugins'),
-      Directory('../../../plugins'),
-      Directory('../../../../plugins'),
-      Directory('../../../../../plugins'),
+      if (standardDirectories != null)
+        ...standardDirectories
+      else ...[
+        Directory('plugins'),
+        Directory('../plugins'),
+        Directory('../../plugins'),
+        Directory('../../../plugins'),
+        Directory('../../../../plugins'),
+        Directory('../../../../../plugins'),
+        ..._resolveExecutablePluginDirectories(),
+      ],
     ];
-    try {
-      final exeDir = File(Platform.resolvedExecutable).parent;
-      searchDirs.addAll([
-        Directory('${exeDir.path}/plugins'),
-        Directory('${exeDir.path}/../plugins'),
-        Directory('${exeDir.path}/../../plugins'),
-        Directory('${exeDir.path}/../../../plugins'),
-        Directory('${exeDir.path}/../../../../plugins'),
-        Directory('${exeDir.path}/../../../../../plugins'),
-      ]);
-    } catch (_) {}
 
     for (final dir in searchDirs) {
       if (!dir.existsSync()) continue;
@@ -269,6 +270,11 @@ class PluginManager extends ChangeNotifier {
               hlepBytes,
             );
             if (manifest != null) {
+              if (_registry[manifest.id] is InstalledPlugin &&
+                  (_registry[manifest.id] as InstalledPlugin)
+                      .isDevelopmentSource) {
+                continue;
+              }
               final existing = _registry[manifest.id];
               final isNewerVersion =
                   existing is InstalledPlugin &&
@@ -286,9 +292,13 @@ class PluginManager extends ChangeNotifier {
               bool isBundleModified = false;
               if (installedDir != null) {
                 try {
-                  final cachedManifest = File('${installedDir.path}/manifest.json');
+                  final cachedManifest = File(
+                    '${installedDir.path}/manifest.json',
+                  );
                   if (!cachedManifest.existsSync() ||
-                      hlep.lastModifiedSync().isAfter(cachedManifest.lastModifiedSync())) {
+                      hlep.lastModifiedSync().isAfter(
+                        cachedManifest.lastModifiedSync(),
+                      )) {
                     isBundleModified = true;
                   }
                 } catch (_) {}
@@ -335,7 +345,14 @@ class PluginManager extends ChangeNotifier {
             final manifest = PluginStorageManager.instance.loadManifestFromDir(
               subDir,
             );
-            if (manifest != null && !_registry.containsKey(manifest.id)) {
+            final existing = manifest == null ? null : _registry[manifest.id];
+            final preferDevelopmentSource =
+                kDebugMode &&
+                manifest != null &&
+                existing != null &&
+                (existing is! InstalledPlugin || !existing.isDevelopmentSource);
+            if (manifest != null &&
+                (existing == null || preferDevelopmentSource)) {
               final segments = subDir.uri.pathSegments
                   .where((s) => s.isNotEmpty)
                   .toList();
@@ -349,6 +366,7 @@ class PluginManager extends ChangeNotifier {
                 manifest: manifest,
                 installDirectory: installedDir,
                 sourceFilename: dirname,
+                isDevelopmentSource: kDebugMode,
               );
               _registry[manifest.id] = plugin;
               if (_installedPluginIds.contains(manifest.id)) {
@@ -366,6 +384,22 @@ class PluginManager extends ChangeNotifier {
           '[PluginManager] Error scanning directories in ${dir.path}: $e',
         );
       }
+    }
+  }
+
+  List<Directory> _resolveExecutablePluginDirectories() {
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent;
+      return [
+        Directory('${exeDir.path}/plugins'),
+        Directory('${exeDir.path}/../plugins'),
+        Directory('${exeDir.path}/../../plugins'),
+        Directory('${exeDir.path}/../../../plugins'),
+        Directory('${exeDir.path}/../../../../plugins'),
+        Directory('${exeDir.path}/../../../../../plugins'),
+      ];
+    } catch (_) {
+      return const [];
     }
   }
 

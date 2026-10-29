@@ -129,7 +129,10 @@ extension _StudioScreenActionsExt on _StudioScreenState {
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop('save'),
-              style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Lưu & Thoát'),
             ),
           ],

@@ -13,6 +13,7 @@ import '../../../plugin_engine/domain/models/plugin_manifest.dart';
 import '../../../plugin_engine/services/host_bridge.dart';
 import '../../../plugin_engine/services/plugin_manager.dart';
 import '../../../plugin_engine/services/process_supervisor.dart';
+import '../../../plugin_engine/services/plugin_analysis_client.dart';
 import '../../services/controllers/audio_sync_controller.dart';
 import '../../services/controllers/canvas_drawing_controller.dart';
 import '../../services/controllers/pdf_smart_pen_controller.dart';
@@ -89,9 +90,6 @@ class StudioState extends ChangeNotifier {
   final Map<String, List<_PdfAnnotationHistoryEntry>> _pdfAnnotationRedo = {};
   final Map<String, Map<int, Map<String, BoardStroke?>>>
   _temporaryPdfAnnotationOverrides = {};
-  final Map<BoardStroke, int> _boardUndoSequence = {};
-  final Map<BoardStroke, int> _boardRedoSequence = {};
-  Map<int, List<BoardStroke>>? _redoPages;
   int _historySequence = 0;
   int _revision = 0;
   int get revision => _revision;
@@ -259,60 +257,26 @@ class StudioState extends ChangeNotifier {
     }
   }
 
-  void erase(Offset point, {List<BoardStroke>? target}) {
-    canvas.erase(point, target: target);
+  void erase(Offset point, {List<BoardStroke>? target, int? pageNumber}) {
+    final targetPage = pageNumber ?? pdfPage;
+    canvas.erase(
+      point,
+      target: target,
+      onErased: (stroke, index) {
+        if (target != null) {
+          pdf.recordAnnotationRemoved(targetPage, stroke, index);
+        }
+      },
+    );
     dirty = true;
     _revision++;
   }
 
-  void undo() {
-    final history = _pdfAnnotationUndo[_pdfAnnotationHistoryKey];
-    if (history != null &&
-        history.isNotEmpty &&
-        history.last.sequence > coordinator.undoSequence) {
-      final entry = history.removeLast();
-      _applyPdfAnnotationHistory(entry, entry.before);
-      _historySequence = pdf.smartPenManager.historySequence;
-      entry.redoSequence = ++_historySequence;
-      pdf.smartPenManager.historySequence = _historySequence;
-      _pdfAnnotationRedo
-          .putIfAbsent(_pdfAnnotationHistoryKey, () => [])
-          .add(entry);
-      _revision++;
-      if (entry.persistedChanged) dirty = true;
-      notifyListeners();
-      return;
-    }
-    coordinator.undo();
-  }
-
-  void redo() {
-    final history = _pdfAnnotationRedo[_pdfAnnotationHistoryKey];
-    if (history != null &&
-        history.isNotEmpty &&
-        history.last.redoSequence > coordinator.redoSequence) {
-      final entry = history.removeLast();
-      _applyPdfAnnotationHistory(entry, entry.after);
-      _historySequence = pdf.smartPenManager.historySequence;
-      entry.sequence = ++_historySequence;
-      pdf.smartPenManager.historySequence = _historySequence;
-      _pdfAnnotationUndo
-          .putIfAbsent(_pdfAnnotationHistoryKey, () => [])
-          .add(entry);
-      _revision++;
-      if (entry.persistedChanged) dirty = true;
-      notifyListeners();
-      return;
-    }
-    coordinator.redo();
-  }
-
-  bool get canUndo =>
-      (_pdfAnnotationUndo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false) ||
-      coordinator.canUndo;
-  bool get canRedo =>
-      (_pdfAnnotationRedo[_pdfAnnotationHistoryKey]?.isNotEmpty ?? false) ||
-      coordinator.canRedo;
+  bool get pdfHighlightsVisible => pdf.pdfHighlightsVisible;
+  void setPdfHighlightsVisible(bool val) => pdf.setPdfHighlightsVisible(val);
+  void togglePdfHighlightsVisible() => pdf.togglePdfHighlightsVisible();
+  void clearPdfHighlights({int? pageNumber}) =>
+      pdf.clearPdfHighlights(pageNumber: pageNumber);
 
   void nextPage() => canvas.nextPage();
   void prevPage() => canvas.prevPage();
@@ -386,49 +350,6 @@ class StudioState extends ChangeNotifier {
     dirty = true;
     _revision++;
     notifyListeners();
-  }
-
-  bool analyzeHandwritingAt(Offset touchPoint, {String? hintText}) {
-    final res = canvas.analyzeHandwritingAt(touchPoint, hintText: hintText);
-    if (res) {
-      dirty = true;
-      _revision++;
-    }
-    return res;
-  }
-
-  Future<bool> analyzeHandwritingWithVerifiedText(
-    Offset touchPoint,
-    String verifiedText,
-  ) async {
-    final res = await canvas.analyzeHandwritingWithVerifiedText(
-      touchPoint,
-      verifiedText,
-    );
-    if (res) {
-      dirty = true;
-      _revision++;
-    }
-    return res;
-  }
-
-  bool analyzePdfSentenceAt(
-    int pageNumber,
-    Offset normPoint, {
-    String? sampleText,
-    Rect? targetRect,
-  }) {
-    final res = pdf.analyzePdfSentenceAt(
-      pageNumber,
-      normPoint,
-      sampleText: sampleText,
-      targetRect: targetRect,
-    );
-    if (res) {
-      dirty = true;
-      _revision++;
-    }
-    return res;
   }
 
   void addTypedChalkAnnotation(String sentence, {Offset? position}) {
@@ -668,6 +589,12 @@ class StudioState extends ChangeNotifier {
       pdf.addPdfDgnlPassage(passage);
   void removePdfDgnlPassage(String id) => pdf.removePdfDgnlPassage(id);
 
+  PedagogicalHighlightPolicy get pedagogicalPolicy => pdf.pedagogicalPolicy;
+  set pedagogicalPolicy(PedagogicalHighlightPolicy policy) =>
+      pdf.setPedagogicalPolicy(policy);
+  void setPedagogicalPolicy(PedagogicalHighlightPolicy policy) =>
+      pdf.setPedagogicalPolicy(policy);
+
   // --- Document Snapshots ---
   List<ImportedDocument> get importedDocs => pdf.importedDocs;
   String? get activeDocId => pdf.activeDocId;
@@ -888,6 +815,7 @@ class StudioState extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    unawaited(pdf.flushPendingAnnotationPersistence());
     coordinator.removeListener(_onCoordinatorChanged);
     coordinator.dispose();
     super.dispose();

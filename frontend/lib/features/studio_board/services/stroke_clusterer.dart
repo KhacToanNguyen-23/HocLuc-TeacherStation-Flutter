@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
-import 'english_analyzer.dart';
 
 class StrokeClusterer {
   static const double _proximityRadius =
@@ -114,62 +113,28 @@ class StrokeClusterer {
       wordClusters.add(currentWordRect);
     }
 
-    // 6. Sentence resolution
+    // Preserve stroke geometry as a plain, unclassified chalk annotation.
     final chalkTokens = <ChalkWordToken>[];
-    final String sentenceText;
-
-    if (hintText != null && hintText.trim().isNotEmpty) {
-      sentenceText = hintText.trim();
-      final stickerData = EnglishSentenceAnalyzer.analyze(text: sentenceText);
-      final rawTokens = stickerData.tokens;
-      final tokenCount = rawTokens.length;
-
-      for (int i = 0; i < tokenCount; i++) {
-        final tokenInfo = rawTokens[i];
-        final word = tokenInfo['text'] as String;
-        final role = tokenInfo['role'] as String?;
-
-        Rect relRect;
-        if (i < wordClusters.length) {
-          final cRect = wordClusters[i];
-          final relLeft = ((cRect.left - lineBounds.left) / lineBounds.width)
-              .clamp(0.0, 1.0);
-          final relW = (cRect.width / lineBounds.width).clamp(0.05, 1.0);
-          relRect = Rect.fromLTWH(relLeft, 0.0, relW, 1.0);
-        } else {
-          final step = 1.0 / tokenCount;
-          relRect = Rect.fromLTWH(i * step, 0.0, step * 0.9, 1.0);
-        }
-
-        chalkTokens.add(
-          ChalkWordToken(word: word, role: role, relativeRect: relRect),
-        );
-      }
-    } else {
-      // Natural stroke clusters on the board awaiting verified text from user or OCR
-      final clusterCount = wordClusters.length;
-      sentenceText = 'Chờ xác nhận văn bản ($clusterCount cụm từ)...';
-
-      for (int i = 0; i < clusterCount; i++) {
-        final cRect = wordClusters[i];
-        final relLeft = ((cRect.left - lineBounds.left) / lineBounds.width)
-            .clamp(0.0, 1.0);
-        final relW = (cRect.width / lineBounds.width).clamp(0.05, 1.0);
-        final relRect = Rect.fromLTWH(relLeft, 0.0, relW, 1.0);
-
-        chalkTokens.add(
-          ChalkWordToken(
-            word: 'W${i + 1}',
-            role:
-                null, // Tuyệt đối không gán bừa S, V, O, A khi chưa có văn bản chính xác!
-            relativeRect: relRect,
-          ),
-        );
-      }
+    final sentenceText = hintText?.trim().isNotEmpty == true
+        ? hintText!.trim()
+        : 'Handwriting';
+    final words = hintText?.trim().isNotEmpty == true
+        ? hintText!.trim().split(RegExp(r'\s+'))
+        : List.generate(wordClusters.length, (_) => 'W');
+    for (int i = 0; i < words.length; i++) {
+      final relRect = i < wordClusters.length
+          ? Rect.fromLTWH(
+              ((wordClusters[i].left - lineBounds.left) / lineBounds.width)
+                  .clamp(0.0, 1.0),
+              0.0,
+              (wordClusters[i].width / lineBounds.width).clamp(0.05, 1.0),
+              1.0,
+            )
+          : Rect.fromLTWH(i / words.length, 0.0, 0.9 / words.length, 1.0);
+      chalkTokens.add(ChalkWordToken(word: words[i], relativeRect: relRect));
     }
-
     return SmartChalkAnnotation(
-      id: 'annotation-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'annotation',
       source: 'chalkboard',
       pageIndex: pageIndex,
       rawText: sentenceText,
@@ -192,7 +157,7 @@ class StrokeClusterer {
       final physicalH = (bounds.height * 900.0).clamp(30.0, 900.0);
       final aspectRatio = physicalW / physicalH;
 
-      // Standardize target text line height to 80px (the golden height for OCR models)
+      // Standardize the target text line height to the existing 80px baseline.
       const targetH = 80.0;
       final targetW = (targetH * aspectRatio).clamp(160.0, 2400.0);
 
@@ -265,4 +230,3 @@ class StrokeClusterer {
     }
   }
 }
-

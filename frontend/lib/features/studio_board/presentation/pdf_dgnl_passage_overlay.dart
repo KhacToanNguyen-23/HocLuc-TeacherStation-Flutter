@@ -1,9 +1,8 @@
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
+import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
-
 import '../services/pdf_annotation_exporter.dart';
 
 part 'pdf_dgnl_passage_dialogs.dart';
@@ -26,7 +25,36 @@ class PdfDgnlPassageOverlay extends StatefulWidget {
 
 class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
   int _activeSpanIndex = 0;
-  String? _activeCategoryFilter; // null = all, or 'grammar' / 'collocation'
+  String?
+  _activeCategoryFilter; // null = all, or 'grammar', 'collocation', 'vocabulary'
+
+  void _openPassageAnalysis(PdfDgnlPassage passage) {
+    final pluginId = passage.analysisPluginId;
+    final activePlugin = widget.studio.activePlugin;
+    final floatingPlugin = widget.studio.floatingPlugin;
+    final plugin = pluginId == null
+        ? activePlugin ?? floatingPlugin
+        : PluginManager.instance.getPlugin(pluginId) ??
+              (activePlugin?.id == pluginId ? activePlugin : null) ??
+              (floatingPlugin?.id == pluginId ? floatingPlugin : null);
+    final analysis = passage.analysisResult;
+    if (plugin == null || analysis == null) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(
+          content: Text('Không thể mở kết quả phân tích trong plugin.'),
+        ),
+      );
+      return;
+    }
+
+    widget.studio.openPlugin(plugin, openModal: true);
+    widget.studio.sendSnippetToPlugin(
+      passage.rawText,
+      target: 'dgnl',
+      analysis: analysis,
+      pluginId: plugin.id,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +77,32 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
     );
   }
 
+  bool _isSpanContained(
+    PdfDgnlHighlightSpan inner,
+    PdfDgnlHighlightSpan outer,
+  ) {
+    if (identical(inner, outer)) return false;
+    final innerText = inner.text.toLowerCase().trim();
+    final outerText = outer.text.toLowerCase().trim();
+    if (outerText.contains(innerText) && outerText != innerText) {
+      return true;
+    }
+    for (final iRect in inner.normalizedRects) {
+      for (final oRect in outer.normalizedRects) {
+        final oExpanded = Rect.fromLTRB(
+          oRect.left - 0.005,
+          oRect.top - 0.005,
+          oRect.right + 0.005,
+          oRect.bottom + 0.005,
+        );
+        if (oExpanded.contains(iRect.center)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   List<Widget> _buildPassageWidgets(
     BuildContext context,
     PdfDgnlPassage passage,
@@ -62,11 +116,85 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
     final pWidth = passage.normalizedBounds.width * pageRect.width;
     final pHeight = passage.normalizedBounds.height * pageRect.height;
 
-    final visibleSpans = passage.spans.where((span) {
-      if (span.category == 'vocabulary') return false;
-      return _activeCategoryFilter == null ||
-          span.category == _activeCategoryFilter;
-    }).toList();
+    final policy = studio.pedagogicalPolicy;
+
+    // Filter spans according to active display mode or category:
+    // Mode A (null): Chế độ trọng tâm sư phạm mặc định (Ngữ pháp + Collocation + B2-C2/AWL + B1 chọn lọc)
+    // Mode B ('vocabulary_all'): Chế độ tất cả từ vựng A1-C2 (Ngữ pháp + Collocation + A1-C2 từ vựng đã chuẩn hóa)
+    // Mode Unknown ('unknown'): Bộ lọc riêng cho các từ chưa định danh
+    final visibleSpans = _activeCategoryFilter == null
+        ? policy.filterSpans(passage.spans)
+        : passage.spans.where((s) {
+            if (_activeCategoryFilter == 'grammar') {
+              return s.category == 'grammar';
+            }
+            if (_activeCategoryFilter == 'collocation') {
+              return s.category == 'collocation';
+            }
+            if (_activeCategoryFilter == 'vocabulary') {
+              return s.category == 'vocabulary' &&
+                  policy.isEligibleForHighlight(s);
+            }
+            if (_activeCategoryFilter == 'vocabulary_all') {
+              if (s.category == 'vocabulary') {
+                return s.level != 'Unknown' &&
+                    !s.isFunctionWord &&
+                    !s.isNumber &&
+                    !s.isProperNoun;
+              }
+              return true;
+            }
+            if (_activeCategoryFilter == 'unknown') {
+              return s.category == 'vocabulary' && s.level == 'Unknown';
+            }
+            if (_activeCategoryFilter == 'A1') {
+              return s.category == 'vocabulary' &&
+                  s.level == 'A1' &&
+                  !s.isFunctionWord &&
+                  !s.isNumber &&
+                  !s.isProperNoun;
+            }
+            if (_activeCategoryFilter == 'A2') {
+              return s.category == 'vocabulary' &&
+                  s.level == 'A2' &&
+                  !s.isFunctionWord &&
+                  !s.isNumber &&
+                  !s.isProperNoun;
+            }
+            if (_activeCategoryFilter == 'B1') {
+              return s.category == 'vocabulary' &&
+                  s.level == 'B1' &&
+                  !s.isFunctionWord &&
+                  !s.isNumber &&
+                  !s.isProperNoun;
+            }
+            if (_activeCategoryFilter == 'B2') {
+              return s.category == 'vocabulary' &&
+                  s.level == 'B2' &&
+                  !s.isFunctionWord &&
+                  !s.isNumber &&
+                  !s.isProperNoun;
+            }
+            if (_activeCategoryFilter == 'C1') {
+              return s.category == 'vocabulary' &&
+                  s.level == 'C1' &&
+                  !s.isFunctionWord &&
+                  !s.isNumber &&
+                  !s.isProperNoun;
+            }
+            if (_activeCategoryFilter == 'C2') {
+              return s.category == 'vocabulary' &&
+                  s.level == 'C2' &&
+                  !s.isFunctionWord &&
+                  !s.isNumber &&
+                  !s.isProperNoun;
+            }
+            return true;
+          }).toList();
+
+    passage.activeFilteredSpans = _activeCategoryFilter == null
+        ? null
+        : visibleSpans;
 
     final grammarCount = passage.spans
         .where((s) => s.category == 'grammar')
@@ -75,7 +203,78 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
         .where((s) => s.category == 'collocation')
         .length;
 
+    // Số điểm nhấn trọng tâm sư phạm theo policy (Mode A)
+    final focusedCount = policy.filterSpans(passage.spans).length;
+
     // Khử trùng lặp từ vựng khi đếm số lượng học thuật (Unique Lemmas/Terms)
+    final uniqueA1Count = passage.spans
+        .where(
+          (s) =>
+              s.category == 'vocabulary' &&
+              s.level == 'A1' &&
+              !s.isFunctionWord,
+        )
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+    final uniqueA2Count = passage.spans
+        .where(
+          (s) =>
+              s.category == 'vocabulary' &&
+              s.level == 'A2' &&
+              !s.isFunctionWord,
+        )
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+    final uniqueB1Count = passage.spans
+        .where((s) => s.category == 'vocabulary' && s.level == 'B1')
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+    final uniqueB2Count = passage.spans
+        .where((s) => s.category == 'vocabulary' && s.level == 'B2')
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+    final uniqueC1Count = passage.spans
+        .where((s) => s.category == 'vocabulary' && s.level == 'C1')
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+    final uniqueC2Count = passage.spans
+        .where((s) => s.category == 'vocabulary' && s.level == 'C2')
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+    final uniqueUnknownCount = passage.spans
+        .where((s) => s.category == 'vocabulary' && s.level == 'Unknown')
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+    final uniquePedagogicalVocabCount = passage.spans
+        .where(
+          (s) => s.category == 'vocabulary' && policy.isEligibleForHighlight(s),
+        )
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+    final uniqueTotalCefrCount = passage.spans
+        .where(
+          (s) =>
+              s.category == 'vocabulary' &&
+              s.level != 'Unknown' &&
+              !s.isFunctionWord,
+        )
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+    final uniqueTotalVocabCount = passage.spans
+        .where((s) => s.category == 'vocabulary')
+        .map((s) => (s.lemma ?? s.text).toLowerCase().trim())
+        .toSet()
+        .length;
+
     // Ensure active index is within bounds
     if (_activeSpanIndex >= visibleSpans.length && visibleSpans.isNotEmpty) {
       _activeSpanIndex = 0;
@@ -111,139 +310,163 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
     );
 
     // 2. Highlighting individual spans directly on the printed ink text
-    for (int spanIdx = 0; spanIdx < passage.spans.length; spanIdx++) {
-      final span = passage.spans[spanIdx];
-      if (span.category == 'vocabulary') continue;
-      final isCurrentActive = activeSpan != null && identical(span, activeSpan);
+    if (studio.pdfHighlightsVisible) {
+      for (int spanIdx = 0; spanIdx < passage.spans.length; spanIdx++) {
+        final span = passage.spans[spanIdx];
+        final isCurrentActive =
+            activeSpan != null && identical(span, activeSpan);
 
-      final matchesFilter =
-          span.category != 'vocabulary' &&
-          (_activeCategoryFilter == null ||
-              _activeCategoryFilter == span.category);
+        final matchesFilter = visibleSpans.contains(span);
+        final spanOpacity = matchesFilter ? 1.0 : 0.12;
 
-      final spanOpacity = matchesFilter ? 1.0 : 0.14;
+        // Check if vocabulary span is nested inside a collocation span
+        final isNestedVocab =
+            span.category == 'vocabulary' &&
+            passage.spans.any(
+              (other) =>
+                  other.category == 'collocation' &&
+                  _isSpanContained(span, other),
+            );
 
-      for (final normR in span.normalizedRects) {
-        // Expand grammar dashed box slightly so it neatly wraps around inner spans
-        final isGrammar = span.category == 'grammar';
-        final pad = isGrammar ? 2.5 : 0.0;
+        for (final normR in span.normalizedRects) {
+          // Expand grammar dashed box slightly so it neatly wraps around inner spans
+          final isGrammar = span.category == 'grammar';
+          final pad = isGrammar ? 2.5 : 0.0;
 
-        final sLeft = normR.left * pageRect.width - pad;
-        final sTop = normR.top * pageRect.height - pad;
-        final sWidth = normR.width * pageRect.width + (pad * 2);
-        final sHeight = normR.height * pageRect.height + (pad * 2);
+          final sLeft = normR.left * pageRect.width - pad;
+          final sTop = normR.top * pageRect.height - pad;
+          final sWidth = normR.width * pageRect.width + (pad * 2);
+          final sHeight = normR.height * pageRect.height + (pad * 2);
 
-        Color bgColor;
-        Color accentColor;
+          final colors = DgnlHighlightPalette.resolveOverlayColors(
+            span: span,
+            isCurrentActive: isCurrentActive,
+            isNestedVocab: isNestedVocab,
+          );
+          final bgColor = colors.background;
 
-        if (isGrammar) {
-          // Grammar: outer dashed border, ZERO background fill to avoid color mud
-          bgColor = isCurrentActive
-              ? const Color(0x2289b4fa)
-              : Colors.transparent;
-          accentColor = const Color(0xff89b4fa); // Neon blue
-        } else if (span.category == 'collocation') {
-          // Collocation: Soft green pastel fill
-          bgColor = isCurrentActive
-              ? const Color(0x4d86efac)
-              : const Color(0x2886efac);
-          accentColor = const Color(0xff86efac); // Vibrant green
-        } else {
-          bgColor = Colors.transparent;
-          accentColor = const Color(0xff89b4fa);
-        }
-        widgets.add(
-          Positioned(
-            left: sLeft,
-            top: sTop,
-            width: sWidth,
-            height: sHeight,
-            child: Opacity(
-              opacity: spanOpacity,
-              child: Tooltip(
-                message: '[${span.type}] ${span.text}\n• ${span.note}',
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                textStyle: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  height: 1.35,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xf0111a15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: accentColor, width: 1.2),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black54,
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
+          widgets.add(
+            Positioned(
+              left: sLeft,
+              top: sTop,
+              width: sWidth,
+              height: sHeight,
+              child: Opacity(
+                opacity: spanOpacity,
+                child: Tooltip(
+                  message: _buildCompactTooltipMessage(span),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xf0111a15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: colors.token.badgeDark,
+                      width: 1.2,
                     ),
-                  ],
-                ),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      if (!matchesFilter) {
-                        _activeCategoryFilter = span.category;
-                      }
-                      final targetVisible = passage.spans
-                          .where(
-                            (item) =>
-                                item.category != 'vocabulary' &&
-                                (_activeCategoryFilter == null ||
-                                    item.category == _activeCategoryFilter),
-                          )
-                          .toList();
-                      final idx = targetVisible.indexOf(span);
-                      _activeSpanIndex = idx != -1 ? idx : 0;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(3),
-                  child: CustomPaint(
-                    painter: isGrammar
-                        ? _DashedBorderPainter(
-                            color: isCurrentActive ? Colors.white : accentColor,
-                            strokeWidth: isCurrentActive ? 2.0 : 1.5,
-                          )
-                        : null,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(
-                          isGrammar ? 4.5 : 3.5,
-                        ),
-                        border: isGrammar
-                            ? null
-                            : Border.all(
-                                color: isCurrentActive
-                                    ? Colors.white
-                                    : accentColor.withValues(alpha: 0.45),
-                                width: isCurrentActive ? 1.6 : 0.8,
-                              ),
-                        boxShadow: isCurrentActive
-                            ? [
-                                BoxShadow(
-                                  color: accentColor.withValues(alpha: 0.6),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black54,
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        if (!matchesFilter) {
+                          _activeCategoryFilter = span.category == 'grammar'
+                              ? 'grammar'
+                              : (span.category == 'collocation'
+                                    ? 'collocation'
+                                    : (span.level == 'C1' || span.level == 'C2'
+                                          ? 'C1'
+                                          : 'B2'));
+                        }
+                        final targetVisible = _activeCategoryFilter == null
+                            ? passage.spans
+                            : passage.spans.where((s) {
+                                if (_activeCategoryFilter == 'grammar') {
+                                  return s.category == 'grammar';
+                                }
+                                if (_activeCategoryFilter == 'collocation') {
+                                  return s.category == 'collocation';
+                                }
+                                if (_activeCategoryFilter == 'B2') {
+                                  return s.category == 'vocabulary' &&
+                                      s.level == 'B2';
+                                }
+                                if (_activeCategoryFilter == 'C1') {
+                                  return s.category == 'vocabulary' &&
+                                      (s.level == 'C1' || s.level == 'C2');
+                                }
+                                return true;
+                              }).toList();
+                        final idx = targetVisible.indexOf(span);
+                        _activeSpanIndex = idx != -1 ? idx : 0;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(3),
+                    child: CustomPaint(
+                      painter: isGrammar
+                          ? _DashedBorderPainter(
+                              color: isCurrentActive
+                                  ? Colors.white
+                                  : colors.stroke,
+                              strokeWidth: isCurrentActive ? 2.0 : 1.5,
+                            )
+                          : null,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          borderRadius: BorderRadius.circular(
+                            isGrammar ? 4.5 : 3.5,
+                          ),
+                          border: isGrammar
+                              ? null
+                              : Border.all(
+                                  color: isCurrentActive
+                                      ? Colors.white
+                                      : (isNestedVocab
+                                            ? colors.stroke.withValues(
+                                                alpha: 0.95,
+                                              )
+                                            : colors.stroke.withValues(
+                                                alpha: 0.85,
+                                              )),
+                                  width: isCurrentActive
+                                      ? 1.6
+                                      : (isNestedVocab ? 1.2 : 0.8),
                                 ),
-                              ]
-                            : null,
+                          boxShadow: isCurrentActive
+                              ? [
+                                  BoxShadow(
+                                    color: colors.stroke.withValues(alpha: 0.6),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
+          );
+        }
       }
     }
-
     // 3. Legend Header Bar (bounded inside PDF page dimensions, never overflowing)
     final headerTop = (pTop - 44).clamp(6.0, pageRect.height - 50).toDouble();
     const estimatedBarWidth = 490.0;
@@ -303,27 +526,29 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                         ),
                         const SizedBox(width: 6),
 
-                        // Chip: Tất cả các tầng (Lớp phủ sư phạm mặc định)
+                        // Chip: Trọng tâm (Mode A: Ngữ pháp + Collocation + B1-C2/AWL)
                         _buildLegendChip(
-                          label: 'Tất cả',
-                          count: visibleSpans.length,
-                          color: const Color(0xff89dceb),
+                          label: 'Trọng tâm',
+                          count: focusedCount,
+                          color: DgnlHighlightPalette.tokenFocused.badgeDark,
                           isDashed: false,
                           isSelected: _activeCategoryFilter == null,
                           onTap: () {
                             setState(() {
                               _activeCategoryFilter = null;
                               _activeSpanIndex = 0;
+                              widget.studio.setPedagogicalPolicy(
+                                PedagogicalHighlightPolicy.defaultPolicy,
+                              );
                             });
                           },
                         ),
                         const SizedBox(width: 4),
-
                         // Chip: Ngữ pháp
                         _buildLegendChip(
                           label: 'Ngữ pháp',
                           count: grammarCount,
-                          color: const Color(0xff89b4fa),
+                          color: DgnlHighlightPalette.tokenGrammar.badgeDark,
                           isDashed: true,
                           isSelected: _activeCategoryFilter == 'grammar',
                           onTap: () {
@@ -337,12 +562,12 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                           },
                         ),
                         const SizedBox(width: 4),
-
                         // Chip: Collocation
                         _buildLegendChip(
                           label: 'Collocation',
                           count: collocCount,
-                          color: const Color(0xff86efac),
+                          color:
+                              DgnlHighlightPalette.tokenCollocation.badgeDark,
                           isDashed: false,
                           isSelected: _activeCategoryFilter == 'collocation',
                           onTap: () {
@@ -357,38 +582,63 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                         ),
                         const SizedBox(width: 4),
 
-                        const SizedBox(width: 4),
-
-                        // Cloze Test Button
-                        if (passage.clozeQuestions.isNotEmpty) ...[
-                          InkWell(
-                            onTap: () => _showClozeModal(context, passage),
-                            borderRadius: BorderRadius.circular(6),
+                        // Smart CEFR Dropdown Chip (Consolidates 6 levels + Mode B + Unknown into 1 interactive popup)
+                        if (uniqueTotalVocabCount > 0) ...[
+                          _buildCefrDropdownChip(
+                            pedagogicalCount: uniquePedagogicalVocabCount,
+                            totalCefrCount: uniqueTotalCefrCount,
+                            a1Count: uniqueA1Count,
+                            a2Count: uniqueA2Count,
+                            b1Count: uniqueB1Count,
+                            b2Count: uniqueB2Count,
+                            c1Count: uniqueC1Count,
+                            c2Count: uniqueC2Count,
+                            unknownCount: uniqueUnknownCount,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        // Button: Hồ sơ độ khó Ngữ liệu (English Text Profiler)
+                        InkWell(
+                          key: const Key('btn_open_text_profiler'),
+                          onTap: () => _openPassageAnalysis(passage),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Tooltip(
+                            message: 'Hồ sơ độ khó Ngữ liệu (Text Profiler)',
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
+                                horizontal: 6,
                                 vertical: 2.5,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0x3386efac),
+                                color: DgnlHighlightPalette
+                                    .tokenAllVocab
+                                    .badgeDark
+                                    .withValues(alpha: 0.20),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: const Color(0x8886efac),
+                                  color: DgnlHighlightPalette
+                                      .tokenAllVocab
+                                      .badgeDark,
+                                  width: 1.0,
                                 ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
-                                    Icons.quiz_outlined,
+                                  Icon(
+                                    Icons.analytics_outlined,
                                     size: 12,
-                                    color: Color(0xff86efac),
+                                    color: DgnlHighlightPalette
+                                        .tokenAllVocab
+                                        .badgeDark,
                                   ),
                                   const SizedBox(width: 3),
                                   Text(
-                                    '${passage.clozeQuestions.length} Cloze',
-                                    style: const TextStyle(
-                                      color: Color(0xff86efac),
+                                    'Độ khó',
+                                    style: TextStyle(
+                                      color: DgnlHighlightPalette
+                                          .tokenAllVocab
+                                          .badgeDark,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -397,8 +647,120 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 4),
-                        ],
+                        ),
+                        const SizedBox(width: 4),
+                        // Button: Ẩn/Hiện lớp Highlight
+                        InkWell(
+                          key: const Key('btn_toggle_pdf_highlights'),
+                          onTap: () => studio.togglePdfHighlightsVisible(),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Tooltip(
+                            message: studio.pdfHighlightsVisible
+                                ? 'Ẩn lớp Highlight (Ctrl+H)'
+                                : 'Hiện lớp Highlight (Ctrl+H)',
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 2.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: studio.pdfHighlightsVisible
+                                    ? const Color(0x3389b4fa)
+                                    : const Color(0x33f38ba8),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: studio.pdfHighlightsVisible
+                                      ? const Color(0xff89b4fa)
+                                      : const Color(0xfff38ba8),
+                                  width: 1.0,
+                                ),
+                              ),
+                              child: Icon(
+                                studio.pdfHighlightsVisible
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                                size: 12,
+                                color: studio.pdfHighlightsVisible
+                                    ? const Color(0xff89b4fa)
+                                    : const Color(0xfff38ba8),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Button: Xóa lớp Highlight
+                        InkWell(
+                          key: const Key('btn_clear_pdf_highlights'),
+                          onTap: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: const Color(0xff1e1e2e),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                title: const Text(
+                                  'Xóa Highlight trên trang?',
+                                  style: TextStyle(
+                                    color: Color(0xffcdd6f4),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                content: const Text(
+                                  'Chỉ xóa các điểm highlight từ vựng và ngữ pháp đã quét trên trang này. Nét vẽ tay và tệp PDF gốc không bị thay đổi.',
+                                  style: TextStyle(
+                                    color: Color(0xffa6adc8),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Hủy'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xfff38ba8),
+                                      foregroundColor: const Color(0xff11111b),
+                                    ),
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('Xóa'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              studio.clearPdfHighlights(
+                                pageNumber: passage.pageNumber,
+                              );
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: Tooltip(
+                            message: 'Xóa toàn bộ highlight trên trang này',
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 2.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0x22f38ba8),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: const Color(0x66f38ba8),
+                                  width: 1.0,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.layers_clear_outlined,
+                                size: 12,
+                                color: Color(0xfff38ba8),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
 
                         // Button: Highlight trực tiếp lên file PDF
                         InkWell(
@@ -407,6 +769,8 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                               PdfAnnotationExporter.applyHighlightDirectlyToPdf(
                                 context,
                                 studio,
+                                passageId: passage.id,
+                                selectedSpans: visibleSpans,
                               ),
                           borderRadius: BorderRadius.circular(6),
                           child: Tooltip(
@@ -417,26 +781,35 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
                                 vertical: 2.5,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0x3389b4fa),
+                                color: DgnlHighlightPalette
+                                    .tokenGrammar
+                                    .badgeDark
+                                    .withValues(alpha: 0.20),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: const Color(0xff89b4fa),
+                                  color: DgnlHighlightPalette
+                                      .tokenGrammar
+                                      .badgeDark,
                                   width: 1.0,
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
                                     Icons.draw_rounded,
                                     size: 12,
-                                    color: Color(0xff89b4fa),
+                                    color: DgnlHighlightPalette
+                                        .tokenGrammar
+                                        .badgeDark,
                                   ),
-                                  SizedBox(width: 3),
+                                  const SizedBox(width: 3),
                                   Text(
                                     'Ghi PDF',
                                     style: TextStyle(
-                                      color: Color(0xff89b4fa),
+                                      color: DgnlHighlightPalette
+                                          .tokenGrammar
+                                          .badgeDark,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -490,6 +863,7 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
         _buildActiveSpanExplanationCard(
           context: context,
           studio: studio,
+          passageId: passage.id,
           activeSpan: activeSpan,
           visibleSpans: visibleSpans,
           pageRect: pageRect,
@@ -502,5 +876,24 @@ class _PdfDgnlPassageOverlayState extends State<PdfDgnlPassageOverlay> {
     }
 
     return widgets;
+  }
+
+  /// Builds a single-line, ultra-compact hover tooltip message:
+  /// e.g. '[AWL] researcher', 'B1 · researcher', '[Collocation] bitter taste'
+  static String _buildCompactTooltipMessage(PdfDgnlHighlightSpan span) {
+    final type = span.type.trim();
+    final text = span.text.trim();
+    if (type.toUpperCase() == 'AWL' || span.isAcademic) {
+      return '[AWL] $text';
+    }
+    const cefrLevels = {'A1', 'A2', 'B1', 'B2', 'C1', 'C2'};
+    if (cefrLevels.contains(type.toUpperCase())) {
+      return '${type.toUpperCase()} · $text';
+    }
+    final level = span.level.trim().toUpperCase();
+    if (cefrLevels.contains(level)) {
+      return '$level · $text';
+    }
+    return '[$type] $text';
   }
 }

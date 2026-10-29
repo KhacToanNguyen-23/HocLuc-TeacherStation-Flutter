@@ -16,7 +16,7 @@ void main() {
       stylesheet,
       contains('--glass-bg: rgb(24 38 32 / var(--glass-bg-opacity));'),
     );
-    for (final selector in ['.liquid-pill-btn', '.liquid-gem-token']) {
+    for (final selector in ['.liquid-pill-btn', '.liquid-card']) {
       expect(
         _ruleFor(stylesheet, selector),
         contains('background-color: var(--glass-bg);'),

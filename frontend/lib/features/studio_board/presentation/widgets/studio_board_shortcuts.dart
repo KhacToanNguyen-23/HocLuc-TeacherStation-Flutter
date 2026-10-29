@@ -42,6 +42,14 @@ class StudioBoardShortcuts extends StatelessWidget {
           studio.setViewportMode(StudioViewportMode.fullPdf),
       const SingleActivator(LogicalKeyboardKey.f3): () =>
           studio.setViewportMode(StudioViewportMode.split),
+      const SingleActivator(LogicalKeyboardKey.keyP): () =>
+          studio.change(() => studio.tool = 'pen', persist: false),
+      const SingleActivator(LogicalKeyboardKey.keyH): () =>
+          studio.change(() => studio.tool = 'highlight', persist: false),
+      const SingleActivator(LogicalKeyboardKey.keyE): () =>
+          studio.change(() => studio.tool = 'erase', persist: false),
+      const SingleActivator(LogicalKeyboardKey.keyL): () =>
+          studio.change(() => studio.tool = 'laser', persist: false),
     };
     return Focus(
       autofocus: true,

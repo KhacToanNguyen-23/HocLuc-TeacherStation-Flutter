@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "offsetUnit": "unicodeCodePoint",
+  "offsetCases": [
+    {
+      "id": "ascii-word",
+      "text": "A smart student reads.",
+      "span": {"start": 2, "end": 7},
+      "expectedSlice": "smart"
+    },
+    {
+      "id": "supplementary-character-before-span",
+      "text": "A 😀b",
+      "span": {"start": 3, "end": 4},
+      "expectedSlice": "b",
+      "dartUtf16Span": {"start": 4, "end": 5}
+    },
+    {
+      "id": "combining-sequence-before-span",
+      "text": "e\u0301 x",
+      "span": {"start": 3, "end": 4},
+      "expectedSlice": "x",
+      "dartUtf16Span": {"start": 3, "end": 4}
+    },
+    {
+      "id": "repeated-word-occurrence",
+      "text": "go go",
+      "span": {"start": 3, "end": 5},
+      "expectedSlice": "go"
+    }
+  ],
+  "selectionCases": [
+    {
+      "id": "reject-stale-selection",
+      "selectionToken": "fixture-stale",
+      "currentSelectionToken": "fixture-current",
+      "expectedResult": "rejected"
+    }
+  ]
+}

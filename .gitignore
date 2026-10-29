@@ -11,6 +11,8 @@ plugins/**/.cache/
 node_modules/
 frontend/build/
 frontend/.dart_tool/
+plugins/english_assistant/engine/dart/.dart_tool/
+plugins/english_assistant/engine/dart/build/
 frontend/.flutter-plugins-dependencies
 frontend/windows/flutter/ephemeral/
 frontend/macos/Flutter/ephemeral/
