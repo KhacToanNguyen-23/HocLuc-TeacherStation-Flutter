@@ -1,0 +1,17 @@
+{
+  "$schema": "https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json",
+  "id": "com.hocluc.plugin.vietnamese_dictionary",
+  "name": "Ngữ văn · Từ điển tiếng Việt",
+  "version": "1.0.1",
+  "author": "Học Lực Studio",
+  "description": "Tra nghĩa tiếng Việt ngoại tuyến, so sánh nguồn và tra nhanh từ được bôi đen trên PDF.",
+  "category": "languages",
+  "icon": "icon.png",
+  "ui": {"entry": "ui/index.html", "placement": "bottom_drawer", "default_width": 460, "default_height": 560, "resizable": true, "frameless": false, "inject_sdk": true},
+  "backend": null,
+  "contributes": {"tools": [
+    {"id": "dictionary_selection", "label": "Bôi đen để tra từ", "icon": "menu_book", "action": "toggle_tool", "target": "dictionary_selection", "text_selection_mode": true, "tooltip": "Bật rồi kéo chọn từ hoặc cụm từ trong PDF có lớp văn bản."},
+    {"id": "dictionary_snip", "label": "Quét từ trên ảnh", "icon": "crop_free", "action": "snip_region", "target": "dictionary_selection", "snip_text_only": true, "tooltip": "Khoanh vùng từ trên PDF ảnh để nhận diện bằng công cụ quét của ứng dụng."}
+  ]},
+  "permissions": ["board:read_text", "board:control_tools"]
+}

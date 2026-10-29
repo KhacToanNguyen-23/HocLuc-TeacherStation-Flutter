@@ -215,7 +215,7 @@ void main() {
         );
         expect(
           topDock.backgroundColor,
-          const Color(0xf2111a16),
+          const Color(0xff111a16).withValues(alpha: 0.80),
           reason: 'Palette substantially overlapping PDF must use PDF Glass',
         );
         buttonGlass = tester.widget<LiquidGlassContainer>(
@@ -226,7 +226,7 @@ void main() {
         );
         expect(
           buttonGlass.backgroundColor,
-          const Color(0xf2111a16),
+          const Color(0xff111a16).withValues(alpha: 0.80),
           reason: 'Tool button over PDF must use PDF Glass frosted surface',
         );
 
@@ -293,7 +293,10 @@ void main() {
         final topDock = tester.widget<LiquidGlassContainer>(
           find.byKey(const Key('subject_tool_palette_surface')),
         );
-        expect(topDock.backgroundColor, const Color(0xf2111a16));
+        expect(
+          topDock.backgroundColor,
+          const Color(0xff111a16).withValues(alpha: 0.80),
+        );
 
         // FloatingPluginWindow is on chalkboard -> Liquid Glass (overlaySurface)
         final windowMaterial = tester.widget<Material>(
@@ -302,7 +305,7 @@ void main() {
             matching: find.byType(Material),
           ).first,
         );
-        expect(windowMaterial.color, isNot(const Color(0xf2111a16)));
+        expect(windowMaterial.color, isNot(topDock.backgroundColor));
       },
     );
   });

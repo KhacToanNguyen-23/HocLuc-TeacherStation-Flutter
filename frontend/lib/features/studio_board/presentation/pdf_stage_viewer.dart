@@ -15,6 +15,40 @@ extension _PdfStageViewer on _PdfStageState {
 
     final params = PdfViewerParams(
       backgroundColor: chalkboardBg,
+      textSelectionParams: PdfTextSelectionParams(
+        onTextSelectionChange: (selection) async {
+          final revision = ++_selectionRevision;
+          final plugin = studio.activePlugin ?? studio.floatingPlugin;
+          final target = studio.activeSubjectTool;
+          final generation = studio.pdfContentGeneration;
+          if (!_pluginTextSelectionEnabled ||
+              plugin == null ||
+              !selection.hasSelectedText ||
+              !selection.isCopyAllowed) {
+            return;
+          }
+          String? text;
+          try {
+            text = PluginTextSelection.term(await selection.getSelectedText());
+          } catch (error) {
+            debugPrint('[PluginSelection] Text extraction failed: $error');
+            return;
+          }
+          if (!mounted ||
+              revision != _selectionRevision ||
+              text == null ||
+              generation != studio.pdfContentGeneration ||
+              (studio.activePlugin ?? studio.floatingPlugin)?.id != plugin.id ||
+              target != studio.activeSubjectTool ||
+              !_pluginTextSelectionEnabled) {
+            return;
+          }
+          PluginEventHub.instance.dispatch(plugin.id, 'board:text_selected', {
+            'text': text,
+            'target': target,
+          });
+        },
+      ),
       panAxis: ClassroomSettingsService.instance.boardOptimization
           ? PanAxis.free
           : PanAxis.aligned,
@@ -87,9 +121,11 @@ extension _PdfStageViewer on _PdfStageState {
                 builder: (context, _) {
                   final isPanMode =
                       studio.tool == 'pan' || studio.isSpacePressed;
+                  final isSelectingText = _pluginTextSelectionEnabled;
                   return Listener(
                     onPointerDown: (event) {
-                      if (!studio.smartSnapEnabled ||
+                      if (isSelectingText ||
+                          !studio.smartSnapEnabled ||
                           studio.tool != 'pen' ||
                           isPanMode ||
                           !widget.interactive ||
@@ -105,7 +141,8 @@ extension _PdfStageViewer on _PdfStageState {
                     },
                     onPointerUp: (event) {
                       final down = _smartPointerDowns.remove(event.pointer);
-                      if (down == null ||
+                      if (isSelectingText ||
+                          down == null ||
                           down.pageNumber != page.pageNumber ||
                           !studio.smartSnapEnabled ||
                           studio.tool != 'pen' ||
@@ -154,7 +191,8 @@ extension _PdfStageViewer on _PdfStageState {
                       }
                     },
                     child: IgnorePointer(
-                      ignoring: isPanMode || !widget.interactive,
+                      ignoring:
+                          isSelectingText || isPanMode || !widget.interactive,
                       child: Stack(
                         children: [
                           StrokeCanvas(
@@ -329,13 +367,17 @@ extension _PdfStageViewer on _PdfStageState {
                             ),
                           ),
                           // In-Document DGNL Multi-layer Highlight Overlay
-                          Positioned.fill(
-                            child: PdfDgnlPassageOverlay(
-                              studio: studio,
-                              pageNumber: page.pageNumber,
-                              pageRect: pageRect,
+                          if (!PluginTextSelection.prefersRawSnippets(
+                            (studio.activePlugin ?? studio.floatingPlugin)
+                                ?.manifest,
+                          ))
+                            Positioned.fill(
+                              child: PdfDgnlPassageOverlay(
+                                studio: studio,
+                                pageNumber: page.pageNumber,
+                                pageRect: pageRect,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),

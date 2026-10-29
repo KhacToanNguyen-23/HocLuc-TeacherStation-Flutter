@@ -1,7 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'audio_translation_studio_button.dart';
+import '../../../meet_tutor/services/tutor_controller.dart';
+import '../../../meet_tutor/presentation/widgets/tutor_settings.dart';
 
 class StudioNotesSettingsTab extends StatelessWidget {
   const StudioNotesSettingsTab({
@@ -11,6 +13,7 @@ class StudioNotesSettingsTab extends StatelessWidget {
     required this.questionController,
     required this.endpointController,
     required this.onPreview,
+    this.tutor,
   });
 
   final StudioState studio;
@@ -18,6 +21,7 @@ class StudioNotesSettingsTab extends StatelessWidget {
   final TextEditingController questionController;
   final TextEditingController endpointController;
   final VoidCallback onPreview;
+  final TutorController? tutor;
 
   static Widget _sectionLabel(String text) => Text(
     text,
@@ -57,6 +61,12 @@ class StudioNotesSettingsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (tutor != null) ...[
+          TutorSettings(controller: tutor!),
+          const SizedBox(height: 16),
+          const Divider(color: line),
+          const SizedBox(height: 12),
+        ],
         const Text(
           'Thiết bị & Đầu ra Meet',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
@@ -140,4 +150,3 @@ class StudioNotesSettingsTab extends StatelessWidget {
     );
   }
 }
-

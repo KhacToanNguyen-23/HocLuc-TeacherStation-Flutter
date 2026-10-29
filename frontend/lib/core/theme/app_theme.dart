@@ -232,9 +232,10 @@ abstract final class AppTheme {
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
       ),
-      textSelectionTheme: const TextSelectionThemeData(
+      textSelectionTheme: TextSelectionThemeData(
         cursorColor: AppColors.primary,
-        selectionColor: AppColors.selected,
+        // PDF viewers paint this over glyphs, so an opaque surface hides text.
+        selectionColor: AppColors.primary.withValues(alpha: 0.28),
         selectionHandleColor: AppColors.primary,
       ),
       tooltipTheme: const TooltipThemeData(

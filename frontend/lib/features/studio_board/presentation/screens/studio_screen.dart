@@ -29,6 +29,8 @@ import 'package:teaching_companion/features/classroom_meet/services/planning_rep
 import 'package:teaching_companion/features/auth/presentation/google_webview_login_dialog.dart';
 import 'package:teaching_companion/features/classroom_meet/presentation/dashboard/select_classroom_dialog.dart';
 
+import '../../../meet_tutor/services/studio_tutor_session.dart';
+
 part 'studio_screen_actions.dart';
 
 class StudioScreen extends StatefulWidget {
@@ -57,6 +59,8 @@ class StudioScreen extends StatefulWidget {
 
 class _StudioScreenState extends State<StudioScreen> {
   late final StudioState studio;
+  late final StudioTutorSession _tutorSession;
+  int _inspectorInitialTab = 0;
   final notes = TextEditingController();
   final question = TextEditingController();
   final endpoint = TextEditingController();
@@ -78,6 +82,7 @@ class _StudioScreenState extends State<StudioScreen> {
     _currentPlanningId = widget.planningId;
     PluginManager().init();
     studio = widget.initialState ?? StudioState();
+    _tutorSession = StudioTutorSession(studio, active: !widget.isPlanningMode);
     if (widget.initialState == null) {
       if (widget.isPlanningMode && widget.planningId != null) {
         _loadPlanning(widget.planningId!);
@@ -357,9 +362,9 @@ class _StudioScreenState extends State<StudioScreen> {
     try {
       _currentPlanningId = id;
       await studio.service.connect();
-      final content =
-          await PlanningRepository(localService: studio.service)
-              .getPlanningContent(id);
+      final content = await PlanningRepository(
+        localService: studio.service,
+      ).getPlanningContent(id);
       if (content != null) {
         studio.change(() {
           studio.restoreFromJson(content);
@@ -396,6 +401,7 @@ class _StudioScreenState extends State<StudioScreen> {
     if (widget.teachingTarget == null) {
       unawaited(TeacherMediaService().shutdown());
     }
+    _tutorSession.dispose();
     studio.removeListener(syncControllers);
     studio.dispose();
     notes.dispose();
@@ -411,8 +417,9 @@ class _StudioScreenState extends State<StudioScreen> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      ScopedListenableBuilder<({bool dirty, String view})>(
+  Widget build(
+    BuildContext context,
+  ) => ScopedListenableBuilder<({bool dirty, String view})>(
     // The screen shell only depends on the dirty flag (back navigation guard)
     // and the active view. Stage, toolbar, notes and panels subscribe to the
     // studio themselves, so pen/laser/PDF/audio updates no longer rebuild the
@@ -498,6 +505,8 @@ class _StudioScreenState extends State<StudioScreen> {
                                     ),
                                   )
                                 : StudioInspectorPanel(
+                                    tutor: _tutorSession.controller,
+                                    initialTab: _inspectorInitialTab,
                                     studio: studio,
                                     notesController: notes,
                                     questionController: question,
@@ -513,6 +522,7 @@ class _StudioScreenState extends State<StudioScreen> {
                   return Column(
                     children: [
                       StudioTopBar(
+                        tutor: _tutorSession.controller,
                         studio: studio,
                         width: box.maxWidth,
 
@@ -590,9 +600,7 @@ class _StudioScreenState extends State<StudioScreen> {
                                         if (studio.view == 'board' &&
                                             studio.showSpeakerNotes) ...[
                                           const SizedBox(height: 4),
-                                          StudioSpeakerNotesBar(
-                                            studio: studio,
-                                          ),
+                                          StudioSpeakerNotesBar(studio: studio),
                                         ],
                                       ],
                                     ),
