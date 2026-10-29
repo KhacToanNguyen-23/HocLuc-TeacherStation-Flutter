@@ -204,26 +204,21 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
                                       onEdit: () => _handleEdit(s),
                                     ),
                                   ),
-                                // Canva Selection Overlay Layer: Top-most Floating Action Bar
-                                if (selSticker != null)
-                                  Positioned(
-                                    left: _calculateBarLeft(selSticker, size),
-                                    top: _calculateBarTop(selSticker, size),
-                                    width: 540.0,
-                                    height: 38.0,
-                                    child: BoardStickerFloatingBar(
-                                      sticker: selSticker,
-                                      onDeselect: () =>
-                                          widget.studio.selectSticker(null),
-                                      onToggleRevolve: () =>
-                                          _handleRevolveOrEdit(selSticker),
-                                      onEdit: () => _handleEdit(selSticker),
-                                      onDuplicate: () => widget.studio
-                                          .duplicateSticker(selSticker.id),
-                                      onDelete: () => widget.studio
-                                          .removeSticker(selSticker.id),
-                                    ),
+                              // Canva Selection Overlay Layer: Top-most Floating Action Bar
+                              if (selSticker != null)
+                                Positioned(
+                                  left: _calculateBarLeft(selSticker, size),
+                                  top: _calculateBarTop(selSticker, size),
+                                  width: 220.0,
+                                  height: 38.0,
+                                  child: BoardStickerFloatingBar(
+                                    sticker: selSticker,
+                                    onDeselect: () => widget.studio.selectSticker(null),
+                                    onEdit: () => _handleEdit(selSticker),
+                                    onDuplicate: () => widget.studio.duplicateSticker(selSticker.id),
+                                    onDelete: () => widget.studio.removeSticker(selSticker.id),
                                   ),
+                                ),
                               ],
                             );
                           },
@@ -276,7 +271,7 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
   }
 
   double _calculateBarLeft(BoardSticker s, Size size) {
-    const barWidth = 540.0;
+    const barWidth = 220.0;
     final stickerLeft = s.normalizedRect.left * size.width;
     final stickerWidth = (s.normalizedRect.width * size.width).clamp(
       200.0,
@@ -308,27 +303,17 @@ class _InteractiveChalkboardState extends State<InteractiveChalkboard> {
         ...PluginManager.instance.availablePlugins,
       ].whereType<InstalledPlugin>().toList();
 
-      plugin =
-          all
-              .where(
-                (p) =>
-                    p.id == s.type ||
-                    p.manifest.id == s.type ||
-                    s.type.contains(p.id) ||
-                    p.id.contains(s.type) ||
-                    s.type.contains(p.manifest.id) ||
-                    p.manifest.id.contains(s.type) ||
-                    (s.svgContent != null && p.manifest.id.contains('math')),
-              )
-              .firstOrNull ??
-          all.firstOrNull;
+      plugin = all.where((p) =>
+        p.id == s.type ||
+        p.manifest.id == s.type ||
+        s.type.contains(p.id) ||
+        p.id.contains(s.type) ||
+        s.type.contains(p.manifest.id) ||
+        p.manifest.id.contains(s.type)
+      ).firstOrNull ?? all.firstOrNull;
     }
     if (plugin != null) {
       widget.studio.openPlugin(plugin, editingSticker: s);
     }
-  }
-
-  void _handleRevolveOrEdit(BoardSticker s) {
-    _handleEdit(s);
   }
 }

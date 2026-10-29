@@ -188,7 +188,7 @@ void main() {
               '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><text x="10" y="25">y = 1.5 + sin(x)</text></svg>',
         );
 
-        bool revolved = false;
+        bool deleted = false;
         bool duplicated = false;
         bool edited = false;
 
@@ -198,36 +198,36 @@ void main() {
               body: Center(
                 child: BoardStickerFloatingBar(
                   sticker: sticker,
-                  onDelete: () {},
+                  onDelete: () => deleted = true,
                   onEdit: () => edited = true,
                   onDuplicate: () => duplicated = true,
-                  onToggleRevolve: () => revolved = true,
                 ),
               ),
             ),
           ),
         );
 
-        // Expect Canva Floating Action Bar action items
-        expect(find.text('Phát quay'), findsOneWidget);
-        expect(find.text('Sách GK'), findsOneWidget);
-        expect(find.text('Nhân bản'), findsOneWidget);
+        // Expect compact 3-button Floating Action Bar items
         expect(find.text('Sửa'), findsOneWidget);
+        expect(find.text('Nhân bản'), findsOneWidget);
+        expect(find.text('Xóa'), findsOneWidget);
+        expect(find.text('Phát quay'), findsNothing);
+        expect(find.text('Sách GK'), findsNothing);
 
-        // Tap 'Phát quay'
-        await tester.tap(find.text('Phát quay'));
+        // Tap 'Sửa'
+        await tester.tap(find.text('Sửa'));
         await tester.pump();
-        expect(revolved, isTrue);
+        expect(edited, isTrue);
 
         // Tap 'Nhân bản'
         await tester.tap(find.text('Nhân bản'));
         await tester.pump();
         expect(duplicated, isTrue);
 
-        // Tap 'Sửa'
-        await tester.tap(find.text('Sửa'));
+        // Tap 'Xóa'
+        await tester.tap(find.text('Xóa'));
         await tester.pump();
-        expect(edited, isTrue);
+        expect(deleted, isTrue);
       },
     );
 
@@ -268,6 +268,40 @@ void main() {
         await tester.tap(find.byType(BoardStickerCard));
         await tester.pump();
         expect(selected, isTrue);
+      },
+    );
+
+    testWidgets(
+      'BoardStickerCard falls back gracefully to imageBase64 when svgContent is malformed',
+      (tester) async {
+        // 1x1 transparent PNG base64
+        const samplePng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        final sticker = BoardSticker(
+          id: 's-fallback',
+          type: 'math_studio',
+          normalizedRect: const Rect.fromLTWH(0.1, 0.1, 0.5, 0.4),
+          rawText: 'f(x) = x^3 - 3x',
+          // Malformed SVG with broken quote
+          svgContent: '<svg><text font-family=""Broken">Test</text></svg>',
+          imageBase64: 'data:image/png;base64,$samplePng',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BoardStickerCard(
+                sticker: sticker,
+                isSelected: true,
+                onDelete: () {},
+                onUpdateRect: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+        // Since SVG failed, Image should be present via errorBuilder fallback
+        expect(find.byType(Image), findsOneWidget);
       },
     );
   });

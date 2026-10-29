@@ -26,13 +26,14 @@ const VALID_TOOL_ACTIONS = new Set([
   'rpc_event',
 ]);
 const REQUIRED_MANIFEST_SCHEMA = 'https://hocluc.edu.vn/schemas/plugin-manifest-v2.1.json';
-const FIXED_PORT_PATTERN = /(?:18888|\bport\s*[:=]\s*\d{2,5}\b|\|\|\s*['"]\d{2,5}['"])/i;
+const FIXED_PORT_PATTERN = /(?::18888\b|(?<![\d.])18888(?![\d.])|\b(?:localhost|127\.0\.0\.1):\d{2,5}\b|\bport\s*[:=]\s*\d{2,5}\b|\bport\s*\|\|\s*['"]\d{2,5}['"])/i;
 
 const IGNORED_DIRS = new Set([
   '__pycache__',
   '.venv',
   'node_modules',
   '.git',
+  '.cache',
 ]);
 
 const TEXT_EXTENSIONS = new Set([
