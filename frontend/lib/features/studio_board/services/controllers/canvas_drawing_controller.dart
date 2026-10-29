@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart';
 import '../../domain/models/board_sticker.dart';
 import '../../domain/models/smart_chalk_annotation.dart';
 import '../../domain/models/studio_board_models.dart';
-import '../english_analyzer.dart';
-import '../stroke_clusterer.dart';
 
 /// Single-responsibility controller managing freehand drawing strokes,
 /// undo/redo history stacks, page collections, and board stickers/chalk.
@@ -447,240 +445,38 @@ class CanvasDrawingController extends ChangeNotifier {
     });
   }
 
-  bool analyzeHandwritingAt(Offset touchPoint, {String? hintText}) {
-    final annotation = StrokeClusterer.clusterAndAnalyze(
-      touchPoint: touchPoint,
-      strokes: currentStrokes,
-      pageIndex: page,
-      hintText: hintText,
-    );
-    if (annotation == null) return false;
-
-    currentChalkAnnotations.removeWhere((a) {
-      final center = a.normalizedBounds.center;
-      return (center.dy - touchPoint.dy).abs() < 0.12 &&
-          (center.dx - touchPoint.dx).abs() < 0.35;
-    });
-
-    addChalkAnnotation(annotation);
-    _refineAnnotationWithOcr(annotation, touchPoint);
-    return true;
-  }
-
-  Future<bool> analyzeHandwritingWithVerifiedText(
-    Offset touchPoint,
-    String verifiedText,
-  ) async {
-    final cleanText = verifiedText.trim();
-    if (cleanText.isEmpty) return false;
-
-    final tokensData = await EnglishSentenceAnalyzer.analyzeTokensWithBackend(
-      cleanText,
-    );
-    if (tokensData.isEmpty) return false;
-
-    final annotation = StrokeClusterer.clusterAndAnalyze(
-      touchPoint: touchPoint,
-      strokes: currentStrokes,
-      pageIndex: page,
-      hintText: cleanText,
-    );
-    if (annotation == null) return false;
-
-    final chalkTokens = <ChalkWordToken>[];
-    for (int i = 0; i < tokensData.length; i++) {
-      final t = tokensData[i];
-      final rect = i < annotation.tokens.length
-          ? annotation.tokens[i].relativeRect
-          : const Rect.fromLTWH(0, 0, 1, 1);
-      chalkTokens.add(
-        ChalkWordToken(
-          word: t['text'] as String,
-          role: t['role'] as String?,
-          relativeRect: rect,
-        ),
-      );
-    }
-    final updated = annotation.copyWith(
-      rawText: cleanText,
-      tokens: chalkTokens,
-    );
-    addChalkAnnotation(updated);
-    return true;
-  }
-
-  void _refineAnnotationWithOcr(
-    SmartChalkAnnotation annotation,
-    Offset touchPoint,
-  ) async {
-    try {
-      final lineStrokes = currentStrokes.where((s) {
-        if (s.isEraser || s.points.isEmpty) return false;
-        return s.points.any(
-          (p) =>
-              annotation.normalizedBounds.inflate(0.04).contains(p) ||
-              ((p.dy - touchPoint.dy).abs() < 0.12 &&
-                  p.dx >= (annotation.normalizedBounds.left - 0.03) &&
-                  p.dx <= (annotation.normalizedBounds.right + 0.03)),
-        );
-      }).toList();
-
-      if (lineStrokes.isEmpty) return;
-
-      final pngBytes = await StrokeClusterer.rasterizeStrokesToPng(
-        strokes: lineStrokes,
-        bounds: annotation.normalizedBounds,
-      );
-      if (pngBytes == null) return;
-
-      final ocrResult = await EnglishSentenceAnalyzer.analyzeWithOcr(pngBytes);
-      if (ocrResult == null) return;
-
-      final text = ocrResult['text'] as String?;
-      final rawList = ocrResult['tokens'] as List?;
-      final rawTokens = rawList
-          ?.map((item) => Map<String, dynamic>.from(item as Map))
-          .toList();
-      if (text == null ||
-          text.isEmpty ||
-          rawTokens == null ||
-          rawTokens.isEmpty) {
-        return;
-      }
-
-      final totalTokens = rawTokens.length;
-      final hasValidGrammarRoles = rawTokens.any(
-        (t) => t['role'] != null && (t['role'] as String).isNotEmpty,
-      );
-      if (!hasValidGrammarRoles) return;
-
-      final chalkTokens = <ChalkWordToken>[];
-      if (totalTokens == annotation.tokens.length) {
-        for (int i = 0; i < totalTokens; i++) {
-          final t = rawTokens[i];
-          chalkTokens.add(
-            ChalkWordToken(
-              word: t['text'] as String,
-              role: t['role'] as String?,
-              relativeRect: annotation.tokens[i].relativeRect,
-            ),
-          );
-        }
-      } else if (totalTokens < annotation.tokens.length) {
-        for (int i = 0; i < annotation.tokens.length; i++) {
-          if (i < totalTokens) {
-            final t = rawTokens[i];
-            chalkTokens.add(
-              ChalkWordToken(
-                word: t['text'] as String,
-                role: t['role'] as String?,
-                relativeRect: annotation.tokens[i].relativeRect,
-              ),
-            );
-          } else {
-            chalkTokens.add(annotation.tokens[i]);
-          }
-        }
-      } else {
-        for (int i = 0; i < totalTokens; i++) {
-          final t = rawTokens[i];
-          final word = t['text'] as String;
-          final role = t['role'] as String?;
-          if (i < annotation.tokens.length) {
-            chalkTokens.add(
-              ChalkWordToken(
-                word: word,
-                role: role,
-                relativeRect: annotation.tokens[i].relativeRect,
-              ),
-            );
-          } else {
-            final lastCluster = annotation.tokens.isNotEmpty
-                ? annotation.tokens.last.relativeRect
-                : const Rect.fromLTWH(0.8, 0.0, 0.15, 1.0);
-            final extraIdx = i - annotation.tokens.length + 1;
-            final extraW = (lastCluster.width * 0.8).clamp(0.08, 0.25);
-            final extraLeft =
-                (lastCluster.right + (extraIdx - 1) * extraW + 0.02).clamp(
-                  0.0,
-                  1.0 - extraW,
-                );
-            chalkTokens.add(
-              ChalkWordToken(
-                word: word,
-                role: role,
-                relativeRect: Rect.fromLTWH(extraLeft, 0.0, extraW, 1.0),
-              ),
-            );
-          }
-        }
-      }
-
-      final updated = annotation.copyWith(rawText: text, tokens: chalkTokens);
-      final idx = currentChalkAnnotations.indexWhere(
-        (a) => a.id == annotation.id,
-      );
-      if (idx != -1) {
-        currentChalkAnnotations[idx] = updated;
-        notifyListeners();
-      }
-    } catch (_) {}
-  }
-
-  void addTypedChalkAnnotation(String sentence, {Offset? position}) async {
+  void addTypedChalkAnnotation(String sentence, {Offset? position}) {
     final cleanText = sentence.trim();
     if (cleanText.isEmpty) return;
-
-    List<ChalkWordToken> buildTokens(List<Map<String, dynamic>> tokens) {
-      final list = <ChalkWordToken>[];
-      final count = tokens.length;
-      final totalLen = math.max(1, cleanText.length);
-      double currentX = 0.0;
-      for (int i = 0; i < count; i++) {
-        final t = tokens[i];
-        final word = t['text'] as String;
-        final role = t['role'] as String?;
-        final relW = (word.length / totalLen).clamp(0.05, 0.95);
-        final relRect = Rect.fromLTWH(currentX, 0.0, relW, 1.0);
-        currentX += relW + (1.0 / totalLen);
-        list.add(ChalkWordToken(word: word, role: role, relativeRect: relRect));
-      }
-      return list;
+    final words = cleanText.split(RegExp(r'\s+'));
+    final totalLength = math.max(1, cleanText.length);
+    var x = 0.0;
+    final tokens = <ChalkWordToken>[];
+    for (final word in words) {
+      final width = (word.length / totalLength).clamp(0.05, 0.95);
+      tokens.add(
+        ChalkWordToken(word: word, relativeRect: Rect.fromLTWH(x, 0, width, 1)),
+      );
+      x += width + 1 / totalLength;
     }
-
-    final localData = EnglishSentenceAnalyzer.analyze(text: cleanText);
     final pos = position ?? const Offset(0.20, 0.30);
-    final boxWidth = (cleanText.length * 0.015 + 0.12).clamp(0.12, 0.85);
-    const boxHeight = 0.06;
-    final sentenceRect = Rect.fromLTWH(pos.dx, pos.dy, boxWidth, boxHeight);
-
-    final annotation = SmartChalkAnnotation(
-      id: 'typed-svo-${DateTime.now().millisecondsSinceEpoch}',
-      source: 'chalkboard',
-      pageIndex: page,
-      rawText: cleanText,
-      normalizedBounds: sentenceRect,
-      tokens: buildTokens(localData.tokens),
-      isVisible: true,
-      normalizedOffset: Offset.zero,
+    addChalkAnnotation(
+      SmartChalkAnnotation(
+        id: 'typed-note-${DateTime.now().millisecondsSinceEpoch}',
+        source: 'chalkboard',
+        pageIndex: page,
+        rawText: cleanText,
+        normalizedBounds: Rect.fromLTWH(
+          pos.dx,
+          pos.dy,
+          (cleanText.length * 0.015 + 0.12).clamp(0.12, 0.85),
+          0.06,
+        ),
+        tokens: tokens,
+        isVisible: true,
+        normalizedOffset: Offset.zero,
+      ),
     );
-
-    addChalkAnnotation(annotation);
-
-    try {
-      final backendTokens =
-          await EnglishSentenceAnalyzer.analyzeTokensWithBackend(cleanText);
-      if (backendTokens.isNotEmpty) {
-        final updated = annotation.copyWith(tokens: buildTokens(backendTokens));
-        final idx = currentChalkAnnotations.indexWhere(
-          (a) => a.id == annotation.id,
-        );
-        if (idx != -1) {
-          currentChalkAnnotations[idx] = updated;
-          notifyListeners();
-        }
-      }
-    } catch (_) {}
   }
 
   @override

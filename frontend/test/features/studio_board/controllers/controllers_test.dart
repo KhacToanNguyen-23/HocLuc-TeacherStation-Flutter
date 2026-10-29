@@ -50,7 +50,6 @@ void main() {
         tokens: [
           {'text': 'hello'},
         ],
-        issues: [],
       );
       controller.addSticker(sticker);
       expect(controller.currentStickers.length, 1);

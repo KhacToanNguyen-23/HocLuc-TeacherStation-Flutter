@@ -73,9 +73,7 @@ extension _PdfStageViewer on _PdfStageState {
                 height: 28,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Color(0xffd4e8a6),
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xffd4e8a6)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -336,66 +334,7 @@ extension _PdfStageViewer on _PdfStageState {
                                 ),
                               ),
                             ),
-                          if (studio.activeToolCapturesBoardInput)
-                            Positioned.fill(
-                              child: MouseRegion(
-                                cursor: SystemMouseCursors.click,
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTapDown: (details) async {
-                                    final normX =
-                                        (details.localPosition.dx /
-                                                pageRect.width)
-                                            .clamp(0.0, 1.0);
-                                    final normY =
-                                        (details.localPosition.dy /
-                                                pageRect.height)
-                                            .clamp(0.0, 1.0);
 
-                                    String? extractedText;
-                                    Rect? textNormalizedRect;
-
-                                    try {
-                                      final pageText = await page.loadText();
-                                      final full =
-                                          pageText?.fullText.trim() ?? '';
-                                      if (full.isNotEmpty) {
-                                        final rawLines = full
-                                            .split('\n')
-                                            .map((l) => l.trim())
-                                            .where((l) => l.isNotEmpty)
-                                            .toList();
-                                        if (rawLines.isNotEmpty) {
-                                          final idx = (normY * rawLines.length)
-                                              .clamp(0, rawLines.length - 1)
-                                              .toInt();
-                                          extractedText = rawLines[idx];
-                                          final approxW =
-                                              (extractedText.length * 0.018)
-                                                  .clamp(0.12, 0.70);
-                                          textNormalizedRect = Rect.fromLTWH(
-                                            (normX - approxW / 2).clamp(
-                                              0.04,
-                                              0.96 - approxW,
-                                            ),
-                                            (normY - 0.012).clamp(0.005, 0.96),
-                                            approxW,
-                                            0.022,
-                                          );
-                                        }
-                                      }
-                                    } catch (_) {}
-
-                                    studio.analyzePdfSentenceAt(
-                                      page.pageNumber,
-                                      Offset(normX, normY),
-                                      sampleText: extractedText,
-                                      targetRect: textNormalizedRect,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
                           SmartChalkOverlay(
                             studio: studio,
                             targetAnnotations: studio.getPdfChalkAnnotations(
@@ -430,7 +369,8 @@ extension _PdfStageViewer on _PdfStageState {
       },
     );
 
-    final hasLocalFile = studio.pdfFilePath != null &&
+    final hasLocalFile =
+        studio.pdfFilePath != null &&
         studio.pdfFilePath!.isNotEmpty &&
         File(studio.pdfFilePath!).existsSync();
 
@@ -443,17 +383,17 @@ extension _PdfStageViewer on _PdfStageState {
               params: params,
             )
           : (studio.pdfBytes != null
-              ? PdfViewer.data(
-                  studio.pdfBytes!,
-                  sourceName: studio.pdfFilePath ?? 'document.pdf',
-                  controller: _pdfController,
-                  params: params,
-                )
-              : PdfViewer.file(
-                  studio.pdfFilePath!,
-                  controller: _pdfController,
-                  params: params,
-                )),
+                ? PdfViewer.data(
+                    studio.pdfBytes!,
+                    sourceName: studio.pdfFilePath ?? 'document.pdf',
+                    controller: _pdfController,
+                    params: params,
+                  )
+                : PdfViewer.file(
+                    studio.pdfFilePath!,
+                    controller: _pdfController,
+                    params: params,
+                  )),
     );
     return _cachedPdfViewer!;
   }

@@ -7,9 +7,9 @@
   "recognized_unrated_file": "recognized_unrated.csv",
   "legacy_curated_chunks_file": "data/vocabulary_sources/legacy_curated_chunks.dart",
   "awl_counts": {
-    "headword_source_file": "frontend/lib/features/studio_board/services/profiler/awl_word_list.dart",
+    "headword_source_file": "plugins/english_assistant/engine/dart/lib/src/profiler/awl_word_list.dart",
     "headword_symbol": "coxheadAwlSublists",
-    "family_forms_glob": "frontend/lib/features/studio_board/services/profiler/awl_family_forms_part_*.dart"
+    "family_forms_glob": "plugins/english_assistant/engine/dart/lib/src/profiler/awl_family_forms_part_*.dart"
   },
   "sources": [
     {

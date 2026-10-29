@@ -1,12 +1,9 @@
 import 'dart:typed_data';
 import 'dart:ui';
-
 import 'package:flutter/painting.dart';
-
 import 'ink_path.dart';
 
 export 'dgnl_highlight_palette.dart';
-export 'offline_lexeme.dart';
 export 'pedagogical_highlight_policy.dart';
 
 enum StudioViewportMode { fullBoard, fullPdf, split }
@@ -14,6 +11,7 @@ enum StudioViewportMode { fullBoard, fullPdf, split }
 class PdfDgnlHighlightSpan {
   final String text;
   final String category; // 'grammar', 'collocation', 'vocabulary'
+  final String level; // 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Unknown'
   final String type;
   final String note;
   final List<Rect> normalizedRects;
@@ -24,10 +22,13 @@ class PdfDgnlHighlightSpan {
   final bool isProperNoun;
   final bool isNumber;
   final String? lemma;
+  final String? sourceStyleId;
+  final Map<String, dynamic> metadata;
 
   const PdfDgnlHighlightSpan({
     required this.text,
     required this.category,
+    this.level = 'B2',
     required this.type,
     required this.note,
     required this.normalizedRects,
@@ -38,6 +39,8 @@ class PdfDgnlHighlightSpan {
     this.isProperNoun = false,
     this.isNumber = false,
     this.lemma,
+    this.sourceStyleId,
+    this.metadata = const {},
   });
 }
 
@@ -48,8 +51,10 @@ class PdfDgnlPassage {
   final Rect normalizedBounds;
   final List<PdfDgnlHighlightSpan> spans;
   final Map<String, dynamic> metrics;
-  final List<Map<String, dynamic>> clozeQuestions;
   bool isVisible;
+  final Map<String, dynamic>? analysisResult;
+  final String? analysisPluginId;
+  List<PdfDgnlHighlightSpan>? activeFilteredSpans;
 
   PdfDgnlPassage({
     required this.id,
@@ -58,8 +63,10 @@ class PdfDgnlPassage {
     required this.normalizedBounds,
     required this.spans,
     required this.metrics,
-    required this.clozeQuestions,
     this.isVisible = true,
+    this.analysisResult,
+    this.analysisPluginId,
+    this.activeFilteredSpans,
   });
 }
 

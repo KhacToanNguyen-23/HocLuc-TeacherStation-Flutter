@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
@@ -326,7 +326,6 @@ void main() {
         normalizedBounds: const Rect.fromLTWH(0, 0, 1, 1),
         spans: spans,
         metrics: const {},
-        clozeQuestions: const [],
       );
       studio.addPdfDgnlPassage(passage);
 

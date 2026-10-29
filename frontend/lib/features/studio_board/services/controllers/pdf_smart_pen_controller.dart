@@ -1,13 +1,16 @@
-import 'dart:math' as math;
+import 'dart:async';
+import 'dart:collection';
 import 'dart:ui';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/models/smart_chalk_annotation.dart';
 import '../../domain/models/smart_pen_answer_selection.dart';
 import '../../domain/models/studio_board_models.dart';
-import '../english_analyzer.dart';
+import '../pdf_annotation_save_diagnostics.dart';
 import '../pdf_annotation_storage_service.dart';
 import 'smart_pen_answer_manager.dart';
+
+part 'pdf_smart_pen_persistence.dart';
 
 /// Single-responsibility controller managing PDF document state,
 /// page navigation, per-page annotations, window geometry, and Smart Pen oval snapping.
@@ -28,6 +31,21 @@ class PdfSmartPenController extends ChangeNotifier {
   late final SmartPenAnswerManager smartPenManager;
   final PdfAnnotationStorageService Function() _storageServiceFactory;
   int _documentGeneration = 0;
+  int _storageIdentityGeneration = -1;
+  String? _storageIdentityPath;
+  String? _storageIdentityAppDocumentId;
+  Uint8List? _storageIdentityBytes;
+  Future<String>? _storageIdentityFuture;
+  final LinkedHashMap<String, _PendingPdfAnnotationSave> _pendingSaves =
+      LinkedHashMap<String, _PendingPdfAnnotationSave>();
+  Future<void>? _persistenceDrain;
+  bool isPersistingAnnotations = false;
+  String? annotationPersistenceError;
+  bool _isDisposed = false;
+  int _contentFingerprintComputations = 0;
+
+  @visibleForTesting
+  int get contentFingerprintComputations => _contentFingerprintComputations;
 
   PdfAnnotationStorageService _newStorageService() => _storageServiceFactory();
 
@@ -189,6 +207,16 @@ class PdfSmartPenController extends ChangeNotifier {
     }
   }
 
+  Future<bool> flushPendingAnnotationPersistence() async {
+    final drain = _persistenceDrain;
+    if (drain != null) await drain;
+    return annotationPersistenceError == null;
+  }
+
+  Future<bool> retryAnnotationPersistence() => savePersistentAnnotations();
+
+  void _notifyPersistenceListeners() => notifyListeners();
+
   void togglePdfHighlightsVisible() {
     pdfHighlightsVisible = !pdfHighlightsVisible;
     savePersistentAnnotations();
@@ -238,14 +266,85 @@ class PdfSmartPenController extends ChangeNotifier {
   }
 
   void recordAnnotationAdded(int page, BoardStroke stroke) {
+    unawaited(
+      recordAnnotationsAdded({
+        page: [stroke],
+      }),
+    );
+  }
+
+  /// Commits an annotation batch as one undoable action and one persistence
+  /// request. Existing geometry and stroke objects are preserved as supplied.
+  Future<bool> recordAnnotationsAdded(
+    Map<int, List<BoardStroke>> additions, {
+    String? operationId,
+  }) {
+    final saveOperationId =
+        operationId ?? PdfAnnotationSaveDiagnostics.newOperationId('batch');
+    final commitTimer = Stopwatch()..start();
+    final accepted = <int, List<BoardStroke>>{};
+    for (final entry in additions.entries) {
+      if (entry.key < 1 || entry.value.isEmpty) continue;
+
+      final current = pdfAnnotations[entry.key] ?? const <BoardStroke>[];
+      final ids = <String>{
+        for (final stroke in current)
+          if (stroke.id != null) stroke.id!,
+      };
+      final rects = <Rect>{
+        for (final stroke in current)
+          if (stroke.rect != null) stroke.rect!,
+      };
+      final identitySet = HashSet<BoardStroke>.identity()..addAll(current);
+      final pageAdditions = <BoardStroke>[];
+
+      for (final stroke in entry.value) {
+        if (stroke.id != null && !ids.add(stroke.id!)) continue;
+        if (stroke.rect != null && !rects.add(stroke.rect!)) continue;
+        if (!identitySet.add(stroke)) continue;
+        pageAdditions.add(stroke);
+      }
+      if (pageAdditions.isNotEmpty) accepted[entry.key] = pageAdditions;
+    }
+
+    if (accepted.isEmpty) return Future<bool>.value(true);
+
+    for (final entry in accepted.entries) {
+      pdfAnnotations.putIfAbsent(entry.key, () => []).addAll(entry.value);
+    }
+    final historyTimer = Stopwatch()..start();
     _pushAnnotationUndo(
       _PdfAnnotationHistoryItem(
-        pageNumber: page,
-        stroke: stroke,
-        isDeletion: false,
+        pageNumber: accepted.keys.first,
+        addedAnnotations: accepted,
       ),
     );
-    savePersistentAnnotations();
+    PdfAnnotationSaveDiagnostics.log(
+      saveOperationId,
+      'undo_history_update',
+      duration: historyTimer.elapsed,
+      fields: {'undoEntries': 1, 'pages': accepted.length},
+    );
+
+    // This single notification also publishes the pending-save state.
+    PdfAnnotationSaveDiagnostics.log(
+      saveOperationId,
+      'annotation_commit',
+      duration: commitTimer.elapsed,
+      fields: {
+        'annotations': accepted.values.fold<int>(
+          0,
+          (total, strokes) => total + strokes.length,
+        ),
+        'pages': accepted.length,
+      },
+    );
+    final persistence = _queueAnnotationPersistence(
+      notifyOnStart: false,
+      operationId: saveOperationId,
+    );
+    notifyListeners();
+    return persistence;
   }
 
   void recordAnnotationRemoved(int page, BoardStroke stroke, int index) {
@@ -263,7 +362,12 @@ class PdfSmartPenController extends ChangeNotifier {
   bool undoAnnotation() {
     if (_annotationUndoStack.isEmpty) return false;
     final entry = _annotationUndoStack.removeLast();
-    if (entry.isClear && entry.clearedStrokes != null) {
+    if (entry.addedAnnotations != null) {
+      for (final page in entry.addedAnnotations!.entries) {
+        final list = pdfAnnotations[page.key];
+        list?.removeWhere(page.value.contains);
+      }
+    } else if (entry.isClear && entry.clearedStrokes != null) {
       final list = pdfAnnotations.putIfAbsent(entry.pageNumber, () => []);
       list.addAll(entry.clearedStrokes!);
     } else if (entry.isDeletion && entry.stroke != null) {
@@ -286,7 +390,11 @@ class PdfSmartPenController extends ChangeNotifier {
   bool redoAnnotation() {
     if (_annotationRedoStack.isEmpty) return false;
     final entry = _annotationRedoStack.removeLast();
-    if (entry.isClear && entry.clearedStrokes != null) {
+    if (entry.addedAnnotations != null) {
+      for (final page in entry.addedAnnotations!.entries) {
+        pdfAnnotations.putIfAbsent(page.key, () => []).addAll(page.value);
+      }
+    } else if (entry.isClear && entry.clearedStrokes != null) {
       final list = pdfAnnotations[entry.pageNumber];
       list?.removeWhere((s) => entry.clearedStrokes!.contains(s));
     } else if (entry.isDeletion && entry.stroke != null) {
@@ -303,20 +411,10 @@ class PdfSmartPenController extends ChangeNotifier {
     return true;
   }
 
-  Future<void> savePersistentAnnotations() async {
-    try {
-      final storage = _newStorageService();
-      final docId = await storage.computeDocumentId(
-        filePath: pdfFilePath,
-        bytes: pdfBytes,
-      );
-      await storage.saveAnnotations(
-        documentId: docId,
-        filePath: pdfFilePath,
-        annotations: pdfAnnotations,
-        highlightsVisible: pdfHighlightsVisible,
-      );
-    } catch (_) {}
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 
   Future<void> restorePersistentAnnotations() async {
@@ -325,11 +423,16 @@ class PdfSmartPenController extends ChangeNotifier {
     final documentId = activeDocId;
     final filePath = pdfFilePath;
     final bytes = pdfBytes;
+    final operationId = PdfAnnotationSaveDiagnostics.newOperationId('restore');
     try {
       final storage = _newStorageService();
+      final storageDocumentId = await _storageDocumentIdForCurrentPdf(
+        operationId,
+      );
       final layer = await storage.loadAnnotations(
         filePath: filePath,
         bytes: bytes,
+        documentId: storageDocumentId,
       );
       if (generation != _documentGeneration ||
           documentId != activeDocId ||
@@ -383,8 +486,10 @@ class PdfSmartPenController extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _pdfContentFingerprint(Uint8List bytes) =>
-      sha256.convert(bytes).toString();
+  String _pdfContentFingerprint(Uint8List bytes) {
+    _contentFingerprintComputations++;
+    return sha256.convert(bytes).toString();
+  }
 
   bool _samePdfBytes(Uint8List left, Uint8List right) {
     if (identical(left, right)) return true;
@@ -396,7 +501,9 @@ class PdfSmartPenController extends ChangeNotifier {
   }
 
   void setPdfFile(String? path, [Uint8List? bytes]) {
+    _freezePendingAnnotationSaves();
     _documentGeneration++;
+    annotationPersistenceError = null;
     final replacedDocumentId = _historyKey;
     smartPenManager.clearTemporaryAnswers(documentId: replacedDocumentId);
 
@@ -421,6 +528,9 @@ class PdfSmartPenController extends ChangeNotifier {
     smartPenAnswerSelection = null;
 
     if (path != null || bytes != null) {
+      final incomingFingerprint = bytes == null
+          ? null
+          : _pdfContentFingerprint(bytes);
       final name = path != null
           ? path.split(RegExp(r'[\\/]')).last
           : 'Tài liệu.pdf';
@@ -432,7 +542,7 @@ class PdfSmartPenController extends ChangeNotifier {
             (doc) =>
                 doc.name == name &&
                 bytes != null &&
-                doc.contentFingerprint == _pdfContentFingerprint(bytes),
+                doc.contentFingerprint == incomingFingerprint,
           )
           .firstOrNull;
       final existing = exactPathMatch ?? nameMatch;
@@ -443,17 +553,12 @@ class PdfSmartPenController extends ChangeNotifier {
           name: name,
           path: path,
           bytes: bytes,
-          contentFingerprint: bytes == null
-              ? null
-              : _pdfContentFingerprint(bytes),
+          contentFingerprint: incomingFingerprint,
         );
         importedDocs.add(doc);
         activeDocId = id;
       } else {
         activeDocId = existing.id;
-        final incomingFingerprint = bytes == null
-            ? null
-            : _pdfContentFingerprint(bytes);
         if (bytes != null &&
             ((existing.contentFingerprint != null &&
                     existing.contentFingerprint != incomingFingerprint) ||
@@ -510,6 +615,9 @@ class PdfSmartPenController extends ChangeNotifier {
           incomingFingerprint ?? existing.contentFingerprint;
       if (existing.id == activeDocId) {
         if (contentChanged) {
+          _freezePendingAnnotationSaves();
+          _documentGeneration++;
+          annotationPersistenceError = null;
           smartPenManager.clearTemporaryAnswers(documentId: existing.id);
           smartPenManager.clearHistory(documentId: existing.id);
           smartPenAnswerSelection = null;
@@ -550,6 +658,7 @@ class PdfSmartPenController extends ChangeNotifier {
     final doc = importedDocs.where((d) => d.id == id).firstOrNull;
     if (doc == null) return;
 
+    if (activeDocId != id) _freezePendingAnnotationSaves();
     if (activeDoc != null && activeDoc!.id != id) {
       activeDoc!.annotations.clear();
       activeDoc!.annotations.addAll(pdfAnnotations);
@@ -585,7 +694,9 @@ class PdfSmartPenController extends ChangeNotifier {
   }
 
   void closePdf() {
+    _freezePendingAnnotationSaves();
     _documentGeneration++;
+    annotationPersistenceError = null;
     pdfFilePath = null;
     pdfBytes = null;
     activeDocId = null;
@@ -598,7 +709,9 @@ class PdfSmartPenController extends ChangeNotifier {
   }
 
   void updatePdfBytesInPlace(Uint8List newBytes) {
+    _freezePendingAnnotationSaves();
     _documentGeneration++;
+    annotationPersistenceError = null;
     final replacedDocumentId = _historyKey;
     smartPenManager.clearTemporaryAnswers(documentId: replacedDocumentId);
     pdfBytes = newBytes;
@@ -760,87 +873,13 @@ class PdfSmartPenController extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  bool analyzePdfSentenceAt(
-    int pageNumber,
-    Offset normPoint, {
-    String? sampleText,
-    Rect? targetRect,
-  }) {
-    getPdfChalkAnnotations(pageNumber).removeWhere((a) {
-      final center = a.normalizedBounds.center;
-      return (center.dy - normPoint.dy).abs() < 0.04 &&
-          (center.dx - normPoint.dx).abs() < 0.35;
-    });
-
-    final rawSentence = (sampleText != null && sampleText.trim().isNotEmpty)
-        ? sampleText.trim()
-        : 'The teacher explains grammar.';
-
-    final stickerData = EnglishSentenceAnalyzer.analyze(text: rawSentence);
-    final rawTokens = stickerData.tokens;
-
-    final sentenceRect =
-        targetRect ??
-        Rect.fromLTWH(
-          (normPoint.dx - 0.04).clamp(0.04, 0.58),
-          (normPoint.dy - 0.012).clamp(0.005, 0.96),
-          0.38,
-          0.020,
-        );
-
-    final chalkTokens = <ChalkWordToken>[];
-    final tokenCount = rawTokens.length;
-
-    if (tokenCount <= 1) {
-      final tokenInfo = rawTokens.isNotEmpty
-          ? rawTokens.first
-          : {'text': rawSentence, 'role': 'subject'};
-      chalkTokens.add(
-        ChalkWordToken(
-          word: tokenInfo['text'] as String,
-          role: tokenInfo['role'] as String? ?? 'subject',
-          relativeRect: const Rect.fromLTWH(0.0, 0.0, 1.0, 1.0),
-        ),
-      );
-    } else {
-      final totalLen = math.max(1, rawSentence.length);
-      double currentX = 0.0;
-      for (int i = 0; i < tokenCount; i++) {
-        final tokenInfo = rawTokens[i];
-        final word = tokenInfo['text'] as String;
-        final role = tokenInfo['role'] as String?;
-
-        final relW = (word.length / totalLen).clamp(0.05, 0.95);
-        final relRect = Rect.fromLTWH(currentX, 0.0, relW, 1.0);
-        currentX += relW + (1.0 / totalLen);
-
-        chalkTokens.add(
-          ChalkWordToken(word: word, role: role, relativeRect: relRect),
-        );
-      }
-    }
-
-    final annotation = SmartChalkAnnotation(
-      id: 'pdf-svo-${DateTime.now().millisecondsSinceEpoch}',
-      source: 'pdf',
-      pageIndex: pageNumber,
-      rawText: rawSentence,
-      normalizedBounds: sentenceRect,
-      tokens: chalkTokens,
-      isVisible: true,
-      normalizedOffset: Offset.zero,
-    );
-
-    addPdfChalkAnnotation(pageNumber, annotation);
-    return true;
-  }
 }
 
 class _PdfAnnotationHistoryItem {
   _PdfAnnotationHistoryItem({
     required this.pageNumber,
     this.stroke,
+    this.addedAnnotations,
     this.index,
     this.isDeletion = false,
     this.isClear = false,
@@ -849,6 +888,7 @@ class _PdfAnnotationHistoryItem {
 
   final int pageNumber;
   final BoardStroke? stroke;
+  final Map<int, List<BoardStroke>>? addedAnnotations;
   final int? index;
   final bool isDeletion;
   final bool isClear;

@@ -13,6 +13,7 @@ import '../../../plugin_engine/domain/models/plugin_manifest.dart';
 import '../../../plugin_engine/services/host_bridge.dart';
 import '../../../plugin_engine/services/plugin_manager.dart';
 import '../../../plugin_engine/services/process_supervisor.dart';
+import '../../../plugin_engine/services/plugin_analysis_client.dart';
 import '../../services/controllers/audio_sync_controller.dart';
 import '../../services/controllers/canvas_drawing_controller.dart';
 import '../../services/controllers/pdf_smart_pen_controller.dart';
@@ -349,49 +350,6 @@ class StudioState extends ChangeNotifier {
     dirty = true;
     _revision++;
     notifyListeners();
-  }
-
-  bool analyzeHandwritingAt(Offset touchPoint, {String? hintText}) {
-    final res = canvas.analyzeHandwritingAt(touchPoint, hintText: hintText);
-    if (res) {
-      dirty = true;
-      _revision++;
-    }
-    return res;
-  }
-
-  Future<bool> analyzeHandwritingWithVerifiedText(
-    Offset touchPoint,
-    String verifiedText,
-  ) async {
-    final res = await canvas.analyzeHandwritingWithVerifiedText(
-      touchPoint,
-      verifiedText,
-    );
-    if (res) {
-      dirty = true;
-      _revision++;
-    }
-    return res;
-  }
-
-  bool analyzePdfSentenceAt(
-    int pageNumber,
-    Offset normPoint, {
-    String? sampleText,
-    Rect? targetRect,
-  }) {
-    final res = pdf.analyzePdfSentenceAt(
-      pageNumber,
-      normPoint,
-      sampleText: sampleText,
-      targetRect: targetRect,
-    );
-    if (res) {
-      dirty = true;
-      _revision++;
-    }
-    return res;
   }
 
   void addTypedChalkAnnotation(String sentence, {Offset? position}) {
@@ -857,6 +815,7 @@ class StudioState extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    unawaited(pdf.flushPendingAnnotationPersistence());
     coordinator.removeListener(_onCoordinatorChanged);
     coordinator.dispose();
     super.dispose();

@@ -118,7 +118,7 @@ void main() {
         expect(body, contains('liquid glass SDK stylesheet v1.0.0'));
         expect(body, contains('--glass-bg-opacity'));
         expect(body, contains('.liquid-card'));
-        expect(body, contains('.liquid-gem-token'));
+        expect(body, contains('.liquid-pill-btn'));
         for (final token in [
           "data-glass-preset='clear'",
           '--glass-bg-opacity: 0.15',

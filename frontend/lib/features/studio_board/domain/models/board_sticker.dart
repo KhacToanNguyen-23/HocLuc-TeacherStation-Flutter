@@ -10,7 +10,6 @@ class BoardSticker {
     this.svgContent,
     this.imageBase64,
     this.tokens = const [],
-    this.issues = const [],
     this.rotation = 0.0,
     this.metadata,
   });
@@ -23,12 +22,10 @@ class BoardSticker {
   final String? svgContent;
   final String? imageBase64;
   final List<Map<String, dynamic>> tokens;
-  final List<String> issues;
   final double rotation;
   final Map<String, dynamic>? metadata;
 
   String get text => rawText;
-  String? get grammarIssue => issues.isNotEmpty ? issues.first : null;
 
   BoardSticker copyWith({
     String? id,
@@ -39,7 +36,6 @@ class BoardSticker {
     String? svgContent,
     String? imageBase64,
     List<Map<String, dynamic>>? tokens,
-    List<String>? issues,
     double? rotation,
     Map<String, dynamic>? metadata,
   }) {
@@ -52,7 +48,6 @@ class BoardSticker {
       svgContent: svgContent ?? this.svgContent,
       imageBase64: imageBase64 ?? this.imageBase64,
       tokens: tokens ?? this.tokens,
-      issues: issues ?? this.issues,
       rotation: rotation ?? this.rotation,
       metadata: metadata ?? this.metadata,
     );
@@ -71,8 +66,7 @@ class BoardSticker {
     if (title != null) 'title': title,
     if (svgContent != null) 'svgContent': svgContent,
     if (imageBase64 != null) 'imageBase64': imageBase64,
-    'tokens': tokens,
-    'issues': issues,
+    'tokens': _withoutLegacyParserMetadata(tokens),
     'rotation': rotation,
     if (metadata != null) 'metadata': metadata,
   };
@@ -92,14 +86,12 @@ class BoardSticker {
       title: json['title'] as String?,
       svgContent: json['svgContent'] as String?,
       imageBase64: json['imageBase64'] as String?,
-      tokens:
-          (json['tokens'] as List?)
-              ?.map((t) => Map<String, dynamic>.from(t as Map))
-              .toList() ??
-          const [],
-      issues:
-          (json['issues'] as List?)?.map((e) => e.toString()).toList() ??
-          const [],
+      tokens: _withoutLegacyParserMetadata(
+        (json['tokens'] as List?)
+                ?.map((t) => Map<String, dynamic>.from(t as Map))
+                .toList() ??
+            const [],
+      ),
       rotation: (json['rotation'] as num?)?.toDouble() ?? 0.0,
       metadata: json['metadata'] != null
           ? Map<String, dynamic>.from(json['metadata'] as Map)
@@ -107,3 +99,13 @@ class BoardSticker {
     );
   }
 }
+
+List<Map<String, dynamic>> _withoutLegacyParserMetadata(
+  List<Map<String, dynamic>> tokens,
+) => tokens.map((token) {
+  final sanitized = Map<String, dynamic>.from(token)
+    ..remove('role')
+    ..remove('pos')
+    ..remove('dep');
+  return sanitized;
+}).toList(growable: false);

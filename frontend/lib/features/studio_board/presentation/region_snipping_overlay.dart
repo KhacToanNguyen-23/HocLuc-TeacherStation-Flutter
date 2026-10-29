@@ -1,15 +1,9 @@
 import 'package:teaching_companion/core/utils/frontend_logger.dart';
-
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
-
-import '../services/dgnl_service.dart';
-
-import 'package:teaching_companion/features/plugin_engine/services/plugin_text_selection.dart';
 
 part 'region_snipping_painter.dart';
 
@@ -38,6 +32,27 @@ class _PdfSnippetResult {
     required this.charBoxes,
   });
 }
+
+List<Rect> _charBoxRectsForCodePointRange(
+  List<_PdfCharBox> boxes,
+  int start,
+  int end,
+) {
+  final result = <Rect>[];
+  var codePointOffset = 0;
+  for (final box in boxes) {
+    for (final _ in box.char.runes) {
+      if (codePointOffset >= start && codePointOffset < end) {
+        result.add(box.normalizedRect);
+      }
+      codePointOffset++;
+    }
+  }
+  return result;
+}
+
+int _codePointOffsetAt(String text, int utf16Offset) =>
+    text.substring(0, utf16Offset.clamp(0, text.length).toInt()).runes.length;
 
 class RegionSnippingOverlay extends StatefulWidget {
   const RegionSnippingOverlay({super.key, required this.studio});
@@ -191,19 +206,6 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final studio = widget.studio;
     final size = MediaQuery.of(context).size;
-    final owner = (studio.activePlugin ?? studio.floatingPlugin)?.id;
-    final target = studio.snipTarget;
-    final generation = studio.pdfContentGeneration;
-    final rawTextOnly = PluginTextSelection.acceptsSnippet(
-      (studio.activePlugin ?? studio.floatingPlugin)?.manifest,
-      target,
-    );
-    bool stillOwnsSnip() =>
-        mounted &&
-        studio.isSnippingActive &&
-        studio.snipTarget == target &&
-        (studio.activePlugin ?? studio.floatingPlugin)?.id == owner &&
-        studio.pdfContentGeneration == generation;
 
     // 1. Try accurate extraction using active PdfViewerController
     _PdfSnippetResult? pdfResult = await _extractFromActivePdfViewer(
@@ -217,22 +219,74 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         (studio.pdfBytes != null || studio.pdfFilePath != null)) {
       pdfResult = await _extractFromPdfFallback(studio, screenRect, size);
     }
-    if (!stillOwnsSnip()) return;
 
     if (pdfResult != null && pdfResult.text.trim().isNotEmpty) {
       final cleanText = pdfResult.text.replaceAll(RegExp(r'\s+'), ' ').trim();
-      if (rawTextOnly) {
-        studio.sendSnippetToPlugin(cleanText, target: target);
+
+      // Ask the active plugin sidecar once, then reuse its response for the
+      // PDF annotations and plugin view.
+      final selectionToken =
+          '${studio.pdfContentGeneration}-${DateTime.now().microsecondsSinceEpoch}';
+      final documentGeneration = studio.pdfContentGeneration;
+      final analysisPluginId =
+          (studio.activePlugin ?? studio.floatingPlugin)?.id;
+      Map<String, dynamic> analysis;
+      try {
+        analysis = await studio.analyzeTextWithActivePlugin(
+          cleanText,
+          requestId: selectionToken,
+          selectionToken: selectionToken,
+        );
+        if (studio.pdfContentGeneration != documentGeneration) {
+          throw StateError('Tài liệu PDF đã thay đổi trong lúc phân tích.');
+        }
+      } catch (error) {
+        if (mounted) {
+          setState(() => _isProcessing = false);
+          messenger?.showSnackBar(
+            SnackBar(content: Text('Không thể phân tích đoạn văn: $error')),
+          );
+        }
         return;
       }
+      final rawAnalysis =
+          analysis['analysis'] as Map<String, dynamic>? ?? const {};
+      final rawPluginSpans = analysis['spans'] as List? ?? const [];
+      final highlights = <Map<String, dynamic>>[];
+      for (final rawSpan in rawPluginSpans) {
+        if (rawSpan is! Map) continue;
+        final span = Map<String, dynamic>.from(rawSpan);
+        final style = span['style'] is Map
+            ? Map<String, dynamic>.from(span['style'] as Map)
+            : <String, dynamic>{};
+        final metadata = style['metadata'] is Map
+            ? Map<String, dynamic>.from(style['metadata'] as Map)
+            : <String, dynamic>{};
+        highlights.add({
+          ...span,
+          'category': metadata['category'] ?? style['id'] ?? 'annotation',
+          'level': metadata['level'] ?? '',
+          'type': metadata['label'] ?? style['id'] ?? 'annotation',
+          'note': metadata['note'] ?? metadata['description'] ?? '',
+          'metadata': metadata,
+          'styleId': style['id'],
+          'color': metadata['color'],
+          'isPedagogical': metadata['isPedagogical'] == true,
+          'isAcademic': metadata['isAcademic'] == true,
+          'isPreTeach': metadata['isPreTeach'] == true,
+          'isFunctionWord': metadata['isFunctionWord'] == true,
+          'isProperNoun': metadata['isProperNoun'] == true,
+          'isNumber': metadata['isNumber'] == true,
+          'lemma': metadata['lemma'],
+        });
+      }
 
-      // Perform DGNL analysis and Cloze generation first while overlay is active
-      final analysis = await DgnlService.analyze(cleanText);
-      final clozeQuestions = await DgnlService.generateCloze(cleanText);
-      if (!stillOwnsSnip()) return;
-
+      // Vocabulary classifications come from the same plugin profile shown in
+      // Hồ sơ. The plugin's annotation spans are reserved for grammar and
+      // collocations; the host only maps these profile token ranges to PDF.
       // Map highlight spans to line-level bounding boxes on the PDF page
       final spans = <PdfDgnlHighlightSpan>[];
+      final mappedHighlightIndexes = <int>{};
       final snippetChars = pdfResult.charBoxes;
       final rawCharsText = snippetChars.map((b) => b.char).join('');
       final rawCharsLower = rawCharsText.toLowerCase();
@@ -247,7 +301,10 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 final inter = ra.intersect(rb);
                 if (inter.width > 0 && inter.height > 0) {
                   final interArea = inter.width * inter.height;
-                  final minArea = math.min(ra.width * ra.height, rb.width * rb.height);
+                  final minArea = math.min(
+                    ra.width * ra.height,
+                    rb.width * rb.height,
+                  );
                   if (minArea > 0 && (interArea / minArea) >= 0.75) {
                     if (candidate.text.length > s.text.length) {
                       spans[i] = candidate;
@@ -271,7 +328,10 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                   final inter = ra.intersect(rb);
                   if (inter.width > 0 && inter.height > 0) {
                     final interArea = inter.width * inter.height;
-                    final minArea = math.min(ra.width * ra.height, rb.width * rb.height);
+                    final minArea = math.min(
+                      ra.width * ra.height,
+                      rb.width * rb.height,
+                    );
                     if (minArea > 0 && (interArea / minArea) >= 0.75) {
                       if (candidate.text.length > s.text.length) {
                         spans[i] = candidate;
@@ -288,9 +348,15 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         spans.add(candidate);
       }
 
-      for (final hl in analysis.highlights) {
+      for (
+        var highlightIndex = 0;
+        highlightIndex < highlights.length;
+        highlightIndex++
+      ) {
+        final hl = highlights[highlightIndex];
         final hlText = hl['text']?.toString().trim() ?? '';
         final category = hl['category']?.toString() ?? 'grammar';
+        final level = hl['level']?.toString() ?? 'B2';
         final type = hl['type']?.toString() ?? category.toUpperCase();
         final note = hl['note']?.toString() ?? '';
         final isPedagogical = hl['isPedagogical'] as bool? ?? false;
@@ -315,20 +381,20 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
 
         if (matches.isNotEmpty) {
           for (final m in matches) {
-            final matchedBoxes = <Rect>[];
-            for (
-              int ci = m.start;
-              ci < m.end && ci < snippetChars.length;
-              ci++
-            ) {
-              matchedBoxes.add(snippetChars[ci].normalizedRect);
-            }
+            final startOffset = _codePointOffsetAt(rawCharsText, m.start);
+            final endOffset = _codePointOffsetAt(rawCharsText, m.end);
+            final matchedBoxes = _charBoxRectsForCodePointRange(
+              snippetChars,
+              startOffset,
+              endOffset,
+            );
             if (matchedBoxes.isNotEmpty) {
               final lineRects = _groupCharBoxesIntoLines(matchedBoxes);
               addSpanSafely(
                 PdfDgnlHighlightSpan(
                   text: hlText,
                   category: category,
+                  level: level,
                   type: type,
                   note: note,
                   normalizedRects: lineRects,
@@ -339,8 +405,13 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                   isProperNoun: isProperNoun,
                   isNumber: isNumber,
                   lemma: lemma,
+                  sourceStyleId: hl['styleId']?.toString(),
+                  metadata: Map<String, dynamic>.from(
+                    hl['metadata'] as Map? ?? const {},
+                  ),
                 ),
               );
+              mappedHighlightIndexes.add(highlightIndex);
             }
           }
         } else {
@@ -349,16 +420,20 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
           int sIdx = 0;
           while ((sIdx = rawCharsLower.indexOf(hlLower, sIdx)) != -1) {
             final eIdx = sIdx + hlLower.length;
-            final matchedBoxes = <Rect>[];
-            for (int ci = sIdx; ci < eIdx && ci < snippetChars.length; ci++) {
-              matchedBoxes.add(snippetChars[ci].normalizedRect);
-            }
+            final startOffset = _codePointOffsetAt(rawCharsLower, sIdx);
+            final endOffset = _codePointOffsetAt(rawCharsLower, eIdx);
+            final matchedBoxes = _charBoxRectsForCodePointRange(
+              snippetChars,
+              startOffset,
+              endOffset,
+            );
             if (matchedBoxes.isNotEmpty) {
               final lineRects = _groupCharBoxesIntoLines(matchedBoxes);
               addSpanSafely(
                 PdfDgnlHighlightSpan(
                   text: hlText,
                   category: category,
+                  level: level,
                   type: type,
                   note: note,
                   normalizedRects: lineRects,
@@ -369,8 +444,13 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                   isProperNoun: isProperNoun,
                   isNumber: isNumber,
                   lemma: lemma,
+                  sourceStyleId: hl['styleId']?.toString(),
+                  metadata: Map<String, dynamic>.from(
+                    hl['metadata'] as Map? ?? const {},
+                  ),
                 ),
               );
+              mappedHighlightIndexes.add(highlightIndex);
             }
             sIdx = eIdx;
           }
@@ -378,7 +458,8 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       }
 
       // 3. Fallback: If snippet character matching had gaps or missed spans, search page fullText
-      if (spans.isEmpty && studio.pdfViewerController != null) {
+      if (mappedHighlightIndexes.length < highlights.length &&
+          studio.pdfViewerController != null) {
         try {
           final ctrl = studio.pdfViewerController;
           if (ctrl.isReady && pdfResult.pageNumber <= ctrl.pages.length) {
@@ -387,10 +468,17 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
             if (rawPageText != null && rawPageText.fullText.isNotEmpty) {
               final pageFull = rawPageText.fullText;
               final pageFullLower = pageFull.toLowerCase();
-              for (final hl in analysis.highlights) {
+              for (
+                var highlightIndex = 0;
+                highlightIndex < highlights.length;
+                highlightIndex++
+              ) {
+                if (mappedHighlightIndexes.contains(highlightIndex)) continue;
+                final hl = highlights[highlightIndex];
                 final hlText = hl['text']?.toString().trim() ?? '';
                 if (hlText.isEmpty) continue;
                 final category = hl['category']?.toString() ?? 'grammar';
+                final level = hl['level']?.toString() ?? 'B2';
                 final type = hl['type']?.toString() ?? category.toUpperCase();
                 final note = hl['note']?.toString() ?? '';
                 final isPedagogical = hl['isPedagogical'] as bool? ?? false;
@@ -407,9 +495,17 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                     -1) {
                   final endIdx = findIdx + hlLower.length;
                   final matchedBoxes = <Rect>[];
+                  final startCodePoint = _codePointOffsetAt(
+                    pageFullLower,
+                    findIdx,
+                  );
+                  final endCodePoint = _codePointOffsetAt(
+                    pageFullLower,
+                    endIdx,
+                  );
                   for (
-                    int ci = findIdx;
-                    ci < endIdx && ci < rawPageText.charRects.length;
+                    int ci = startCodePoint;
+                    ci < endCodePoint && ci < rawPageText.charRects.length;
                     ci++
                   ) {
                     final r = rawPageText.charRects[ci];
@@ -424,10 +520,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                   }
                   if (matchedBoxes.isNotEmpty) {
                     final lineRects = _groupCharBoxesIntoLines(matchedBoxes);
-                    spans.add(
+                    addSpanSafely(
                       PdfDgnlHighlightSpan(
                         text: hlText,
                         category: category,
+                        level: level,
                         type: type,
                         note: note,
                         normalizedRects: lineRects,
@@ -438,8 +535,13 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                         isProperNoun: isProperNoun,
                         isNumber: isNumber,
                         lemma: lemma,
+                        sourceStyleId: hl['styleId']?.toString(),
+                        metadata: Map<String, dynamic>.from(
+                          hl['metadata'] as Map? ?? const {},
+                        ),
                       ),
                     );
+                    mappedHighlightIndexes.add(highlightIndex);
                   }
                   findIdx = endIdx;
                 }
@@ -460,22 +562,16 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
         rawText: cleanText,
         normalizedBounds: pdfResult.normalizedBounds,
         spans: spans,
-        metrics: {
-          'total_words': analysis.totalWords,
-          'content_words': analysis.contentWords,
-          'lexical_density': analysis.lexicalDensity,
-          'evaluation': analysis.evaluation,
-          'status': analysis.status,
-        },
-        clozeQuestions: clozeQuestions,
+        metrics: rawAnalysis,
+        analysisResult: analysis,
+        analysisPluginId: analysisPluginId,
       );
 
       // 1. First add passage to PDF stage so in-document highlight appears immediately
-      if (!stillOwnsSnip()) return;
       studio.addPdfDgnlPassage(passage);
 
       // 2. Synchronize to English assistant plugin and cleanly close snipping
-      studio.sendSnippetToPlugin(cleanText, target: target);
+      studio.sendSnippetToPlugin(cleanText, analysis: analysis);
       studio.stopSnipping();
 
       if (mounted) {
@@ -491,7 +587,7 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Đã highlight trực tiếp trên đề (Trang ${pdfResult.pageNumber}): ${spans.length} điểm Ngữ pháp, Collocations!',
+                    'Đã phân tích CEFR, ngữ pháp và collocation trên đề (Trang ${pdfResult.pageNumber}).',
                     style: const TextStyle(fontSize: 12.5),
                   ),
                 ),
@@ -524,11 +620,11 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       extracted = matchedTexts.join(' ');
     }
 
-    if (!stillOwnsSnip()) return;
+    if (!mounted) return;
 
     if (extracted.trim().isNotEmpty) {
       final cleanText = extracted.trim();
-      studio.sendSnippetToPlugin(cleanText, target: target);
+      studio.sendSnippetToPlugin(cleanText);
       studio.stopSnipping();
 
       messenger?.showSnackBar(
@@ -558,9 +654,9 @@ class _RegionSnippingOverlayState extends State<RegionSnippingOverlay> {
       messenger?.showSnackBar(
         const SnackBar(
           content: Text(
-            'Không tìm thấy văn bản trong vùng khoanh. Vui lòng kéo chọn lại!',
+            'Vùng chọn không có lớp văn bản nên không thể quét nội dung này.',
           ),
-          duration: Duration(seconds: 2),
+          duration: Duration(seconds: 5),
         ),
       );
     }

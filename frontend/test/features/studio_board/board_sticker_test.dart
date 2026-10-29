@@ -10,7 +10,7 @@ void main() {
     test('BoardSticker model serialization and rotation deserialization', () {
       final sticker = BoardSticker(
         id: 'sticker-1',
-        type: 'english_svo_card',
+        type: 'english_quick_input_card',
         normalizedRect: const Rect.fromLTWH(0.1, 0.2, 0.4, 0.15),
         rawText: 'The teacher explained the lesson',
         rotation: 0.25,
@@ -21,17 +21,21 @@ void main() {
           {'text': 'the', 'role': 'OTHER', 'pos': 'DET', 'dep': 'det'},
           {'text': 'lesson', 'role': 'OBJECT', 'pos': 'NOUN', 'dep': 'dobj'},
         ],
-        issues: ['⚠️ Watch verb tense agreement'],
       );
 
       final json = sticker.toJson();
       expect(json['id'], 'sticker-1');
-      expect(json['type'], 'english_svo_card');
+      expect(json['type'], 'english_quick_input_card');
       expect(json['rect'], [0.1, 0.2, 0.4, 0.15]);
       expect(json['rawText'], 'The teacher explained the lesson');
       expect(json['rotation'], 0.25);
-      expect((json['tokens'] as List).length, 5);
-      expect((json['issues'] as List).length, 1);
+      expect(json['tokens'], [
+        {'text': 'The'},
+        {'text': 'teacher'},
+        {'text': 'explained'},
+        {'text': 'the'},
+        {'text': 'lesson'},
+      ]);
 
       final restored = BoardSticker.fromJson(json);
       expect(restored.id, sticker.id);
@@ -42,75 +46,76 @@ void main() {
       expect(restored.normalizedRect.height, closeTo(0.15, 0.001));
       expect(restored.rotation, closeTo(0.25, 0.001));
       expect(restored.tokens.length, 5);
-      expect(restored.issues.first, '⚠️ Watch verb tense agreement');
     });
 
-    test('StudioState manages stickers and Canva selection state correctly', () {
-      final studio = StudioState()..loading = false;
-      expect(studio.currentStickers, isEmpty);
-      expect(studio.selectedStickerId, isNull);
+    test(
+      'StudioState manages stickers and Canva selection state correctly',
+      () {
+        final studio = StudioState()..loading = false;
+        expect(studio.currentStickers, isEmpty);
+        expect(studio.selectedStickerId, isNull);
 
-      final sticker1 = BoardSticker(
-        id: 's1',
-        type: 'english_svo_card',
-        normalizedRect: const Rect.fromLTWH(0.2, 0.2, 0.3, 0.2),
-        rawText: 'She sings',
-        tokens: [
-          {'text': 'She', 'role': 'SUBJECT'},
-          {'text': 'sings', 'role': 'VERB'},
-        ],
-      );
+        final sticker1 = BoardSticker(
+          id: 's1',
+          type: 'english_quick_input_card',
+          normalizedRect: const Rect.fromLTWH(0.2, 0.2, 0.3, 0.2),
+          rawText: 'She sings',
+          tokens: [
+            {'text': 'She', 'role': 'SUBJECT'},
+            {'text': 'sings', 'role': 'VERB'},
+          ],
+        );
 
-      studio.addSticker(sticker1);
-      expect(studio.currentStickers.length, 1);
-      expect(studio.currentStickers.first.id, 's1');
-      expect(studio.selectedStickerId, 's1'); // auto-selected on add
+        studio.addSticker(sticker1);
+        expect(studio.currentStickers.length, 1);
+        expect(studio.currentStickers.first.id, 's1');
+        expect(studio.selectedStickerId, 's1'); // auto-selected on add
 
-      // Test deselect and select
-      studio.selectSticker(null);
-      expect(studio.selectedStickerId, isNull);
+        // Test deselect and select
+        studio.selectSticker(null);
+        expect(studio.selectedStickerId, isNull);
 
-      studio.selectSticker('s1');
-      expect(studio.selectedStickerId, 's1');
+        studio.selectSticker('s1');
+        expect(studio.selectedStickerId, 's1');
 
-      // Change page to page 1
-      studio.addPage('Trang 2');
-      expect(studio.page, 1);
-      expect(studio.currentStickers, isEmpty);
+        // Change page to page 1
+        studio.addPage('Trang 2');
+        expect(studio.page, 1);
+        expect(studio.currentStickers, isEmpty);
 
-      // Return to page 0
-      studio.setPage(0);
-      expect(studio.currentStickers.length, 1);
-      expect(studio.currentStickers.first.id, 's1');
+        // Return to page 0
+        studio.setPage(0);
+        expect(studio.currentStickers.length, 1);
+        expect(studio.currentStickers.first.id, 's1');
 
-      // Update sticker position
-      studio.updateStickerRect('s1', const Rect.fromLTWH(0.3, 0.4, 0.3, 0.2));
-      expect(
-        studio.currentStickers.first.normalizedRect.left,
-        closeTo(0.3, 0.001),
-      );
+        // Update sticker position
+        studio.updateStickerRect('s1', const Rect.fromLTWH(0.3, 0.4, 0.3, 0.2));
+        expect(
+          studio.currentStickers.first.normalizedRect.left,
+          closeTo(0.3, 0.001),
+        );
 
-      // Remove sticker
-      studio.removeSticker('s1');
-      expect(studio.currentStickers, isEmpty);
-      expect(studio.selectedStickerId, isNull);
+        // Remove sticker
+        studio.removeSticker('s1');
+        expect(studio.currentStickers, isEmpty);
+        expect(studio.selectedStickerId, isNull);
 
-      studio.dispose();
-    });
+        studio.dispose();
+      },
+    );
 
     testWidgets(
-      'BoardStickerCard renders tokens, role badges, and triggers delete',
+      'BoardStickerCard renders unclassified text tokens and triggers delete',
       (tester) async {
         final sticker = BoardSticker(
           id: 's-widget',
-          type: 'english_svo_card',
+          type: 'english_quick_input_card',
           normalizedRect: const Rect.fromLTWH(0.1, 0.1, 0.4, 0.2),
           rawText: 'He runs',
           tokens: [
             {'text': 'He', 'role': 'SUBJECT'},
             {'text': 'runs', 'role': 'VERB'},
           ],
-          issues: ['⚠️ Simple present tense'],
         );
 
         bool deleted = false;
@@ -130,9 +135,8 @@ void main() {
 
         expect(find.text('He'), findsOneWidget);
         expect(find.text('runs'), findsOneWidget);
-        expect(find.text('S'), findsOneWidget);
-        expect(find.text('V'), findsOneWidget);
-        expect(find.textContaining('Simple present tense'), findsOneWidget);
+        expect(find.text('S'), findsNothing);
+        expect(find.text('V'), findsNothing);
 
         // Tap close / delete button
         await tester.tap(find.byIcon(Icons.close));
@@ -167,10 +171,7 @@ void main() {
           ),
         );
 
-        expect(
-          find.text('Bảng biến thiên: y = x³ - 3x + 1'),
-          findsOneWidget,
-        );
+        expect(find.text('Bảng biến thiên: y = x³ - 3x + 1'), findsOneWidget);
         expect(find.byType(SvgPicture), findsOneWidget);
       },
     );
@@ -270,5 +271,30 @@ void main() {
         expect(selected, isTrue);
       },
     );
+  });
+
+  test('legacy sticker parser metadata and grammar issues are discarded', () {
+    final restored = BoardSticker.fromJson({
+      'id': 'legacy-role-sticker',
+      'type': 'generic_card',
+      'rect': [0, 0, 1, 1],
+      'rawText': 'The teacher reads.',
+      'tokens': [
+        {
+          'text': 'teacher',
+          'role': 'SUBJECT',
+          'pos': 'NOUN',
+          'dep': 'nsubj',
+        },
+        {'text': 'reads', 'role': 'VERB', 'pos': 'VERB', 'dep': 'ROOT'},
+      ],
+      'issues': ['S-V-O sentence is correct'],
+    });
+
+    expect(restored.tokens, [
+      {'text': 'teacher'},
+      {'text': 'reads'},
+    ]);
+    expect(restored.toJson().containsKey('issues'), isFalse);
   });
 }

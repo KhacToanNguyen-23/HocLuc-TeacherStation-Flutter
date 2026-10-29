@@ -79,21 +79,32 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
 
             final editing = studio.editingSticker;
             if (editing != null) {
-              final editParams = <String, String>{
-                'editId': editing.id,
-              };
+              final editParams = <String, String>{'editId': editing.id};
               final meta = editing.metadata;
               if (meta != null) {
-                if (meta['formula'] != null) editParams['formula'] = meta['formula'].toString();
-                if (meta['a'] != null) editParams['a'] = meta['a'].toString();
-                if (meta['b'] != null) editParams['b'] = meta['b'].toString();
-                if (meta['view'] != null) editParams['view'] = meta['view'].toString();
+                if (meta['formula'] != null) {
+                  editParams['formula'] = meta['formula'].toString();
+                }
+                if (meta['a'] != null) {
+                  editParams['a'] = meta['a'].toString();
+                }
+                if (meta['b'] != null) {
+                  editParams['b'] = meta['b'].toString();
+                }
+                if (meta['view'] != null) {
+                  editParams['view'] = meta['view'].toString();
+                }
               } else if (editing.title != null) {
-                final clean = editing.title!.replaceAll(RegExp(r'^(Đồ thị:\s*|y\s*=\s*)'), '').trim();
+                final clean = editing.title!
+                    .replaceAll(RegExp(r'^(Đồ thị:\s*|y\s*=\s*)'), '')
+                    .trim();
                 if (clean.isNotEmpty) editParams['formula'] = clean;
               }
               final queryParts = editParams.entries
-                  .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+                  .map(
+                    (e) =>
+                        '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+                  )
                   .join('&');
               targetUrl = targetUrl.contains('?')
                   ? '$targetUrl&$queryParts'
@@ -101,7 +112,9 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
             }
 
             return FlatHost(
-              key: ValueKey('flat_host_${plugin.manifest.id}_${studio.editingSticker?.id ?? "default"}'),
+              key: ValueKey(
+                'flat_host_${plugin.manifest.id}_${studio.editingSticker?.id ?? "default"}',
+              ),
               url: targetUrl,
               transparentBackground: plugin.manifest.transparentBackground,
               glassPreset: studio.glassPreset,
@@ -127,8 +140,11 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
                     'stickerId': curEditing.id,
                     'title': curEditing.title,
                     'metadata': curEditing.metadata,
-                    'formula': curEditing.metadata?['formula'] ??
-                        curEditing.title?.replaceAll(RegExp(r'^(Đồ thị:\s*|y\s*=\s*)'), '').trim(),
+                    'formula':
+                        curEditing.metadata?['formula'] ??
+                        curEditing.title
+                            ?.replaceAll(RegExp(r'^(Đồ thị:\s*|y\s*=\s*)'), '')
+                            .trim(),
                     'a': curEditing.metadata?['a'],
                     'b': curEditing.metadata?['b'],
                     'view': curEditing.metadata?['view'],
@@ -137,14 +153,22 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
                     "window.__hocluc_load_edit && window.__hocluc_load_edit(${jsonEncode(editData)});",
                   );
                 }
-                studio.onSnippetCapturedForPlugin = (text, target) {
-                  sendJs(
-                    "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)});",
-                  );
-                };
+                studio.pluginBridge.registerSnippetReceiver(
+                  plugin.manifest.id,
+                  sendJs,
+                  (text, target, analysis) {
+                    sendJs(
+                      "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)}, ${jsonEncode(analysis)});",
+                    );
+                  },
+                );
               },
               onControllerDisposed: (sender) {
                 PluginEventHub.instance.unregister(plugin.manifest.id, sender);
+                studio.pluginBridge.unregisterSnippetReceiver(
+                  plugin.manifest.id,
+                  sender,
+                );
               },
             );
           },
@@ -163,8 +187,14 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
 
                 final maxSafeW = (availW - 48.0).clamp(400.0, 2000.0);
                 final maxSafeH = (availH - 64.0).clamp(300.0, 1400.0);
-                final dialogW = studio.pluginFloatingSize.width.clamp(400.0, maxSafeW);
-                final dialogH = studio.pluginFloatingSize.height.clamp(300.0, maxSafeH);
+                final dialogW = studio.pluginFloatingSize.width.clamp(
+                  400.0,
+                  maxSafeW,
+                );
+                final dialogH = studio.pluginFloatingSize.height.clamp(
+                  300.0,
+                  maxSafeH,
+                );
 
                 final centerLeft = (availW - dialogW) / 2.0;
                 final centerTop = (availH - dialogH) / 2.0;
@@ -177,9 +207,7 @@ class _FloatingPluginWindowState extends State<FloatingPluginWindow> {
                         key: const Key('modal_plugin_backdrop'),
                         behavior: HitTestBehavior.opaque,
                         onTap: studio.closeFloatingPlugin,
-                        child: Container(
-                          color: const Color(0x66000000),
-                        ),
+                        child: Container(color: const Color(0x66000000)),
                       ),
                     ),
                     // Fixed, dead-centered elevated modal dialog card

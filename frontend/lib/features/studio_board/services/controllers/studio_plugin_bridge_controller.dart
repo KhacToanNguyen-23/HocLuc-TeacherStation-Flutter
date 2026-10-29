@@ -23,7 +23,85 @@ class StudioPluginBridgeController extends ChangeNotifier {
   String snipTarget = 'dgnl';
   bool _wasFloatingBeforeSnip = false;
 
-  void Function(String text, String target)? onSnippetCapturedForPlugin;
+  void Function(String text, String target, Map<String, dynamic>? analysis)?
+  _onSnippetCapturedForPlugin;
+  final Map<String, _SnippetReceiver> _snippetReceivers = {};
+  final Map<String, _PendingPluginSnippet> _pendingPluginSnippets = {};
+  String? _pendingSnippetText;
+  String? _pendingSnippetTarget;
+  Map<String, dynamic>? _pendingSnippetAnalysis;
+
+  void Function(String text, String target, Map<String, dynamic>? analysis)?
+  get onSnippetCapturedForPlugin => _onSnippetCapturedForPlugin;
+
+  set onSnippetCapturedForPlugin(
+    void Function(String text, String target, Map<String, dynamic>? analysis)?
+    callback,
+  ) {
+    _onSnippetCapturedForPlugin = callback;
+    final text = _pendingSnippetText;
+    if (callback == null || text == null) return;
+
+    final target = _pendingSnippetTarget ?? 'dgnl';
+    final analysis = _pendingSnippetAnalysis;
+    _pendingSnippetText = null;
+    _pendingSnippetTarget = null;
+    _pendingSnippetAnalysis = null;
+    Future<void>.delayed(Duration.zero, () => callback(text, target, analysis));
+  }
+
+  void registerSnippetReceiver(
+    String pluginId,
+    Object viewToken,
+    void Function(String text, String target, Map<String, dynamic>? analysis)
+    callback,
+  ) {
+    _snippetReceivers[pluginId] = _SnippetReceiver(viewToken, callback);
+    final pending = _pendingPluginSnippets.remove(pluginId);
+    if (pending != null) {
+      Future<void>.delayed(
+        Duration.zero,
+        () => callback(pending.text, pending.target, pending.analysis),
+      );
+    }
+  }
+
+  void unregisterSnippetReceiver(String pluginId, Object viewToken) {
+    if (identical(_snippetReceivers[pluginId]?.viewToken, viewToken)) {
+      _snippetReceivers.remove(pluginId);
+    }
+  }
+
+  void sendSnippetToPlugin(
+    String text,
+    String target,
+    Map<String, dynamic>? analysis, {
+    String? pluginId,
+  }) {
+    final resolvedPluginId = pluginId ?? activePlugin?.id ?? floatingPlugin?.id;
+    if (resolvedPluginId != null) {
+      final receiver = _snippetReceivers[resolvedPluginId]?.callback;
+      if (receiver != null) {
+        receiver(text, target, analysis);
+      } else {
+        _pendingPluginSnippets[resolvedPluginId] = _PendingPluginSnippet(
+          text,
+          target,
+          analysis,
+        );
+      }
+      return;
+    }
+    final callback = _onSnippetCapturedForPlugin;
+    if (callback != null) {
+      callback(text, target, analysis);
+      return;
+    }
+    _pendingSnippetText = text;
+    _pendingSnippetTarget = target;
+    _pendingSnippetAnalysis = analysis;
+  }
+
   VoidCallback? onSaveHighlightedPdfRequested;
   VoidCallback? onApplyHighlightToPdfRequested;
 
@@ -143,4 +221,24 @@ class StudioPluginBridgeController extends ChangeNotifier {
     }
     notifyListeners();
   }
+}
+
+class _SnippetReceiver {
+  const _SnippetReceiver(this.viewToken, this.callback);
+
+  final Object viewToken;
+  final void Function(
+    String text,
+    String target,
+    Map<String, dynamic>? analysis,
+  )
+  callback;
+}
+
+class _PendingPluginSnippet {
+  const _PendingPluginSnippet(this.text, this.target, this.analysis);
+
+  final String text;
+  final String target;
+  final Map<String, dynamic>? analysis;
 }

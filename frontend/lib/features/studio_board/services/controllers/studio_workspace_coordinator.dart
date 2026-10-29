@@ -104,13 +104,14 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
     final rawTokens = cardData['tokens'] as List? ?? [];
     final tokens = rawTokens
         .map(
-          (t) =>
-              t is Map ? Map<String, dynamic>.from(t) : {'text': t.toString()},
+          (t) => t is Map
+              ? (Map<String, dynamic>.from(t)
+                  ..remove('role')
+                  ..remove('pos')
+                  ..remove('dep'))
+              : {'text': t.toString()},
         )
         .toList();
-
-    final rawIssues = cardData['issues'] as List? ?? [];
-    final issues = rawIssues.map((e) => e.toString()).toList();
 
     final sticker = BoardSticker(
       id:
@@ -120,7 +121,6 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
       normalizedRect: rect,
       rawText: cardData['rawText']?.toString() ?? '',
       tokens: tokens,
-      issues: issues,
     );
 
     canvas.addSticker(sticker);
@@ -270,6 +270,7 @@ class StudioWorkspaceCoordinator extends ChangeNotifier {
   /// Restores complete state from JSON representation.
   void restoreFromJson(Map<String, dynamic> json) {
     pdf.smartPenManager.resetSession(resetSavingDefault: true);
+    pdf.prepareForDocumentReplacement();
     pdf.pdfFilePath = null;
     pdf.pdfBytes = null;
     pdf.setPdfPage(1);

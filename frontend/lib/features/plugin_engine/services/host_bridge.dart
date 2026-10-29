@@ -558,20 +558,16 @@ class HostBridge {
         (innerData['text'] as String?) ??
         '';
 
-    final tokens =
-        (innerData['tokens'] as List?)
-            ?.map((t) => Map<String, dynamic>.from(t as Map))
+    final tokens = (innerData['tokens'] as List?)
+            ?.map((item) {
+              final token = Map<String, dynamic>.from(item as Map)
+                ..remove('role')
+                ..remove('pos')
+                ..remove('dep');
+              return token;
+            })
             .toList() ??
         const [];
-
-    List<String> issues = [];
-    if (innerData['issues'] is List) {
-      issues = (innerData['issues'] as List).map((e) => e.toString()).toList();
-    } else if (innerData['grammarIssue'] != null) {
-      issues = [innerData['grammarIssue'].toString()];
-    } else if (innerData['grammar_issue'] != null) {
-      issues = [innerData['grammar_issue'].toString()];
-    }
 
     final title = (innerData['title'] as String?)?.trim();
     final svgContent =
@@ -603,7 +599,6 @@ class HostBridge {
         imageBase64: imageBase64 ?? existing.imageBase64,
         rawText: rawText.isNotEmpty ? rawText : existing.rawText,
         tokens: tokens.isNotEmpty ? tokens : existing.tokens,
-        issues: issues.isNotEmpty ? issues : existing.issues,
         metadata: metadata ?? existing.metadata,
       );
       studio.updateSticker(updated);
@@ -643,7 +638,6 @@ class HostBridge {
         svgContent: svgContent,
         imageBase64: imageBase64,
         tokens: tokens,
-        issues: issues,
         metadata: metadata,
       );
       studio.addSticker(sticker);

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -295,7 +295,6 @@ void main() {
           normalizedBounds: const Rect.fromLTWH(0, 0, 1, 1),
           spans: spans,
           metrics: const {},
-          clozeQuestions: const [],
         );
 
         studio.addPdfDgnlPassage(passage);

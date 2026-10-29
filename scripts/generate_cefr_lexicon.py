@@ -519,7 +519,7 @@ def main(argv: list[str] | None = None, *, root_override: Path | None = None) ->
         "--output",
         type=Path,
         default=Path(
-            "frontend/lib/features/studio_board/services/profiler/"
+            "plugins/english_assistant/engine/dart/lib/src/profiler/"
             "generated_cefr_source_words.dart"
         ),
     )

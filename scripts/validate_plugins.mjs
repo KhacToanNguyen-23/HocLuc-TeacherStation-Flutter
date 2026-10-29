@@ -9,6 +9,7 @@ const rootDir = path.resolve(__dirname, '..');
 const pluginsDir = path.join(rootDir, 'plugins');
 
 const isFixMode = process.argv.includes('--fix');
+const sourceOnly = process.argv.includes('--source-only');
 
 const VALID_PLACEMENTS = new Set([
   'floating_window',
@@ -31,7 +32,12 @@ const FIXED_PORT_PATTERN = /(?:18888|\bport\s*[:=]\s*\d{2,5}\b|\|\|\s*['"]\d{2,5
 const IGNORED_DIRS = new Set([
   '__pycache__',
   '.venv',
+  '.dart_tool',
   'node_modules',
+  'build',
+  'coverage',
+  'test',
+  'tests',
   '.git',
 ]);
 
@@ -247,7 +253,7 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
   }
 
   // 7. Kiểm tra tệp .hlep và độ tươi (Freshness Check)
-  if (!fs.existsSync(hlepPath)) {
+  if (!sourceOnly && !fs.existsSync(hlepPath)) {
     errors.push({
       plugin: pluginName,
       code: 'MISSING_HLEP',
@@ -255,7 +261,7 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
       fix: `node scripts/package_plugin.mjs ${pluginName}`,
     });
     outOfSyncPlugins.add(pluginName);
-  } else {
+  } else if (!sourceOnly) {
     const files = getFilesRecursively(dirPath);
     let isOutOfSync = false;
     let mismatchPath = null;
@@ -316,7 +322,9 @@ function checkOrphanPackages(errors) {
 }
 
 function main() {
-  console.log('🔍 [Plugin Validator] Đang quét toàn bộ plugins và kiểm tra tính toàn vẹn...');
+  console.log(sourceOnly
+    ? '🔍 [Plugin Validator] Đang kiểm tra source plugin, bỏ qua freshness của archive...'
+    : '🔍 [Plugin Validator] Đang quét toàn bộ plugins và kiểm tra tính toàn vẹn...');
   const startTime = Date.now();
 
   const errors = [];

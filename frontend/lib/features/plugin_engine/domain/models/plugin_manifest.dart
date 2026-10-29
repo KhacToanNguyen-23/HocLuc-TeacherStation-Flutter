@@ -2,12 +2,14 @@ class PluginBackend {
   const PluginBackend({
     this.type = 'python',
     this.entry,
+    this.developmentEntry,
     this.port,
     this.healthEndpoint,
   });
 
   final String type;
   final String? entry;
+  final String? developmentEntry;
   final int? port;
   final String? healthEndpoint;
 
@@ -15,6 +17,7 @@ class PluginBackend {
     return PluginBackend(
       type: json['type'] as String? ?? 'python',
       entry: json['entry'] as String? ?? json['executable'] as String?,
+      developmentEntry: json['development_entry'] as String?,
       port: (json['port'] as num?)?.toInt(),
       healthEndpoint: json['health_endpoint'] as String?,
     );
@@ -171,8 +174,7 @@ class PluginManifest {
         json['resizable'] as bool? ?? ui['resizable'] as bool? ?? true;
     final frameless =
         json['frameless'] as bool? ?? ui['frameless'] as bool? ?? false;
-    final movable =
-        json['movable'] as bool? ?? ui['movable'] as bool? ?? true;
+    final movable = json['movable'] as bool? ?? ui['movable'] as bool? ?? true;
     final injectSdk =
         json['inject_sdk'] as bool? ?? ui['inject_sdk'] as bool? ?? true;
     final transparentBackground = ui['transparent_background'] == true;
@@ -255,6 +257,8 @@ class PluginManifest {
       'has_sidecar': hasSidecar,
       'executable': backendExecutable,
       'port': backendPort,
+      if (backend?.developmentEntry != null)
+        'development_entry': backend!.developmentEntry,
     },
   };
 }

@@ -57,7 +57,8 @@ class StudioScreen extends StatefulWidget {
   State<StudioScreen> createState() => _StudioScreenState();
 }
 
-class _StudioScreenState extends State<StudioScreen> {
+class _StudioScreenState extends State<StudioScreen>
+    with WidgetsBindingObserver {
   late final StudioState studio;
   late final StudioTutorSession _tutorSession;
   int _inspectorInitialTab = 0;
@@ -79,6 +80,7 @@ class _StudioScreenState extends State<StudioScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentPlanningId = widget.planningId;
     PluginManager().init();
     studio = widget.initialState ?? StudioState();
@@ -107,6 +109,16 @@ class _StudioScreenState extends State<StudioScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_openTeachingRoom());
       });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      unawaited(studio.pdf.flushPendingAnnotationPersistence());
     }
   }
 
@@ -396,6 +408,7 @@ class _StudioScreenState extends State<StudioScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     MeetAutomationService().removeListener(_onMeetChanged);
     _sessionApi.dispose();
     if (widget.teachingTarget == null) {

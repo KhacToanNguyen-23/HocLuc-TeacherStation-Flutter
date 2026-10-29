@@ -263,7 +263,6 @@ class _StrokeCanvasState extends State<StrokeCanvas> {
                       }
                       final norm = normalized(e.localPosition);
                       if (capturesBoardInput) {
-                        widget.studio.analyzeHandwritingAt(norm);
                         return;
                       }
                       if (widget.studio.tool == 'laser') {
@@ -400,7 +399,8 @@ class CommittedStrokesPainter extends CustomPainter {
       if (stroke.points.isEmpty && stroke.rect == null) continue;
 
       final isHighlight = stroke.isHighlighter || stroke.rect != null;
-      final opacity = stroke.opacity ??
+      final opacity =
+          stroke.opacity ??
           (stroke.isHollow
               ? 0.85
               : (stroke.color.a < 1.0

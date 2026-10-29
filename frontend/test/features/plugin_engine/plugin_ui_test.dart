@@ -57,7 +57,6 @@ void main() {
             {'text': 'love', 'role': 'VERB'},
             {'text': 'coding', 'role': 'OBJECT'},
           ],
-          'issues': ['⚠️ Great sentence!'],
         },
       });
 
@@ -65,7 +64,7 @@ void main() {
       final sticker = studio.currentStickers.first;
       expect(sticker.rawText, 'I love coding');
       expect(sticker.tokens.length, 3);
-      expect(sticker.issues.first, '⚠️ Great sentence!');
+      expect(sticker.tokens.every((token) => !token.containsKey('role')), isTrue);
 
       // Close plugin
       studio.closePlugin();
@@ -123,4 +122,3 @@ void main() {
     });
   });
 }
-

@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_storage_service.dart';
+import 'package:teaching_companion/features/studio_board/presentation/widgets/pdf_annotation_save_indicator.dart';
 import 'package:teaching_companion/features/studio_board/services/controllers/pdf_smart_pen_controller.dart';
 
 class _MockBuildContext implements BuildContext {
@@ -27,6 +29,107 @@ class _DelayedAnnotationStorage extends PdfAnnotationStorageService {
   }) => loads
       .putIfAbsent(filePath!, Completer<PdfAnnotationLayerData?>.new)
       .future;
+}
+
+class _CountingAnnotationStorage extends PdfAnnotationStorageService {
+  int identityComputations = 0;
+  int saveCalls = 0;
+  bool saveResult = true;
+  Completer<void>? saveStarted;
+  Completer<void>? releaseSave;
+  final List<Map<int, List<BoardStroke>>> savedSnapshots = [];
+  final List<String> savedDocumentIds = [];
+  final List<String?> savedFilePaths = [];
+
+  @override
+  Future<String> computeDocumentId({
+    String? filePath,
+    Uint8List? bytes,
+    String? contentSha256,
+    int? contentLength,
+    String? operationId,
+  }) async {
+    identityComputations++;
+    return 'test-document-$identityComputations';
+  }
+
+  @override
+  Future<PdfAnnotationLayerData?> loadAnnotations({
+    String? filePath,
+    Uint8List? bytes,
+    String? documentId,
+  }) async => null;
+
+  @override
+  Future<bool> saveAnnotations({
+    required String documentId,
+    String? filePath,
+    required Map<int, List<BoardStroke>> annotations,
+    bool highlightsVisible = true,
+    String? operationId,
+    int? pdfBytesLength,
+  }) async {
+    saveCalls++;
+    savedDocumentIds.add(documentId);
+    savedFilePaths.add(filePath);
+    savedSnapshots.add({
+      for (final entry in annotations.entries)
+        entry.key: List<BoardStroke>.of(entry.value),
+    });
+    if (saveStarted != null && !saveStarted!.isCompleted) {
+      saveStarted!.complete();
+    }
+    await releaseSave?.future;
+    return saveResult;
+  }
+}
+
+class _MeasuredAnnotationStorage extends PdfAnnotationStorageService {
+  _MeasuredAnnotationStorage(Directory directory)
+    : super(customStorageDirectory: directory);
+
+  int identityComputations = 0;
+  int saveCalls = 0;
+  int reusedContentFingerprints = 0;
+
+  @override
+  Future<String> computeDocumentId({
+    String? filePath,
+    Uint8List? bytes,
+    String? contentSha256,
+    int? contentLength,
+    String? operationId,
+  }) {
+    identityComputations++;
+    if (contentSha256 != null) reusedContentFingerprints++;
+    return super.computeDocumentId(
+      filePath: filePath,
+      bytes: bytes,
+      contentSha256: contentSha256,
+      contentLength: contentLength,
+      operationId: operationId,
+    );
+  }
+
+  @override
+  Future<bool> saveAnnotations({
+    required String documentId,
+    String? filePath,
+    required Map<int, List<BoardStroke>> annotations,
+    bool highlightsVisible = true,
+    String? operationId,
+    int? pdfBytesLength,
+  }) {
+    saveCalls++;
+    return super.saveAnnotations(
+      documentId: documentId,
+      filePath: filePath,
+      annotations: annotations,
+      highlightsVisible: highlightsVisible,
+      operationId: operationId,
+      pdfBytesLength: pdfBytesLength,
+    );
+  }
 }
 
 void main() {
@@ -62,10 +165,406 @@ void main() {
     return bytes;
   }
 
+  group('PDF highlight batch persistence', () {
+    PdfSmartPenController createController(_CountingAnnotationStorage storage) {
+      final controller = PdfSmartPenController(
+        storageServiceFactory: () => storage,
+      );
+      controller.setPdfFile('batch-test.pdf', Uint8List.fromList([1, 2, 3, 4]));
+      return controller;
+    }
+
+    List<BoardStroke> createHighlights(int count, {int startAt = 0}) => [
+      for (var index = startAt; index < startAt + count; index++)
+        BoardStroke(
+          const Color(0xff22c55e),
+          20,
+          [Offset(index / 1000, 0.1), Offset(index / 1000 + 0.01, 0.1)],
+          id: 'highlight-$index',
+          rect: Rect.fromLTWH(index / 1000, 0.1, 0.01, 0.02),
+          category: 'vocabulary',
+        ),
+    ];
+
+    test(
+      'one batch persists once and is undone/redone as one action',
+      () async {
+        final storage = _CountingAnnotationStorage();
+        final controller = createController(storage);
+        addTearDown(controller.dispose);
+        await controller.restorePersistentAnnotations();
+
+        var notifications = 0;
+        controller.addListener(() => notifications++);
+        final highlights = createHighlights(48);
+        final fingerprintCountBeforeBatch =
+            controller.contentFingerprintComputations;
+        final stopwatch = Stopwatch()..start();
+        final saved = await controller.recordAnnotationsAdded({1: highlights});
+        stopwatch.stop();
+
+        expect(saved, isTrue);
+        expect(controller.pdfAnnotations[1], hasLength(48));
+        expect(controller.canUndoAnnotation, isTrue);
+        expect(controller.isPersistingAnnotations, isFalse);
+        expect(storage.saveCalls, 1);
+        expect(storage.identityComputations, 1);
+        expect(
+          controller.contentFingerprintComputations,
+          fingerprintCountBeforeBatch,
+        );
+        expect(notifications, 2); // batch commit and persistence completion
+        debugPrint(
+          'PDF highlight batch: 48 annotations, '
+          '${storage.identityComputations} document-id computations, '
+          '${storage.saveCalls} persistence operations, '
+          '0 full-PDF hashes during batch, '
+          '${stopwatch.elapsedMicroseconds / 1000} ms.',
+        );
+
+        // An accidental duplicate submission is idempotent and adds no history.
+        expect(
+          await controller.recordAnnotationsAdded({1: highlights}),
+          isTrue,
+        );
+        expect(storage.saveCalls, 1);
+        expect(controller.pdfAnnotations[1], hasLength(48));
+
+        expect(controller.undoAnnotation(), isTrue);
+        expect(controller.pdfAnnotations[1], isEmpty);
+        await controller.flushPendingAnnotationPersistence();
+        expect(controller.redoAnnotation(), isTrue);
+        expect(controller.pdfAnnotations[1], hasLength(48));
+        await controller.flushPendingAnnotationPersistence();
+      },
+    );
+
+    test('rapid pending saves coalesce to the latest snapshot', () async {
+      final storage = _CountingAnnotationStorage();
+      final controller = createController(storage);
+      addTearDown(controller.dispose);
+      await controller.restorePersistentAnnotations();
+
+      final writes = [
+        controller.savePersistentAnnotations(),
+        controller.savePersistentAnnotations(),
+        controller.savePersistentAnnotations(),
+      ];
+      expect(await Future.wait(writes), everyElement(isTrue));
+      expect(storage.saveCalls, 1);
+    });
+
+    test(
+      'several rapid batches persist their combined latest state once',
+      () async {
+        final storage = _CountingAnnotationStorage();
+        final controller = createController(storage);
+        addTearDown(controller.dispose);
+        await controller.restorePersistentAnnotations();
+
+        final first = controller.recordAnnotationsAdded({
+          1: createHighlights(2, startAt: 0),
+        });
+        final second = controller.recordAnnotationsAdded({
+          1: createHighlights(2, startAt: 2),
+        });
+        final third = controller.recordAnnotationsAdded({
+          2: createHighlights(1, startAt: 4),
+        });
+
+        expect(await Future.wait([first, second, third]), everyElement(isTrue));
+        expect(storage.saveCalls, 1);
+        expect(controller.pdfAnnotations[1], hasLength(4));
+        expect(controller.pdfAnnotations[2], hasLength(1));
+        expect(storage.savedSnapshots.single[1], hasLength(4));
+        expect(storage.savedSnapshots.single[2], hasLength(1));
+      },
+    );
+
+    test(
+      'representative batch uses one real storage write and cached identity',
+      () async {
+        final representativePdf = File(
+          '${tempDir.path}${Platform.pathSeparator}representative.pdf',
+        );
+        final representativeBytes = Uint8List(4472975)
+          ..fillRange(0, 4472975, 7);
+        await representativePdf.writeAsBytes(representativeBytes);
+
+        // Reproduce the previous per-annotation persistence pattern: 48
+        // annotation commits plus the exporter's final save, each recalculating
+        // the content identity and writing both destinations.
+        final legacyDirectory = Directory(
+          '${tempDir.path}${Platform.pathSeparator}legacy',
+        )..createSync();
+        final legacyPdf = File(
+          '${legacyDirectory.path}${Platform.pathSeparator}representative.pdf',
+        );
+        await legacyPdf.writeAsBytes(representativeBytes);
+        final legacyStorage = PdfAnnotationStorageService(
+          customStorageDirectory: legacyDirectory,
+        );
+        final priorDebugPrint = debugPrint;
+        final legacyTimer = Stopwatch()..start();
+        var legacyIdentityComputations = 0;
+        var legacyWriteOperations = 0;
+        debugPrint = (String? message, {int? wrapWidth}) {};
+        try {
+          for (var count = 1; count <= 48; count++) {
+            final documentId = await legacyStorage.computeDocumentId(
+              filePath: legacyPdf.path,
+              bytes: representativeBytes,
+            );
+            legacyIdentityComputations++;
+            final saved = await legacyStorage.saveAnnotations(
+              documentId: documentId,
+              filePath: legacyPdf.path,
+              annotations: {1: createHighlights(count)},
+              pdfBytesLength: representativeBytes.length,
+            );
+            expect(saved, isTrue);
+            legacyWriteOperations++;
+          }
+          final finalDocumentId = await legacyStorage.computeDocumentId(
+            filePath: legacyPdf.path,
+            bytes: representativeBytes,
+          );
+          legacyIdentityComputations++;
+          expect(
+            await legacyStorage.saveAnnotations(
+              documentId: finalDocumentId,
+              filePath: legacyPdf.path,
+              annotations: {1: createHighlights(48)},
+              pdfBytesLength: representativeBytes.length,
+            ),
+            isTrue,
+          );
+          legacyWriteOperations++;
+        } finally {
+          legacyTimer.stop();
+          debugPrint = priorDebugPrint;
+        }
+
+        final storage = _MeasuredAnnotationStorage(tempDir);
+        final controller = PdfSmartPenController(
+          storageServiceFactory: () => storage,
+        );
+        addTearDown(controller.dispose);
+        controller.setPdfFile(representativePdf.path, representativeBytes);
+        await controller.restorePersistentAnnotations();
+        final fingerprintCountBeforeBatch =
+            controller.contentFingerprintComputations;
+
+        final stopwatch = Stopwatch()..start();
+        final saved = await controller.recordAnnotationsAdded({
+          1: createHighlights(48),
+        });
+        stopwatch.stop();
+
+        expect(saved, isTrue);
+        expect(storage.saveCalls, 1);
+        expect(storage.identityComputations, 1);
+        expect(storage.reusedContentFingerprints, 1);
+        expect(
+          controller.contentFingerprintComputations,
+          fingerprintCountBeforeBatch,
+        );
+        expect(await File('${representativePdf.path}.hlann').exists(), isTrue);
+        expect(
+          tempDir.listSync().whereType<File>().where(
+            (file) => file.path.endsWith('.json'),
+          ),
+          hasLength(1),
+        );
+        debugPrint(
+          'Synthetic previous path: 48 annotations, '
+          '$legacyIdentityComputations full-PDF identity computations, '
+          '$legacyWriteOperations app-data+sidecar writes, '
+          '${legacyTimer.elapsedMicroseconds / 1000} ms.\n'
+          'Optimized path: 48 annotations, '
+          '${storage.identityComputations} identity computations '
+          '(${storage.reusedContentFingerprints} reused content fingerprint), '
+          '${storage.saveCalls} disk write operation, '
+          '0 full-PDF hashes during batch, '
+          '${stopwatch.elapsedMicroseconds / 1000} ms.',
+        );
+      },
+    );
+
+    test('a commit during an in-flight save is persisted afterward', () async {
+      final storage = _CountingAnnotationStorage()
+        ..saveStarted = Completer<void>()
+        ..releaseSave = Completer<void>();
+      final controller = createController(storage);
+      addTearDown(controller.dispose);
+      await controller.restorePersistentAnnotations();
+
+      final firstSave = controller.savePersistentAnnotations();
+      await storage.saveStarted!.future;
+      final secondSave = controller.recordAnnotationsAdded({
+        1: createHighlights(1),
+      });
+      storage.releaseSave!.complete();
+
+      expect(await firstSave, isTrue);
+      expect(await secondSave, isTrue);
+      expect(storage.saveCalls, 2);
+      expect(storage.savedSnapshots.last[1], hasLength(1));
+      expect(controller.isPersistingAnnotations, isFalse);
+    });
+
+    test(
+      'a document switch keeps pending saves attached to their PDF',
+      () async {
+        final storage = _CountingAnnotationStorage()
+          ..saveStarted = Completer<void>()
+          ..releaseSave = Completer<void>();
+        final controller = createController(storage);
+        addTearDown(controller.dispose);
+        await controller.restorePersistentAnnotations();
+
+        final firstSave = controller.recordAnnotationsAdded({
+          1: createHighlights(2),
+        });
+        await storage.saveStarted!.future;
+
+        controller.setPdfFile(
+          'second-batch-test.pdf',
+          Uint8List.fromList([4, 5]),
+        );
+        await controller.restorePersistentAnnotations();
+        final secondSave = controller.recordAnnotationsAdded({
+          1: createHighlights(1, startAt: 3),
+        });
+        storage.releaseSave!.complete();
+
+        expect(await firstSave, isTrue);
+        expect(await secondSave, isTrue);
+        expect(storage.savedDocumentIds, [
+          'test-document-1',
+          'test-document-2',
+        ]);
+        expect(storage.savedFilePaths, [
+          'batch-test.pdf',
+          'second-batch-test.pdf',
+        ]);
+        expect(storage.savedSnapshots[0][1], hasLength(2));
+        expect(storage.savedSnapshots[1][1], hasLength(1));
+      },
+    );
+
+    test(
+      'document identity is cached and invalidated for new PDF bytes',
+      () async {
+        final storage = _CountingAnnotationStorage();
+        final controller = createController(storage);
+        addTearDown(controller.dispose);
+        await controller.restorePersistentAnnotations();
+        expect(storage.identityComputations, 1);
+
+        await controller.savePersistentAnnotations();
+        await controller.savePersistentAnnotations();
+        expect(storage.identityComputations, 1);
+
+        controller.updatePdfBytesInPlace(Uint8List.fromList([4, 3, 2, 1]));
+        await controller.savePersistentAnnotations();
+        expect(storage.identityComputations, 2);
+      },
+    );
+
+    test('failed saves remain in memory and can be retried', () async {
+      final storage = _CountingAnnotationStorage()..saveResult = false;
+      final controller = createController(storage);
+      addTearDown(controller.dispose);
+      await controller.restorePersistentAnnotations();
+
+      expect(
+        await controller.recordAnnotationsAdded({1: createHighlights(2)}),
+        isFalse,
+      );
+      expect(controller.pdfAnnotations[1], hasLength(2));
+      expect(controller.annotationPersistenceError, isNotNull);
+      expect(controller.isPersistingAnnotations, isFalse);
+
+      storage.saveResult = true;
+      expect(await controller.retryAnnotationPersistence(), isTrue);
+      expect(controller.annotationPersistenceError, isNull);
+      expect(controller.pdfAnnotations[1], hasLength(2));
+      expect(controller.isPersistingAnnotations, isFalse);
+    });
+  });
+
+  testWidgets(
+    'PDF save indicator is not queued and an older save cannot clear a newer one',
+    (tester) async {
+      PdfAnnotationSaveIndicatorToken? firstOperation;
+      PdfAnnotationSaveIndicatorToken? secondOperation;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        duration: Duration(days: 1),
+                        content: Text('Unrelated notification'),
+                      ),
+                    ),
+                    child: const Text('Show unrelated'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => firstOperation =
+                        PdfAnnotationSaveIndicator.show(context, 'save-old'),
+                    child: const Text('Show old save'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => secondOperation =
+                        PdfAnnotationSaveIndicator.show(context, 'save-new'),
+                    child: const Text('Show new save'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () =>
+                        PdfAnnotationSaveIndicator.hide(firstOperation),
+                    child: const Text('Complete old save'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () =>
+                        PdfAnnotationSaveIndicator.hide(secondOperation),
+                    child: const Text('Complete new save'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show unrelated'));
+      await tester.pump();
+      await tester.tap(find.text('Show old save'));
+      await tester.pump();
+      expect(find.text('Đang lưu các điểm highlight…'), findsOneWidget);
+
+      await tester.tap(find.text('Show new save'));
+      await tester.pump();
+      await tester.tap(find.text('Complete old save'));
+      await tester.pump();
+      expect(find.text('Đang lưu các điểm highlight…'), findsOneWidget);
+      expect(find.text('Unrelated notification'), findsOneWidget);
+
+      await tester.tap(find.text('Complete new save'));
+      await tester.pump();
+      expect(find.text('Đang lưu các điểm highlight…'), findsNothing);
+      expect(find.text('Unrelated notification'), findsOneWidget);
+    },
+  );
+
   group('A. Non-Destructive Protection & Source PDF Integrity', () {
     test(
       'undo and redo follow the order of PDF highlights and board strokes',
-      () {
+      () async {
         final studio = StudioState()..loading = false;
         addTearDown(studio.dispose);
         studio.setPdfFile('history-order.pdf', Uint8List.fromList([8, 4, 2]));
@@ -77,7 +576,6 @@ void main() {
           rect: const Rect.fromLTWH(0.1, 0.1, 0.2, 0.05),
           category: 'vocabulary',
         );
-        studio.pdfAnnotations.putIfAbsent(1, () => []).add(highlight);
         studio.pdf.recordAnnotationAdded(1, highlight);
         studio.startStroke(const Offset(0.4, 0.4));
         final boardStroke = studio.strokes.single;
@@ -96,6 +594,7 @@ void main() {
         expect(studio.pdfAnnotations[1], contains(highlight));
         studio.redo();
         expect(studio.strokes, contains(boardStroke));
+        await studio.pdf.flushPendingAnnotationPersistence();
       },
     );
 
@@ -162,7 +661,6 @@ void main() {
               ),
             ],
             metrics: const {},
-            clozeQuestions: const [],
           ),
         );
 
@@ -354,6 +852,26 @@ void main() {
         );
 
         expect(idA, isNot(equals(idB)));
+      },
+    );
+
+    test(
+      'cached content fingerprint preserves the existing document ID',
+      () async {
+        final bytes = Uint8List.fromList([3, 6, 9, 12]);
+        final fingerprint = sha256.convert(bytes).toString();
+        final directId = await storageService.computeDocumentId(
+          filePath: 'C:/docs/cached.pdf',
+          bytes: bytes,
+        );
+        final cachedId = await storageService.computeDocumentId(
+          filePath: 'C:/docs/cached.pdf',
+          bytes: bytes,
+          contentSha256: fingerprint,
+          contentLength: bytes.length,
+        );
+
+        expect(cachedId, directId);
       },
     );
 
