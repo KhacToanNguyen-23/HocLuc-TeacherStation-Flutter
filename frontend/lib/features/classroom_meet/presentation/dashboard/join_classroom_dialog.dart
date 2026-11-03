@@ -97,6 +97,14 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadii.panel),
+          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.slate900.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -108,7 +116,7 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: AppColors.sky50,
+                    color: AppColors.selected,
                     borderRadius: BorderRadius.circular(AppRadii.control),
                   ),
                   child: Center(
@@ -165,9 +173,9 @@ class _JoinClassroomDialogState extends State<JoinClassroomDialog> {
                   horizontal: 14,
                   vertical: 12,
                 ),
-                border: OutlineInputBorder(
+                enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.inputBorder),
+                  borderSide: const BorderSide(color: AppColors.surfaceBorder),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),

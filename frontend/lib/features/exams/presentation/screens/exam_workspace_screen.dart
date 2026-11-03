@@ -232,15 +232,40 @@ class _ExamWorkspaceScreenState extends State<ExamWorkspaceScreen> {
                       needsLogin
                           ? 'Đăng nhập lại để truy cập dữ liệu đề thi của bạn.'
                           : 'Chưa tải được dữ liệu. Bạn có thể thử lại hoặc trở về trang chủ.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: needsLogin ? reauthenticate : reload,
-                      child: Text(needsLogin ? 'Đăng nhập lại' : 'Thử lại'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Trở về app'),
+                    const SizedBox(height: 18),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.textMuted,
+                          ),
+                          child: const Text('Trở về app'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: needsLogin ? reauthenticate : reload,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.control,
+                              ),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(needsLogin ? 'Đăng nhập lại' : 'Thử lại'),
+                        ),
+                      ],
                     ),
                   ],
                 ),

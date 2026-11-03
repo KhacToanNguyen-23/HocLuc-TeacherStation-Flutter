@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "headword_target": {
+    "minimum": 8000,
+    "maximum": 10000
+  },
+  "recognized_unrated_file": "recognized_unrated.csv",
+  "legacy_curated_chunks_file": "data/vocabulary_sources/legacy_curated_chunks.dart",
+  "awl_counts": {
+    "headword_source_file": "plugins/english_assistant/engine/dart/lib/src/profiler/awl_word_list.dart",
+    "headword_symbol": "coxheadAwlSublists",
+    "family_forms_glob": "plugins/english_assistant/engine/dart/lib/src/profiler/awl_family_forms_part_*.dart"
+  },
+  "sources": [
+    {
+      "id": "cefr-j-vocabulary-profile-1.5",
+      "file": "cefrj-vocabulary-profile-1.5.csv",
+      "headword_column": "headword",
+      "pos_column": "pos",
+      "level_column": "CEFR",
+      "citation": "Tono, Y. (2013). CEFR-J Vocabulary Profile (Version 1.5). Tokyo University of Foreign Studies.",
+      "license": "Research and commercial use permitted at no charge with citation; copyright Tono Laboratory, TUFS.",
+      "url": "https://github.com/openlanguageprofiles/olp-en-cefrj"
+    },
+    {
+      "id": "octanove-vocabulary-profile-c1c2-1.0",
+      "file": "octanove-vocabulary-profile-c1c2-1.0.csv",
+      "headword_column": "headword",
+      "pos_column": "pos",
+      "level_column": "CEFR",
+      "citation": "Octanove Labs. (2016). Octanove Vocabulary Profile C1/C2 (Version 1.0).",
+      "license": "CC BY-SA 4.0; derived/redistributed data retains attribution and share-alike terms.",
+      "url": "https://creativecommons.org/licenses/by-sa/4.0/"
+    }
+  ]
+}

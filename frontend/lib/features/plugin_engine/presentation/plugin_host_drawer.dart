@@ -163,14 +163,22 @@ class PluginHostDrawer extends StatelessWidget {
           isPdfMode: studio.isPdfMode,
           sender: sendJs,
         );
-        studio.onSnippetCapturedForPlugin = (text, target) {
+        studio.pluginBridge.registerSnippetReceiver(plugin.manifest.id, sendJs, (
+          text,
+          target,
+          analysis,
+        ) {
           sendJs(
-            "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)});",
+            "window.onSnippetCaptured && window.onSnippetCaptured(${jsonEncode(text)}, ${jsonEncode(target)}, ${jsonEncode(analysis)});",
           );
-        };
+        });
       },
       onControllerDisposed: (sender) {
         PluginEventHub.instance.unregister(plugin.manifest.id, sender);
+        studio.pluginBridge.unregisterSnippetReceiver(
+          plugin.manifest.id,
+          sender,
+        );
       },
     );
   }

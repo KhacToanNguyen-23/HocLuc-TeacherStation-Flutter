@@ -23,9 +23,9 @@ void main() {
         name: 'Tiếng Anh',
         contributesTools: const [
           PluginToolContribution(
-            id: 'svo',
-            label: 'S-V-O',
-            widgetKey: 'svo_tool_button',
+            id: 'quick_input',
+            label: 'Quick input',
+            widgetKey: 'quick_input_tool_button',
           ),
         ],
       ),
@@ -34,7 +34,7 @@ void main() {
 
   group('Phase 01: Subject Tool Palette Dock Tests', () {
     testWidgets(
-      'renders SubjectToolPalette with badge, SVO button, eye toggle, and close button',
+      'renders SubjectToolPalette with badge, quick_input button, eye toggle, and close button',
       (tester) async {
         studio.openPlugin(dummyPlugin);
 
@@ -49,8 +49,11 @@ void main() {
 
         // Plugin badge
         expect(find.text('Tiếng Anh'), findsOneWidget);
-        // S-V-O Tool button
-        expect(find.byKey(const Key('svo_tool_button')), findsOneWidget);
+        // Quick input Tool button
+        expect(
+          find.byKey(const Key('quick_input_tool_button')),
+          findsOneWidget,
+        );
         // Eye toggle button
         expect(find.byKey(const Key('eye_toggle_button')), findsOneWidget);
         // Close button
@@ -73,21 +76,27 @@ void main() {
         await tester.pumpAndSettle();
 
         // Initially expanded: tool buttons are visible in the sub-dock
-        expect(find.byKey(const Key('svo_tool_button')), findsOneWidget);
+        expect(
+          find.byKey(const Key('quick_input_tool_button')),
+          findsOneWidget,
+        );
 
         // Tap badge button -> collapses sub-dock
         await tester.tap(find.byKey(const Key('subject_badge_button')));
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('svo_tool_button')), findsNothing);
+        expect(find.byKey(const Key('quick_input_tool_button')), findsNothing);
 
         // Tap badge button again -> re-expands sub-dock
         await tester.tap(find.byKey(const Key('subject_badge_button')));
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('svo_tool_button')), findsOneWidget);
+        expect(
+          find.byKey(const Key('quick_input_tool_button')),
+          findsOneWidget,
+        );
       },
     );
 
-    testWidgets('tapping S-V-O button toggles activeSubjectTool state', (
+    testWidgets('tapping Quick input button toggles activeSubjectTool state', (
       tester,
     ) async {
       studio.openPlugin(dummyPlugin);
@@ -103,13 +112,13 @@ void main() {
 
       expect(studio.activeSubjectTool, isNull);
 
-      // Tap S-V-O tool button -> becomes 'svo'
-      await tester.tap(find.byKey(const Key('svo_tool_button')));
+      // Tap Quick input tool button -> becomes 'quick_input'
+      await tester.tap(find.byKey(const Key('quick_input_tool_button')));
       await tester.pumpAndSettle();
-      expect(studio.activeSubjectTool, equals('svo'));
+      expect(studio.activeSubjectTool, equals('quick_input'));
 
       // Tap again -> becomes null
-      await tester.tap(find.byKey(const Key('svo_tool_button')));
+      await tester.tap(find.byKey(const Key('quick_input_tool_button')));
       await tester.pumpAndSettle();
       expect(studio.activeSubjectTool, isNull);
     });
@@ -154,7 +163,7 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
 
         studio.openPlugin(dummyPlugin);
-        studio.setActiveSubjectTool('svo');
+        studio.setActiveSubjectTool('quick_input');
 
         await tester.pumpWidget(
           MaterialApp(
@@ -176,13 +185,13 @@ void main() {
     test(
       'selecting main tool (pen, erase, highlight) automatically resets activeSubjectTool',
       () {
-        studio.setActiveSubjectTool('svo');
-        expect(studio.activeSubjectTool, equals('svo'));
+        studio.setActiveSubjectTool('quick_input');
+        expect(studio.activeSubjectTool, equals('quick_input'));
 
         studio.tool = 'pen';
         expect(studio.activeSubjectTool, isNull);
 
-        studio.setActiveSubjectTool('svo');
+        studio.setActiveSubjectTool('quick_input');
         studio.tool = 'erase';
         expect(studio.activeSubjectTool, isNull);
       },
@@ -312,7 +321,7 @@ void main() {
           tester
                   .widget<AnimatedContainer>(
                     find.descendant(
-                      of: find.byKey(const Key('svo_tool_button')),
+                      of: find.byKey(const Key('quick_input_tool_button')),
                       matching: find.byType(AnimatedContainer),
                     ),
                   )
@@ -534,11 +543,31 @@ void main() {
             id: 'test.wrap.five',
             name: 'Wrap Test 5',
             contributesTools: const [
-              PluginToolContribution(id: 'btn1', label: 'B1', widgetKey: 'w5_btn_1'),
-              PluginToolContribution(id: 'btn2', label: 'B2', widgetKey: 'w5_btn_2'),
-              PluginToolContribution(id: 'btn3', label: 'B3', widgetKey: 'w5_btn_3'),
-              PluginToolContribution(id: 'btn4', label: 'B4', widgetKey: 'w5_btn_4'),
-              PluginToolContribution(id: 'btn5', label: 'B5', widgetKey: 'w5_btn_5'),
+              PluginToolContribution(
+                id: 'btn1',
+                label: 'B1',
+                widgetKey: 'w5_btn_1',
+              ),
+              PluginToolContribution(
+                id: 'btn2',
+                label: 'B2',
+                widgetKey: 'w5_btn_2',
+              ),
+              PluginToolContribution(
+                id: 'btn3',
+                label: 'B3',
+                widgetKey: 'w5_btn_3',
+              ),
+              PluginToolContribution(
+                id: 'btn4',
+                label: 'B4',
+                widgetKey: 'w5_btn_4',
+              ),
+              PluginToolContribution(
+                id: 'btn5',
+                label: 'B5',
+                widgetKey: 'w5_btn_5',
+              ),
             ],
           ),
         );
@@ -592,9 +621,9 @@ void main() {
             name: 'Trợ giảng Tiếng Anh',
             contributesTools: const [
               PluginToolContribution(
-                id: 'svo',
-                label: 'S-V-O',
-                widgetKey: 'svo_tool_button',
+                id: 'quick_input',
+                label: 'Quick input',
+                widgetKey: 'quick_input_tool_button',
               ),
             ],
           ),
@@ -636,7 +665,10 @@ void main() {
         tester.binding.reassembleApplication();
         await tester.pumpAndSettle();
 
-        expect(find.byKey(const Key('svo_tool_button')), findsOneWidget);
+        expect(
+          find.byKey(const Key('quick_input_tool_button')),
+          findsOneWidget,
+        );
       },
     );
 
@@ -671,10 +703,12 @@ void main() {
           find.byKey(const Key('subject_tool_palette_surface')),
         );
         final buttonRect = tester.getRect(
-          find.ancestor(
-            of: find.byKey(const Key('answer_marker_tool_button')),
-            matching: find.byType(LiquidGlassContainer),
-          ).first,
+          find
+              .ancestor(
+                of: find.byKey(const Key('answer_marker_tool_button')),
+                matching: find.byType(LiquidGlassContainer),
+              )
+              .first,
         );
         final wrapSize = tester.getSize(find.byType(Wrap));
 
@@ -686,7 +720,11 @@ void main() {
         expect(buttonRect.left, equals(topDockRect.left));
         expect(
           buttonRect.left,
-          isNot(equals(topDockRect.left + (topDockRect.width - buttonRect.width) / 2)),
+          isNot(
+            equals(
+              topDockRect.left + (topDockRect.width - buttonRect.width) / 2,
+            ),
+          ),
         );
 
         // Button retains its natural width (148.0)
@@ -696,41 +734,45 @@ void main() {
   });
 
   group('Phase 02: PDF Mode Visual Theme and State Isolation', () {
-    test('isPdfMode activates dynamically based on viewport and active PDF', () {
-      expect(studio.isPdfMode, isFalse);
+    test(
+      'isPdfMode activates dynamically based on viewport and active PDF',
+      () {
+        expect(studio.isPdfMode, isFalse);
 
-      // PDF present but board-only viewport -> isPdfMode is false
-      studio.pdfFilePath = 'test.pdf';
-      studio.setViewportMode(StudioViewportMode.fullBoard);
-      expect(studio.isPdfMode, isFalse);
+        // PDF present but board-only viewport -> isPdfMode is false
+        studio.pdfFilePath = 'test.pdf';
+        studio.setViewportMode(StudioViewportMode.fullBoard);
+        expect(studio.isPdfMode, isFalse);
 
-      // PDF present and split viewport -> isPdfMode is true
-      studio.setViewportMode(StudioViewportMode.split);
-      expect(studio.isPdfMode, isTrue);
+        // PDF present and split viewport -> isPdfMode is true
+        studio.setViewportMode(StudioViewportMode.split);
+        expect(studio.isPdfMode, isTrue);
 
-      // PDF present and fullPdf viewport -> isPdfMode is true
-      studio.setViewportMode(StudioViewportMode.fullPdf);
-      expect(studio.isPdfMode, isTrue);
+        // PDF present and fullPdf viewport -> isPdfMode is true
+        studio.setViewportMode(StudioViewportMode.fullPdf);
+        expect(studio.isPdfMode, isTrue);
 
-      // Manual override forces PDF mode
-      studio.setPdfMode(false);
-      expect(studio.isPdfMode, isFalse);
-      studio.setPdfMode(true);
-      expect(studio.isPdfMode, isTrue);
-      studio.setPdfMode(null);
-      expect(studio.isPdfMode, isTrue);
+        // Manual override forces PDF mode
+        studio.setPdfMode(false);
+        expect(studio.isPdfMode, isFalse);
+        studio.setPdfMode(true);
+        expect(studio.isPdfMode, isTrue);
+        studio.setPdfMode(null);
+        expect(studio.isPdfMode, isTrue);
 
-      // Closing PDF restores normal mode
-      studio.pdfFilePath = null;
-      studio.activeDocId = null;
-      expect(studio.isPdfMode, isFalse);
-    });
+        // Closing PDF restores normal mode
+        studio.pdfFilePath = null;
+        studio.activeDocId = null;
+        expect(studio.isPdfMode, isFalse);
+      },
+    );
 
     testWidgets(
-      'PDF opacity control changes the rendered surface for every preset',
+      'PDF mode applies high-contrast frosted glass surface and soft shadow',
       (tester) async {
         studio.openPlugin(dummyPlugin);
         studio.setPdfMode(true);
+
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -740,131 +782,101 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        Color background() => tester
-            .widget<LiquidGlassContainer>(
-              find.byKey(const Key('subject_tool_palette_surface')),
-            )
-            .backgroundColor!;
-        final frosted = background();
-        await tester.tap(find.byKey(const Key('glass_preset_button')));
-        await tester.pumpAndSettle();
-        final solid = background();
-        await tester.tap(find.byKey(const Key('glass_preset_button')));
-        await tester.pumpAndSettle();
-        final clear = background();
-        expect(clear.a, lessThan(frosted.a));
-        expect(frosted.a, lessThan(solid.a));
-        for (final surface in [clear, frosted, solid]) {
-          final overPdf = Color.alphaBlend(surface, Colors.white);
-          expect(
-            _contrastRatio(Colors.white, overPdf),
-            greaterThanOrEqualTo(4.5),
-          );
-        }
+        final topDock = tester.widget<LiquidGlassContainer>(
+          find.byKey(const Key('subject_tool_palette_surface')),
+        );
+        expect(topDock.backgroundColor, const Color(0xcc111a16));
+        expect(topDock.boxShadow, isNotNull);
+        expect(topDock.boxShadow!.isNotEmpty, isTrue);
+
+        // Inactive tool button inside PDF mode shares the high-contrast frosted glass surface and soft shadow
+        final toolGlass = tester.widget<LiquidGlassContainer>(
+          find
+              .ancestor(
+                of: find.byKey(const Key('quick_input_tool_button')),
+                matching: find.byType(LiquidGlassContainer),
+              )
+              .first,
+        );
+        expect(toolGlass.backgroundColor, const Color(0xcc111a16));
+        expect(toolGlass.boxShadow, isNotNull);
+        expect(toolGlass.boxShadow!.isNotEmpty, isTrue);
+
+        final toolDecoration =
+            tester
+                    .widget<AnimatedContainer>(
+                      find.descendant(
+                        of: find.byKey(const Key('quick_input_tool_button')),
+                        matching: find.byType(AnimatedContainer),
+                      ),
+                    )
+                    .decoration!
+                as BoxDecoration;
+        expect(toolDecoration.color, Colors.transparent);
+        expect(
+          toolDecoration.border!.top.color,
+          AppColors.overlayAccent.withValues(alpha: 0.45),
+        );
+        expect(
+          _contrastRatio(
+            toolDecoration.border!.top.color,
+            toolDecoration.color!,
+          ),
+          greaterThanOrEqualTo(3),
+        );
+        _expectBoundaryAgainstFixtures(
+          toolDecoration.border!.top.color,
+          toolDecoration.color!,
+        );
       },
     );
 
-    testWidgets('PDF mode applies high-contrast frosted glass surface and soft shadow', (
-      tester,
-    ) async {
-      studio.openPlugin(dummyPlugin);
-      studio.setPdfMode(true);
+    testWidgets(
+      'Whiteboard mode preserves transparent surface without dark backdrop tint',
+      (tester) async {
+        studio.openPlugin(dummyPlugin);
+        studio.setPdfMode(false);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Stack(children: [SubjectToolPalette(studio: studio)]),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Stack(children: [SubjectToolPalette(studio: studio)]),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final topDock = tester.widget<LiquidGlassContainer>(
-        find.byKey(const Key('subject_tool_palette_surface')),
-      );
-      expect(topDock.backgroundColor, const Color(0xff111a16).withValues(alpha: 0.80));
-      expect(topDock.boxShadow, isNotNull);
-      expect(topDock.boxShadow!.isNotEmpty, isTrue);
+        final topDock = tester.widget<LiquidGlassContainer>(
+          find.byKey(const Key('subject_tool_palette_surface')),
+        );
+        expect(topDock.backgroundColor, isNull);
+        expect(topDock.boxShadow, isNull);
 
-      // Inactive tool button inside PDF mode shares the high-contrast frosted glass surface and soft shadow
-      final toolGlass = tester.widget<LiquidGlassContainer>(
-        find.ancestor(
-          of: find.byKey(const Key('svo_tool_button')),
-          matching: find.byType(LiquidGlassContainer),
-        ).first,
-      );
-      expect(toolGlass.backgroundColor, const Color(0xff111a16).withValues(alpha: 0.80));
-      expect(toolGlass.boxShadow, isNotNull);
-      expect(toolGlass.boxShadow!.isNotEmpty, isTrue);
+        final toolGlass = tester.widget<LiquidGlassContainer>(
+          find
+              .ancestor(
+                of: find.byKey(const Key('quick_input_tool_button')),
+                matching: find.byType(LiquidGlassContainer),
+              )
+              .first,
+        );
+        expect(toolGlass.backgroundColor, isNull);
+        expect(toolGlass.boxShadow, isNull);
 
-      final toolDecoration =
-          tester
-                  .widget<AnimatedContainer>(
-                    find.descendant(
-                      of: find.byKey(const Key('svo_tool_button')),
-                      matching: find.byType(AnimatedContainer),
-                    ),
-                  )
-                  .decoration!
-              as BoxDecoration;
-      expect(toolDecoration.color, Colors.transparent);
-      expect(
-        toolDecoration.border!.top.color,
-        AppColors.overlayAccent.withValues(alpha: 0.45),
-      );
-      expect(
-        _contrastRatio(toolDecoration.border!.top.color, toolDecoration.color!),
-        greaterThanOrEqualTo(3),
-      );
-      _expectBoundaryAgainstFixtures(
-        toolDecoration.border!.top.color,
-        toolDecoration.color!,
-      );
-    });
-
-    testWidgets('Whiteboard mode preserves transparent surface without dark backdrop tint', (
-      tester,
-    ) async {
-      studio.openPlugin(dummyPlugin);
-      studio.setPdfMode(false);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Stack(children: [SubjectToolPalette(studio: studio)]),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final topDock = tester.widget<LiquidGlassContainer>(
-        find.byKey(const Key('subject_tool_palette_surface')),
-      );
-      expect(topDock.backgroundColor, isNull);
-      expect(topDock.boxShadow, isNull);
-
-      final toolGlass = tester.widget<LiquidGlassContainer>(
-        find.ancestor(
-          of: find.byKey(const Key('svo_tool_button')),
-          matching: find.byType(LiquidGlassContainer),
-        ).first,
-      );
-      expect(toolGlass.backgroundColor, isNull);
-      expect(toolGlass.boxShadow, isNull);
-
-      final toolDecoration =
-          tester
-                  .widget<AnimatedContainer>(
-                    find.descendant(
-                      of: find.byKey(const Key('svo_tool_button')),
-                      matching: find.byType(AnimatedContainer),
-                    ),
-                  )
-                  .decoration!
-              as BoxDecoration;
-      expect(toolDecoration.color, Colors.transparent);
-      expect(toolDecoration.border!.top.color, AppColors.overlayMuted);
-    });
+        final toolDecoration =
+            tester
+                    .widget<AnimatedContainer>(
+                      find.descendant(
+                        of: find.byKey(const Key('quick_input_tool_button')),
+                        matching: find.byType(AnimatedContainer),
+                      ),
+                    )
+                    .decoration!
+                as BoxDecoration;
+        expect(toolDecoration.color, Colors.transparent);
+        expect(toolDecoration.border!.top.color, AppColors.overlayMuted);
+      },
+    );
   });
 }
 

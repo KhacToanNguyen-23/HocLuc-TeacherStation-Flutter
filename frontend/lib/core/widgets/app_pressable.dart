@@ -34,6 +34,7 @@ class AppPressable extends StatefulWidget {
 
 class _AppPressableState extends State<AppPressable> {
   bool _isPressed = false;
+  bool _isFocused = false;
 
   void _handleTapDown(TapDownDetails details) {
     if (widget.onTap == null && widget.onLongPress == null) return;
@@ -74,6 +75,23 @@ class _AppPressableState extends State<AppPressable> {
       child: widget.child,
     );
 
+    if (_isFocused && !disabled) {
+      content = DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: widget.borderRadius ?? BorderRadius.circular(AppRadii.control),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.35),
+              spreadRadius: 1.5,
+              blurRadius: 1.0,
+            ),
+          ],
+        ),
+        position: DecorationPosition.foreground,
+        child: content,
+      );
+    }
+
     if (widget.borderRadius != null) {
       content = ClipRRect(
         borderRadius: widget.borderRadius!,
@@ -81,15 +99,31 @@ class _AppPressableState extends State<AppPressable> {
       );
     }
 
-    Widget gesture = GestureDetector(
-      behavior: widget.behavior,
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      child: MouseRegion(
-        cursor: disabled ? SystemMouseCursors.basic : widget.cursor,
+    Widget interactive = FocusableActionDetector(
+      enabled: !disabled,
+      mouseCursor: disabled ? SystemMouseCursors.basic : widget.cursor,
+      onShowFocusHighlight: (val) {
+        if (_isFocused != val) {
+          setState(() => _isFocused = val);
+        }
+      },
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            if (widget.onTap != null) {
+              widget.onTap!();
+            }
+            return null;
+          },
+        ),
+      },
+      child: GestureDetector(
+        behavior: widget.behavior,
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
         child: content,
       ),
     );
@@ -97,11 +131,11 @@ class _AppPressableState extends State<AppPressable> {
     if (widget.tooltip != null && widget.tooltip!.isNotEmpty) {
       return Tooltip(
         message: widget.tooltip!,
-        child: gesture,
+        child: interactive,
       );
     }
 
-    return gesture;
+    return interactive;
   }
 }
 

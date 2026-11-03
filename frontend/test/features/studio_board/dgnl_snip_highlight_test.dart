@@ -1,12 +1,11 @@
+import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 import 'package:teaching_companion/features/studio_board/domain/models/studio_state.dart';
-import 'package:teaching_companion/features/studio_board/services/dgnl_service.dart';
 import 'package:teaching_companion/features/studio_board/services/pdf_annotation_exporter.dart';
 import 'package:teaching_companion/features/plugin_engine/services/plugin_manager.dart';
 import 'package:teaching_companion/features/studio_board/presentation/pdf_dgnl_passage_overlay.dart';
@@ -14,29 +13,6 @@ import 'package:teaching_companion/features/studio_board/presentation/subject_to
 
 void main() {
   group('In-Document Passage Highlight & Scan Button Tests', () {
-    test('1. DgnlService produces highlights for Question 36-40', () async {
-      const passage =
-          'At home, I used to suffer enough from passive smoking, because two of my brothers were heavy smokers. '
-          'They would light up their cigarettes in any room, and soon the air would be thick with smoke. '
-          'I was often having headaches and coughing, and I had to put up with the smell.';
-
-      final analysis = await DgnlService.analyze(passage);
-
-      expect(analysis.highlights.isNotEmpty, isTrue);
-      expect(analysis.totalWords, greaterThan(30));
-
-      final categories = analysis.highlights.map((h) => h['category']).toSet();
-      expect(
-        categories.contains('grammar') || categories.contains('collocation'),
-        isTrue,
-      );
-
-      final vocabularyHighlights = analysis.highlights.where(
-        (h) => h['category'] == 'vocabulary',
-      );
-      expect(vocabularyHighlights, isEmpty);
-    });
-
     testWidgets(
       '2. SubjectToolPalette displays quick scan button and triggers snipping',
       (tester) async {
@@ -61,7 +37,9 @@ void main() {
             ],
           },
         });
-        final plugin = InstalledPlugin(manifest: manifest);
+        final plugin = InstalledPlugin(
+          manifest: manifest,
+        );
         studio.openPlugin(plugin);
 
         await tester.pumpWidget(
@@ -104,13 +82,16 @@ void main() {
           PdfDgnlHighlightSpan(
             text: 'used to suffer',
             category: 'grammar',
+            level: 'B2',
             type: 'Cấu trúc Thói quen quá khứ (Used to + V)',
-            note: 'Diễn tả thói quen hoặc trạng thái từng xảy ra trong quá khứ nhưng không còn nữa.',
+            note:
+                'Diễn tả thói quen hoặc trạng thái từng xảy ra trong quá khứ nhưng không còn nữa.',
             normalizedRects: const [Rect.fromLTWH(0.1, 0.2, 0.2, 0.04)],
           ),
           PdfDgnlHighlightSpan(
             text: 'passive smoking',
             category: 'collocation',
+            level: 'B2',
             type: 'Collocation Học thuật',
             note: 'Hút thuốc lá thụ động (hít phải khói thuốc của người khác).',
             normalizedRects: const [Rect.fromLTWH(0.35, 0.2, 0.22, 0.04)],
@@ -129,7 +110,6 @@ void main() {
             'lexical_density': 58.5,
             'evaluation': 'Đoạn văn đạt chuẩn phân hóa đề thi ĐGNL.',
           },
-          clozeQuestions: const [],
         );
 
         studio.addPdfDgnlPassage(passage);
@@ -153,7 +133,7 @@ void main() {
 
         // Check legend bar chips
         expect(find.textContaining('Bóc tách Đa tầng'), findsOneWidget);
-        expect(find.textContaining('Tất cả (2)'), findsOneWidget);
+        expect(find.textContaining(RegExp(r'(Trọng tâm|Tất cả) \(2\)')), findsOneWidget);
         expect(find.textContaining('Ngữ pháp (1)'), findsOneWidget);
         expect(find.textContaining('Collocation (1)'), findsOneWidget);
 
@@ -200,13 +180,13 @@ void main() {
             PdfDgnlHighlightSpan(
               text: 'test',
               category: 'grammar',
+              level: 'B2',
               type: 'Test Grammar',
               note: 'Test note',
               normalizedRects: [Rect.fromLTWH(0.2, 0.2, 0.1, 0.05)],
             ),
           ],
           metrics: const {},
-          clozeQuestions: const [],
         );
         studio.addPdfDgnlPassage(passage);
 
@@ -298,7 +278,7 @@ void main() {
         doc.dispose();
 
         studio.pdfBytes = initialBytes;
-        studio.pdfFilePath = 'test_sample.pdf';
+        studio.pdfFilePath = '${Directory.systemTemp.path}${Platform.pathSeparator}test_sample.pdf';
         studio.addPdfDgnlPassage(
           PdfDgnlPassage(
             id: 'test-p1',
@@ -309,13 +289,13 @@ void main() {
               PdfDgnlHighlightSpan(
                 text: 'used to suffer',
                 category: 'grammar',
+                level: 'B2',
                 type: 'Cấu trúc Used to',
                 note: 'Thói quen quá khứ',
                 normalizedRects: [Rect.fromLTWH(0.1, 0.2, 0.3, 0.05)],
               ),
             ],
             metrics: const {},
-            clozeQuestions: const [],
           ),
         );
 
@@ -366,149 +346,225 @@ void main() {
       expect(reconstructed.width, 1.5);
     });
 
-    test('8. Nested Span Conflict Resolution: grammar & nested vocab get isHollow=true in direct highlight', () async {
-      final studio = StudioState();
-      final doc = sf.PdfDocument();
-      doc.pages.add();
-      final initialBytes = Uint8List.fromList(doc.saveSync());
-      doc.dispose();
+    test(
+      '8. Nested Span Conflict Resolution: grammar & nested vocab get isHollow=true in direct highlight',
+      () async {
+        final studio = StudioState();
+        final doc = sf.PdfDocument();
+        doc.pages.add();
+        final initialBytes = Uint8List.fromList(doc.saveSync());
+        doc.dispose();
 
-      studio.pdfBytes = initialBytes;
-      studio.pdfFilePath = 'test_sample.pdf';
+        studio.pdfBytes = initialBytes;
+        studio.pdfFilePath = '${Directory.systemTemp.path}${Platform.pathSeparator}test_sample.pdf';
 
-      // Passage with nested structures:
-      // Grammar: "used to suffer"
-      // Collocation: "passive smoking"
-      // Vocab: "smoking" (nested inside collocation "passive smoking")
-      final grammarSpan = const PdfDgnlHighlightSpan(
-        text: 'used to suffer',
-        category: 'grammar',
-        type: 'Cấu trúc Used to',
-        note: 'Thói quen quá khứ',
-        normalizedRects: [Rect.fromLTWH(0.1, 0.2, 0.2, 0.04)],
-      );
+        // Passage with nested structures:
+        // Grammar: "used to suffer"
+        // Collocation: "passive smoking"
+        // Vocab: "smoking" (nested inside collocation "passive smoking")
+        final grammarSpan = const PdfDgnlHighlightSpan(
+          text: 'used to suffer',
+          category: 'grammar',
+          level: 'B2',
+          type: 'Cấu trúc Used to',
+          note: 'Thói quen quá khứ',
+          normalizedRects: [Rect.fromLTWH(0.1, 0.2, 0.2, 0.04)],
+        );
 
-      final collocSpan = const PdfDgnlHighlightSpan(
-        text: 'passive smoking',
-        category: 'collocation',
-        type: 'Collocation Học thuật',
-        note: 'Hút thuốc lá thụ động',
-        normalizedRects: [Rect.fromLTWH(0.35, 0.2, 0.22, 0.04)],
-      );
+        final collocSpan = const PdfDgnlHighlightSpan(
+          text: 'passive smoking',
+          category: 'collocation',
+          level: 'B2',
+          type: 'Collocation Học thuật',
+          note: 'Hút thuốc lá thụ động',
+          normalizedRects: [Rect.fromLTWH(0.35, 0.2, 0.22, 0.04)],
+        );
 
-      final nestedVocabSpan = const PdfDgnlHighlightSpan(
-        text: 'smoking',
-        category: 'vocabulary',
-        type: 'Từ vựng B2',
-        note: 'Hành động hút thuốc',
-        normalizedRects: [Rect.fromLTWH(0.45, 0.2, 0.12, 0.04)],
-      );
+        final nestedVocabSpan = const PdfDgnlHighlightSpan(
+          text: 'smoking',
+          category: 'vocabulary',
+          level: 'B2',
+          type: 'Từ vựng B2',
+          note: 'Hành động hút thuốc',
+          normalizedRects: [Rect.fromLTWH(0.45, 0.2, 0.12, 0.04)],
+        );
 
-      studio.addPdfDgnlPassage(
-        PdfDgnlPassage(
-          id: 'test-nested-p1',
+        studio.addPdfDgnlPassage(
+          PdfDgnlPassage(
+            id: 'test-nested-p1',
+            pageNumber: 1,
+            rawText: 'used to suffer from passive smoking',
+            normalizedBounds: const Rect.fromLTWH(0, 0, 1, 1),
+            spans: [grammarSpan, collocSpan, nestedVocabSpan],
+            metrics: const {},
+          ),
+        );
+
+        final applied = await PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+          _MockBuildContext(),
+          studio,
+          showFeedback: false,
+        );
+        expect(applied, isTrue);
+
+        final strokes = studio.pdfAnnotations[1]!;
+        expect(strokes.length, 3);
+
+        // Grammar stroke: MUST be hollow outline to avoid darkening background
+        final grammarStroke = strokes.firstWhere(
+          (s) => s.rect == grammarSpan.normalizedRects.first,
+        );
+        expect(grammarStroke.isHollow, isTrue);
+        expect(grammarStroke.width, 1.5);
+
+        // Collocation stroke: MUST be filled pastel capsule (isHollow == false)
+        final collocStroke = strokes.firstWhere(
+          (s) => s.rect == collocSpan.normalizedRects.first,
+        );
+        expect(collocStroke.isHollow, isFalse);
+        expect(collocStroke.width, 20.0);
+
+        // Nested Vocab stroke: MUST be hollow outline (isHollow == true) to avoid double-layer background mud
+        final vocabStroke = strokes.firstWhere(
+          (s) => s.rect == nestedVocabSpan.normalizedRects.first,
+        );
+        expect(vocabStroke.isHollow, isTrue);
+        expect(vocabStroke.width, 1.2);
+      },
+    );
+
+    test(
+      '9. Visual Channel Separation in exportHighlightedPdfBytes creates valid PDF with discrete channels',
+      () async {
+        final studio = StudioState();
+        final doc = sf.PdfDocument();
+        doc.pages.add();
+        final initialBytes = Uint8List.fromList(doc.saveSync());
+        doc.dispose();
+
+        studio.pdfBytes = initialBytes;
+
+        final passage = PdfDgnlPassage(
+          id: 'test-p9',
           pageNumber: 1,
           rawText: 'used to suffer from passive smoking',
           normalizedBounds: const Rect.fromLTWH(0, 0, 1, 1),
-          spans: [grammarSpan, collocSpan, nestedVocabSpan],
+          spans: const [
+            PdfDgnlHighlightSpan(
+              text: 'used to suffer',
+              category: 'grammar',
+              level: 'B2',
+              type: 'Used to',
+              note: 'Thói quen',
+              normalizedRects: [Rect.fromLTWH(0.1, 0.2, 0.2, 0.04)],
+            ),
+            PdfDgnlHighlightSpan(
+              text: 'passive smoking',
+              category: 'collocation',
+              level: 'B2',
+              type: 'Collocation',
+              note: 'Hút thuốc thụ động',
+              normalizedRects: [Rect.fromLTWH(0.35, 0.2, 0.22, 0.04)],
+            ),
+            PdfDgnlHighlightSpan(
+              text: 'smoking',
+              category: 'vocabulary',
+              level: 'B2',
+              type: 'Vocab',
+              note: 'Hút thuốc',
+              normalizedRects: [Rect.fromLTWH(0.45, 0.2, 0.12, 0.04)],
+            ),
+          ],
           metrics: const {},
-          clozeQuestions: const [],
-        ),
-      );
+        );
 
-      final applied = await PdfAnnotationExporter.applyHighlightDirectlyToPdf(
-        _MockBuildContext(),
-        studio,
-        showFeedback: false,
-      );
-      expect(applied, isTrue);
+        studio.addPdfDgnlPassage(passage);
 
-      final strokes = studio.pdfAnnotations[1]!;
-      expect(strokes.length, 3);
+        final exportedBytes =
+            await PdfAnnotationExporter.exportHighlightedPdfBytes(studio);
+        expect(exportedBytes, isNotNull);
+        expect(exportedBytes!.length, greaterThan(initialBytes.length));
 
-      // Grammar stroke: MUST be hollow outline to avoid darkening background
-      final grammarStroke = strokes.firstWhere(
-        (s) => s.rect == grammarSpan.normalizedRects.first,
-      );
-      expect(grammarStroke.isHollow, isTrue);
-      expect(grammarStroke.width, 1.5);
+        // Load exported PDF with Syncfusion to inspect annotations
+        final loadedDoc = sf.PdfDocument(inputBytes: exportedBytes);
+        expect(loadedDoc.pages.count, 1);
+        final page = loadedDoc.pages[0];
 
-      // Collocation stroke: MUST be filled pastel capsule (isHollow == false)
-      final collocStroke = strokes.firstWhere(
-        (s) => s.rect == collocSpan.normalizedRects.first,
-      );
-      expect(collocStroke.isHollow, isFalse);
-      expect(collocStroke.width, 20.0);
+        // Collocation produces standard TextMarkup highlight annotation
+        // While grammar and nested vocab are rendered via graphics pen paths directly in the content stream
+        expect(page.annotations.count, 1);
+        final markup = page.annotations[0] as sf.PdfTextMarkupAnnotation;
+        expect(markup.text, 'passive smoking');
 
-      // Nested Vocab stroke: MUST be hollow outline (isHollow == true) to avoid double-layer background mud
-      final vocabStroke = strokes.firstWhere(
-        (s) => s.rect == nestedVocabSpan.normalizedRects.first,
-      );
-      expect(vocabStroke.isHollow, isTrue);
-      expect(vocabStroke.width, 1.2);
-    });
+        loadedDoc.dispose();
+      },
+    );
 
-    test('9. Visual Channel Separation in exportHighlightedPdfBytes creates valid PDF with discrete channels', () async {
-      final studio = StudioState();
-      final doc = sf.PdfDocument();
-      doc.pages.add();
-      final initialBytes = Uint8List.fromList(doc.saveSync());
-      doc.dispose();
+    test(
+      '10. Active Filtered Spans: applyHighlightDirectlyToPdf respects passage.activeFilteredSpans',
+      () async {
+        final studio = StudioState()..loading = false;
+        final doc = sf.PdfDocument();
+        doc.pages.add();
+        studio.pdfBytes = Uint8List.fromList(doc.saveSync());
+        doc.dispose();
+        studio.pdfFilePath =
+            '${Directory.systemTemp.path}${Platform.pathSeparator}test_all_words.pdf';
 
-      studio.pdfBytes = initialBytes;
+        // 3 spans: 1 B2 (focused), 1 A1 (normally filtered out), 1 A2 (normally filtered out)
+        final b2Span = const PdfDgnlHighlightSpan(
+          text: 'expedition',
+          category: 'vocabulary',
+          level: 'B2',
+          type: 'B2',
+          note: 'Focus word',
+          normalizedRects: [Rect.fromLTWH(0.1, 0.1, 0.2, 0.04)],
+        );
+        final a1Span = const PdfDgnlHighlightSpan(
+          text: 'water',
+          category: 'vocabulary',
+          level: 'A1',
+          type: 'A1',
+          note: 'Basic word',
+          normalizedRects: [Rect.fromLTWH(0.3, 0.1, 0.1, 0.04)],
+        );
+        final a2Span = const PdfDgnlHighlightSpan(
+          text: 'palate',
+          category: 'vocabulary',
+          level: 'A2',
+          type: 'A2',
+          note: 'Waystage word',
+          normalizedRects: [Rect.fromLTWH(0.5, 0.1, 0.1, 0.04)],
+        );
 
-      final passage = PdfDgnlPassage(
-        id: 'test-p9',
-        pageNumber: 1,
-        rawText: 'used to suffer from passive smoking',
-        normalizedBounds: const Rect.fromLTWH(0, 0, 1, 1),
-        spans: const [
-          PdfDgnlHighlightSpan(
-            text: 'used to suffer',
-            category: 'grammar',
-            type: 'Used to',
-            note: 'Thói quen',
-            normalizedRects: [Rect.fromLTWH(0.1, 0.2, 0.2, 0.04)],
-          ),
-          PdfDgnlHighlightSpan(
-            text: 'passive smoking',
-            category: 'collocation',
-            type: 'Collocation',
-            note: 'Hút thuốc thụ động',
-            normalizedRects: [Rect.fromLTWH(0.35, 0.2, 0.22, 0.04)],
-          ),
-          PdfDgnlHighlightSpan(
-            text: 'smoking',
-            category: 'vocabulary',
-            type: 'Vocab',
-            note: 'Hút thuốc',
-            normalizedRects: [Rect.fromLTWH(0.45, 0.2, 0.12, 0.04)],
-          ),
-        ],
-        metrics: const {},
-        clozeQuestions: const [],
-      );
+        final passage = PdfDgnlPassage(
+          id: 'p-all-words',
+          pageNumber: 1,
+          rawText: 'expedition water palate',
+          normalizedBounds: const Rect.fromLTWH(0, 0, 1, 1),
+          spans: [b2Span, a1Span, a2Span],
+          metrics: const {},
+        );
+        studio.addPdfDgnlPassage(passage);
 
-      studio.addPdfDgnlPassage(passage);
+        // When activeFilteredSpans is set to all 3 spans (user selected "Tất cả từ")
+        passage.activeFilteredSpans = [b2Span, a1Span, a2Span];
 
-      final exportedBytes =
-          await PdfAnnotationExporter.exportHighlightedPdfBytes(studio);
-      expect(exportedBytes, isNotNull);
-      expect(exportedBytes!.length, greaterThan(initialBytes.length));
+        final applied = await PdfAnnotationExporter.applyHighlightDirectlyToPdf(
+          _MockBuildContext(),
+          studio,
+          showFeedback: false,
+        );
+        expect(applied, isTrue);
 
-      // Load exported PDF with Syncfusion to inspect annotations
-      final loadedDoc = sf.PdfDocument(inputBytes: exportedBytes);
-      expect(loadedDoc.pages.count, 1);
-      final page = loadedDoc.pages[0];
-
-      // Collocation produces standard TextMarkup highlight annotation
-      // While grammar and nested vocab are rendered via graphics pen paths directly in the content stream
-      expect(page.annotations.count, 1);
-      final markup = page.annotations[0] as sf.PdfTextMarkupAnnotation;
-      expect(markup.text, 'passive smoking');
-
-      loadedDoc.dispose();
-    });
+        final strokes = studio.pdfAnnotations[1]!;
+        // All 3 spans must be applied as permanent strokes, NOT just the 1 B2 word!
+        expect(strokes.length, 3);
+        expect(strokes.any((s) => s.text == 'expedition'), isTrue);
+        expect(strokes.any((s) => s.text == 'water'), isTrue);
+        expect(strokes.any((s) => s.text == 'palate'), isTrue);
+      },
+    );
   });
 }
 

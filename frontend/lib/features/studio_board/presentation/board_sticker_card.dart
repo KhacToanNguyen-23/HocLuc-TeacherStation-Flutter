@@ -83,19 +83,6 @@ class BoardStickerCard extends StatelessWidget {
   final bool showFloatingBar;
   final Size? parentSize;
 
-  Color _getRoleColor(String role) {
-    switch (role.toUpperCase()) {
-      case 'SUBJECT':
-        return const Color(0xff89b4fa); // Catppuccin Blue
-      case 'VERB':
-        return const Color(0xfff38ba8); // Catppuccin Red/Pink
-      case 'OBJECT':
-        return const Color(0xfffab387); // Catppuccin Peach
-      default:
-        return const Color(0xffa6adc8); // Subtext
-    }
-  }
-
   Widget _buildCanvaHandle({
     required Offset offset,
     required GestureDragUpdateCallback onPanUpdate,
@@ -676,56 +663,26 @@ class BoardStickerCard extends StatelessWidget {
             runSpacing: 4,
             children: sticker.tokens.map((token) {
               final text = token['text'] as String? ?? '';
-              final role = token['role'] as String? ?? 'OTHER';
-              final roleColor = _getRoleColor(role);
+              const tokenColor = Color(0x88d4e8a6);
 
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 decoration: BoxDecoration(
-                  color: roleColor.withValues(alpha: 0.15),
+                  color: tokenColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: roleColor.withValues(alpha: 0.5)),
+                  border: Border.all(color: tokenColor.withValues(alpha: 0.5)),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      text,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      role.substring(0, 1),
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: roleColor,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               );
             }).toList(),
           ),
-          if (sticker.issues.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0x33f38ba8),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: const Color(0x66f38ba8)),
-              ),
-              child: Text(
-                sticker.issues.first,
-                style: const TextStyle(fontSize: 11, color: Color(0xfff38ba8)),
-              ),
-            ),
-          ],
         ],
       ),
     );

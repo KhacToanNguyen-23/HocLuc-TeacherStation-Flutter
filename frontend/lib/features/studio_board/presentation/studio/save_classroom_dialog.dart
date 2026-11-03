@@ -115,7 +115,7 @@ class SaveClassroomDialog extends StatelessWidget {
               _buildOptionCard(
                 context: context,
                 icon: Icons.auto_stories_rounded,
-                iconColor: const Color(0xff0284c7),
+                iconColor: AppColors.primary,
                 iconBg: AppColors.sky50,
                 title: 'Tài liệu Handout (Slide + Ghi chú)',
                 buttonText: 'Xuất Handout',

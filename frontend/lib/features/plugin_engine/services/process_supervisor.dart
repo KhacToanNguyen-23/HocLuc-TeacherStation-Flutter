@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:teaching_companion/features/plugin_engine/domain/models/plugin_manifest.dart';
 
+typedef SidecarHealthProbe = Future<bool> Function(Uri targetUri);
+
 class ProcessInstance {
   final String pluginId;
   final int port;
@@ -20,15 +22,20 @@ class ProcessInstance {
   });
 }
 
-/// Central supervisor managing sidecar process lifecycles (Python, Node, Binaries)
+/// Central supervisor managing plugin sidecar process lifecycles.
 /// with dynamic port allocation, health checking, and automatic teardown.
 class ProcessSupervisor {
   static final ProcessSupervisor _instance = ProcessSupervisor._internal();
   factory ProcessSupervisor() => _instance;
-  ProcessSupervisor._internal();
+  ProcessSupervisor._internal() : _healthProbe = null;
+
+  @visibleForTesting
+  ProcessSupervisor.testing({required SidecarHealthProbe healthProbe})
+    : _healthProbe = healthProbe;
 
   static ProcessSupervisor get instance => _instance;
 
+  final SidecarHealthProbe? _healthProbe;
   final Map<String, ProcessInstance> _activeProcesses = {};
 
   /// Find an available dynamic loopback port assigned by OS.
@@ -91,8 +98,17 @@ class ProcessSupervisor {
       );
       return null;
     }
-    final entryRel =
+    final productionEntryRel =
         backend?.entry ?? manifest.backendExecutable ?? 'engine/service.py';
+    final developmentEntryRel = kDebugMode ? backend?.developmentEntry : null;
+    final developmentEntryPath = developmentEntryRel == null
+        ? null
+        : File('$pluginDirectory/$developmentEntryRel');
+    final useDartSource =
+        developmentEntryPath != null &&
+        developmentEntryPath.existsSync() &&
+        developmentEntryRel!.toLowerCase().endsWith('.dart');
+    final entryRel = useDartSource ? developmentEntryRel : productionEntryRel;
 
     final possiblePaths = [
       '$pluginDirectory/$entryRel',
@@ -116,14 +132,20 @@ class ProcessSupervisor {
     }
 
     final isPython = backend?.type == 'python' || entryRel.endsWith('.py');
-    final executable = isPython ? 'python' : entryFile.absolute.path;
-    final args = isPython
+    final executable = useDartSource
+        ? _resolveDartExecutable()
+        : isPython
+        ? 'python'
+        : entryFile.absolute.path;
+    final args = useDartSource
+        ? ['run', entryFile.absolute.path, '--port', port.toString()]
+        : isPython
         ? [entryFile.absolute.path, '--port', port.toString()]
         : ['--port', port.toString()];
 
     try {
       FrontendLogger.write(
-        '[ProcessSupervisor] Starting sidecar | plugin_id=$pluginId port=$port',
+        '[ProcessSupervisor] Starting sidecar | plugin_id=$pluginId port=$port runtime=${useDartSource ? 'dart-source' : 'manifest'}',
       );
       final process = await Process.start(
         executable,
@@ -187,6 +209,49 @@ class ProcessSupervisor {
     }
   }
 
+  String _resolveDartExecutable() {
+    final candidates = <String>[];
+    final configuredExecutable = Platform.environment['DART_EXECUTABLE'];
+    if (configuredExecutable != null && configuredExecutable.isNotEmpty) {
+      candidates.add(configuredExecutable);
+    }
+
+    final sdkDirectory = Platform.environment['DART_SDK'];
+    if (sdkDirectory != null && sdkDirectory.isNotEmpty) {
+      candidates.add(
+        '$sdkDirectory/bin/dart${Platform.isWindows ? '.exe' : ''}',
+      );
+    }
+
+    final flutterRoot = Platform.environment['FLUTTER_ROOT'];
+    if (flutterRoot != null && flutterRoot.isNotEmpty) {
+      candidates.add(
+        '$flutterRoot/bin/cache/dart-sdk/bin/dart${Platform.isWindows ? '.exe' : ''}',
+      );
+    }
+
+    for (final pathDirectory in (Platform.environment['PATH'] ?? '').split(
+      Platform.isWindows ? ';' : ':',
+    )) {
+      if (pathDirectory.isEmpty) continue;
+      candidates.add(
+        '$pathDirectory${Platform.pathSeparator}dart${Platform.isWindows ? '.exe' : ''}',
+      );
+      if (Platform.isWindows) {
+        candidates.add(
+          '$pathDirectory${Platform.pathSeparator}cache${Platform.pathSeparator}dart-sdk${Platform.pathSeparator}bin${Platform.pathSeparator}dart.exe',
+        );
+      }
+    }
+
+    for (final candidate in candidates) {
+      if (File(candidate).existsSync()) return File(candidate).absolute.path;
+    }
+
+    // Keep the last-resort command portable; Process.start resolves it from PATH.
+    return Platform.isWindows ? 'dart.exe' : 'dart';
+  }
+
   /// Stop a running plugin sidecar process.
   Future<void> stopSidecar(String pluginId) async {
     final instance = _activeProcesses.remove(pluginId);
@@ -226,10 +291,16 @@ class ProcessSupervisor {
 
     while (stopwatch.elapsedMilliseconds < timeoutMs) {
       try {
-        final res = await http
-            .get(targetUri)
-            .timeout(const Duration(milliseconds: 400));
-        if (res.statusCode == 200) {
+        final healthy = _healthProbe == null
+            ? (await http
+                          .get(targetUri)
+                          .timeout(const Duration(milliseconds: 400)))
+                      .statusCode ==
+                  200
+            : await _healthProbe(
+                targetUri,
+              ).timeout(const Duration(milliseconds: 400));
+        if (healthy) {
           return true;
         }
       } catch (_) {}
@@ -241,8 +312,10 @@ class ProcessSupervisor {
   Future<bool> _checkHealth(int port, String? endpoint) async {
     try {
       final ep = endpoint ?? '/health';
+      final targetUri = Uri.parse('http://127.0.0.1:$port$ep');
+      if (_healthProbe != null) return await _healthProbe(targetUri);
       final res = await http
-          .get(Uri.parse('http://127.0.0.1:$port$ep'))
+          .get(targetUri)
           .timeout(const Duration(milliseconds: 500));
       return res.statusCode == 200;
     } catch (_) {

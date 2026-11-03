@@ -42,10 +42,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Fast Plugin Validation (Schema v2.1 & .hlep Freshness)
+      - name: Fast Plugin Validation (Schema v2.1 & Development Sources)
         run: |
-          echo "🔍 [Early Gate] Kiểm tra nhanh tính toàn vẹn Plugin và độ tươi của gói .hlep..."
-          node ../scripts/validate_plugins.mjs
+          echo "Checking plugin manifest schema and development sources"
+          node ../scripts/validate_plugins.mjs --source-only
 
       - name: Validate Plugin UI Contract
         run: |

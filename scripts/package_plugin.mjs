@@ -11,10 +11,61 @@ const rootDir = path.resolve(__dirname, '..');
 // Tự động đảm bảo Git hook được cấu hình ngầm khi dev chạy lệnh đóng gói
 ensureHooksConfigured(true);
 
-const targetArg = process.argv[2] || 'casio_calculator';
+const args = process.argv.slice(2);
+let targetArg = 'casio_calculator';
+let targetWasProvided = false;
+let outputArg;
+let syncCache = true;
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--output') {
+    outputArg = args[++i];
+    if (!outputArg) throw new Error('Missing path after --output');
+  } else if (args[i] === '--no-cache-sync') {
+    syncCache = false;
+  } else if (args[i].startsWith('--')) {
+    throw new Error(`Unknown option: ${args[i]}`);
+  } else if (!targetWasProvided) {
+    targetArg = args[i];
+    targetWasProvided = true;
+  } else {
+    throw new Error(`Unexpected argument: ${args[i]}`);
+  }
+}
+
 const targetPluginName = path.basename(targetArg);
 const pluginDir = path.isAbsolute(targetArg) ? targetArg : path.join(rootDir, 'plugins', targetPluginName);
-const outputHlep = path.join(rootDir, 'plugins', `${targetPluginName}.hlep`);
+const outputHlep = outputArg
+  ? path.resolve(rootDir, outputArg)
+  : path.join(rootDir, 'plugins', `${targetPluginName}.hlep`);
+if (path.extname(outputHlep).toLowerCase() !== '.hlep') {
+  throw new Error(`Output file must use the .hlep extension: ${outputHlep}`);
+}
+const isWithinDirectory = (directory, candidate) => {
+  const relative = path.relative(directory, candidate);
+  return relative === '' ||
+    (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+};
+if (!isWithinDirectory(rootDir, outputHlep)) {
+  throw new Error(`Output path must remain inside the repository: ${outputHlep}`);
+}
+if (isWithinDirectory(path.resolve(pluginDir), outputHlep)) {
+  throw new Error(`Output archive cannot be inside the plugin source directory: ${outputHlep}`);
+}
+
+const outputRelativeToRoot = path.relative(rootDir, outputHlep);
+let outputParent = rootDir;
+for (const segment of path.dirname(outputRelativeToRoot).split(path.sep).filter(Boolean)) {
+  outputParent = path.join(outputParent, segment);
+  if (fs.existsSync(outputParent)) {
+    const stats = fs.lstatSync(outputParent);
+    if (stats.isSymbolicLink() || !stats.isDirectory()) {
+      throw new Error(`Output path cannot contain symlinks or non-directories: ${outputParent}`);
+    }
+  }
+}
+if (fs.existsSync(outputHlep) && fs.lstatSync(outputHlep).isSymbolicLink()) {
+  throw new Error(`Output archive cannot be a symlink: ${outputHlep}`);
+}
 
 console.log(`Packaging plugin from: ${pluginDir}`);
 console.log(`Target archive: ${outputHlep}`);
@@ -69,7 +120,7 @@ function createZip(sourceDir, outputFile) {
       const fullPath = path.join(dir, entry.name);
       const relPath = path.join(relative, entry.name).replace(/\\/g, '/');
       if (entry.isDirectory()) {
-        if (entry.name === '__pycache__' || entry.name === '.venv' || entry.name === 'node_modules' || entry.name === '.cache') {
+        if (['__pycache__', '.venv', '.dart_tool', 'node_modules', 'build', 'coverage', 'test', 'tests', '.git', '.cache'].includes(entry.name)) {
           continue;
         }
         if (relPath === 'engine/tests' || relPath.startsWith('engine/tests/') ||
@@ -152,12 +203,22 @@ function createZip(sourceDir, outputFile) {
   eocd.writeUInt16LE(0, 20);         // Comment length
 
   const fullBuffer = Buffer.concat([...localHeaders, ...centralHeaders, eocd]);
+  fs.mkdirSync(path.dirname(outputFile), { recursive: true });
+  const realRoot = fs.realpathSync(rootDir);
+  const realOutputParent = fs.realpathSync(path.dirname(outputFile));
+  if (!isWithinDirectory(realRoot, realOutputParent)) {
+    throw new Error(`Output path resolves outside the repository: ${realOutputParent}`);
+  }
+  if (fs.existsSync(outputFile) && fs.lstatSync(outputFile).isSymbolicLink()) {
+    throw new Error(`Output archive cannot be a symlink: ${outputFile}`);
+  }
   fs.writeFileSync(outputFile, fullBuffer);
   const sha256 = crypto.createHash('sha256').update(fullBuffer).digest('hex');
   console.log(`Successfully created ${outputFile} (${fullBuffer.length} bytes, ${files.length} files, sha256: ${sha256})`);
 
   // Best-effort sync to %LOCALAPPDATA%/HocLuc/plugins/<id>/v<version> so running/restarted dev builds immediately use fresh assets
   try {
+    if (!syncCache) return;
     const localAppData = process.env.LOCALAPPDATA;
     if (localAppData && manifest?.id && manifest?.version) {
       const cacheDir = path.join(localAppData, 'HocLuc', 'plugins', manifest.id, `v${manifest.version}`);

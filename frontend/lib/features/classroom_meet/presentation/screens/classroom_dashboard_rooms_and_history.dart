@@ -20,6 +20,7 @@ extension _ClassroomDashboardRoomsAndHistoryExt
         actionButton: ElevatedButton(
           onPressed: _startClassroom,
           style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadii.control),
@@ -162,6 +163,7 @@ extension _ClassroomDashboardRoomsAndHistoryExt
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(

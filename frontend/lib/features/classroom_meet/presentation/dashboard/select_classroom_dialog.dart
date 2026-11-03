@@ -261,11 +261,12 @@ class _SelectClassroomDialogState extends State<SelectClassroomDialog> {
         decoration: BoxDecoration(
           color: AppColors.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadii.panel),
+          border: Border.all(color: AppColors.border, width: 1),
           boxShadow: [
             BoxShadow(
-              color: AppColors.accentDark.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+              color: AppColors.slate900.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
         ),

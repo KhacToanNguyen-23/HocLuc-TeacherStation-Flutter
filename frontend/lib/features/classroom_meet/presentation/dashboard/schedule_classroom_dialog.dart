@@ -39,7 +39,7 @@ class _ScheduleClassroomDialogState extends State<ScheduleClassroomDialog> {
         content: Text(
           'Đã lên lịch thành công cho lớp "${_titleController.text.trim()}"!',
         ),
-        backgroundColor: AppColors.pine,
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -62,6 +62,14 @@ class _ScheduleClassroomDialogState extends State<ScheduleClassroomDialog> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadii.panel),
+          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.slate900.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -118,16 +126,27 @@ class _ScheduleClassroomDialogState extends State<ScheduleClassroomDialog> {
             const SizedBox(height: 6),
             TextField(
               controller: _titleController,
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 11,
                 ),
-                border: OutlineInputBorder(
+                enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadii.control),
+                  borderSide: const BorderSide(color: AppColors.surfaceBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadii.control),
+                  borderSide: BorderSide(color: sky, width: 1.5),
                 ),
               ),
+              onSubmitted: (_) => _handleSave(),
             ),
             const SizedBox(height: 12),
             const Text(
@@ -141,23 +160,35 @@ class _ScheduleClassroomDialogState extends State<ScheduleClassroomDialog> {
             const SizedBox(height: 6),
             TextField(
               controller: _subjectController,
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 11,
                 ),
-                border: OutlineInputBorder(
+                enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadii.control),
+                  borderSide: const BorderSide(color: AppColors.surfaceBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadii.control),
+                  borderSide: BorderSide(color: sky, width: 1.5),
                 ),
               ),
+              onSubmitted: (_) => _handleSave(),
             ),
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: AppColors.surfaceSoft,
                 borderRadius: BorderRadius.circular(AppRadii.control),
+                border: Border.all(color: AppColors.surfaceBorder),
               ),
               child: Row(
                 children: [

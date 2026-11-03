@@ -16,7 +16,7 @@ void main() {
         'name': 'Trợ giảng Tiếng Anh',
         'version': '1.0.0',
         'author': 'Học Lực Studio',
-        'description': 'Phân tích Chủ - Vị (S-V-O) và kiểm tra lỗi thì động từ',
+        'description': 'Phân tích ngữ pháp và từ vựng cho giáo viên',
         'category': 'language',
         'ui': {
           'entry': 'ui/index.html',
@@ -26,6 +26,7 @@ void main() {
         'backend': {
           'has_sidecar': true,
           'executable': 'engine/service.exe',
+          'development_entry': 'engine/dart/bin/service.dart',
           'port': 18888,
         },
       };
@@ -40,10 +41,18 @@ void main() {
       expect(manifest.hasSidecar, isTrue);
       expect(manifest.backendExecutable, 'engine/service.exe');
       expect(manifest.backendPort, 18888);
+      expect(
+        manifest.backend?.developmentEntry,
+        'engine/dart/bin/service.dart',
+      );
 
       final restored = manifest.toJson();
       expect(restored['id'], manifest.id);
       expect(restored['ui']['default_width'], 420);
+      expect(
+        restored['backend']['development_entry'],
+        'engine/dart/bin/service.dart',
+      );
     });
 
     test(

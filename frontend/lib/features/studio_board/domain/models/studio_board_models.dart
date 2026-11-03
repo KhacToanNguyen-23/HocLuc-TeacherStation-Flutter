@@ -1,25 +1,46 @@
 import 'dart:typed_data';
 import 'dart:ui';
-
 import 'package:flutter/painting.dart';
-
 import 'ink_path.dart';
+
+export 'dgnl_highlight_palette.dart';
+export 'pedagogical_highlight_policy.dart';
 
 enum StudioViewportMode { fullBoard, fullPdf, split }
 
 class PdfDgnlHighlightSpan {
   final String text;
   final String category; // 'grammar', 'collocation', 'vocabulary'
+  final String level; // 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Unknown'
   final String type;
   final String note;
   final List<Rect> normalizedRects;
+  final bool isPedagogical;
+  final bool isAcademic;
+  final bool isPreTeach;
+  final bool isFunctionWord;
+  final bool isProperNoun;
+  final bool isNumber;
+  final String? lemma;
+  final String? sourceStyleId;
+  final Map<String, dynamic> metadata;
 
   const PdfDgnlHighlightSpan({
     required this.text,
     required this.category,
+    this.level = 'B2',
     required this.type,
     required this.note,
     required this.normalizedRects,
+    this.isPedagogical = false,
+    this.isAcademic = false,
+    this.isPreTeach = false,
+    this.isFunctionWord = false,
+    this.isProperNoun = false,
+    this.isNumber = false,
+    this.lemma,
+    this.sourceStyleId,
+    this.metadata = const {},
   });
 }
 
@@ -30,8 +51,10 @@ class PdfDgnlPassage {
   final Rect normalizedBounds;
   final List<PdfDgnlHighlightSpan> spans;
   final Map<String, dynamic> metrics;
-  final List<Map<String, dynamic>> clozeQuestions;
   bool isVisible;
+  final Map<String, dynamic>? analysisResult;
+  final String? analysisPluginId;
+  List<PdfDgnlHighlightSpan>? activeFilteredSpans;
 
   PdfDgnlPassage({
     required this.id,
@@ -40,8 +63,10 @@ class PdfDgnlPassage {
     required this.normalizedBounds,
     required this.spans,
     required this.metrics,
-    required this.clozeQuestions,
     this.isVisible = true,
+    this.analysisResult,
+    this.analysisPluginId,
+    this.activeFilteredSpans,
   });
 }
 
@@ -50,16 +75,23 @@ class BoardStroke {
     this.color,
     this.width,
     this.points, {
+    this.id,
     this.isEraser = false,
     bool? isHighlighter,
     this.rect,
     this.isHollow = false,
+    this.isDashed = false,
+    this.text,
     this.smartPenGroupId,
     this.smartPenLabel,
     this.annotationOwnerId,
     this.annotationGroupId,
     this.annotationItemId,
+    this.category,
+    this.level,
+    this.opacity,
   }) : isHighlighter = isHighlighter ?? (width > 6 || rect != null);
+  final String? id;
   final bool isHighlighter;
   final Color color;
   final double width;
@@ -67,11 +99,16 @@ class BoardStroke {
   final bool isEraser;
   final Rect? rect;
   final bool isHollow;
+  final bool isDashed;
+  final String? text;
   final String? smartPenGroupId;
   final String? smartPenLabel;
   final String? annotationOwnerId;
   final String? annotationGroupId;
   final String? annotationItemId;
+  final String? category;
+  final String? level;
+  final double? opacity;
   String? get groupedAnnotationGroupId => annotationGroupId ?? smartPenGroupId;
   String? get groupedAnnotationItemId => annotationItemId ?? smartPenLabel;
   bool get isGroupedPdfAnnotation =>
@@ -82,6 +119,14 @@ class BoardStroke {
       smartPenGroupId != null && smartPenLabel != null && points.length >= 3;
   Path? _cachedPath;
   Size? _cachedSize;
+
+  bool hitTest(Offset point, double radius) {
+    if (rect != null) {
+      final inflated = rect!.inflate(radius);
+      return inflated.contains(point);
+    }
+    return points.any((p) => (p - point).distance < radius);
+  }
 
   Path getPath([Size? size]) {
     if (rect != null) {
@@ -127,15 +172,21 @@ class BoardStroke {
     color,
     width,
     List<Offset>.of(points),
+    id: id,
     isEraser: isEraser,
     isHighlighter: isHighlighter,
     rect: rect,
     isHollow: isHollow,
+    isDashed: isDashed,
+    text: text,
     smartPenGroupId: smartPenGroupId,
     smartPenLabel: smartPenLabel,
     annotationOwnerId: annotationOwnerId,
     annotationGroupId: annotationGroupId,
     annotationItemId: annotationItemId,
+    category: category,
+    level: level,
+    opacity: opacity,
   );
 
   Map<String, dynamic> toJson() => {
@@ -144,14 +195,20 @@ class BoardStroke {
     'isEraser': isEraser,
     'isHighlighter': isHighlighter,
     'points': points.map((p) => [p.dx, p.dy]).toList(),
+    if (id != null) 'id': id,
     if (rect != null)
       'rect': [rect!.left, rect!.top, rect!.width, rect!.height],
     if (isHollow) 'isHollow': true,
+    if (isDashed) 'isDashed': true,
+    if (text != null) 'text': text,
     if (smartPenGroupId != null) 'smartPenGroupId': smartPenGroupId,
     if (smartPenLabel != null) 'smartPenLabel': smartPenLabel,
     if (annotationOwnerId != null) 'annotationOwnerId': annotationOwnerId,
     if (annotationGroupId != null) 'annotationGroupId': annotationGroupId,
     if (annotationItemId != null) 'annotationItemId': annotationItemId,
+    if (category != null) 'category': category,
+    if (level != null) 'level': level,
+    if (opacity != null) 'opacity': opacity,
   };
 
   static BoardStroke fromJson(Map<String, dynamic> json) {
@@ -175,15 +232,21 @@ class BoardStroke {
             (p) => Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()),
           )
           .toList(),
+      id: json['id'] as String?,
       isEraser: json['isEraser'] as bool? ?? false,
       isHighlighter: json['isHighlighter'] as bool?,
       rect: r,
       isHollow: json['isHollow'] == true,
+      isDashed: json['isDashed'] == true,
+      text: json['text'] as String?,
       smartPenGroupId: json['smartPenGroupId'] as String?,
       smartPenLabel: json['smartPenLabel'] as String?,
       annotationOwnerId: json['annotationOwnerId'] as String?,
       annotationGroupId: json['annotationGroupId'] as String?,
       annotationItemId: json['annotationItemId'] as String?,
+      category: json['category'] as String?,
+      level: json['level'] as String?,
+      opacity: (json['opacity'] as num?)?.toDouble(),
     );
   }
 }

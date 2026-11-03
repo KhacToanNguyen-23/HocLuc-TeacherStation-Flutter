@@ -8,9 +8,6 @@
   --glass-shadow: 0 8px 28px rgb(0 0 0 / 0.28);
   --glass-radius-pill: 9999px;
   --glass-radius-card: 18px;
-  --glass-subject-color: #38bdf8;
-  --glass-verb-color: #f472b6;
-  --glass-object-color: #fb923c;
 }
 
 :root[data-glass-preset='clear'] {
@@ -40,8 +37,8 @@
   border: 1px solid #0b2348;
   outline: 1px solid #ffffff;
   border-radius: var(--glass-radius-card);
-  background: #182620;
-  background: var(--glass-bg);
+  background-color: #182620;
+  background-color: var(--glass-bg);
   box-shadow: var(--glass-shadow), inset 0 1px 0 rgb(255 255 255 / 0.12);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
@@ -90,49 +87,6 @@
     box-shadow: var(--glass-shadow), inset 0 1.5px 1.5px 0 rgb(255 255 255 / 0.65), 0 4px 16px rgb(0 0 0 / 0.25);
     transform: translateY(-1px);
     filter: brightness(1.06);
-  }
-}
-
-.liquid-gem-token {
-  border-radius: var(--glass-radius-pill);
-  background-color: var(--glass-bg);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), var(--glass-shadow);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
-}
-
-.token-pill.liquid-gem-token {
-  background-color: var(--glass-bg);
-}
-
-.liquid-gem-token.role-subject {
-  border-color: var(--glass-subject-color);
-  border-style: solid;
-  background-image: linear-gradient(135deg, color-mix(in srgb, var(--glass-subject-color) 16%, transparent), transparent 75%);
-}
-
-.liquid-gem-token.role-verb {
-  border-color: var(--glass-verb-color);
-  border-style: dashed;
-  background-image: linear-gradient(135deg, color-mix(in srgb, var(--glass-verb-color) 16%, transparent), transparent 75%);
-}
-
-.liquid-gem-token.role-object {
-  border: 3px double var(--glass-object-color);
-  background-image: linear-gradient(135deg, color-mix(in srgb, var(--glass-object-color) 17%, transparent), transparent 75%);
-}
-
-.liquid-gem-token.role-subject .role-tag { color: var(--glass-subject-color); }
-.liquid-gem-token.role-verb .role-tag { color: var(--glass-verb-color); }
-.liquid-gem-token.role-object .role-tag { color: var(--glass-object-color); }
-
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .liquid-card,
-  .liquid-pill-btn,
-  .liquid-gem-token {
-    background-color: #182620;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 }
 

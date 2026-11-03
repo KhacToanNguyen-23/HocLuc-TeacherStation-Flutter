@@ -39,6 +39,7 @@ public class ClassroomService {
     public Classroom createClassroom(String directUrl, String accessToken, String title, String teacherId) {
         long startedAt = System.nanoTime();
         synchronized (repository.getLock()) {
+            long sessionStartedAt = System.currentTimeMillis();
             JsonObject active = getActiveClassroom();
             if (active.has("status") && "ONGOING".equals(active.get("status").getAsString())) {
                 String owner = teacherId != null && !teacherId.isBlank() ? teacherId : "teacher_default";
@@ -59,7 +60,7 @@ public class ClassroomService {
                 classroom.setId("cls_" + UUID.randomUUID().toString().substring(0, 8));
                 classroom.setTitle(title != null && !title.isBlank() ? title : "Phòng học trực tuyến");
                 classroom.setTeacherId(teacherId != null && !teacherId.isBlank() ? teacherId : "teacher_default");
-                classroom.setStartedAt(System.currentTimeMillis());
+                classroom.setStartedAt(sessionStartedAt);
 
                 if (!saveOrUpdateClassroom(classroom)) {
                     return Classroom.error("Chưa lưu được buổi học vào bộ nhớ.");

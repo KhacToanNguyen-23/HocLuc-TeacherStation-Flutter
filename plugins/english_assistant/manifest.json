@@ -4,7 +4,7 @@
   "name": "Trợ giảng Tiếng Anh",
   "version": "2.1.4",
   "author": "Học Lực Studio",
-  "description": "Bóc tách cú pháp S-V-O và phân tích ngữ liệu ĐGNL.",
+  "description": "Phân tích từ vựng, ngữ pháp và collocation cho giáo viên.",
   "category": "languages",
   "icon": "icon.png",
   "ui": {
@@ -27,30 +27,13 @@
         "action": "snip_region",
         "target": "dgnl",
         "key": "quick_snip_dgnl_button"
-      },
-      {
-        "id": "svo",
-        "label": "Công cụ S-V-O",
-        "icon": "auto_awesome",
-        "tooltip": "Bật công cụ bóc tách S-V-O.",
-        "action": "toggle_tool",
-        "target": "svo",
-        "captures_board_input": true,
-        "key": "svo_tool_button"
-      },
-      {
-        "id": "quick_sentence",
-        "label": "Nhập câu",
-        "icon": "edit_note",
-        "tooltip": "Nhập hoặc chọn câu tiếng Anh để phân tích.",
-        "action": "quick_input",
-        "key": "quick_sentence_button"
       }
     ]
   },
   "backend": {
-    "type": "python",
-    "entry": "engine/service.py",
+    "type": "binary",
+    "entry": "engine/bin/english_assistant_engine.exe",
+    "development_entry": "engine/dart/bin/english_assistant_engine.dart",
     "health_endpoint": "/health"
   },
   "permissions": [

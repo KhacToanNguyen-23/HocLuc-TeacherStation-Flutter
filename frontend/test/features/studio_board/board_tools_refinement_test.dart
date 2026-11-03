@@ -82,7 +82,7 @@ void main() {
             ),
           ),
         );
-        await tester.tap(find.byTooltip('Độ dày và xem trước nét'));
+        await tester.tap(find.byTooltip('Độ dày và xem trước nét vẽ'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('10.0 px'));
         await tester.pump();
@@ -92,13 +92,13 @@ void main() {
         studio.startStroke(const Offset(.1, .1));
         expect(studio.strokes.single.isHighlighter, isFalse);
         await tester.pump();
-        await tester.tap(find.byTooltip('Hoàn tác nét'));
+        await tester.tap(find.byTooltip('Hoàn tác nét vẽ (Ctrl+Z)'));
         await tester.pump();
         expect(studio.strokes, isEmpty);
-        await tester.tap(find.byTooltip('Làm lại nét'));
+        await tester.tap(find.byTooltip('Làm lại nét vẽ (Ctrl+Y)'));
         await tester.pump();
         expect(studio.strokes, hasLength(1));
-        await tester.tap(find.byTooltip('Xóa nét trang này'));
+        await tester.tap(find.byTooltip('Xóa toàn bộ nét trang này'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Hủy'));
         await tester.pumpAndSettle();

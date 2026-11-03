@@ -27,7 +27,7 @@ class GoogleWebviewLoginDialog extends StatefulWidget {
     String initialUrl = 'https://accounts.google.com/signin',
   }) {
     final service = authService ?? GoogleMeetAuthService();
-    return showDialog<String>(
+    return showAppModalDialog<String>(
       context: context,
       barrierDismissible: true,
       builder: (_) => GoogleWebviewLoginDialog(

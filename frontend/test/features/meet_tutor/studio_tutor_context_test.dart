@@ -39,7 +39,6 @@ BoardSticker sticker(String id, String text) => BoardSticker(
   tokens: const [
     {'answerKey': 'PRIVATE TOKEN'},
   ],
-  issues: const ['PRIVATE ANALYSIS'],
 );
 
 SmartChalkAnnotation chalk(String id, String text, {bool visible = true}) =>

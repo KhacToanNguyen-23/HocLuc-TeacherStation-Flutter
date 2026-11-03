@@ -19,15 +19,14 @@ List<int> createEnglishAssistantZip() {
     'name': 'Trợ giảng Tiếng Anh',
     'version': '1.0.0',
     'author': 'Học Lực Studio',
-    'description': 'Bóc tách S-V-O và bắt lỗi thì/ngữ pháp',
+    'description': 'Phân tích ngữ pháp và từ vựng cho giáo viên',
     'main': 'ui/index.html',
     'icon': 'icon.png',
     'placement': 'drawer_panel',
     'default_width': 420,
     'backend': {
-      'type': 'python',
-      'entry': 'engine/service.py',
-      'port': 18888,
+      'type': 'binary',
+      'entry': 'engine/bin/english_assistant_engine.exe',
       'health_endpoint': '/health',
     },
     'permissions': ['board:insert_annotation'],
@@ -83,7 +82,11 @@ void main() {
         expect(installed.manifest.id, 'com.hocluc.plugin.english');
         expect(installed.manifest.name, 'Trợ giảng Tiếng Anh');
         expect(installed.manifest.defaultWidth, 420);
-        expect(installed.manifest.backend?.port, 18888);
+        expect(installed.manifest.backend?.type, 'binary');
+        expect(
+          installed.manifest.backend?.entry,
+          'engine/bin/english_assistant_engine.exe',
+        );
         expect(
           installed.getFileString('ui/index.html'),
           contains('English Assistant'),
@@ -145,7 +148,6 @@ void main() {
             {'text': 'a', 'role': null},
             {'text': 'book', 'role': 'object'},
           ],
-          'grammarIssue': 'Sentence is grammatically sound.',
         });
         await tester.pumpAndSettle();
 
@@ -157,7 +159,6 @@ void main() {
           'The smart student reads a book eagerly in the classroom.',
         );
         expect(sticker.tokens.length, 6);
-        expect(sticker.grammarIssue, 'Sentence is grammatically sound.');
 
         // Check BoardStickerCard is rendered on the interactive chalkboard
         expect(find.byType(BoardStickerCard), findsOneWidget);
@@ -248,32 +249,36 @@ void main() {
     );
 
     test(
-      '4. Verify real packaged file plugins/english_assistant.hlep',
+      'development source declares a Dart binary and text-only UI',
       () async {
-        final file = File('../plugins/english_assistant.hlep');
-        expect(file.existsSync(), isTrue);
-        final bytes = await file.readAsBytes();
-        final installed = await PluginManager.instance.installPluginFromBytes(
-          bytes,
-          'english_assistant.hlep',
-        );
-        expect(installed.manifest.id, 'com.hocluc.plugin.english');
-        expect(installed.manifest.name, 'Trợ giảng Tiếng Anh');
+        final manifest =
+            jsonDecode(
+                  await File(
+                    '../plugins/english_assistant/manifest.json',
+                  ).readAsString(),
+                )
+                as Map<String, dynamic>;
+        final html = await File(
+          '../plugins/english_assistant/ui/index.html',
+        ).readAsString();
+        final app = await File(
+          '../plugins/english_assistant/ui/app.js',
+        ).readAsString();
+        expect(manifest['backend']['type'], 'binary');
         expect(
-          installed.getFileString('ui/index.html'),
-          contains('Trợ Giảng Tiếng Anh'),
+          manifest['backend']['entry'],
+          'engine/bin/english_assistant_engine.exe',
         );
-        expect(
-          installed.getFileString('ui/app.js'),
-          contains('window.HocLuc.board.insertAnnotation'),
-        );
-        expect(
-          installed.getFileString('engine/service.py'),
-          contains('FastAPI'),
-        );
+        expect(html, contains('Tổng quan'));
+        expect(html, contains('Nguồn dữ liệu'));
+        expect(app, contains('/api/analyze'));
+        expect(app, isNot(contains('analyze-svo')));
+        final engineFiles = Directory(
+          '../plugins/english_assistant/engine',
+        ).listSync(recursive: true).whereType<File>();
+        expect(engineFiles.where((file) => file.path.endsWith('.py')), isEmpty);
       },
     );
-
     test(
       'glass preset events flow through the SDK and update the plugin UI',
       () async {
@@ -360,12 +365,6 @@ glassHandler({ preset: 'unknown', dispatched_at_epoch_ms: 1700000000000 });
 if (root.dataset.glassPreset !== 'solid') process.exit(5);
 const report = window.__glassPresetLatencyReport();
 if (report.count !== 30 || report.medianMs >= 50 || report.p95Ms >= 50 || report.maxMs >= 50) process.exit(6);
-const input = elements.get('inputSentence');
-input.value = 'The student reads a book';
-elements.get('btnAnalyze').handlers.click().then(() => {
-  if (!registeredRegion || registeredRegion.id !== 'analysis-result-card') process.exitCode = 7;
-  if (registeredRegion.target !== elements.get('resultsCard')) process.exitCode = 8;
-});
 ''',
         ]);
         expect(
@@ -383,8 +382,7 @@ elements.get('btnAnalyze').handlers.click().then(() => {
         for (final preset in ['clear', 'frosted', 'solid']) {
           expect(appJs, contains(preset));
         }
-        expect(appJs, contains('registerRegion'));
-        expect(appJs, contains('analysis-result-card'));
+        expect(appJs, isNot(contains('analyze-svo')));
       },
     );
   });

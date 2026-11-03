@@ -447,7 +447,7 @@ class _AnnotationItemWidgetState extends State<_AnnotationItemWidget> {
                 ),
                 onPressed: () => Navigator.of(ctx).pop(controller.text),
                 child: const Text(
-                  'Cập nhật S-V-O',
+                  'Cập nhật văn bản',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -458,9 +458,24 @@ class _AnnotationItemWidgetState extends State<_AnnotationItemWidget> {
     );
 
     if (newText != null && newText.trim().isNotEmpty) {
-      widget.studio.analyzeHandwritingWithVerifiedText(
-        widget.annotation.normalizedBounds.center,
-        newText.trim(),
+      final cleanText = newText.trim();
+      final words = cleanText.split(RegExp(r'\s+'));
+      final totalLength = math.max(1, cleanText.length);
+      var left = 0.0;
+      final tokens = <ChalkWordToken>[];
+      for (final word in words) {
+        final width = (word.length / totalLength).clamp(0.05, 0.95);
+        tokens.add(
+          ChalkWordToken(
+            word: word,
+            relativeRect: Rect.fromLTWH(left, 0, width, 1),
+          ),
+        );
+        left += width + 1 / totalLength;
+      }
+      widget.studio.removeChalkAnnotation(widget.annotation.id);
+      widget.studio.addChalkAnnotation(
+        widget.annotation.copyWith(rawText: cleanText, tokens: tokens),
       );
     }
   }
@@ -530,78 +545,6 @@ class _AnnotationItemWidgetState extends State<_AnnotationItemWidget> {
                   ),
                 ),
 
-                // Word Role Badges (S, V, O, A, C or ... when pending)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: strokeHeight + 3.0,
-                  height: 18,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      for (final token in a.tokens)
-                        Positioned(
-                          left: token.relativeRect.left * strokeWidth,
-                          width: (token.relativeRect.width * strokeWidth).clamp(
-                            20.0,
-                            strokeWidth,
-                          ),
-                          height: 18,
-                          child: Center(
-                            child: GestureDetector(
-                              onTap: () => _handleEdit(context),
-                              child: Tooltip(
-                                message:
-                                    (token.role != null &&
-                                        token.role!.isNotEmpty)
-                                    ? '${token.word}: ${_getRoleDescription(token.role)}'
-                                    : 'Bấm để nhập/chỉnh sửa câu',
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                    vertical: 1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: token.color.withValues(alpha: 0.25),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color: token.color,
-                                      width: 1.0,
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Color(0x88000000),
-                                        blurRadius: 3,
-                                        offset: Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    (token.role != null &&
-                                            token.role!.isNotEmpty)
-                                        ? _getRoleLetter(token.role)
-                                        : '...',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w900,
-                                      color: token.color,
-                                      shadows: const [
-                                        Shadow(
-                                          color: Colors.black,
-                                          blurRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-
                 // Action buttons visible on hover or eraser mode
                 if (_isHovered || isEraser)
                   Positioned(
@@ -642,7 +585,7 @@ class _AnnotationItemWidgetState extends State<_AnnotationItemWidget> {
                         ),
                         const SizedBox(width: 6),
                         Tooltip(
-                          message: 'Xóa gạch chân S-V-O',
+                          message: 'Xóa chú thích văn bản',
                           child: GestureDetector(
                             onTap: _handleDelete,
                             child: Container(
@@ -681,33 +624,4 @@ class _AnnotationItemWidgetState extends State<_AnnotationItemWidget> {
       ),
     );
   }
-
-  String _getRoleLetter(String? role) {
-    if (role == null) return '';
-    final r = role.toLowerCase();
-    if (r == 'subject' || r == 's') return 'S';
-    if (r == 'verb' || r == 'v') return 'V';
-    if (r == 'object' || r == 'o') return 'O';
-    if (r == 'adverb' || r == 'adverbial' || r == 'a') return 'A';
-    if (r == 'complement' || r == 'c') return 'C';
-    if (r == 'det' || r == 'determiner') return 'Det';
-    if (r == 'prep' || r == 'preposition') return 'Prep';
-    if (r == 'conj' || r == 'conjunction') return 'Conj';
-    return role.toUpperCase();
-  }
-
-  String _getRoleDescription(String? role) {
-    if (role == null) return '';
-    final r = role.toLowerCase();
-    if (r == 'subject' || r == 's') return 'Chủ ngữ [S]';
-    if (r == 'verb' || r == 'v') return 'Động từ [V]';
-    if (r == 'object' || r == 'o') return 'Tân ngữ [O]';
-    if (r == 'adverb' || r == 'adverbial' || r == 'a') return 'Trạng ngữ [A]';
-    if (r == 'complement' || r == 'c') return 'Bổ ngữ [C]';
-    if (r == 'det' || r == 'determiner') return 'Mạo từ / Hạn định từ [Det]';
-    if (r == 'prep' || r == 'preposition') return 'Giới từ [Prep]';
-    if (r == 'conj' || r == 'conjunction') return 'Liên từ [Conj]';
-    return role.toUpperCase();
-  }
 }
-

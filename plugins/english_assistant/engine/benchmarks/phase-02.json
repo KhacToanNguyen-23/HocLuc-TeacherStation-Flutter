@@ -1,7 +1,7 @@
 {
   "kind": "current_pipeline",
   "generated_at_utc": "2026-10-23T17:55:59.583969+00:00",
-  "measurement": "end-to-end /analyze-svo response time, including image OCR and S-V-O parsing",
+  "measurement": "end-to-end legacy image-analysis endpoint response time, including image OCR and legacy sentence-role parsing",
   "runtime": {
     "python": "3.12.10",
     "pillow": "12.3.0",

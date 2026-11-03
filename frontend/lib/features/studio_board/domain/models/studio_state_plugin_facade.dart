@@ -6,14 +6,17 @@ extension StudioStatePluginFacadeExt on StudioState {
     canvas.addSticker(sticker);
     change(() => _selectedStickerId = sticker.id);
   }
+
   void updateSticker(BoardSticker sticker) {
     canvas.updateSticker(sticker);
     change(() => _selectedStickerId = sticker.id);
   }
+
   void removeSticker(String id) {
     if (_selectedStickerId == id) _selectedStickerId = null;
     canvas.removeSticker(id);
   }
+
   void updateStickerRect(String id, Rect newRect) =>
       canvas.updateStickerRect(id, newRect);
   void updateStickerRotation(String id, double rotation) =>
@@ -51,8 +54,7 @@ extension StudioStatePluginFacadeExt on StudioState {
     final target = activeSubjectTool;
     if (plugin == null || target == null) return false;
     return plugin.manifest.contributesTools.any(
-      (tool) =>
-          tool.capturesBoardInput && (tool.target ?? tool.id) == target,
+      (tool) => tool.capturesBoardInput && (tool.target ?? tool.id) == target,
     );
   }
 
@@ -125,10 +127,11 @@ extension StudioStatePluginFacadeExt on StudioState {
   void endSnipping() => pluginBridge.endSnipping();
   void stopSnipping() => pluginBridge.endSnipping();
 
-  void Function(String text, String target)? get onSnippetCapturedForPlugin =>
-      pluginBridge.onSnippetCapturedForPlugin;
+  void Function(String text, String target, Map<String, dynamic>? analysis)?
+  get onSnippetCapturedForPlugin => pluginBridge.onSnippetCapturedForPlugin;
   set onSnippetCapturedForPlugin(
-    void Function(String text, String target)? callback,
+    void Function(String text, String target, Map<String, dynamic>? analysis)?
+    callback,
   ) => pluginBridge.onSnippetCapturedForPlugin = callback;
 
   VoidCallback? get onSaveHighlightedPdfRequested =>
@@ -140,12 +143,46 @@ extension StudioStatePluginFacadeExt on StudioState {
   set onApplyHighlightToPdfRequested(VoidCallback? callback) =>
       pluginBridge.onApplyHighlightToPdfRequested = callback;
 
-  void sendSnippetToPlugin(String text, {String? target}) {
+  Future<Map<String, dynamic>> analyzeTextWithActivePlugin(
+    String text, {
+    required String requestId,
+    required String selectionToken,
+  }) async {
+    final plugin = activePlugin ?? floatingPlugin;
+    if (plugin == null) throw StateError('No active plugin can analyze text.');
+    final port = ProcessSupervisor.instance.getPort(plugin.id);
+    if (port == null) {
+      throw StateError('The plugin analysis engine is unavailable.');
+    }
+    final client = PluginAnalysisClient();
+    try {
+      return await client.analyze(
+        port: port,
+        text: text,
+        requestId: requestId,
+        selectionToken: selectionToken,
+      );
+    } finally {
+      client.close();
+    }
+  }
+
+  void sendSnippetToPlugin(
+    String text, {
+    String? target,
+    Map<String, dynamic>? analysis,
+    String? pluginId,
+  }) {
     final resolvedTarget = target ?? snipTarget;
     stopSnipping();
     final clean = text.trim();
     if (clean.isNotEmpty) {
-      onSnippetCapturedForPlugin?.call(clean, resolvedTarget);
+      pluginBridge.sendSnippetToPlugin(
+        clean,
+        resolvedTarget,
+        analysis,
+        pluginId: pluginId,
+      );
       change(() {}, persist: false);
     }
   }
@@ -209,7 +246,8 @@ extension StudioStatePluginFacadeExt on StudioState {
     Size? stageSize,
   }) {
     if (pdf.pdfModeOverride != null) return pdf.pdfModeOverride!;
-    return getPdfOverlapRatio(componentBounds, stageSize: stageSize) >= threshold;
+    return getPdfOverlapRatio(componentBounds, stageSize: stageSize) >=
+        threshold;
   }
 
   void insertPluginCard(Map<String, dynamic> cardData) =>

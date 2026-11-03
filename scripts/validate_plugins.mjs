@@ -9,6 +9,7 @@ const rootDir = path.resolve(__dirname, '..');
 const pluginsDir = path.join(rootDir, 'plugins');
 
 const isFixMode = process.argv.includes('--fix');
+const sourceOnly = process.argv.includes('--source-only');
 
 const VALID_PLACEMENTS = new Set([
   'floating_window',
@@ -31,7 +32,12 @@ const FIXED_PORT_PATTERN = /(?::18888\b|(?<![\d.])18888(?![\d.])|\b(?:localhost|
 const IGNORED_DIRS = new Set([
   '__pycache__',
   '.venv',
+  '.dart_tool',
   'node_modules',
+  'build',
+  'coverage',
+  'test',
+  'tests',
   '.git',
   '.cache',
 ]);
@@ -198,7 +204,30 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
     const backendEntryRel = manifest.backend.entry || manifest.backendExecutable;
     if (backendEntryRel) {
       const backendEntryPath = path.join(dirPath, backendEntryRel);
-      if (!fs.existsSync(backendEntryPath)) {
+      const developmentEntryRel = manifest.backend.development_entry;
+      let hasDevelopmentEntry = false;
+      if (
+        sourceOnly &&
+        typeof developmentEntryRel === 'string' &&
+        developmentEntryRel.toLowerCase().endsWith('.dart')
+      ) {
+        try {
+          const pluginRoot = fs.realpathSync(dirPath);
+          const developmentEntryPath = fs.realpathSync(
+            path.resolve(dirPath, developmentEntryRel),
+          );
+          const relativeEntryPath = path.relative(pluginRoot, developmentEntryPath);
+          const isInsidePlugin = relativeEntryPath === '' ||
+            (relativeEntryPath !== '..' &&
+              !relativeEntryPath.startsWith(`..${path.sep}`) &&
+              !path.isAbsolute(relativeEntryPath));
+          hasDevelopmentEntry = isInsidePlugin &&
+            fs.statSync(developmentEntryPath).isFile();
+        } catch (_) {
+          hasDevelopmentEntry = false;
+        }
+      }
+      if (!fs.existsSync(backendEntryPath) && !hasDevelopmentEntry) {
         errors.push({
           plugin: pluginName,
           code: 'MISSING_BACKEND_ENTRY',
@@ -248,7 +277,7 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
   }
 
   // 7. Kiểm tra tệp .hlep và độ tươi (Freshness Check)
-  if (!fs.existsSync(hlepPath)) {
+  if (!sourceOnly && !fs.existsSync(hlepPath)) {
     errors.push({
       plugin: pluginName,
       code: 'MISSING_HLEP',
@@ -256,7 +285,7 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
       fix: `node scripts/package_plugin.mjs ${pluginName}`,
     });
     outOfSyncPlugins.add(pluginName);
-  } else {
+  } else if (!sourceOnly) {
     const files = getFilesRecursively(dirPath);
     let isOutOfSync = false;
     let mismatchPath = null;
@@ -317,7 +346,9 @@ function checkOrphanPackages(errors) {
 }
 
 function main() {
-  console.log('🔍 [Plugin Validator] Đang quét toàn bộ plugins và kiểm tra tính toàn vẹn...');
+  console.log(sourceOnly
+    ? '🔍 [Plugin Validator] Đang kiểm tra source plugin, bỏ qua freshness của archive...'
+    : '🔍 [Plugin Validator] Đang quét toàn bộ plugins và kiểm tra tính toàn vẹn...');
   const startTime = Date.now();
 
   const errors = [];

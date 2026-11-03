@@ -217,11 +217,17 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
     int? badgeCount,
   }) {
     final isSelected = _selectedTabIndex == index;
-    return AppPressable(
-      scaleDown: 0.98,
-      onTap: () => _cubit.setTabIndex(index),
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: badgeCount != null && badgeCount > 0
+          ? '$title, $badgeCount mục'
+          : title,
+      child: AppPressable(
+        scaleDown: 0.98,
+        onTap: () => _cubit.setTabIndex(index),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
         duration: AppMotion.duration(context, milliseconds: 200),
         curve: AppMotion.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
@@ -276,8 +282,9 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Future<void> _startClassroom() async {
     await Navigator.of(context).push<void>(
@@ -413,7 +420,12 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                 Container(
                   height: 60,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  decoration: const BoxDecoration(color: Colors.white),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border, width: 1),
+                    ),
+                  ),
                   child: Row(
                     children: [
                       const HocLucBrandMark(size: 34),
@@ -613,6 +625,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                                     child: DashboardActionCard(
                                       title: 'Chọn lớp để dạy',
                                       icon: Icons.videocam_rounded,
+                                      primary: true,
                                       onTap: _startClassroom,
                                     ),
                                   ),
@@ -632,6 +645,7 @@ class _ClassroomDashboardScreenState extends State<ClassroomDashboardScreen> {
                                   DashboardActionCard(
                                     title: 'Chọn lớp để dạy',
                                     icon: Icons.videocam_rounded,
+                                    primary: true,
                                     onTap: _startClassroom,
                                   ),
                                   const SizedBox(height: AppSpacing.md),

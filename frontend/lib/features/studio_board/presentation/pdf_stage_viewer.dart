@@ -57,6 +57,38 @@ extension _PdfStageViewer on _PdfStageState {
         horizontal: 16.0,
         vertical: 20.0,
       ),
+      behaviorControlParams: const PdfViewerBehaviorControlParams(
+        loadPageDimensionsOnDemand: true,
+        trailingPageLoadingDelay: Duration.zero,
+      ),
+      loadingBannerBuilder: (context, bytesDownloaded, totalBytes) {
+        return Container(
+          color: chalkboardBg,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xffd4e8a6)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Đang tải trang tài liệu...',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
       onPageChanged: (page) {
         if (page != null && page != studio.pdfPage) {
           _lastPage = page;
@@ -73,9 +105,14 @@ extension _PdfStageViewer on _PdfStageState {
       onViewerReady: (doc, controller) {
         _beginSmartIndexing(doc);
         if (studio.pdfPage > 1 && studio.pdfPage <= doc.pages.length) {
-          controller.goToPage(pageNumber: studio.pdfPage);
+          controller.goToPage(
+            pageNumber: studio.pdfPage,
+            duration: Duration.zero,
+          );
         }
-        Future.microtask(() => _applyFit());
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _applyFit();
+        });
       },
       viewerOverlayBuilder: (context, size, handleLinkTap) => [
         PdfViewerScrollThumb(
@@ -197,6 +234,7 @@ extension _PdfStageViewer on _PdfStageState {
                         children: [
                           StrokeCanvas(
                             studio: studio,
+                            pageNumber: page.pageNumber,
                             targetStrokes: studio.pdfAnnotations.putIfAbsent(
                               page.pageNumber,
                               () => [],
@@ -296,66 +334,7 @@ extension _PdfStageViewer on _PdfStageState {
                                 ),
                               ),
                             ),
-                          if (studio.activeToolCapturesBoardInput)
-                            Positioned.fill(
-                              child: MouseRegion(
-                                cursor: SystemMouseCursors.click,
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTapDown: (details) async {
-                                    final normX =
-                                        (details.localPosition.dx /
-                                                pageRect.width)
-                                            .clamp(0.0, 1.0);
-                                    final normY =
-                                        (details.localPosition.dy /
-                                                pageRect.height)
-                                            .clamp(0.0, 1.0);
 
-                                    String? extractedText;
-                                    Rect? textNormalizedRect;
-
-                                    try {
-                                      final pageText = await page.loadText();
-                                      final full =
-                                          pageText?.fullText.trim() ?? '';
-                                      if (full.isNotEmpty) {
-                                        final rawLines = full
-                                            .split('\n')
-                                            .map((l) => l.trim())
-                                            .where((l) => l.isNotEmpty)
-                                            .toList();
-                                        if (rawLines.isNotEmpty) {
-                                          final idx = (normY * rawLines.length)
-                                              .clamp(0, rawLines.length - 1)
-                                              .toInt();
-                                          extractedText = rawLines[idx];
-                                          final approxW =
-                                              (extractedText.length * 0.018)
-                                                  .clamp(0.12, 0.70);
-                                          textNormalizedRect = Rect.fromLTWH(
-                                            (normX - approxW / 2).clamp(
-                                              0.04,
-                                              0.96 - approxW,
-                                            ),
-                                            (normY - 0.012).clamp(0.005, 0.96),
-                                            approxW,
-                                            0.022,
-                                          );
-                                        }
-                                      }
-                                    } catch (_) {}
-
-                                    studio.analyzePdfSentenceAt(
-                                      page.pageNumber,
-                                      Offset(normX, normY),
-                                      sampleText: extractedText,
-                                      targetRect: textNormalizedRect,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
                           SmartChalkOverlay(
                             studio: studio,
                             targetAnnotations: studio.getPdfChalkAnnotations(
@@ -390,20 +369,31 @@ extension _PdfStageViewer on _PdfStageState {
       },
     );
 
+    final hasLocalFile =
+        studio.pdfFilePath != null &&
+        studio.pdfFilePath!.isNotEmpty &&
+        File(studio.pdfFilePath!).existsSync();
+
     _cachedPdfViewer = RepaintBoundary(
       key: _pdfViewerKey,
-      child: studio.pdfBytes != null
-          ? PdfViewer.data(
-              studio.pdfBytes!,
-              sourceName: studio.pdfFilePath ?? 'document.pdf',
-              controller: _pdfController,
-              params: params,
-            )
-          : PdfViewer.file(
+      child: hasLocalFile
+          ? PdfViewer.file(
               studio.pdfFilePath!,
               controller: _pdfController,
               params: params,
-            ),
+            )
+          : (studio.pdfBytes != null
+                ? PdfViewer.data(
+                    studio.pdfBytes!,
+                    sourceName: studio.pdfFilePath ?? 'document.pdf',
+                    controller: _pdfController,
+                    params: params,
+                  )
+                : PdfViewer.file(
+                    studio.pdfFilePath!,
+                    controller: _pdfController,
+                    params: params,
+                  )),
     );
     return _cachedPdfViewer!;
   }

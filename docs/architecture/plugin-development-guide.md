@@ -149,6 +149,7 @@ Hiển thị ngăn kéo gắn bài giảng kèm thanh công cụ nổi (`Subject
 - A `toggle_tool` may declare `"text_selection_mode": true` to let teachers drag-select native PDF text while it is active. Request `board:read_text` and listen with `window.HocLuc.onHostEvent('board:text_selected', ({text, target}) => { ... })`. Events go only to the plugin owning the active target, respect the document's copy permission, normalize whitespace, and ignore empty or over-500-character selections. This mode cannot be combined with `pdf_tap_mode` or `captures_board_input`. Scanned/image-only PDFs require OCR via a separate workflow.
 - A `snip_region` contribution may declare `"snip_text_only": true` to receive extracted text without running the host's legacy language analysis. It requires `board:read_text`; text is delivered via the existing `onSnippetCaptured(text, target)` callback. Saved legacy analysis overlays remain intact but are hidden while a plugin with this raw-text capability is active.
 - `backend`:
+  - Optional `development_entry` can point to a sidecar's Dart source entry. In Flutter debug, the host runs that source through the Dart SDK; release continues to use `entry`. This avoids rebuilding the executable or repackaging `.hlep` for each engine edit during development.
   - Đặt là `null` nếu plugin chỉ là HTML/JS/WASM thuần.
   - Nếu có Python sidecar: Khai báo `{"type": "python", "entry": "engine/service.py", "health_endpoint": "/health"}`. Sidecar nhận cổng Host cấp qua `--port` hoặc `HOCLUC_PLUGIN_PORT`.
 

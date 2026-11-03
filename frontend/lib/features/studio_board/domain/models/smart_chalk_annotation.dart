@@ -1,55 +1,20 @@
 import 'package:flutter/material.dart';
 
 class ChalkWordToken {
-  ChalkWordToken({
+  static const neutralColor = Color(0x88d4e8a6);
+
+  const ChalkWordToken({
     required this.word,
-    this.role,
     Color? color,
     required this.relativeRect,
-  }) : color = color ?? _defaultColorForRole(role);
+  }) : color = color ?? neutralColor;
 
   final String word;
-  final String? role;
   final Color color;
   final Rect relativeRect;
 
-  static Color _defaultColorForRole(String? r) {
-    switch (r?.toLowerCase()) {
-      case 'subject':
-      case 's':
-        return const Color(0xff89b4fa); // Pastel Blue
-      case 'verb':
-      case 'v':
-        return const Color(0xfff38ba8); // Pastel Pink
-      case 'object':
-      case 'o':
-        return const Color(0xfffab387); // Pastel Orange
-      case 'adverb':
-      case 'adverbial':
-      case 'a':
-        return const Color(0xffa6e3a1); // Pastel Green
-      case 'complement':
-      case 'c':
-        return const Color(0xffcba6f7); // Pastel Purple / Lavender
-      case 'det':
-      case 'determiner':
-        return const Color(0xff94e2d5); // Pastel Teal / Cyan
-      case 'prep':
-      case 'preposition':
-        return const Color(0xfff9e2af); // Pastel Warm Yellow / Amber
-      case 'conj':
-      case 'conjunction':
-        return const Color(0xffeba0ac); // Pastel Coral / Peach
-      default:
-        return const Color(
-          0x88d4e8a6,
-        ); // Soft neutral chalk underline while analyzing
-    }
-  }
-
   Map<String, dynamic> toJson() => {
     'word': word,
-    'role': role,
     'color': color.toARGB32(),
     'relativeRect': [
       relativeRect.left,
@@ -63,10 +28,8 @@ class ChalkWordToken {
     final rectList = (json['relativeRect'] as List).cast<num>();
     return ChalkWordToken(
       word: json['word'] as String? ?? '',
-      role: json['role'] as String?,
-      color: json['color'] != null
-          ? Color((json['color'] as num).toInt())
-          : null,
+      // Ignore legacy serialized role colors; old annotations become neutral.
+      color: neutralColor,
       relativeRect: Rect.fromLTWH(
         rectList[0].toDouble(),
         rectList[1].toDouble(),

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:teaching_companion/core/theme/theme.dart';
 import 'package:teaching_companion/features/classroom_meet/services/teacher_media_service.dart';
 
@@ -109,6 +109,13 @@ class LobbyMeetRoomCard extends StatelessWidget {
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -259,6 +266,7 @@ class LobbyMeetRoomCard extends StatelessWidget {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           elevation: 0,
@@ -299,6 +307,7 @@ class LobbyMeetRoomCard extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onEnterStudio,
             style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 3,
               shadowColor: AppColors.primary.withValues(alpha: 0.35),
