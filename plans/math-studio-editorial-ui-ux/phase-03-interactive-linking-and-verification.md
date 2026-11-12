@@ -35,8 +35,8 @@
 
 4. **Task 3.4: Đóng gói plugin và vượt qua các cổng kiểm thử CI**
    - Kiểm tra cú pháp ES Module của toàn bộ các file JS qua Node.js (0 lỗi).
-   - Chạy `node scripts/package_plugin.mjs math_studio` để cập nhật `plugins/math_studio.hlep`.
-   - Chạy `node scripts/validate_plugins.mjs` (đạt chuẩn Schema v2.1).
+   - Chạy `node scripts/plugins/package-plugin.mjs math_studio` để cập nhật `plugins/math_studio.hlep`.
+   - Chạy `node scripts/plugins/validate-plugin-packages.mjs` (đạt chuẩn Schema v2.1).
    - Chạy `flutter test test/architecture_test.dart` (12/12 passing invariants).
    - Chạy `flutter analyze --no-fatal-infos` (0 errors, 0 warnings).
 

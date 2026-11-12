@@ -18,8 +18,8 @@ Plugin chỉ chứa code đang dùng; giấy phép rõ ràng; `.hlep` đồng b�
 
 ## Bước
 1. Xoá file; chạy lại build + test Phase 1–3 (phải còn xanh).
-2. `node scripts/package_plugin.mjs math_studio`.
-3. `node scripts/validate_plugins.mjs` → phải 0 lỗi.
+2. `node scripts/plugins/package-plugin.mjs math_studio`.
+3. `node scripts/plugins/validate-plugin-packages.mjs` → phải 0 lỗi.
 4. Đo và ghi: kích thước `ui/dist/app.js`, `.hlep`, số file.
 5. Quét `frontend/lib/`: không có chuỗi tên plugin/môn toán mới; `flutter test test/architecture_test.dart` 12/12; `dart analyze` 0 issue. (Chỉ là bằng chứng kiến trúc, không phải bằng chứng chức năng.)
 

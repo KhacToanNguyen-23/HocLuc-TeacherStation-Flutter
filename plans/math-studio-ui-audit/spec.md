@@ -43,5 +43,5 @@ Giải quyết triệt để toàn bộ 5 vấn đề UI/UX phát hiện qua ki�
 
 1. **Modal Placement**: Khoảng cách từ mép trên/dưới của modal đến mép vùng bảng luôn $\ge 36\text{px}$, hiển thị 100% footer và nút *"Ghim vào bảng"*.
 2. **SVG Export Visibility**: 100% các phần tử `<text>` và `<tspan>` trong SVG xuất ra bảng đen có màu sáng (`#ffffff`, `#fde047`, hoặc `#93c5fd`), 0 phần tử lưới phụ (`strokeOpacity < 0.3`) và 0 glider kéo cận bị lọt vào SVG tĩnh.
-3. **Architecture Gate**: 12/12 Invariants trong `node scripts/run_architecture_check.mjs` và 5/5 bộ unit test đạt 100%.
+3. **Architecture Gate**: 12/12 Invariants trong `node scripts/checks/run-architecture-check.mjs` và 5/5 bộ unit test đạt 100%.
 

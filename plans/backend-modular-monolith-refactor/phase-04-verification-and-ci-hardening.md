@@ -10,7 +10,7 @@ Verify all backend and frontend test suites, architecture invariants, and plugin
 2. Run frontend architecture invariants (`flutter test test/architecture_test.dart`).
    - Invariant 6: Java files <= 600 LOC.
 3. Run frontend test suite (`flutter test`).
-4. Run plugin validator (`node scripts/validate_plugins.mjs`).
+4. Run plugin validator (`node scripts/plugins/validate-plugin-packages.mjs`).
 5. Run analyzer (`flutter analyze --no-fatal-infos`).
 
 ---
@@ -20,7 +20,7 @@ Verify all backend and frontend test suites, architecture invariants, and plugin
 mvn test -f backend/api/pom.xml
 flutter test test/architecture_test.dart
 flutter test
-node scripts/validate_plugins.mjs
+node scripts/plugins/validate-plugin-packages.mjs
 flutter analyze --no-fatal-infos
 ```
 

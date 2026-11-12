@@ -1,3 +1,4 @@
+// Legacy test tham chiếu API Math Studio đã bị thay thế; giữ làm tư liệu, không thuộc CI hiện hành. Kiểm thử các phép tính đại số và giải tích trong Math CAS.
 import assert from 'assert';
 import {
   compileFunction,
@@ -6,7 +7,7 @@ import {
   findExtrema,
   calculateDefiniteIntegral,
   analyzeFunction
-} from '../plugins/math_studio/ui/core/math_cas.js';
+} from '../../../../plugins/math_studio/ui/core/math_cas.js';
 
 console.log('🧪 Bắt đầu kiểm thử Symbolic Math CAS Engine (math_cas.js)...');
 

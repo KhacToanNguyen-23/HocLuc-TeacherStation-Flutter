@@ -7,13 +7,13 @@ This module extends the existing Flutter application and Java 17 / Spring Boot s
 From `D:\Projects\HocLuc-Teacher`:
 
 ```powershell
-.\scripts\Start-ExamPlatform.ps1
+.\scripts\exam\start-exam-platform.ps1
 ```
 
 Open `http://127.0.0.1:47831/`. The first run builds the JAR and Flutter web preview, creates a local admin with a random password, and stores that credential encrypted with Windows DPAPI at `.run/exam-admin.credential.xml`. A separate PowerShell terminal can display the local admin login:
 
 ```powershell
-.\scripts\Start-ExamPlatform.ps1 -ShowAdminCredential
+.\scripts\exam\start-exam-platform.ps1 -ShowAdminCredential
 ```
 
 Default local admin email: `admin@hocluc.local`. This is a technical account, not a default shared password. Supply `-AdminEmail` and `-AdminPassword (Read-Host -AsSecureString)` to choose a different credential. An existing ADMIN account's password is updated only when the configured bootstrap password changes; existing teacher emails are never promoted. Changing the password revokes existing sessions. Treat the encrypted credential as private local runtime data, not an artifact to distribute. The environment-based bootstrap must be removed or managed through secrets when deploying.

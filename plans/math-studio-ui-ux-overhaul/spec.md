@@ -137,4 +137,4 @@ Chuỗi nhập (Raw Input)
 - [ ] Integral tab displays exact $I$ and $S$ (splitting at roots $f(x)=0$, zero `.0001` error, no stray `∫` label on graph).
 - [ ] 3D Geometry exports visibly to dark chalkboard with all vertex labels intact and supports Vietnamese problem text parsing.
 - [ ] Chalkboard `BoardStickerFloatingBar` trimmed to 3 working actions (`✎ Sửa`, `⧉ Nhân bản`, `🗑 Xóa`).
-- [ ] `node scripts/validate_plugins.mjs`, `flutter test test/architecture_test.dart`, and `flutter analyze --no-fatal-infos` pass with 0 errors.
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs`, `flutter test test/architecture_test.dart`, and `flutter analyze --no-fatal-infos` pass with 0 errors.

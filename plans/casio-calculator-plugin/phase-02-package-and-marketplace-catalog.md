@@ -7,7 +7,7 @@
 ## 1. Scope & Action Items
 
 1. **Đóng gói file `.hlep`:**
-   - Chạy `node scripts/package_plugin.mjs casio_calculator`.
+   - Chạy `node scripts/plugins/package-plugin.mjs casio_calculator`.
    - Xác nhận file `plugins/casio_calculator.hlep` được tạo thành công với dung lượng tối ưu (< 1MB).
 2. **Kiểm thử giải nén và lưu trữ On-Disk (`PluginStorageManager`):**
    - Đảm bảo cơ chế lazy loading của `PluginStorageManager` giải nén đúng cấu trúc:

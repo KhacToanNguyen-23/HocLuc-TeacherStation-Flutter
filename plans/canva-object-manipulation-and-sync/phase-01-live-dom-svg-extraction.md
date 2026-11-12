@@ -28,13 +28,13 @@
    - Nếu container có SVG hợp lệ $\rightarrow$ dùng ngay SVG trích xuất; nếu chưa có (fallback) $\rightarrow$ mới dùng hàm sinh SVG dự phòng.
 
 3. **Đóng gói plugin:**
-   - Chạy `node scripts/validate_plugins.mjs --fix` để đóng gói lại `plugins/math_studio.hlep` đồng bộ Schema v2.1.
+   - Chạy `node scripts/plugins/validate-plugin-packages.mjs --fix` để đóng gói lại `plugins/math_studio.hlep` đồng bộ Schema v2.1.
 
 ---
 
 ## 3. Acceptance Criteria
 - [ ] Khi bấm "Ghim lên bảng", chuỗi SVG gửi sang Flutter là bản sao chính xác từ thẻ `<svg>` đang hiển thị trong panel.
 - [ ] Không còn sai lệch màu sắc (đường cong màu đỏ `#DC2626`, cận tích phân đỏ, cực trị xanh navy viền trắng y hệt panel).
-- [ ] `node scripts/test_math_studio.mjs` đạt 7/7 tests (100%).
-- [ ] `node scripts/validate_plugins.mjs` đạt 3/3 plugins valid (0 lỗi).
+- [ ] `node scripts/tests/math-studio/test-math-studio.mjs` đạt 7/7 tests (100%).
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs` đạt 3/3 plugins valid (0 lỗi).
 

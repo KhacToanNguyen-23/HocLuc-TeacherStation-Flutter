@@ -62,7 +62,7 @@ Giao diện Math Studio hiện tại còn mang tư duy cửa sổ hộp desktop 
 - [ ] Đối tượng trên bảng hoạt động chuẩn Canva: Click chọn mới hiện 8 chốt co giãn + cuống xoay + thanh Floating Bar; click ngoài thì ẩn viền.
 - [ ] Kéo điểm cực trị trực tiếp trên bảng phấn làm đồ thị biến dạng và công thức thay đổi theo thời gian thực (60 FPS).
 - [ ] Gõ công thức trong ô nhập không bị giật, lỗi caret hay mất nét.
-- [ ] `node scripts/validate_plugins.mjs` và `node scripts/run_architecture_check.mjs` đạt 100% PASS.
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs` và `node scripts/checks/run-architecture-check.mjs` đạt 100% PASS.
 
 ---
 

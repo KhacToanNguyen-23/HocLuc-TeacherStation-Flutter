@@ -23,5 +23,5 @@
    - Khi `isRevolved === true`: Kích hoạt bộ vẽ khối tròn xoay chèn trực tiếp vào SVG đồ thị.
 
 3. **Kiểm thử tự động:**
-   - Tạo `scripts/test_revolution_solid.mjs` kiểm tra tính chính xác của các đường elip và thời gian sinh SVG ($\le 20$ ms).
+   - Tạo `scripts/tests/math-studio/test-revolution-solid.mjs` kiểm tra tính chính xác của các đường elip và thời gian sinh SVG ($\le 20$ ms).
 

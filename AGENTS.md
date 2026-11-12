@@ -26,7 +26,7 @@ When working on any plugin or extending the Teacher Station plugin system:
 6. **Declarative Manifest Schema v2.1**:
    - **In-Board Tool Contributions**: Declare board tools in `manifest.json` under `contributes.tools` (`snip_region`, `toggle_tool`, `quick_input`) — NEVER hardcode tool buttons in `SubjectToolPalette`.
    - **Frameless Bare-Device Mode**: For physical device simulators (e.g., calculators, rulers), set `"placement": "floating_window"`, `"frameless": true`, `"resizable": false`, and exact `default_width` / `default_height` in `manifest.json`.
-   - **Packaging**: Always package modified plugins into `.hlep` via `node scripts/package_plugin.mjs <plugin_folder>` so Backend Marketplace (`GET /api/marketplace/plugins`) serves the updated archive.
+   - **Packaging**: Always package modified plugins into `.hlep` via `node scripts/plugins/package-plugin.mjs <plugin_folder>` so Backend Marketplace (`GET /api/marketplace/plugins`) serves the updated archive.
 7. **Detailed Developer Reference**: Always refer to [`docs/architecture/plugin-development-guide.md`](docs/architecture/plugin-development-guide.md) and [`.agents/rules/plugin_development_rules.md`](.agents/rules/plugin_development_rules.md) for full manifest schema and copy-paste templates.
 
 ---
@@ -44,23 +44,23 @@ When working on any plugin or extending the Teacher Station plugin system:
 
 - **Only commit source code**: NEVER commit environment configs, personal setup scripts (such as `setup_flutter.ps1`), secrets, or `.env` files.
 - All downloaded SDKs (e.g. `.sdk/`) must remain ignored.
-- **Git Hooks Enforced**: Git hooks are configured in `.githooks/` (`core.hooksPath`). Ensure hooks are active by running `node scripts/setup_hooks.mjs`.
+- **Git Hooks Enforced**: Git hooks are configured in `.githooks/` (`core.hooksPath`). Ensure hooks are active by running `node scripts/git/setup-hooks.mjs`.
 
 ---
 
 ## 5. Verification Before Completion (CI Gate)
 
 Before declaring any task or implementation complete:
-- Run the fast plugin validator: `node scripts/validate_plugins.mjs` (or `node scripts/validate_plugins.mjs --fix` to auto-repackage out-of-sync plugins).
+- Run the fast plugin validator: `node scripts/plugins/validate-plugin-packages.mjs` (or `node scripts/plugins/validate-plugin-packages.mjs --fix` to auto-repackage out-of-sync plugins).
 - Run the architecture gate: `flutter test test/architecture_test.dart` (enforced as a dedicated step in GitHub Actions CI with 12 passing invariants).
 - Run the analyzer: `flutter analyze --no-fatal-infos` (0 errors, 0 warnings).
-- If any plugin in `plugins/<name>/` was added or modified, run `node scripts/package_plugin.mjs <name>` to keep `plugins/<name>.hlep` in sync.
+- If any plugin in `plugins/<name>/` was added or modified, run `node scripts/plugins/package-plugin.mjs <name>` to keep `plugins/<name>.hlep` in sync.
 - Ensure no unintended files or temporary artifacts were created.
 
 ### Mandatory Pull Request Checklist
 - [ ] **Zero Hardcoded Names**: No plugin IDs or subject names hardcoded in `frontend/lib/`.
 - [ ] **No Direct Plugin Imports**: Zero cross-imports between `frontend/lib/` and `plugins/`.
 - [ ] **Dynamic Ports**: Sidecar engines receive dynamic port via `--port` or `HOCLUC_PLUGIN_PORT`.
-- [ ] **Package Freshness**: `node scripts/validate_plugins.mjs` passes with 0 errors.
+- [ ] **Package Freshness**: `node scripts/plugins/validate-plugin-packages.mjs` passes with 0 errors.
 - [ ] **Pure Clean Architecture**: Root `lib/` has only `main.dart`, `core/`, `features/`; zero flat tests at `test/` root.
 - [ ] **Architecture Gate**: `flutter test test/architecture_test.dart` passes 12/12 invariants (100%).

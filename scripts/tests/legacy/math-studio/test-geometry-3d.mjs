@@ -1,5 +1,6 @@
+// Legacy test tham chiếu API Math Studio đã bị thay thế; giữ làm tư liệu, không thuộc CI hiện hành. Kiểm thử engine hình học 3D của Math Studio.
 import assert from 'node:assert';
-import { Geometry3DEngine } from '../plugins/math_studio/ui/render/geometry_3d_engine.js';
+import { Geometry3DEngine } from '../../../../plugins/math_studio/ui/render/geometry_3d_engine.js';
 
 console.log('🧪 Testing NoteRenderer 3D Pedagogical Geometry Engine...');
 

@@ -25,5 +25,5 @@
 
 ## Verification
 - Kiểm tra toàn bộ luồng giao diện hoạt động bình thường, không có lỗi console hay import gãy vỡ.
-- Đạt 100% các bài test unit trong `scripts/test_app_logic.mjs`.
+- Đạt 100% các bài test unit trong `scripts/tests/math-studio/test-app-logic.mjs`.
 

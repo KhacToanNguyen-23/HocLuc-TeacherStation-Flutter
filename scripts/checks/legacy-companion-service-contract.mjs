@@ -1,3 +1,4 @@
+// Kiểm thử hợp đồng HTTP của companion service legacy; không thuộc CI hiện hành.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -7,7 +8,7 @@ import { resolve, join } from 'node:path';
 import { createServer } from 'node:net';
 import { request } from 'node:http';
 import { fileURLToPath } from 'node:url';
-const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const fixture = await mkdtemp(join(tmpdir(), 'companion-contract-'));
 await mkdir(join(fixture, 'app/build/web'), { recursive: true });
 await writeFile(join(fixture, 'app/build/web/index.html'), '<h1>fixture</h1>');

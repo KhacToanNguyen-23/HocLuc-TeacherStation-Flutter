@@ -36,6 +36,6 @@ Xóa bỏ hoàn toàn "God Object" `app.js` (979 dòng) và 15 biến trạng th
    - Giảm dung lượng `app.js` từ 979 dòng xuống dưới 250 dòng.
 
 ## Verification Commands
-- `node scripts/test_app_logic.mjs` (Pass 100%).
+- `node scripts/tests/math-studio/test-app-logic.mjs` (Pass 100%).
 - Kiểm tra số dòng code của `app.js` $\le 250$ dòng.
 

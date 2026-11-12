@@ -17,8 +17,8 @@ Date: 2026-10-26
    - Đồng bộ màu sắc thương hiệu Học Lực (Light theme và Chalkboard theme).
 4. **Verification & Packaging**:
    - Đảm bảo 100% tests logic (`test_app_logic.mjs`, `test_curve_manipulator.mjs`, `test_geometry_3d.mjs`, `test_math_studio.mjs`, `test_revolution_solid.mjs`) đều vượt qua.
-   - Đóng gói `.hlep` bằng `node scripts/validate_plugins.mjs --fix`.
-   - Kiểm tra 12 Bất biến kiến trúc: `node scripts/run_architecture_check.mjs`.
+   - Đóng gói `.hlep` bằng `node scripts/plugins/validate-plugin-packages.mjs --fix`.
+   - Kiểm tra 12 Bất biến kiến trúc: `node scripts/checks/run-architecture-check.mjs`.
 
 ---
 
@@ -46,9 +46,9 @@ Date: 2026-10-26
   - Hỗ trợ đổi theme linh hoạt (Sáng / Bảng phấn).
 
 - [x] **Phase 5: Kiểm Thử, Đóng Gói .hlep & Bất Biến Kiến Trúc**
-  - Chạy `node scripts/test_app_logic.mjs`.
-  - Chạy `node scripts/validate_plugins.mjs --fix`.
-  - Chạy `node scripts/run_architecture_check.mjs` (12/12 PASS).
+  - Chạy `node scripts/tests/math-studio/test-app-logic.mjs`.
+  - Chạy `node scripts/plugins/validate-plugin-packages.mjs --fix`.
+  - Chạy `node scripts/checks/run-architecture-check.mjs` (12/12 PASS).
 
 ---
 

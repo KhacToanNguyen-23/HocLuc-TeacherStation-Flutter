@@ -46,7 +46,7 @@ flowchart TD
   - *Covers:* P1-US04, FR-04, NFR-01.
   - Xây dựng mô-đun `plugins/math_studio/ui/render/revolution_solid_plotter.js` (thuật toán chiếu trục đo sinh đường elip đồng mức và mặt cong đối xứng).
   - Tích hợp cờ `isRevolved` vào `graph_plotter.js` và nút `⟳ 3D` trên thanh zoom control của plugin.
-  - Kiểm thử `scripts/test_revolution_solid.mjs` đạt tốc độ 2.28ms, 3/3 tests PASS.
+  - Kiểm thử `scripts/tests/math-studio/test-revolution-solid.mjs` đạt tốc độ 2.28ms, 3/3 tests PASS.
 
 - [x] **[Phase 2: NoteRenderer Bounding Box & Floating Context Bar trên Bảng Phấn](phase-02-noterenderer-chalkboard-ui.md)**
   - *Covers:* P1-US01, P1-US02, P1-US03, FR-01, FR-02, FR-03.
@@ -63,7 +63,7 @@ flowchart TD
 - [x] **[Phase 4: Kiểm thử Toàn diện, Đóng gói Plugin & CI Architecture Gate](phase-04-packaging-and-verification.md)**
   - *Covers:* Success Criteria, CI compliance.
   - Đóng gói plugin: `plugins/math_studio.hlep` (106 KB, 15 files).
-  - `node scripts/validate_plugins.mjs`: 3/3 plugins valid, 100% in sync.
+  - `node scripts/plugins/validate-plugin-packages.mjs`: 3/3 plugins valid, 100% in sync.
   - `flutter test test/architecture_test.dart`: 12/12 Invariants PASS (100%).
   - `flutter analyze --no-fatal-infos`: No issues found!
 

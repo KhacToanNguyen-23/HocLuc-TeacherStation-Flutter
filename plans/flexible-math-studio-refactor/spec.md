@@ -72,7 +72,7 @@ Mã nguồn Math Studio và Plugin Engine trong Teacher Station hiện đang b�
 - [ ] Thanh trượt Riemann $n$ tăng giảm số cột hình chữ nhật khít vào đường cong.
 - [ ] Khối tròn xoay 3D render trực tiếp với nét liền/nét đứt chuẩn SGK và xoay được đa góc nhìn.
 - [ ] Bấm "Ghim vào bảng" sinh ra thẻ sticker trên bảng đen có 8 chấm Canva co giãn và xoay $360^\circ$.
-- [ ] `node scripts/validate_plugins.mjs` xác thực thành công.
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs` xác thực thành công.
 
 ---
 

@@ -19,8 +19,8 @@
    - Ensure minor query parameter changes or visibility toggles do not reset `ready = false` and cause a spurious `CircularProgressIndicator` flash.
 
 3. **Package & Validate Math Studio Plugin**:
-   - Run `node scripts/package_plugin.mjs math_studio`.
-   - Run `node scripts/validate_plugins.mjs`.
+   - Run `node scripts/plugins/package-plugin.mjs math_studio`.
+   - Run `node scripts/plugins/validate-plugin-packages.mjs`.
 
 4. **CI & Architecture Invariant Verification**:
    - Run `flutter test test/architecture_test.dart` (ensure 12/12 passing).
@@ -30,7 +30,7 @@
 
 ## Acceptance Criteria
 - [ ] Warm modal launch time $< 100\text{ms}$ with 0 visible loading spinner.
-- [ ] `node scripts/validate_plugins.mjs` passes 100% with 0 errors.
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs` passes 100% with 0 errors.
 - [ ] `flutter test test/architecture_test.dart` passes 12/12 invariants.
 - [ ] `flutter analyze --no-fatal-infos` outputs "No issues found!".
 

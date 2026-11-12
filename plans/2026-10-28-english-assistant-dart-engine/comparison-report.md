@@ -36,8 +36,8 @@ The historical Python baseline reports a 22.55 ms median and 1,653-byte response
 - Windows binary: compiled with `dart compile exe`; direct health and text-analysis smoke requests returned `ok` and `complete`.
 - Flutter: selected plugin client, PDF regression, end-to-end and architecture tests — 44 passed, including all 12 architecture invariants.
 - Plugin Node checks: 9 passed.
-- `node scripts/validate_plugins.mjs --source-only` — passed.
-- Standard `node scripts/validate_plugins.mjs` — reports the production archive is stale. The production `plugins/english_assistant.hlep` remains unchanged by user direction; the development archive is `.run/dev/english_assistant.hlep`.
+- `node scripts/plugins/validate-plugin-packages.mjs --source-only` — passed.
+- Standard `node scripts/plugins/validate-plugin-packages.mjs` — reports the production archive is stale. The production `plugins/english_assistant.hlep` remains unchanged by user direction; the development archive is `.run/dev/english_assistant.hlep`.
 - `flutter analyze --no-fatal-infos` — no issues after the final code-point geometry adjustment.
 
 ## Remaining Phase 05 items

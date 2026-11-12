@@ -18,7 +18,7 @@ Loại bỏ triệt để code trùng lặp và dead code trong các module, ho�
    - Kết nối 2-way re-edit khi double click vào sticker trên bảng Chalkboard.
 
 ## Verification Commands
-- `node scripts/test_math_studio.mjs`
-- `node scripts/test_app_logic.mjs`
+- `node scripts/tests/math-studio/test-math-studio.mjs`
+- `node scripts/tests/math-studio/test-app-logic.mjs`
 - Đảm bảo toàn bộ các file trong `plugins/math_studio/ui/` đều $\le 350-400$ dòng.
 

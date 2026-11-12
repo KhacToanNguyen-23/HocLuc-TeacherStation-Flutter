@@ -67,7 +67,7 @@
 | **NFR-02** | **Performance and Memory Efficiency** | - **Lazy Disk Caching:** Plugin archives are never unpacked into in-memory byte maps (`filesMap`); assets are extracted to disk and served on demand over loopback HTTP (`PluginWebServer`).<br>- **60 FPS Canvas Rendering:** Stroke paths are cached (`_cachedPath`) to maintain smooth ink rendering at 1080p/2K resolutions.<br>- **Deterministic Process Cleanup:** Sidecar processes (Python/binary engines) are supervised and terminated immediately upon plugin closure via `ProcessSupervisor`. |
 | **NFR-03** | **Security and Sandboxing** | - **Zip Slip Prevention:** `PluginStorageManager` validates all archive entry paths (`..` traversal checks) prior to disk extraction.<br>- **Package Integrity:** `SHA-256` checksum verification for downloaded `.hlep` packages.<br>- **Dynamic Ephemeral Ports:** Hardcoded ports (such as `18888`) are prohibited; loopback servers and sidecar engines bind to OS-assigned ephemeral ports.<br>- **Local API Protection:** Loopback REST communication is authenticated via `SecurityTokenInterceptor` (`X-Companion-Token`). |
 | **NFR-04** | **Offline Resilience** | - Marketplace catalog metadata and installed plugin directories are cached locally (`SharedPreferences` and `%LOCALAPPDATA%/HocLuc/plugins/`), allowing previously installed plugins to run without internet or backend connectivity. |
-| **NFR-05** | **Developer Extensibility** | - New subject plugins or third-party open-source web applications (React/Vue/HTML/WASM) can be integrated in under 5 minutes using only a declarative `manifest.json` (Schema v2.1) and `node scripts/package_plugin.mjs <folder>`, requiring zero modifications to Flutter or Java source code. |
+| **NFR-05** | **Developer Extensibility** | - New subject plugins or third-party open-source web applications (React/Vue/HTML/WASM) can be integrated in under 5 minutes using only a declarative `manifest.json` (Schema v2.1) and `node scripts/plugins/package-plugin.mjs <folder>`, requiring zero modifications to Flutter or Java source code. |
 | **NFR-06** | **Display Compatibility and Portability** | - Verified by automated visual geometry regression tests (`visual_restyle_test.dart`) across four standard viewports: `1366x768`, `1440x900`, `1920x1080 (100%)`, and `1920x1080 (125% DPI)`.<br>- Supports standalone Windows packaging (`Build-Windows.ps1`) with an embedded custom Java 17 runtime (`jlink`) and WebView2 host requiring no administrator privileges. |
 
 ---
@@ -98,7 +98,17 @@ HocLuc-TeacherStation-Flutter/
 │   ├── english_assistant/         # English Assistant plugin (S-V-O-A and DGNL + Python sidecar)
 │   └── english_assistant.hlep     # Packaged English Assistant archive
 ├── scripts/
-│   └── package_plugin.mjs         # CLI tool to validate Schema v2.1 and package .hlep with SHA-256
+│   ├── ai/                        # Cài runtime AI, xuất model, tạo manifest và đóng gói Windows
+│   ├── audio/                     # Chuẩn bị driver audio ảo trên Windows
+│   ├── build/                     # Kiểm tra font web và smoke test gói Windows
+│   ├── checks/                    # Kiểm tra kiến trúc và hợp đồng service legacy
+│   ├── dictionaries/              # Sinh dữ liệu từ điển và lexicon
+│   ├── exam/                      # Khởi chạy nền tảng thi local
+│   ├── git/                       # Cấu hình Git hooks
+│   ├── plugins/                   # Kiểm tra và đóng gói plugin .hlep
+│   └── tests/                     # Bộ kiểm thử Node.js/Python cho plugin và dữ liệu
+│       ├── dictionaries/
+│       └── legacy/math-studio/     # Bộ test dùng API Math Studio cũ, không thuộc CI hiện hành
 ├── docs/architecture/             # Architecture documentation and Plugin Developer Guide
 ├── AGENTS.md                      # Repository architecture invariants for developers and AI agents
 └── Build-Windows.ps1              # Standalone Windows portable packaging script
@@ -112,7 +122,7 @@ HocLuc-TeacherStation-Flutter/
 - **Java Development Kit (JDK):** JDK 17+ (`java` and `jlink` available in `PATH`)
 - **Apache Maven:** Version 3.9+
 - **Flutter SDK:** Version 3.27+ (Dart 3.5+)
-- **Node.js:** Version 20+ (used by `scripts/package_plugin.mjs`)
+- **Node.js:** Version 20+ (used by project validation, packaging, and Node.js tests)
 - **Operating System:** Windows 10/11 x64 (enable **Developer Mode** in *Settings > System > For developers*)
 
 ### Step 1: Start the Backend Companion and Marketplace Service (Terminal 1)
@@ -143,7 +153,7 @@ Team members can create and publish new plugins inside `plugins/<plugin_name>/` 
 1. Create `plugins/<plugin_name>/` with `ui/index.html`, `icon.png`, and `manifest.json` (refer to the copy-paste templates in [`docs/architecture/plugin-development-guide.md`](docs/architecture/plugin-development-guide.md)).
 2. Package the plugin into a `.hlep` archive:
    ```powershell
-   node scripts/package_plugin.mjs <plugin_name>
+   node scripts/plugins/package-plugin.mjs <plugin_name>
    ```
 3. Run the architectural verification suite:
    ```powershell

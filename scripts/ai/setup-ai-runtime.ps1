@@ -1,7 +1,10 @@
+# .SYNOPSIS
+# Tạo môi trường Python AI local và cài dependency/runtime theo cấu hình CPU hoặc CUDA.
+#
 [CmdletBinding()]
 param([string]$PythonPath='python', [switch]$SkipTorch, [ValidateSet('cpu','cuda')][string]$TorchDevice='cpu')
 $ErrorActionPreference='Stop'
-$taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $taskRuntime=Join-Path $taskRoot 'backend\ai-runtime'
 $taskPython=Join-Path $taskRuntime '.venv\Scripts\python.exe'
 if (!(Test-Path -LiteralPath $taskPython)) {

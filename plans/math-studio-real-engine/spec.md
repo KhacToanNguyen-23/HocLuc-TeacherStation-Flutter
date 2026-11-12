@@ -53,7 +53,7 @@ Plugin `math_studio` hiện chỉ là UI tĩnh: không dùng Excalidraw, không 
 3. FR-03: `stage/` dựng scene Excalidraw từ dữ liệu toán học: trục Oxy, vạch/nhãn không đè nhau, đường cong (một element `line` nhiều điểm, tách đoạn tại gián đoạn), tiệm cận nét đứt, điểm cực trị, tiếp tuyến, y=m, cột Riemann, khối tròn xoay (chiếu 3D→2D). Toolbar vẽ ẩn.
 4. FR-04: M và y=m kéo được (cách thực hiện chốt bằng spike — xem NEEDS CLARIFICATION 1); thanh trượt ở bảng trái đồng bộ 2 chiều.
 5. FR-05: BBT sinh từ kết quả engine, xuất SVG; ghim ảnh dùng API xuất của Excalidraw (PNG ≥ 2x cho đồ thị/tích phân/3D, SVG cho BBT) qua `window.HocLuc`.
-6. FR-06: Xoá tàn dư theo story P1 cuối; cập nhật `math_studio.hlep` bằng `node scripts/package_plugin.mjs math_studio`.
+6. FR-06: Xoá tàn dư theo story P1 cuối; cập nhật `math_studio.hlep` bằng `node scripts/plugins/package-plugin.mjs math_studio`.
 7. FR-07: Bộ kiểm thử tự động cho `engine/` chạy bằng Node trong repo (nằm ngoài `frontend/lib`), có trong hướng dẫn chạy.
 
 ---
@@ -75,7 +75,7 @@ Bộ hàm kiểm thử bắt buộc: `x^3-3x`, `2x^2-3x+1`, `(2x+1)/(x-1)`, `(x^
 - [ ] Canvas hiển thị đường cong thật, kéo M và y=m hoạt động, không có chữ đè nhau (kiểm bằng ảnh chụp thực tế).
 - [ ] Ghim bảng từ 3 trang đều ra thẻ có nội dung (chạy app thật, có ảnh chụp).
 - [ ] Mở plugin khi tắt mạng thành công.
-- [ ] Không còn file tàn dư liệt kê; `node scripts/validate_plugins.mjs`, `flutter test test/architecture_test.dart` (12/12), `dart analyze` đều qua.
+- [ ] Không còn file tàn dư liệt kê; `node scripts/plugins/validate-plugin-packages.mjs`, `flutter test test/architecture_test.dart` (12/12), `dart analyze` đều qua.
 - [ ] Báo cáo hoàn thành liệt kê rõ phần nào ĐÃ chạy thật và phần nào CHƯA kiểm chứng.
 
 ---

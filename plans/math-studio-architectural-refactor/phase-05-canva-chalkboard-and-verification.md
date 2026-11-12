@@ -24,8 +24,8 @@
      - Nhấp đúp vào sticker trên bảng chalkboard thì mở ngay Math Studio để sửa tiếp đồ thị đó.
 
 2. **Automated Verification CI Gate (100% PASS):**
-   - Đóng gói plugin: `node scripts/validate_plugins.mjs --fix`.
-   - Kiểm tra kiến trúc: `node scripts/run_architecture_check.mjs` (12/12 Invariants PASS).
+   - Đóng gói plugin: `node scripts/plugins/validate-plugin-packages.mjs --fix`.
+   - Kiểm tra kiến trúc: `node scripts/checks/run-architecture-check.mjs` (12/12 Invariants PASS).
    - Flutter tests: `flutter test test/architecture_test.dart` và `flutter test test/features/studio_board/board_sticker_test.dart`.
    - Linter: `flutter analyze --no-fatal-infos` (0 errors, 0 warnings).
 

@@ -64,7 +64,7 @@ flowchart TD
   - *Covers:* Success Criteria, CI Invariants.
   - Cập nhật unit & widget tests cho `BoardStickerCard` với selection state và 8 chốt kéo.
   - Đóng gói `plugins/math_studio.hlep` phiên bản 2.1.0.
-  - Xác minh `node scripts/validate_plugins.mjs`, `node scripts/run_architecture_check.mjs` và các test bộ máy toán học.
+  - Xác minh `node scripts/plugins/validate-plugin-packages.mjs`, `node scripts/checks/run-architecture-check.mjs` và các test bộ máy toán học.
 
 ---
 

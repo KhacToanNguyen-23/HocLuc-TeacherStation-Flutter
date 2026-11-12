@@ -11,7 +11,7 @@ Chạy toàn bộ các chốt chặn kiểm thử, xác nhận không còn vi ph
 - [x] Chạy toàn bộ test suite frontend:
   - `flutter test` (xác nhận toàn bộ test suite pass 100%, 413/413 tests).
 - [x] Kiểm tra tính toàn vẹn của Plugin ecosystem:
-  - `node scripts/validate_plugins.mjs` (0 errors, 0 warnings, 100% synced).
+  - `node scripts/plugins/validate-plugin-packages.mjs` (0 errors, 0 warnings, 100% synced).
 - [x] Cập nhật tài liệu kỹ thuật và sơ đồ kiến trúc mới trong `docs/architecture/` nếu cần.
 
 ## Tiêu chí chấp nhận

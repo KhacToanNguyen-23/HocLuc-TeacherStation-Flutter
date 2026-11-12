@@ -1,10 +1,11 @@
+// Kiểm tra các bất biến cấu trúc kiến trúc Flutter và plugin.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '..');
+const rootDir = path.resolve(__dirname, '..', '..');
 const frontendDir = path.join(rootDir, 'frontend');
 const libDir = path.join(frontendDir, 'lib');
 const testDir = path.join(frontendDir, 'test');

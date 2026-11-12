@@ -47,4 +47,4 @@ frontend/lib/features/plugin_engine/
 | Thêm dependency native | `flutter pub add` cần mạng (chạy ngoài sandbox, user duyệt) |
 
 ## Verification mỗi phase
-`node scripts/validate_plugins.mjs` · `flutter test test/architecture_test.dart` · `flutter analyze --no-fatal-infos` · `node scripts/package_plugin.mjs math_studio`
+`node scripts/plugins/validate-plugin-packages.mjs` · `flutter test test/architecture_test.dart` · `flutter analyze --no-fatal-infos` · `node scripts/plugins/package-plugin.mjs math_studio`

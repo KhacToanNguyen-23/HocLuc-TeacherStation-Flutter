@@ -32,5 +32,5 @@ Replace the monolithic, hardcoded 1030-line `symbolic_cas.js` and its brittle cl
   3. $y = \frac{x^2 - x + 1}{x - 1}$ $\to$ TCX $y = x$, TCĐ $x = 1$.
   4. $y = \sqrt{x^2 + 1}$ $\to$ TCX $y = x$ ($x \to +\infty$) and $y = -x$ ($x \to -\infty$).
   5. $y = \sin x$ $\to$ bounded oscillating extrema, no asymptotes.
-- Run `node scripts/validate_plugins.mjs`.
+- Run `node scripts/plugins/validate-plugin-packages.mjs`.
 

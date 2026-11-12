@@ -63,8 +63,8 @@ Theo phản hồi mới nhất của người dùng:
 ### Phase 4: Đóng gói, Kiểm thử & Nghiệm thu
 - Biên dịch bundle web: `node plugins/math_studio/build.mjs`.
 - Chạy unit test engine & stage: `node --test plugins/math_studio/engine/tests/engine.test.mjs` & `stage.test.mjs`.
-- Đóng gói plugin: `node scripts/package_plugin.mjs math_studio`.
-- Kiểm tra tính toàn vẹn: `node scripts/validate_plugins.mjs`.
+- Đóng gói plugin: `node scripts/plugins/package-plugin.mjs math_studio`.
+- Kiểm tra tính toàn vẹn: `node scripts/plugins/validate-plugin-packages.mjs`.
 - Kiểm tra kiến trúc: `flutter test test/architecture_test.dart`.
 
 ---

@@ -68,7 +68,7 @@ flowchart TD
 
 - `flutter analyze --no-fatal-infos` -> 0 errors, 0 warnings.
 - `flutter test` -> 100% test files pass.
-- `node scripts/validate_plugins.mjs` -> 0 errors.
+- `node scripts/plugins/validate-plugin-packages.mjs` -> 0 errors.
 - Thư mục `lib/services/` và `lib/widgets/` không còn các file trôi nổi ngoài module.
 
 ---

@@ -36,7 +36,7 @@ Restore clean module boundaries and eliminate inverted dependencies and cyclic f
 ## Verification Commands
 ```powershell
 flutter test test/architecture_test.dart
-node scripts/validate_plugins.mjs
+node scripts/plugins/validate-plugin-packages.mjs
 flutter test
 ```
 

@@ -30,7 +30,7 @@ Mã nguồn `frontend/` đang bị manh múng và nợ kỹ thuật nặng: `lib
   - Là một kiến trúc sư phần mềm,
   - Tôi muốn xóa bỏ plugin giả `smart_pen_answer_snap`, hợp nhất logic của nó vào module native `studio_board`, dọn dẹp các file dead code (`sidecar_manager*.dart`) và xóa bỏ dependency rác (`wgc_broadcaster`),
   - Để hệ thống plugin giữ đúng bản chất Microkernel thuần túy và `pubspec.yaml` sạch sẽ 100%.
-  - *Accepted when:* `node scripts/validate_plugins.mjs` kiểm tra chỉ còn đúng các plugin thực chất, không còn package ma trong `pubspec.yaml`.
+  - *Accepted when:* `node scripts/plugins/validate-plugin-packages.mjs` kiểm tra chỉ còn đúng các plugin thực chất, không còn package ma trong `pubspec.yaml`.
 
 - **[P1 - CI Gate] Chốt chặn tự động ngăn ngừa tái diễn:**
   - Là một Tech Lead,
@@ -71,7 +71,7 @@ Mã nguồn `frontend/` đang bị manh múng và nợ kỹ thuật nặng: `lib
 
 - [ ] `flutter analyze --no-fatal-infos` báo `0 issues`.
 - [ ] `flutter test` chạy toàn bộ test suite và đạt **100% PASS**.
-- [ ] `node scripts/validate_plugins.mjs` đạt `0 errors`.
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs` đạt `0 errors`.
 - [ ] Không còn bất kỳ file `.dart` nào trôi nổi trực tiếp trong `lib/services/` hay `lib/widgets/`.
 - [ ] Thư mục `frontend/test/` ở cấp gốc chỉ còn file chốt chặn `architecture_test.dart`, toàn bộ test khác nằm gọn trong các thư mục con.
 

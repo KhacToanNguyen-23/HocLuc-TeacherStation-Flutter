@@ -4,7 +4,7 @@
 **Target Files:**
 - `plugins/math_studio/ui/core/curve_manipulator.js`
 - `plugins/math_studio/ui/app.js`
-- `scripts/test_curve_manipulator.mjs`
+- `scripts/tests/math-studio/test-curve-manipulator.mjs`
 
 ---
 
@@ -60,5 +60,5 @@
 ---
 
 ## Verification
-- Chạy `node scripts/test_curve_manipulator.mjs` kiểm tra kéo cực trị $y = \sin(x)^2 + 1$ từ $y=2$ lên $y=3$ cho ra $\sin(x)^2 + 2$.
+- Chạy `node scripts/tests/math-studio/test-curve-manipulator.mjs` kiểm tra kéo cực trị $y = \sin(x)^2 + 1$ từ $y=2$ lên $y=3$ cho ra $\sin(x)^2 + 2$.
 

@@ -54,7 +54,7 @@ Hệ thống bổ sung kiến trúc Plugin Microkernel cho Học Lực Studio g�
 ### Decisions made this session
 - Áp dụng conditional export `sidecar_manager_native.dart` (Process.start) và `sidecar_manager_web.dart` (HTTP health-check ping).
 - Quản lý an toàn tiến trình `service.exe` ngầm: Tự động poll health-check với timeout 5 giây, lắng nghe `exitCode`, và dọn dẹp tiến trình ngay khi đóng plugin để tránh orphan process.
-- Tạo gói plugin mẫu `plugins/english_assistant.hlep` và script đóng gói `scripts/package_plugin.mjs`.
+- Tạo gói plugin mẫu `plugins/english_assistant.hlep` và script đóng gói `scripts/plugins/package-plugin.mjs`.
 - Hỗ trợ cả 1-click cài đặt plugin mẫu lẫn chọn tệp `.hlep` từ máy tính trong Drawer Tài liệu.
 - Tự động thu gọn ngăn kéo khi ghim thẻ S-V-O (`INSERT_ANNOTATION`) để trả lại 100% không gian bảng cho giáo viên.
 

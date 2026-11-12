@@ -66,8 +66,8 @@ Verdict: WARN — no blocker. Codex does not expose the named `plan-reviewer` su
 - `python -m unittest discover -s plugins/english_assistant/engine/tests -p test_ocr_recovery.py`
 - `python plugins/english_assistant/engine/benchmarks/ocr_benchmark.py --repeats 5 --max-p95-seconds 3 --output plugins/english_assistant/engine/benchmarks/final.json`
 - `python -m pytest plugins/english_assistant/engine/tests` (when pytest is available)
-- `node scripts/package_plugin.mjs english_assistant`
-- `node scripts/validate_plugins.mjs`
+- `node scripts/plugins/package-plugin.mjs english_assistant`
+- `node scripts/plugins/validate-plugin-packages.mjs`
 - From `frontend/`: `flutter test test/architecture_test.dart`
 - From `frontend/`: `flutter analyze --no-fatal-infos`
 

@@ -14,5 +14,5 @@ Loại bỏ hoàn toàn lỗi hiển thị chuỗi phân số dài dị thườn
     const vxFrac = Number.isInteger(vx) ? `${vx}` : new Fraction(Math.round(-b * 100), Math.round(2 * a * 100)).toDisplayString();
     const vyStr = Number.isInteger(vy) ? `${vy}` : vy.toFixed(2);
     ```
-- Chạy `node scripts/validate_plugins.mjs --fix` để đóng gói lại `plugins/math_studio.hlep`.
+- Chạy `node scripts/plugins/validate-plugin-packages.mjs --fix` để đóng gói lại `plugins/math_studio.hlep`.
 

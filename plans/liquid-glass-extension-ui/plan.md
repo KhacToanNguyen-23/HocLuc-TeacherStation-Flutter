@@ -64,7 +64,7 @@
 
 No tests are run during planning. Implementation verification must use the repository's existing hierarchical locations, including `frontend/test/features/studio_board/subject_tool_palette_test.dart`, `frontend/test/features/plugin_engine/plugin_event_hub_test.dart`, and any new tests under those feature directories. Only `architecture_test.dart` may live at `frontend/test/` root.
 
-Before completion, follow repository CI gates: `node scripts/validate_plugins.mjs`, `flutter test test/architecture_test.dart` from `frontend/` (12 invariants per repository guidance), and `flutter analyze --no-fatal-infos`. If plugin assets are modified, run `node scripts/package_plugin.mjs <plugin_folder>` and validate the resulting package. The feature should not be declared complete unless the Phase 01 decision, supported platform scope, fallback, and measured performance result are recorded.
+Before completion, follow repository CI gates: `node scripts/plugins/validate-plugin-packages.mjs`, `flutter test test/architecture_test.dart` from `frontend/` (12 invariants per repository guidance), and `flutter analyze --no-fatal-infos`. If plugin assets are modified, run `node scripts/plugins/package-plugin.mjs <plugin_folder>` and validate the resulting package. The feature should not be declared complete unless the Phase 01 decision, supported platform scope, fallback, and measured performance result are recorded.
 
 ## Cook handoff
 

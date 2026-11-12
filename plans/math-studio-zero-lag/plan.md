@@ -57,8 +57,8 @@ Ready for production classroom usage.
 
 1. **Plugin Packaging & Validation**:
    ```bash
-   node scripts/package_plugin.mjs math_studio
-   node scripts/validate_plugins.mjs
+   node scripts/plugins/package-plugin.mjs math_studio
+   node scripts/plugins/validate-plugin-packages.mjs
    ```
 2. **Architecture Invariants Gate**:
    ```bash

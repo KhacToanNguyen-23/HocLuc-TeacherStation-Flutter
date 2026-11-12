@@ -72,7 +72,7 @@ Teachers need a unified pedagogical workspace where analytical parameters (formu
 - [ ] Left column width: strictly 35% (~336px); Right column width: strictly 65% (~624px).
 - [ ] Parameter panel displays live formula, analytical derivative, domain, extrema (CĐ/CT), intercepts, and asymptotes.
 - [ ] Primary CTA `[Ghim vào bảng 📌]` sits at top-right of the header and auto-closes the modal upon pinning.
-- [ ] `node scripts/validate_plugins.mjs` passes 100% with 0 errors.
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs` passes 100% with 0 errors.
 - [ ] `flutter test test/architecture_test.dart` passes 12/12 invariants.
 - [ ] `flutter analyze --no-fatal-infos` outputs "No issues found!".
 

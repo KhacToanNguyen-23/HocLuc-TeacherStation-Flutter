@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate deterministic CEFR headword maps from attributed source CSVs."""
+"""Sinh dữ liệu lexicon CEFR từ CSV và manifest nguồn có attribution."""
 
 from __future__ import annotations
 
@@ -441,7 +441,7 @@ def render_dart(
 ) -> str:
     shard_count = (len(entries) + GENERATED_SHARD_SIZE - 1) // GENERATED_SHARD_SIZE
     lines = [
-        "// GENERATED FILE. Run scripts/generate_cefr_lexicon.py to update.",
+        "// GENERATED FILE. Run scripts/dictionaries/generate_cefr_lexicon.py to update.",
         "// CEFR-J word-level projection: earliest CEFR label present in source POS rows.",
     ]
     for source in manifest["sources"]:
@@ -495,7 +495,7 @@ def render_dart_shards(entries: dict[str, dict[str, Any]]) -> dict[str, str]:
         index = offset // GENERATED_SHARD_SIZE + 1
         chunk = words[offset : offset + GENERATED_SHARD_SIZE]
         lines = [
-            "// GENERATED FILE. Run scripts/generate_cefr_lexicon.py to update.",
+            "// GENERATED FILE. Run scripts/dictionaries/generate_cefr_lexicon.py to update.",
             f"const Map<String, String> generatedCefrSourceWordsPart{index:02d} = {{",
         ]
         lines.extend(
@@ -534,7 +534,7 @@ def main(argv: list[str] | None = None, *, root_override: Path | None = None) ->
     parser.add_argument("--dry-run", action="store_true", help="Validate without writing")
     args = parser.parse_args(argv)
 
-    root = root_override.resolve() if root_override else Path(__file__).resolve().parents[1]
+    root = root_override.resolve() if root_override else Path(__file__).resolve().parents[2]
     manifest_path = (root / args.manifest).resolve()
     output_path = (root / args.output).resolve()
     report_path = (root / args.report).resolve()

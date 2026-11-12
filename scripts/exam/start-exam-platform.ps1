@@ -1,3 +1,6 @@
+# .SYNOPSIS
+# Build và khởi động backend cùng Flutter web cho nền tảng thi local.
+#
 param(
     [int]$Port = 47831,
     [string]$AdminEmail = 'admin@hocluc.local',
@@ -11,7 +14,7 @@ $ErrorActionPreference = 'Stop'
 if ($EnableDevLogin -and $SkipBuild) {
     throw 'EnableDevLogin requires a Flutter web rebuild; run without -SkipBuild.'
 }
-$taskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$taskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $taskApi = Join-Path $taskRoot 'backend\api'
 $taskCredentialPath = Join-Path $taskRoot '.run\exam-admin.credential.xml'
 if ($ShowAdminCredential) {
@@ -71,7 +74,7 @@ try {
     if ($EnableDevLogin) { Write-Host 'Development quick login enabled.' }
     Write-Host 'Dùng màn hình đăng nhập hiện có; mở Đề thi & năng lực trên thanh trên cùng.'
     Write-Host ('Local admin: ' + $taskCredential.UserName)
-    Write-Host 'Xem thông tin đăng nhập bằng: .\scripts\Start-ExamPlatform.ps1 -ShowAdminCredential'
+    Write-Host 'Xem thông tin đăng nhập bằng: .\scripts\exam\start-exam-platform.ps1 -ShowAdminCredential'
     & java -jar $taskJar "--server.port=$Port"
 } finally {
     $env:EXAM_ADMIN_EMAIL = $taskOldEmail

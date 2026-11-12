@@ -1,7 +1,10 @@
+# .SYNOPSIS
+# Tải bộ cài VB-CABLE và xác minh chữ ký trước khi cài driver audio ảo.
+#
 [CmdletBinding()]
 param([switch]$OpenInstaller)
 $ErrorActionPreference='Stop'
-$taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $taskFolder=Join-Path $taskRoot '.run\vb-cable'
 $taskInstaller=Join-Path $taskFolder 'package\VBCABLE_Setup_x64.exe'
 if (!(Test-Path -LiteralPath $taskInstaller)) {

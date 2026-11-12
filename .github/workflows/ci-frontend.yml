@@ -7,6 +7,7 @@ on:
       - 'frontend/**'
       - 'plugins/**'
       - 'scripts/**'
+      - 'Build-Windows.ps1'
       - 'docs/architecture/**'
       - '.agents/rules/plugin_development_rules.md'
       - '.github/workflows/ci-frontend.yml'
@@ -16,6 +17,7 @@ on:
       - 'frontend/**'
       - 'plugins/**'
       - 'scripts/**'
+      - 'Build-Windows.ps1'
       - 'docs/architecture/**'
       - '.agents/rules/plugin_development_rules.md'
       - '.github/workflows/ci-frontend.yml'
@@ -45,7 +47,7 @@ jobs:
       - name: Fast Plugin Validation (Schema v2.1 & Development Sources)
         run: |
           echo "Checking plugin manifest schema and development sources"
-          node ../scripts/validate_plugins.mjs --source-only
+          node ../scripts/plugins/validate-plugin-packages.mjs --source-only
 
       - name: Validate Plugin UI Contract
         run: |
@@ -61,7 +63,7 @@ jobs:
       - name: Set up Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.47.9'
           cache: true
           cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
           cache-path: "${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:"
@@ -110,7 +112,7 @@ jobs:
       - name: Set up Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.47.9'
           cache: true
 
       - name: Enable Flutter Windows Desktop

@@ -48,7 +48,7 @@ Khi giáo viên nhập các hàm số phức tạp (lượng giác $y = \sin(x)^
    - Đảm bảo tổng số thẻ `<tspan>` mở bằng chính xác tổng số thẻ `</tspan>` đóng.
 
 4. **FR-04 (Plugin Repackaging & Architecture Gate):**
-   - Đồng bộ `plugins/math_studio.hlep` qua `node scripts/validate_plugins.mjs --fix`.
+   - Đồng bộ `plugins/math_studio.hlep` qua `node scripts/plugins/validate-plugin-packages.mjs --fix`.
    - Vượt qua 12/12 Invariants kiến trúc và test suite tự động.
 
 ---
@@ -65,8 +65,8 @@ Khi giáo viên nhập các hàm số phức tạp (lượng giác $y = \sin(x)^
 
 - [ ] Kéo thả cực đại/cực tiểu trên $y = \sin(x)^2 + 1$ di chuyển trơn tru và cập nhật công thức tương ứng.
 - [ ] Nút `[📌 Ghim vào bảng]` hiển thị rõ ràng, bấm vào là đồ thị xuất hiện ngay trên bảng chalkboard.
-- [ ] Bộ kiểm thử `node scripts/test_math_studio.mjs` và `node scripts/test_app_logic.mjs` đạt 100% PASS.
-- [ ] `node scripts/validate_plugins.mjs` đạt 100% PASS với 0 lỗi.
+- [ ] Bộ kiểm thử `node scripts/tests/math-studio/test-math-studio.mjs` và `node scripts/tests/math-studio/test-app-logic.mjs` đạt 100% PASS.
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs` đạt 100% PASS với 0 lỗi.
 - [ ] `flutter analyze --no-fatal-infos` đạt 0 lỗi, 0 cảnh báo.
 
 ---

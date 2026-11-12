@@ -20,7 +20,7 @@ This plan addresses foundational architecture violations and code smells across 
 | Phase | Title | Scope | Verification |
 | :--- | :--- | :--- | :--- |
 | **01** | [Quick Wins & Zero-Risk Sanitization](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/clean-architecture-and-code-smell-refactor/phase-01-quick-wins-and-sanitization.md) | Backend Mojibake, Java code-golf formatting, and logging empty catch blocks | `mvn test`, `flutter test test/architecture_test.dart` (PASS: 123 tests) |
-| **02** | [Architecture Decoupling & Boundary Enforcement](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/clean-architecture-and-code-smell-refactor/phase-02-architecture-decoupling-and-boundaries.md) | Decouple `LocalService` (core→features leak), relocate `GoogleMeetAuthService`, isolate `plugin_engine` | `flutter test test/architecture_test.dart`, `node scripts/validate_plugins.mjs` |
+| **02** | [Architecture Decoupling & Boundary Enforcement](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/clean-architecture-and-code-smell-refactor/phase-02-architecture-decoupling-and-boundaries.md) | Decouple `LocalService` (core→features leak), relocate `GoogleMeetAuthService`, isolate `plugin_engine` | `flutter test test/architecture_test.dart`, `node scripts/plugins/validate-plugin-packages.mjs` |
 | **03** | [God Class Decomposition via Facade Pattern](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/clean-architecture-and-code-smell-refactor/phase-03-god-class-facade-decomposition.md) | Decompose `StudioState` with sub-controllers, extract large widget build methods | `flutter test` |
 | **04** | [Backend Layering & Unified Error Strategy](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/clean-architecture-and-code-smell-refactor/phase-04-backend-error-handling-and-layering.md) | Spring `@ControllerAdvice`, typed error models, Bean Validation | `mvn test`, `flutter test` |
 
@@ -57,7 +57,7 @@ All phases completed with 100% test coverage and zero logic regressions. Ready f
 
 Every phase must pass:
 1. `flutter test test/architecture_test.dart` (12/12 passing invariants)
-2. `node scripts/validate_plugins.mjs` (0 errors, 100% synced)
+2. `node scripts/plugins/validate-plugin-packages.mjs` (0 errors, 100% synced)
 3. `mvn test -f backend/api/pom.xml` (all Spring Boot unit & integration tests pass)
 4. `flutter test` (all frontend tests pass)
 

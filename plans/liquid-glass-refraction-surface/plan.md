@@ -30,7 +30,7 @@
 - Convert `getBoundingClientRect()` CSS viewport pixels using the WebView RenderBox origin and an empirically calibrated viewport-to-logical scale. Do not multiply by device pixel ratio as a shortcut.
 - Configure transparent native WebView background before its first navigation, and transparent plugin document surfaces. Place host shader regions above the board/PDF and beneath WebView text. Apply `IgnorePointer` and `ExcludeSemantics` to shader-only overlays.
 - Check `ImageFilter.isShaderFilterSupported` at runtime. Unsupported runtime, alpha, or shader cases use the documented opaque fallback.
-- If plugin assets or manifest change, bump that plugin's SemVer and run `node scripts/package_plugin.mjs <plugin_folder>`; run the validator after packaging.
+- If plugin assets or manifest change, bump that plugin's SemVer and run `node scripts/plugins/package-plugin.mjs <plugin_folder>`; run the validator after packaging.
 
 ## Validation decisions
 
@@ -70,7 +70,7 @@
 
 Tests belong under `frontend/test/features/plugin_engine/` and `frontend/test/features/studio_board/`; do not add flat tests under `frontend/test/`. Use feature tests for SDK contract, validation, event generation, lifecycle cleanup, and host widget semantics. Use a Windows profile run for native shader availability, actual scene sampling, transparency ordering, alignment, and UI/raster frame timings.
 
-Completion gates from repository guidance: `node scripts/validate_plugins.mjs`; `flutter test test/architecture_test.dart` from `frontend/` with 12/12 invariants; `flutter analyze --no-fatal-infos`; package any modified plugin and confirm freshness. Planning does not run tests. Do not claim a successful shader surface if only alpha transparency has been observed.
+Completion gates from repository guidance: `node scripts/plugins/validate-plugin-packages.mjs`; `flutter test test/architecture_test.dart` from `frontend/` with 12/12 invariants; `flutter analyze --no-fatal-infos`; package any modified plugin and confirm freshness. Planning does not run tests. Do not claim a successful shader surface if only alpha transparency has been observed.
 
 ## Cook handoff
 

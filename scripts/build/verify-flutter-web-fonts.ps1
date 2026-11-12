@@ -1,3 +1,6 @@
+# .SYNOPSIS
+# Kiểm tra tài nguyên font cần thiết trong Flutter web build.
+#
 param([Parameter(Mandatory=$true)][string]$WebRoot)
 $ErrorActionPreference = 'Stop'
 $taskAssets = Join-Path $WebRoot 'assets'

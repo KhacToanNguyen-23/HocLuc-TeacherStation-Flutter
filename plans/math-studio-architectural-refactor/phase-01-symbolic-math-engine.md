@@ -3,7 +3,7 @@
 **Status:** Not Started  
 **Target Files:**
 - `plugins/math_studio/ui/core/math_cas.js`
-- `scripts/test_math_cas.mjs`
+- `scripts/tests/math-studio/test-math-cas.mjs`
 
 ---
 
@@ -32,7 +32,7 @@
 ---
 
 ## Verification
-- Viết `scripts/test_math_cas.mjs` kiểm thử 10 dạng hàm:
+- Viết `scripts/tests/math-studio/test-math-cas.mjs` kiểm thử 10 dạng hàm:
   - Bậc 3: $y = x^3 - 3x^2 + 2$
   - Trùng phương: $y = x^4 - 2x^2 - 1$
   - Bậc cao: $y = x^5 - 5x$

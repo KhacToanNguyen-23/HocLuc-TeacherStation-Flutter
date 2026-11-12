@@ -1,5 +1,6 @@
+// Legacy test tham chiếu API Math Studio đã bị thay thế; giữ làm tư liệu, không thuộc CI hiện hành. Kiểm thử phân tích và đạo hàm ký hiệu của biểu thức.
 import assert from 'node:assert';
-import { parseExpressionToAST, differentiateAST, simplifyAST, formatAST, computeSymbolicDerivative } from '../plugins/math_studio/ui/core/symbolic_cas.js';
+import { parseExpressionToAST, differentiateAST, simplifyAST, formatAST, computeSymbolicDerivative } from '../../../../plugins/math_studio/ui/core/symbolic_cas.js';
 
 console.log('🧪 Bắt đầu kiểm thử Zero-Dependency Symbolic CAS Engine (symbolic_cas.js)...');
 

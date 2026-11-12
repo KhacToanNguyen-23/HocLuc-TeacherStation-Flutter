@@ -19,7 +19,7 @@ Tạo gói plugin mẫu hoàn chỉnh `english_assistant.hlep` theo đúng tài 
    - `ui/index.html` & `ui/app.js`: Giao diện tương tác tiếng Anh, gọi spaCy và LanguageTool, có xử lý bridge postMessage chuẩn xác cho cả Web (`window.parent.postMessage`) và Windows (`window.chrome.webview.postMessage`), kèm mock fallback khi backend offline.
    - `engine/service.py`: Script FastAPI spaCy bóc tách Chủ - Vị - Tân ngữ S-V-O.
 
-2. **Tạo script đóng gói `.hlep` (`scripts/package_plugin.mjs`):**
+2. **Tạo script đóng gói `.hlep` (`scripts/plugins/package-plugin.mjs`):**
    - Nén thư mục `plugins/english_assistant/` thành file nhị phân `plugins/english_assistant.hlep`.
 
 3. **Tích hợp nút "Cài thêm tiện ích môn" trong Drawer:**
@@ -42,7 +42,7 @@ Tạo gói plugin mẫu hoàn chỉnh `english_assistant.hlep` theo đúng tài 
 - `plugins/english_assistant/ui/index.html` (new)
 - `plugins/english_assistant/ui/app.js` (new)
 - `plugins/english_assistant/engine/service.py` (new)
-- `scripts/package_plugin.mjs` (new)
+- `scripts/plugins/package-plugin.mjs` (new)
 - `frontend/lib/widgets/drawer_questions.dart`
 - `frontend/test/english_assistant_e2e_test.dart` (new)
 

@@ -82,7 +82,7 @@ vn.teaching/
 | **01** | [DTO & Entity Separation](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/backend-modular-monolith-refactor/phase-01-dto-and-entity-separation.md) | Separate Request/Response DTOs from Entities, extract inline records from controllers into typed DTOs | `mvn test`, `mvn test-compile` |
 | **02** | [Repository Layer Extraction](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/backend-modular-monolith-refactor/phase-02-extract-repositories.md) | Extract `ClassroomRepository` and `PlanningRepository` out of service classes to cleanly isolate disk I/O | `mvn test -Dtest=ClassroomSessionTest` |
 | **03** | [Modular Monolith Package Reorganization](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/backend-modular-monolith-refactor/phase-03-modular-monolith-package-restructuring.md) | Relocate classes into `vn.teaching.modules.*` and `vn.teaching.core.*`, update all imports & test suites | `mvn test`, `flutter test test/architecture_test.dart` |
-| **04** | [Full Verification & Architecture CI Gate](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/backend-modular-monolith-refactor/phase-04-verification-and-ci-hardening.md) | Verify all 129+ backend tests, 397+ frontend tests, 12 architecture invariants, and plugin schemas | `mvn test`, `flutter test`, `node scripts/validate_plugins.mjs` |
+| **04** | [Full Verification & Architecture CI Gate](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/backend-modular-monolith-refactor/phase-04-verification-and-ci-hardening.md) | Verify all 129+ backend tests, 397+ frontend tests, 12 architecture invariants, and plugin schemas | `mvn test`, `flutter test`, `node scripts/plugins/validate-plugin-packages.mjs` |
 
 ---
 
@@ -91,6 +91,6 @@ vn.teaching/
 Every phase must pass:
 1. `mvn test -f backend/api/pom.xml` (all 129+ unit & integration tests pass)
 2. `flutter test test/architecture_test.dart` (12/12 passing invariants, Java <= 600 LOC)
-3. `node scripts/validate_plugins.mjs` (100% valid)
+3. `node scripts/plugins/validate-plugin-packages.mjs` (100% valid)
 4. `flutter analyze --no-fatal-infos` (0 issues)
 

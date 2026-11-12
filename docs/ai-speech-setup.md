@@ -29,9 +29,9 @@ Khi audio trực tiếp đã dừng và mic không mute, bấm **Nghe thử WAV*
 Runtime độc lập ở `backend/ai-runtime/.venv`; không dùng environment Unsloth. Có pin trực tiếp và dependency đã resolve. Cài ở máy có Python 3.12:
 
 ```powershell
-.\scripts\Setup-AiRuntime.ps1 -PythonPath 'C:\Users\LENOVO\AppData\Local\Programs\Python\Python312\python.exe' -TorchDevice cuda
-.\scripts\Export-AiInt8.ps1
-.\scripts\Export-AiManifest.ps1
+.\scripts\ai\setup-ai-runtime.ps1 -PythonPath 'C:\Users\LENOVO\AppData\Local\Programs\Python\Python312\python.exe' -TorchDevice cuda
+.\scripts\ai\export-ai-models-int8.ps1
+.\scripts\ai\write-ai-model-manifest.ps1
 ```
 
 Máy chỉ có CPU dùng `-TorchDevice cpu`, rồi đo lại hiệu năng. Script export từ đúng checkpoint hiện có sang hai thư mục mới `PhoWhisper-small-ct2-int8`, `vinai-translate-vi2en-v2-ct2-int8`; từ chối ghi đè export đã tồn tại. Checkpoint gốc được giữ nguyên.
@@ -45,7 +45,7 @@ Python chỉ nghe loopback với token tạm do Java tạo. Java status không n
 WASAPI bridge đọc/ghi thiết bị hiện có; cần cài driver virtual audio riêng để đưa đầu ra app thành micro trong Meet. Bộ cài VB-CABLE đã tải tại `.run/vb-cable/package/VBCABLE_Setup_x64.exe`, chữ ký publisher đã kiểm tra. Trên máy pilot hiện chưa có cặp endpoint này.
 
 ```powershell
-.\scripts\Prepare-VirtualAudio.ps1 -OpenInstaller
+.\scripts\audio\prepare-virtual-audio-driver.ps1 -OpenInstaller
 ```
 
 Chấp nhận UAC, bấm **Install Driver** và khởi động lại khi thuận tiện theo hướng dẫn [VB-Audio](https://vb-audio.com/Cable/). Script không tự reboot. Sau đó:
@@ -59,7 +59,7 @@ Một ngôn ngữ chung cho lớp. Nếu Meet vẫn chọn mic vật lý, học 
 ## Gói Windows native
 
 ```powershell
-.\scripts\Package-AiNativeWindows.ps1 -FlutterPath 'D:\Tools\teaching-companion\flutter\bin\flutter.bat'
+.\scripts\ai\package-ai-native-windows.ps1 -FlutterPath 'D:\Tools\teaching-companion\flutter\bin\flutter.bat'
 ```
 
 Gói ở `dist/HocLuc-AI-Native-Windows-*` chứa Flutter native, JRE jlink, Python embedded và các thư viện AI. Dùng `RUN.bat`; dừng backend checkout trước nếu cổng 47831 đang dùng. Models và driver ngoài gói; cấu hình đường model phù hợp máy nhận. CUDA dependency khiến gói lớn; không xem đây là bản nhỏ gọn đã tối ưu. Manifest ghi hash weights/dependency và nguồn model. VinAI khai báo AGPL-3.0, PhoWhisper BSD-3-Clause, Kokoro Apache-2.0 theo các model card local.

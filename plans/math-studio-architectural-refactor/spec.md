@@ -84,6 +84,6 @@ Math Studio hiện tại đang gặp 3 vấn đề kiến trúc nghiêm trọng:
 - [ ] 100% hàm số (kể cả lượng giác $y = \sin(x)^2 + 1$, bậc cao $x^5$) đều tìm được cực trị và kéo thả mượt mà.
 - [ ] SVG ghim lên bảng chalkboard lấy trực tiếp từ live DOM, giống 100% so với những gì giáo viên thấy trong modal.
 - [ ] Sticker trên bảng phấn hỗ trợ trọn vẹn 8 handles, xoay góc snap, và thanh công cụ nổi.
-- [ ] `node scripts/validate_plugins.mjs` đạt PASS 100% với 0 lỗi.
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs` đạt PASS 100% với 0 lỗi.
 - [ ] `flutter test test/architecture_test.dart` đạt 12/12 Invariants PASS.
 - [ ] `flutter analyze --no-fatal-infos` đạt 0 errors, 0 warnings.

@@ -6,8 +6,8 @@
 
 ## 1. Scope & Action Items
 
-1. **Nâng cấp công cụ đóng gói `scripts/package_plugin.mjs`:**
-   - Cho phép nhận tham số tên thư mục plugin từ dòng lệnh (ví dụ: `node scripts/package_plugin.mjs casio_calculator`), thay vì hardcode `english_assistant`.
+1. **Nâng cấp công cụ đóng gói `scripts/plugins/package-plugin.mjs`:**
+   - Cho phép nhận tham số tên thư mục plugin từ dòng lệnh (ví dụ: `node scripts/plugins/package-plugin.mjs casio_calculator`), thay vì hardcode `english_assistant`.
    - Giữ tương thích ngược khi không truyền tham số (mặc định vẫn là `english_assistant`).
 2. **Build bundle tĩnh từ `HocLucCalculator`:**
    - Sử dụng repo đã clone trong scratch space.
@@ -22,6 +22,6 @@
 ---
 
 ## 2. Verification Criteria
-- [ ] `node scripts/package_plugin.mjs --help` hoặc lệnh chạy nhận đúng thư mục plugin mục tiêu.
+- [ ] `node scripts/plugins/package-plugin.mjs --help` hoặc lệnh chạy nhận đúng thư mục plugin mục tiêu.
 - [ ] Thư mục `plugins/casio_calculator/` có đầy đủ: `manifest.json`, `icon.png`, `ui/index.html`, `ui/sdk.js`, `ui/assets/`.
 - [ ] `manifest.json` hợp lệ theo schema v2 (chạy `flutter test test/architecture_test.dart` kiểm tra bất biến 4).

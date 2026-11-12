@@ -58,5 +58,5 @@ Hiện tại khi mở plugin **Máy Tính Khoa Học Casio** trên bảng phấn
      - Ẩn `.calculator-app-heading`, `.calculator-copyright`, `.update-banner`.
      - Đặt `.calculator-app`, `.calculator-fit-stage` tràn viền `padding: 0; margin: 0; background: transparent;`.
      - Đặt `.calculator-app .calc-playground-face` và `.calculator-app .calc-face` chiếm trọn `width: 100% !important; height: 100% !important; position: static !important; transform: none !important; border-radius: 24px !important; padding: 18px 12px 14px !important;` để bàn phím và màn hình LCD luôn hiển thị đầy đủ, sắc nét và khít tuyệt đối với khung cửa sổ nổi (`328x556`).
-   - Cập nhật `plugins/casio_calculator/manifest.json` (`"frameless": true`, `"default_width": 328`, `"default_height": 556`) và chạy `node scripts/package_plugin.mjs casio_calculator`.
+   - Cập nhật `plugins/casio_calculator/manifest.json` (`"frameless": true`, `"default_width": 328`, `"default_height": 556`) và chạy `node scripts/plugins/package-plugin.mjs casio_calculator`.
 

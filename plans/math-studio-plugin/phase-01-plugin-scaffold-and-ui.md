@@ -79,5 +79,5 @@
 
 ## 3. Tiêu Chí Nghiệm Thu (Acceptance Criteria)
 - [ ] File `plugins/math_studio/manifest.json` và `icon.png` hợp lệ.
-- [ ] Chạy `node scripts/validate_plugins.mjs` nhận diện plugin `com.hocluc.plugin.math_studio` và không báo lỗi schema.
+- [ ] Chạy `node scripts/plugins/validate-plugin-packages.mjs` nhận diện plugin `com.hocluc.plugin.math_studio` và không báo lỗi schema.
 - [ ] Giao diện Webview mở lên hiển thị đúng 5 tab và responsive từ chiều rộng 360px đến 800px.
