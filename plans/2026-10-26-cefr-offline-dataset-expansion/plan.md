@@ -67,7 +67,7 @@ The current CEFR-J core contains 4,000 entries; `wordToCefr` contains 4,698 entr
 - Unit tests: exact-form precedence, `noodles â†’ noodle` as recognized-unrated unless a trusted label exists, `medications â†’ medication`, `medication` not resolving through `medicate`, `species` remaining valid, hyphenated forms, proper nouns, and truly unknown words continuing to the existing asynchronous enrichment path.
 - Data validation: 8,000â€“10,000 unique CEFR-labeled headwords; report AWL-only and recognized-unrated counts separately; no unresolved duplicate-level conflicts; every graded entry has a valid CEFR level and traceable source; every included source has a recorded license; generated output is reproducible.
 - Performance: record current and final first-use initialization, p95 repeated lookup latency, and compiled size on the same reference build/device. Meet the approved budgets (10 ms, 1 ms, and 1 MB growth respectively); lookup remains synchronous.
-- Repository gates from the project instructions: `node scripts/validate_plugins.mjs`, `flutter test test/architecture_test.dart`, and `flutter analyze --no-fatal-infos`; run focused profiler tests and `git diff --check` as well.
+- Repository gates from the project instructions: `node scripts/plugins/validate-plugin-packages.mjs`, `flutter test test/architecture_test.dart`, and `flutter analyze --no-fatal-infos`; run focused profiler tests and `git diff --check` as well.
 - No plugin files are expected to change; if that scope changes, follow plugin packaging requirements.
 
 ## Session Notes

@@ -30,7 +30,7 @@ Verify the complete async flow, request/persistence invariants, error handling, 
 - Targeted feature suite from `frontend/`: `flutter test test/features/studio_board`.
 - Architecture gate from `frontend/`: `flutter test test/architecture_test.dart`.
 - Analyzer from `frontend/`: `flutter analyze --no-fatal-infos`.
-- Plugin validator from repository root: `node scripts/validate_plugins.mjs`.
+- Plugin validator from repository root: `node scripts/plugins/validate-plugin-packages.mjs`.
 - Required spec success criteria all have direct test evidence: offline bypass, local persistence, unique request count, concurrency <=4, 404 TTL, timeout/error fallback, unchanged CEFR totals, stale response ignored, and no passage upload.
 
 ## Risks / Failure Cases
@@ -44,7 +44,7 @@ Verify the complete async flow, request/persistence invariants, error handling, 
 - New integration test and the focused dynamic-dictionary service/controller/dialog suite: **25 passed**. Coverage includes unique lemma requests, immediate synchronous profile, success/failure fallback, no passage upload, persistence, cache refresh behavior, concurrency cap, proper-noun filtering, stale responses, and dialog closure.
 - `flutter test test/architecture_test.dart`: **12/12 passed**.
 - `flutter analyze --no-fatal-infos`: **No issues found** after removing one unused import introduced in the dialog changes.
-- `node scripts/validate_plugins.mjs`: **3 plugins valid and synchronized**.
+- `node scripts/plugins/validate-plugin-packages.mjs`: **3 plugins valid and synchronized**.
 - `git diff --check`: passed (only existing CRLF normalization notices).
 - Initial full-suite run exposed stale toolbar tooltip expectations and a missing function-word entry (`of`). Updated the assertions and function-word set; the targeted regression tests passed.
 - Final `flutter test test/features/studio_board`: **345 passed, 0 failed**.

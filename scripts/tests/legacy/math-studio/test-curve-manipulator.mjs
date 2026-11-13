@@ -1,6 +1,7 @@
+// Legacy test tham chiếu API Math Studio đã bị thay thế; giữ làm tư liệu, không thuộc CI hiện hành. Kiểm thử việc suy ngược công thức khi kéo đường cong.
 import assert from 'assert';
-import { parseAndAnalyze } from '../plugins/math_studio/ui/core/expression_parser.js';
-import { computeFormulaFromDrag } from '../plugins/math_studio/ui/core/curve_manipulator.js';
+import { parseAndAnalyze } from '../../../../plugins/math_studio/ui/core/expression_parser.js';
+import { computeFormulaFromDrag } from '../../../../plugins/math_studio/ui/core/curve_manipulator.js';
 
 console.log('🧪 Testing Curve Manipulator...');
 

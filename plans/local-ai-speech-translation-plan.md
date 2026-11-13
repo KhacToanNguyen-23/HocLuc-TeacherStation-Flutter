@@ -170,7 +170,7 @@ Demo: Flutter gửi một WAV test qua Java/runtime rồi nghe giọng Anh trong
 
 | Task | Vị trí | Phụ thuộc | Đầu ra / kiểm chứng |
 |---|---|---|---|
-| 3.1 Python runtime/lifecycle | `backend/ai-runtime/app/main.py`, backend `AudioRuntimeService.java`, `scripts/Start-AiRuntime.ps1` | Sprint 0 | Health, model load theo nhu cầu, dependency failure, process watcher; mở app không nạp model, đóng parent không để worker mồ côi |
+| 3.1 Python runtime/lifecycle | `backend/ai-runtime/app/main.py`, backend `AudioRuntimeService.java`, `scripts/ai/setup-ai-runtime.ps1` | Sprint 0 | Health, model load theo nhu cầu, dependency failure, process watcher; mở app không nạp model, đóng parent không để worker mồ côi |
 | 3.2 Offline orchestration | `backend/ai-runtime/pipeline.py`, audio controller, Flutter audio service | 3.1, 0.3 | ASR → MT → TTS với cùng segment ID; golden input + timeout/cancel/model failure; giữ input chuẩn để đánh giá lỗi từng model |
 | 3.3 Memory/performance profile | `scripts/benchmark.py`, config model/runtime | 3.2 | Báo tải kết hợp thực; thử CPU/GPU và CT2 nếu cần; so output trước/sau export, không dùng con số benchmark bên ngoài làm kết quả máy pilot |
 
@@ -197,7 +197,7 @@ Demo: hai thiết bị/tài khoản Meet; người tham gia thứ hai xác nhậ
 | Task | Vị trí | Phụ thuộc | Đầu ra / kiểm chứng |
 |---|---|---|---|
 | 5.1 Virtual audio transport acceptance | `audio_bridge`, `docs/ai-speech-setup.md` mới, Meet setup UI hiện có | 2.2, Sprint 4 | Chốt component/cặp endpoint; Meet chọn capture endpoint; test round-trip bằng participant khác và ghi nhận thiết bị/cấu hình thực |
-| 5.2 Startup/packaging/cleanup | `Start.ps1` mode Windows, `scripts/Package-AiNativeWindows.ps1` mới, `frontend/lib/services/sidecar_manager_native.dart` | 3.1, 5.1 | Đóng gói Flutter Windows native + Java + Python runtime/version manifest; model paths cấu hình được, kiểm tra thiếu driver/asset; stop/restart/forced app exit không để process/socket giữ mic |
+| 5.2 Startup/packaging/cleanup | `Start.ps1` mode Windows, `scripts/ai/package-ai-native-windows.ps1` mới, `frontend/lib/services/sidecar_manager_native.dart` | 3.1, 5.1 | Đóng gói Flutter Windows native + Java + Python runtime/version manifest; model paths cấu hình được, kiểm tra thiếu driver/asset; stop/restart/forced app exit không để process/socket giữ mic |
 | 5.3 Acceptance report và rollback | `docs/ai-speech-acceptance.md`, scoped test suites | Các task trước | Báo P50/P95, chất lượng và giới hạn; rollback về giọng gốc; disable capability trên platform chưa kiểm chứng |
 
 Gate: có bằng chứng người học nghe qua Meet thật, cùng số đo end-to-end. Không đánh dấu hỗ trợ đầy đủ chỉ bằng file WAV, widget tests hoặc speaker local.

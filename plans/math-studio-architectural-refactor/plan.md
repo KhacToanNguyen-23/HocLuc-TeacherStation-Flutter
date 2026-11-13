@@ -23,7 +23,7 @@ Risk: normal — touches Math Studio core architecture, DOM export pipeline, and
   - Tích hợp Symbolic Differentiation: Tự động tính biểu thức $f'(x)$ cho mọi hàm số (đa thức, hữu tỉ, lượng giác, siêu việt).
   - Tìm nghiệm chính xác của $f'(x) = 0$ và $f(x) = 0$ kết hợp giải tích và phương pháp Newton-Raphson độ chính xác cao.
   - Tính tích phân xác định và diện tích hình phẳng chính xác.
-  - Viết bộ kiểm thử độc lập: `scripts/test_math_cas.mjs` (5/5 PASS).
+  - Viết bộ kiểm thử độc lập: `scripts/tests/math-studio/test-math-cas.mjs` (5/5 PASS).
 
 - [x] **Phase 2: Single JSXGraph Board & WYSIWYG Live DOM SVG Serializer (`board_exporter.js`)**
   - Viết module `plugins/math_studio/ui/export/board_exporter.js`:
@@ -37,7 +37,7 @@ Risk: normal — touches Math Studio core architecture, DOM export pipeline, and
   - Tái cấu trúc `core/curve_manipulator.js`:
   - Kéo cực đại / cực tiểu trên bất kỳ hàm số nào đều kích hoạt bộ giải CAS ngược, tìm lại bộ hệ số hoặc tham số dịch chuyển chính xác.
   - Hỗ trợ hàm lượng giác $\sin(x)^2 + 1$, đa thức bậc cao $x^5 - 5x$, phân thức, đa thức bậc 3/4.
-  - Viết bộ kiểm thử độc lập: `scripts/test_curve_manipulator.mjs` (5/5 PASS).
+  - Viết bộ kiểm thử độc lập: `scripts/tests/math-studio/test-curve-manipulator.mjs` (5/5 PASS).
 
 - [x] **Phase 4: Modular Plugin Architecture Refactor**
   - Tách `app.js` và `graph_plotter.js` thành các module chuyên biệt:
@@ -67,5 +67,5 @@ Risk: normal — touches Math Studio core architecture, DOM export pipeline, and
 - `frontend/lib/features/studio_board/presentation/board_sticker_card.dart`
 - `frontend/lib/features/studio_board/presentation/interactive_chalkboard.dart`
 - `plugins/math_studio.hlep`
-- `scripts/test_math_cas.mjs`
-- `scripts/test_math_studio.mjs`
+- `scripts/tests/math-studio/test-math-cas.mjs`
+- `scripts/tests/math-studio/test-math-studio.mjs`

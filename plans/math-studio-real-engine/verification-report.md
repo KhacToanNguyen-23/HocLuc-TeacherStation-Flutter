@@ -48,7 +48,7 @@ Tất cả các lệnh dưới đây đã được thực thi trực tiếp trê
   - `plans/math-studio-real-engine/evidence/solid3d-revolution-sqrt-x.png`
 
 ### 4. Kiểm chứng Đóng gói & Ranh giới Kiến trúc
-- `node scripts/validate_plugins.mjs`: **0 lỗi** (4 plugins Schema v2.1 đồng bộ 100%).
+- `node scripts/plugins/validate-plugin-packages.mjs`: **0 lỗi** (4 plugins Schema v2.1 đồng bộ 100%).
 - `flutter test test/architecture_test.dart`: **12/12 invariants đạt** (100%).
 - `flutter analyze --no-fatal-infos`: **0 issues found**.
 - `plugins/math_studio.hlep`: Đã đóng gói thành công (23.2 MB uncompressed zip gồm toàn bộ offline fonts và bundle).

@@ -1,11 +1,11 @@
 // Convert the evaluated local demo snapshot into bounded, lazy-loaded shards.
-// Usage: node scripts/build_vietnamese_dictionary.mjs <demo-directory>
+// Usage: node scripts/dictionaries/build-vietnamese-dictionary.mjs <demo-directory>
 import fs from 'node:fs';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 const require=createRequire(import.meta.url);
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..','..');
 const plugin=path.join(root,'plugins/vietnamese_dictionary');
 const {normalize,bucket}=require(path.join(plugin,'ui/engine.js'));
 const demo=process.argv[2];

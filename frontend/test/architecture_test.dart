@@ -165,7 +165,7 @@ void main() {
           hlepFile.existsSync(),
           isTrue,
           reason:
-              'Plugin "$folderName" chưa được đóng gói thành plugins/$folderName.hlep. Hãy chạy: node scripts/package_plugin.mjs $folderName',
+              'Plugin "$folderName" chưa được đóng gói thành plugins/$folderName.hlep. Hãy chạy: node scripts/plugins/package-plugin.mjs $folderName',
         );
 
         // 2. Kiểm tra Deep Content Integrity của gói .hlep
@@ -189,7 +189,7 @@ void main() {
           zipManifestMap['version'],
           equals(manifest.version),
           reason:
-              'Gói $folderName.hlep có version (${zipManifestMap['version']}) không khớp với manifest.json trên đĩa (${manifest.version})! Hãy chạy: node scripts/package_plugin.mjs $folderName',
+              'Gói $folderName.hlep có version (${zipManifestMap['version']}) không khớp với manifest.json trên đĩa (${manifest.version})! Hãy chạy: node scripts/plugins/package-plugin.mjs $folderName',
         );
 
         // Kiểm tra mọi file trên đĩa đều có trong zip
@@ -211,7 +211,7 @@ void main() {
             archiveFilesMap.containsKey(relPath),
             isTrue,
             reason:
-                'Gói $folderName.hlep bị THIẾU FILE: $relPath! Hãy chạy: node scripts/package_plugin.mjs $folderName',
+                'Gói $folderName.hlep bị THIẾU FILE: $relPath! Hãy chạy: node scripts/plugins/package-plugin.mjs $folderName',
           );
         }
       }

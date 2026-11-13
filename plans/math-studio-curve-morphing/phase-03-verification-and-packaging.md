@@ -5,8 +5,8 @@ Kiểm tra toàn bộ test suites, đóng gói `.hlep` và kiểm tra 12 bất b
 
 ## Requirements
 1. Chạy 5 test suites logic.
-2. Đóng gói plugin và kiểm tra Schema v2.1: `node scripts/validate_plugins.mjs --fix`.
-3. Kiểm tra 12 Bất biến kiến trúc: `node scripts/run_architecture_check.mjs`.
+2. Đóng gói plugin và kiểm tra Schema v2.1: `node scripts/plugins/validate-plugin-packages.mjs --fix`.
+3. Kiểm tra 12 Bất biến kiến trúc: `node scripts/checks/run-architecture-check.mjs`.
 
 ## Success Criteria
 - 100% test suites logic PASS.

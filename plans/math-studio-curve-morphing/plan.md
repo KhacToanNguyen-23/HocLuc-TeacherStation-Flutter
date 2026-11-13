@@ -44,8 +44,8 @@ Date: 2026-10-26
 
 - [x] **Phase 3: Kiểm Thử, Đóng Gói .hlep & Bất Biến Kiến Trúc**
   - Chạy `test_app_logic.mjs`, `test_curve_manipulator.mjs`, `test_geometry_3d.mjs`, `test_math_studio.mjs`, `test_revolution_solid.mjs`.
-  - Đóng gói: `node scripts/validate_plugins.mjs --fix`.
-  - Bất biến kiến trúc: `node scripts/run_architecture_check.mjs`.
+  - Đóng gói: `node scripts/plugins/validate-plugin-packages.mjs --fix`.
+  - Bất biến kiến trúc: `node scripts/checks/run-architecture-check.mjs`.
 
 ---
 

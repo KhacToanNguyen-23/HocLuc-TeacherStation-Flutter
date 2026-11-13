@@ -17,7 +17,7 @@ Prove dataset quality, morphology correctness, runtime cost, and compatibility w
 - Focused data, tokenizer, profiler, and enrichment tests pass.
 - First-use, p95 steady-state lookup, and compiled-size measurements are recorded for the agreed reference target; approved budgets are met and no network wait occurs in the initial profile.
 - The CEFR-labeled unique-headword count meets 8,000–10,000; AWL-only, recognized-unrated, inflectional, and AWL family-form counts are reported separately with source attribution.
-- `node scripts/validate_plugins.mjs` passes.
+- `node scripts/plugins/validate-plugin-packages.mjs` passes.
 - `flutter test test/architecture_test.dart` passes.
 - `flutter analyze --no-fatal-infos` reports zero errors and warnings.
 - No plugin package changed; if a plugin changes, package it and rerun plugin validation.

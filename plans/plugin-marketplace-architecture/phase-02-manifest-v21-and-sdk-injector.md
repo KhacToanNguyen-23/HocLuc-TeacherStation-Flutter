@@ -30,10 +30,10 @@
    - Chặn triệt để các đường dẫn chứa `..` hoặc đường dẫn tuyệt đối khi giải nén trong `installFromZip` (chống lỗ hổng Zip Slip).
    - Bổ sung kiểm tra mã băm `expectedSha256` (nếu truyền vào) trước khi giải nén gói `.hlep`.
 
-4. **Cập nhật `manifest.json` của `casio_calculator`, `english_assistant` & `scripts/package_plugin.mjs`:**
+4. **Cập nhật `manifest.json` của `casio_calculator`, `english_assistant` & `scripts/plugins/package-plugin.mjs`:**
    - Cập nhật `plugins/casio_calculator/manifest.json` bổ sung `"category": "math"`, `"inject_sdk": true`, `"resizable": true`.
    - Cập nhật `plugins/english_assistant/manifest.json` khai báo tường minh khối `contributes.tools` (gồm công cụ Quét đoạn văn, Công cụ S-V-O, Nhập câu) để `SubjectToolPalette` đọc động từ manifest thay vì hardcode trong Flutter.
-   - Nâng cấp `scripts/package_plugin.mjs` để kiểm tra schema `manifest.json` và in ra mã băm `sha256` sau khi đóng gói `.hlep`.
+   - Nâng cấp `scripts/plugins/package-plugin.mjs` để kiểm tra schema `manifest.json` và in ra mã băm `sha256` sau khi đóng gói `.hlep`.
 
 ---
 

@@ -16,7 +16,7 @@ Test: --tdd được khuyến nghị (spec có đáp án số học chuẩn làm
 4. Tàn dư ~10 file cũ + `vendor/jsxgraph/` chưa xoá.
 
 ## Ràng buộc hạ tầng đã biết
-- `scripts/package_plugin.mjs` nén kiểu **STORE** (không nén) → `.hlep` ≈ tổng kích thước file. Bundle thử ≈ 9MB ⇒ `.hlep` ≥ 9MB trừ khi giảm bundle hoặc thêm deflate vào packager.
+- `scripts/plugins/package-plugin.mjs` nén kiểu **STORE** (không nén) → `.hlep` ≈ tổng kích thước file. Bundle thử ≈ 9MB ⇒ `.hlep` ≥ 9MB trừ khi giảm bundle hoặc thêm deflate vào packager.
 - `package_plugin.mjs` và `validate_plugins.mjs` dùng chung quy tắc loại trừ: `node_modules`, `__pycache__`, `.venv`, `engine/tests`, `engine/benchmarks`. Mọi thay đổi quy tắc phải sửa CẢ HAI file.
 - `.gitignore` chưa bỏ qua `node_modules/` toàn cục → phải bổ sung cho `plugins/math_studio/node_modules/`.
 - Bất biến AGENTS: không hardcode tên plugin/môn trong `frontend/lib/`; không import chéo; `inject_sdk: true`; đóng gói bằng `package_plugin.mjs`.

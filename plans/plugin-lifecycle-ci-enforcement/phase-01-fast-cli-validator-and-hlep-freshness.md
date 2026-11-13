@@ -1,14 +1,14 @@
-# Phase 01: Fast CLI Validator & Hash Freshness (`scripts/validate_plugins.mjs`)
+# Phase 01: Fast CLI Validator & Hash Freshness (`scripts/plugins/validate-plugin-packages.mjs`)
 
-**Parent Plan:** [plan.md](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/plugin-lifecycle-ci-enforcement/plan.md)  
-**Status:** Completed  
-**Target File:** `scripts/validate_plugins.mjs`  
+**Parent Plan:** [plan.md](file:///d:/Project/FptProject/HocLuc-TeacherStation-Flutter/plans/plugin-lifecycle-ci-enforcement/plan.md)
+**Status:** Completed
+**Target File:** `scripts/plugins/validate-plugin-packages.mjs`
 
 ---
 
 ## 1. Mục Tiêu & Yêu Cầu
 
-Xây dựng công cụ dòng lệnh `scripts/validate_plugins.mjs` hoạt động độc lập, không phụ thuộc thư viện ngoài (`node_modules`), chạy cực nhanh (< 150ms) trên cả Windows, macOS và Linux.
+Xây dựng công cụ dòng lệnh `scripts/plugins/validate-plugin-packages.mjs` hoạt động độc lập, không phụ thuộc thư viện ngoài (`node_modules`), chạy cực nhanh (< 150ms) trên cả Windows, macOS và Linux.
 
 ### Tiêu chí nghiệm thu:
 1. **Schema v2.1 Verification:**
@@ -24,7 +24,7 @@ Xây dựng công cụ dòng lệnh `scripts/validate_plugins.mjs` hoạt độn
    - Quét mtime (thời gian sửa đổi gần nhất) của tất cả file trong `plugins/<name>/` (bỏ qua `node_modules`, `__pycache__`, `.venv`).
    - Nếu có bất kỳ file nguồn nào có mtime mới hơn file `.hlep`, báo lỗi `OUT_OF_SYNC: Plugin <name> has been modified but .hlep archive was not updated!`.
 3. **Cờ `--fix` tự động đóng gói:**
-   - Khi chạy `node scripts/validate_plugins.mjs --fix`, tự động gọi `package_plugin.mjs` cho các plugin bị thiếu hoặc out-of-sync.
+   - Khi chạy `node scripts/plugins/validate-plugin-packages.mjs --fix`, tự động gọi `package_plugin.mjs` cho các plugin bị thiếu hoặc out-of-sync.
 4. **Actionable Error Messages:**
    - Mỗi lỗi in ra hướng dẫn rõ ràng kèm câu lệnh sửa lỗi để cả người và AI Agent có thể khắc phục tức thì.
 
@@ -32,10 +32,10 @@ Xây dựng công cụ dòng lệnh `scripts/validate_plugins.mjs` hoạt độn
 
 ## 2. Các Bước Triển Khai
 
-1. Tạo file `scripts/validate_plugins.mjs` với `import.meta.url` để xác định project root độc lập với CWD.
+1. Tạo file `scripts/plugins/validate-plugin-packages.mjs` với `import.meta.url` để xác định project root độc lập với CWD.
 2. Viết hàm duyệt cây thư mục `plugins/` loại trừ `*.hlep`, `.*`.
 3. Viết hàm `validateManifest(dir, manifest)`.
 4. Viết hàm `checkFreshness(dir, hlepPath)`.
 5. Bổ sung hỗ trợ `--fix` gọi lại logic đóng gói khi cần.
-6. Test thử với trạng thái hiện tại của repo (`node scripts/validate_plugins.mjs`).
+6. Test thử với trạng thái hiện tại của repo (`node scripts/plugins/validate-plugin-packages.mjs`).
 

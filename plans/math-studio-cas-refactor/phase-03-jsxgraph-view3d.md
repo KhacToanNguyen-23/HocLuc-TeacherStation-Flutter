@@ -16,6 +16,6 @@ Thay thế engine 3D tự chế chắp vá (`geometry_3d_engine.js`) bằng modu
 3. Đóng gói hàm xuất SVG cho hình 3D từ DOM JSXGraph.
 
 ## Verification Commands
-- `node scripts/test_math_studio.mjs`
+- `node scripts/tests/math-studio/test-math-studio.mjs`
 - Đảm bảo file `geometry_3d_engine.js` được dọn sạch hoàn toàn khỏi project.
 

@@ -32,7 +32,7 @@ Khi khởi động Frontend bằng lệnh `flutter run -d windows`, quá trình 
 | **Flutter Linter / Analyzer** | `flutter analyze --no-fatal-infos` | **0 issues** (No issues found) |
 | **Kiến Trúc CI (12 Invariants)** | `flutter test test/architecture_test.dart` | **12/12 Invariants Pass (100%)** |
 | **Studio Board Test Suite** | `flutter test test/features/studio_board/` | **206/206 Tests Pass (100%)** |
-| **Plugin Package Integrity** | `node scripts/validate_plugins.mjs` | **100% Đồng bộ Schema v2.1** |
+| **Plugin Package Integrity** | `node scripts/plugins/validate-plugin-packages.mjs` | **100% Đồng bộ Schema v2.1** |
 | **Backend Spring Boot Tests** | `mvn test -f backend/api/pom.xml` | **129/129 Tests Pass (BUILD SUCCESS)** |
 
 ---

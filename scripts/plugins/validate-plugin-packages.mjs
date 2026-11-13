@@ -1,3 +1,4 @@
+// Kiểm tra manifest, source plugin và độ đồng bộ archive .hlep; hỗ trợ --fix và --source-only.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -5,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '..');
+const rootDir = path.resolve(__dirname, '..', '..');
 const pluginsDir = path.join(rootDir, 'plugins');
 
 const isFixMode = process.argv.includes('--fix');
@@ -99,7 +100,7 @@ function readStoredZipEntries(zipPath) {
 
 function runPackagePlugin(pluginName) {
   console.log(`📦 [Auto-Fix] Đang đóng gói lại plugins/${pluginName}.hlep...`);
-  const packageScript = path.join(__dirname, 'package_plugin.mjs');
+  const packageScript = path.join(__dirname, 'package-plugin.mjs');
   const res = spawnSync(process.execPath, [packageScript, pluginName], {
     cwd: rootDir,
     stdio: 'inherit',
@@ -282,7 +283,7 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
       plugin: pluginName,
       code: 'MISSING_HLEP',
       message: `Gói nén ${pluginName}.hlep chưa tồn tại!`,
-      fix: `node scripts/package_plugin.mjs ${pluginName}`,
+      fix: `node scripts/plugins/package-plugin.mjs ${pluginName}`,
     });
     outOfSyncPlugins.add(pluginName);
   } else if (!sourceOnly) {
@@ -318,7 +319,7 @@ function validatePluginDir(pluginName, errors, warnings, outOfSyncPlugins) {
         plugin: pluginName,
         code: 'OUT_OF_SYNC_HLEP',
         message: `Mã nguồn plugin "${pluginName}" đã bị sửa đổi (ví dụ: ${mismatchPath}) nhưng file "${pluginName}.hlep" chưa được đóng gói lại!`,
-        fix: `node scripts/package_plugin.mjs ${pluginName}`,
+        fix: `node scripts/plugins/package-plugin.mjs ${pluginName}`,
       });
       outOfSyncPlugins.add(pluginName);
     }
@@ -409,7 +410,7 @@ function main() {
         console.error(`     👉 KHẮC PHỤC: ${err.fix}`);
       }
     }
-    console.error('\n💡 GỢI Ý: Chạy "node scripts/validate_plugins.mjs --fix" để tự động sửa các gói bị out-of-sync.\n');
+    console.error('\n💡 GỢI Ý: Chạy "node scripts/plugins/validate-plugin-packages.mjs --fix" để tự động sửa các gói bị out-of-sync.\n');
     process.exit(1);
   }
 

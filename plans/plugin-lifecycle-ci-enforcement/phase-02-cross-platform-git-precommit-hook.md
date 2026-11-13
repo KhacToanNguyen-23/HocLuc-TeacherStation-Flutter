@@ -5,7 +5,7 @@
 **Target Files:**
 - `.githooks/pre-commit`
 - `.gitattributes`
-- `scripts/setup_hooks.mjs`
+- `scripts/git/setup-hooks.mjs`
 
 ---
 
@@ -25,10 +25,10 @@ Thiết lập cơ chế Git Hook tự động chặn commit ngay tại máy cụ
      ```
    - Đảm bảo hook script chạy mượt trên Git Bash, WSL, Linux, macOS mà không bị lỗi `/bin/sh^M`.
 3. **Nội dung `.githooks/pre-commit`:**
-   - Gọi `node scripts/validate_plugins.mjs`.
+   - Gọi `node scripts/plugins/validate-plugin-packages.mjs`.
    - Nếu exit code khác 0 -> Chặn commit (`exit 1`) và in thông báo hướng dẫn.
-4. **Script kích hoạt 1 chạm `scripts/setup_hooks.mjs`:**
-   - Giúp dev chỉ cần chạy `node scripts/setup_hooks.mjs` là tự động cấu hình `git config core.hooksPath .githooks` và cấp quyền thực thi.
+4. **Script kích hoạt 1 chạm `scripts/git/setup-hooks.mjs`:**
+   - Giúp dev chỉ cần chạy `node scripts/git/setup-hooks.mjs` là tự động cấu hình `git config core.hooksPath .githooks` và cấp quyền thực thi.
 
 ---
 
@@ -37,6 +37,6 @@ Thiết lập cơ chế Git Hook tự động chặn commit ngay tại máy cụ
 1. Cập nhật `.gitattributes` ở thư mục gốc.
 2. Tạo thư mục `.githooks/` và file `.githooks/pre-commit`.
 3. Cấp quyền execute bit trong Git index: `git update-index --chmod=+x .githooks/pre-commit`.
-4. Tạo script thiết lập tiện lợi `scripts/setup_hooks.mjs`.
+4. Tạo script thiết lập tiện lợi `scripts/git/setup-hooks.mjs`.
 5. Kiểm thử commit thử nghiệm trên môi trường Windows.
 

@@ -18,9 +18,9 @@ Triệt tiêu hoàn toàn hardcode trong giải tích toán học bằng việc 
 2. Nâng cấp `plugins/math_studio/ui/core/math_cas.js`:
    - Tích hợp `diff(expr)` để tự động gán `derLatex: "y' = " + diff(cleanExpr)`.
    - Kết hợp tìm nghiệm giải tích và số học lai cho $f'(x) = 0$ trên mọi miền xác định.
-3. Viết test runner độc lập: `scripts/test_symbolic_cas.mjs`.
+3. Viết test runner độc lập: `scripts/tests/math-studio/test-symbolic-cas.mjs`.
 
 ## Verification Commands
-- `node scripts/test_symbolic_cas.mjs` (Phải pass 100% cho đa thức, lượng giác, phân thức, căn thức).
-- `node scripts/test_math_cas.mjs` (Pass 5/5).
+- `node scripts/tests/math-studio/test-symbolic-cas.mjs` (Phải pass 100% cho đa thức, lượng giác, phân thức, căn thức).
+- `node scripts/tests/math-studio/test-math-cas.mjs` (Pass 5/5).
 

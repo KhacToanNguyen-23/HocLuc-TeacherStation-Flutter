@@ -69,7 +69,7 @@ Teachers experience noticeable latency and spinning loaders when opening Math St
 - [ ] Graph pan/zoom framerate: 60 FPS verified without drop-frame stutter.
 - [ ] Curve evaluation throughput: $\ge 1,000,000$ points/sec via JIT native compiled evaluator.
 - [ ] Warm modal open time: $< 100\text{ms}$ without visible loading spinner.
-- [ ] Plugin validation (`node scripts/validate_plugins.mjs`) passes 100%.
+- [ ] Plugin validation (`node scripts/plugins/validate-plugin-packages.mjs`) passes 100%.
 - [ ] Architecture tests (`flutter test test/architecture_test.dart`) pass 12/12 invariants.
 - [ ] Analyzer (`flutter analyze --no-fatal-infos`) reports 0 issues.
 

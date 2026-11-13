@@ -63,7 +63,7 @@ Cột bên trái của hộp thoại Math Studio bị rối mắt bởi 5 khối
 - [ ] Ở trạng thái mặc định, toàn bộ cột trái hiển thị trọn vẹn trong chiều cao 620px mà không bị cuộn dọc.
 - [ ] Cả 4 tab trên thanh tiêu đề hiển thị trọn vẹn 100%, không bị khuất mép phải.
 - [ ] Nút `Tùy chọn nâng cao ▾` đóng/mở mượt mà, lưu giữ trạng thái bật/tắt của khối tròn xoay.
-- [ ] Bộ test kiến trúc (`node scripts/run_architecture_check.mjs`) và kiểm tra plugin (`node scripts/validate_plugins.mjs`) đạt 100% PASS.
+- [ ] Bộ test kiến trúc (`node scripts/checks/run-architecture-check.mjs`) và kiểm tra plugin (`node scripts/plugins/validate-plugin-packages.mjs`) đạt 100% PASS.
 
 ---
 

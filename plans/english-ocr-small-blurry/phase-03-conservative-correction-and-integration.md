@@ -27,7 +27,7 @@
 - Run the benchmark and assert the confirmed targets: degraded median CER improves by at least 10% relative (or does not regress when baseline CER is zero); clean median CER increases by no more than 2 percentage points.
 - Assert end-to-end `/analyze-svo` p95 latency ≤3 seconds for 1280×720 images on the benchmark machine.
 - Run `python -m pytest plugins/english_assistant/engine/tests`.
-- Run `node scripts/package_plugin.mjs english_assistant`, then `node scripts/validate_plugins.mjs`.
+- Run `node scripts/plugins/package-plugin.mjs english_assistant`, then `node scripts/plugins/validate-plugin-packages.mjs`.
 - From `frontend/`, run `flutter test test/architecture_test.dart` and `flutter analyze --no-fatal-infos`.
 
 ## Acceptance criteria
@@ -52,5 +52,5 @@
 - TDD verification: `python -m unittest discover -s plugins/english_assistant/engine/tests -p 'test_*.py' -v` passes 28 tests. Existing `test_api.py` and `test_rules.py` scripts also pass. `python -m pytest ...` cannot run because pytest is not installed; the standard-library tests cover the new cases.
 - Accuracy: against Phase 1, degraded median CER improved from `0.429603` to `0.000000`; clean median CER improved from `0.795652` to `0.012969`. WER medians are retained by class in `engine/benchmarks/final.json`.
 - Latency gate: the runner enforces <=3 seconds for aggregate and each image condition, and repeats the 24 fixed images five times. After skipping the redundant retry only when every region confidence is at least `0.995`, the default 120-request run passes: aggregate `0.9265s`, clean `0.9265s`, small `0.7844s`, blurred `0.9994s` p95. CPU utilization was `76.9%` across 8 logical CPUs.
-- Packaging: `node scripts/package_plugin.mjs english_assistant` produced an 18-entry archive; dev-only engine tests/benchmark files are excluded. `node scripts/validate_plugins.mjs` reports all 3 plugins schema-valid and synchronized.
+- Packaging: `node scripts/plugins/package-plugin.mjs english_assistant` produced an 18-entry archive; dev-only engine tests/benchmark files are excluded. `node scripts/plugins/validate-plugin-packages.mjs` reports all 3 plugins schema-valid and synchronized.
 - Repository gates: Python compilation passes; plugin package/validator pass; Flutter architecture invariants pass `12/12`; `flutter analyze --no-fatal-infos` reports no issues. Flutter required a process-scoped `safe.directory=D:/flutter` and elevated cache access because the installed SDK is outside the writable workspace; global Git config was left unchanged.

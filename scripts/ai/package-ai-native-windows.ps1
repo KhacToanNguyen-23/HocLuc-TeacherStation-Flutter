@@ -1,10 +1,13 @@
+# .SYNOPSIS
+# Build và tập hợp ứng dụng Flutter, backend Java cùng runtime AI thành gói Windows native.
+#
 [CmdletBinding()]
 param([string]$FlutterPath, [switch]$SkipBuild, [string]$OutputDirectory)
 $ErrorActionPreference='Stop'
-$taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $taskRuntime=Join-Path $taskRoot 'backend\ai-runtime'
 $taskPython=Join-Path $taskRuntime '.venv\Scripts\python.exe'
-if (!(Test-Path -LiteralPath $taskPython)) {throw 'Chạy Setup-AiRuntime.ps1 trước.'}
+if (!(Test-Path -LiteralPath $taskPython)) {throw 'Chạy scripts/ai/setup-ai-runtime.ps1 trước.'}
 if (!$SkipBuild) {
     if (!$FlutterPath) {$FlutterPath=(Get-Command flutter -ErrorAction Stop).Source}
     Push-Location (Join-Path $taskRoot 'frontend')
@@ -35,7 +38,7 @@ if (!(Test-Path -LiteralPath (Join-Path $taskOutput 'java\bin\java.exe'))) {
     & jlink --add-modules java.se,jdk.unsupported,jdk.crypto.ec --output (Join-Path $taskOutput 'java')
     if ($LASTEXITCODE) {throw 'Không đóng gói được Java runtime.'}
 }
-& (Join-Path $PSScriptRoot 'Export-AiManifest.ps1') -OutputPath (Join-Path $taskOutput 'ai-model-manifest.json')
+& (Join-Path $PSScriptRoot 'write-ai-model-manifest.ps1') -OutputPath (Join-Path $taskOutput 'ai-model-manifest.json')
 New-Item -ItemType Directory -Path (Join-Path $taskOutput 'docs') -Force | Out-Null
 foreach ($taskDoc in @('ai-speech-setup.md','ai-speech-acceptance.md')) {
     Copy-Item -LiteralPath (Join-Path $taskRoot ('docs\'+$taskDoc)) -Destination (Join-Path $taskOutput 'docs') -Force

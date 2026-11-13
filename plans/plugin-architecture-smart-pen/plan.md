@@ -22,7 +22,7 @@
 
 ## Verification
 
-- `node scripts/validate_plugins.mjs`
+- `node scripts/plugins/validate-plugin-packages.mjs`
 - `flutter test test/architecture_test.dart`
 - `flutter analyze --no-fatal-infos`
 - Flutter plugin/bridge/widget tests under `frontend/test/features/plugin_engine/` and `frontend/test/features/studio_board/`

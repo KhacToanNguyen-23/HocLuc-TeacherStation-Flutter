@@ -8,11 +8,11 @@
 
 1. **Đóng gói plugin:**
    - Cập nhật phiên bản manifest lên `v2.0.0` (NoteRenderer UI/UX Edition).
-   - Đóng gói: `node scripts/package_plugin.mjs math_studio`.
-   - Kiểm tra linter plugin: `node scripts/validate_plugins.mjs`.
+   - Đóng gói: `node scripts/plugins/package-plugin.mjs math_studio`.
+   - Kiểm tra linter plugin: `node scripts/plugins/validate-plugin-packages.mjs`.
 
 2. **Chạy bộ kiểm thử tự động:**
-   - Chạy test JavaScript: `node scripts/test_math_studio.mjs`, `node scripts/test_revolution_solid.mjs`.
+   - Chạy test JavaScript: `node scripts/tests/math-studio/test-math-studio.mjs`, `node scripts/tests/math-studio/test-revolution-solid.mjs`.
    - Chạy test widget Flutter: `flutter test test/features/studio_board/board_sticker_test.dart`.
    - Chạy Architecture Gate: `flutter test test/architecture_test.dart` (12/12 Invariants PASS).
    - Chạy Flutter static analyzer: `flutter analyze --no-fatal-infos` (0 errors, 0 warnings).

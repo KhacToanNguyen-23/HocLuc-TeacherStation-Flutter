@@ -37,7 +37,7 @@ Qua kiểm tra thực tế trên Bảng phấn (Studio Board) và plugin Math St
 
 ### P1: Bất Biến Kiến Trúc & Kiểm Thử
 - **US3.1:** 5/5 test suites logic PASS 100%.
-- **US3.2:** 12/12 Invariants PASS 100% (`node scripts/run_architecture_check.mjs`).
+- **US3.2:** 12/12 Invariants PASS 100% (`node scripts/checks/run-architecture-check.mjs`).
 - **US3.3:** Đóng gói `plugins/math_studio.hlep` đồng bộ Schema v2.1.
 
 ### P1: Live DOM SVG Extraction (Bê Nguyên Hình Ra - Cách A)

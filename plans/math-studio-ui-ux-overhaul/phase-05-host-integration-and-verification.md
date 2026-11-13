@@ -22,8 +22,8 @@ Fix WebView2 sub-pixel texture blurring and cold-start overhead in the Flutter H
    - Remove `(s.svgContent != null && p.manifest.id.contains('math'))` at line 271 of `interactive_chalkboard.dart` (strictly adhering to `AGENTS.md` Invariant #1: Zero Hardcoded Names in `frontend/lib/`) and remove unused `_handleRevolveOrEdit`.
 
 ## Packaging & CI Verification Gates
-1. Run `node scripts/package_plugin.mjs math_studio` to rebuild `plugins/math_studio.hlep` and sync local cache if present.
-2. Run `node scripts/validate_plugins.mjs` (0 errors).
+1. Run `node scripts/plugins/package-plugin.mjs math_studio` to rebuild `plugins/math_studio.hlep` and sync local cache if present.
+2. Run `node scripts/plugins/validate-plugin-packages.mjs` (0 errors).
 3. Run `flutter test test/architecture_test.dart` (12/12 invariants passing).
 4. Run `flutter analyze --no-fatal-infos` (0 errors, 0 warnings).
 

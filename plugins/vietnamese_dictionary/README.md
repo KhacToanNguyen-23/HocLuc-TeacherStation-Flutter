@@ -23,6 +23,6 @@ The compact headword index loads once; definitions load on demand with a four-sh
 
 ## Rebuild
 
-`node scripts/build_vietnamese_dictionary.mjs <evaluated-demo-directory>`
+`node scripts/dictionaries/build-vietnamese-dictionary.mjs <evaluated-demo-directory>`
 
-The input directory contains the evaluated `data/combined.json` snapshot and data notices. It is an explicit local build input, not a runtime dependency. Then run `node scripts/package_plugin.mjs vietnamese_dictionary` and `node scripts/validate_plugins.mjs`.
+The input directory contains the evaluated `data/combined.json` snapshot and data notices. It is an explicit local build input, not a runtime dependency. Then run `node scripts/plugins/package-plugin.mjs vietnamese_dictionary` and `node scripts/plugins/validate-plugin-packages.mjs`.

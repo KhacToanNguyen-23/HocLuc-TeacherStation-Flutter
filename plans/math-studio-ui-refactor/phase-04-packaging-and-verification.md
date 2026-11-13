@@ -5,8 +5,8 @@ Xác minh toàn bộ các bất biến kiến trúc của hệ thống, cập nh
 
 ## Target Files
 - `frontend/test/features/studio_board/board_sticker_test.dart`
-- `scripts/validate_plugins.mjs`
-- `scripts/run_architecture_check.mjs`
+- `scripts/plugins/validate-plugin-packages.mjs`
+- `scripts/checks/run-architecture-check.mjs`
 - `plugins/math_studio.hlep`
 
 ## Detailed Implementation Steps
@@ -15,10 +15,10 @@ Xác minh toàn bộ các bất biến kiến trúc của hệ thống, cập nh
    - Test kiểm tra trạng thái Selected: hiển thị đầy đủ 8 chốt kéo, cuống xoay và thanh Floating Action Bar.
    - Test kiểm tra tương tác tap các nút hành động `Sửa`, `Phát quay`, `Nhân bản`, `Xóa`.
 2. **Đóng gói Plugin:**
-   - Chạy `node scripts/package_plugin.mjs math_studio` để sinh gói `plugins/math_studio.hlep` v2.1.0 mới nhất.
+   - Chạy `node scripts/plugins/package-plugin.mjs math_studio` để sinh gói `plugins/math_studio.hlep` v2.1.0 mới nhất.
 3. **Chạy toàn bộ Verification Gates:**
-   - `node scripts/validate_plugins.mjs` $\rightarrow$ 3/3 plugins valid, 100% in sync.
-   - `node scripts/run_architecture_check.mjs` $\rightarrow$ 12/12 Invariants PASS.
+   - `node scripts/plugins/validate-plugin-packages.mjs` $\rightarrow$ 3/3 plugins valid, 100% in sync.
+   - `node scripts/checks/run-architecture-check.mjs` $\rightarrow$ 12/12 Invariants PASS.
    - Chạy các test đại số và hình học: `test_math_studio.mjs`, `test_curve_manipulator.mjs`, `test_geometry_3d.mjs`, `test_revolution_solid.mjs`.
 
 ## Acceptance Criteria

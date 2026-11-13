@@ -1,9 +1,11 @@
+"""Kiểm thử unit cho bộ sinh lexicon CEFR."""
+
 import csv
 import json
 import tempfile
 import unittest
 from pathlib import Path
-from scripts.generate_cefr_lexicon import LexiconError, collect_entries, main, render_dart
+from scripts.dictionaries.generate_cefr_lexicon import LexiconError, collect_entries, main, render_dart
 
 
 class GenerateCefrLexiconTests(unittest.TestCase):

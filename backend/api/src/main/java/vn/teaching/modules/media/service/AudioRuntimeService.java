@@ -52,7 +52,7 @@ public class AudioRuntimeService {
         if(!voice.matches("[ab][fm]_[a-z]+")) throw new IllegalArgumentException("Giọng English không hợp lệ.");
         if(worker==null||!worker.isAlive()) {
             leases.clear();
-            if(!Files.isRegularFile(python())) throw new IOException("Chưa cài AI runtime. Chạy scripts/Setup-AiRuntime.ps1.");
+            if(!Files.isRegularFile(python())) throw new IOException("Chưa cài AI runtime. Chạy scripts/ai/setup-ai-runtime.ps1.");
             byte[] proof=new byte[32]; new SecureRandom().nextBytes(proof);
             token=Base64.getUrlEncoder().withoutPadding().encodeToString(proof);
             try(var socket=new java.net.ServerSocket(0,1,InetAddress.getLoopbackAddress())) { port=socket.getLocalPort(); }

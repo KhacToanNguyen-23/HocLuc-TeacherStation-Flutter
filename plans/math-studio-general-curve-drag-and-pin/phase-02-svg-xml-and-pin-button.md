@@ -6,8 +6,8 @@
 - `plugins/math_studio/ui/index.html`
 - `plugins/math_studio/ui/app.js`
 - `plugins/math_studio/ui/style.css`
-- `scripts/test_math_studio.mjs`
-- `scripts/test_app_logic.mjs`
+- `scripts/tests/math-studio/test-math-studio.mjs`
+- `scripts/tests/math-studio/test-app-logic.mjs`
 
 ---
 
@@ -36,14 +36,14 @@
    - Lắng nghe sự kiện `keydown` trên `window`: nếu `(e.ctrlKey || e.metaKey) && e.key === 'Enter'`, gọi ngay `handlePinToBoard()`.
 
 4. **Đóng gói & Kiểm tra:**
-   - Đóng gói lại: `node scripts/validate_plugins.mjs --fix`.
+   - Đóng gói lại: `node scripts/plugins/validate-plugin-packages.mjs --fix`.
    - Chạy toàn bộ test suites và kiểm tra kiến trúc.
 
 ---
 
 ## Verification
-- `node scripts/validate_plugins.mjs`: PASS 100%
-- `node scripts/run_architecture_check.mjs`: PASS 12/12 Invariants
+- `node scripts/plugins/validate-plugin-packages.mjs`: PASS 100%
+- `node scripts/checks/run-architecture-check.mjs`: PASS 12/12 Invariants
 - `flutter test test/architecture_test.dart`: PASS 12/12 Invariants
 - `flutter analyze --no-fatal-infos`: 0 errors, 0 warnings
 

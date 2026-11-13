@@ -38,7 +38,7 @@ Teacher selects tab 'Tích phân'
 - [x] **Phase 2: Unified Vector SVG Export & Continuous Curve (`app.js` & `graph_plotter.js`)**
   - In `app.js` (`handlePinToBoard`), removed the isolated branch for integral export.
   - Used unified `generateGraphSvg` with `theme: 'chalkboard'` where the function curve continuously covers the viewport from `xMin` to `xMax` and the shaded integral region covers $[a, b]$.
-  - Re-packaged and validated: `node scripts/validate_plugins.mjs --fix`.
+  - Re-packaged and validated: `node scripts/plugins/validate-plugin-packages.mjs --fix`.
   - All automated test suites pass 100%.
 
 ## Session Notes

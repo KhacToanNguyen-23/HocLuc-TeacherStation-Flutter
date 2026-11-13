@@ -6,16 +6,16 @@
 
 ## 1. Automated Test Suites
 1. **Plugin Schema & Archive Freshness:**
-   - Command: `node scripts/validate_plugins.mjs`
+   - Command: `node scripts/plugins/validate-plugin-packages.mjs`
    - Target: 3/3 plugins valid, 0 lỗi, `.hlep` đồng bộ Schema v2.1.
 2. **Math Studio Core Engine Tests:**
-   - Command: `node scripts/test_math_studio.mjs`
+   - Command: `node scripts/tests/math-studio/test-math-studio.mjs`
    - Target: 7/7 tests pass 100% (cực trị, tiệm cận, tích phân, hàm số).
 3. **App Logic Simulation:**
-   - Command: `node scripts/test_app_logic.mjs`
+   - Command: `node scripts/tests/math-studio/test-app-logic.mjs`
    - Target: 5/5 logic tests pass 100%.
 4. **Architecture Gate (12/12 Invariants):**
-   - Command: `node scripts/run_architecture_check.mjs`
+   - Command: `node scripts/checks/run-architecture-check.mjs`
    - Target: 12/12 Bất biến kiến trúc ĐẠT 100% (Zero hardcoded plugin IDs, zero direct imports, process dynamic ports, anti-god class <= 900 lines).
 
 ---

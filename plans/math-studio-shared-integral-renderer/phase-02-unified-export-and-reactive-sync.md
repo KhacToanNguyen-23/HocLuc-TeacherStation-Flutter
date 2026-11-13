@@ -12,10 +12,10 @@
    - Unify the export logic: both 'graph' and 'integral' views call `generateGraphSvg(currentAnalysis, currentIntegral, { theme: 'chalkboard', ... })`.
    - Title matches pedagogical convention (`Tích phân S = ...` or `Đồ thị: y = ...`).
 3. Verification:
-   - Run `node scripts/test_math_studio.mjs` (7/7 tests pass).
-   - Run `node scripts/test_app_logic.mjs` (5/5 tests pass).
-   - Run `node scripts/validate_plugins.mjs --fix` (0 errors, package updated).
-   - Run `node scripts/run_architecture_check.mjs` (12/12 invariants pass).
+   - Run `node scripts/tests/math-studio/test-math-studio.mjs` (7/7 tests pass).
+   - Run `node scripts/tests/math-studio/test-app-logic.mjs` (5/5 tests pass).
+   - Run `node scripts/plugins/validate-plugin-packages.mjs --fix` (0 errors, package updated).
+   - Run `node scripts/checks/run-architecture-check.mjs` (12/12 invariants pass).
 
 ## Acceptance Criteria
 - [ ] Exported sticker on chalkboard displays the complete continuous curve, full axes, grid numbers, and shaded integral region.

@@ -4,7 +4,7 @@
 **Target Files:**
 - `plugins/math_studio/ui/core/curve_manipulator.js`
 - `plugins/math_studio/ui/app.js`
-- `scripts/test_curve_manipulator.mjs`
+- `scripts/tests/math-studio/test-curve-manipulator.mjs`
 
 ---
 
@@ -30,7 +30,7 @@
 ---
 
 ## Verification
-- Chạy `node scripts/test_curve_manipulator.mjs`:
+- Chạy `node scripts/tests/math-studio/test-curve-manipulator.mjs`:
   - Kéo cực trị bậc 3, bậc 4, phân thức, lượng giác $\sin(x)^2 + 1$.
   - Đảm bảo nghiệm $f'(x_1) = 0$ và $f(x_1) = y_1$ thỏa mãn với sai số $\le 10^{-5}$.
 

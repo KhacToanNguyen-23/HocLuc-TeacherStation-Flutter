@@ -5,15 +5,15 @@ Kiểm tra toàn bộ test suites, đóng gói `.hlep` và kiểm tra 12 bất b
 
 ## Requirements
 1. Chạy 5 test suites logic:
-   - `node scripts/test_app_logic.mjs`
-   - `node scripts/test_curve_manipulator.mjs`
-   - `node scripts/test_geometry_3d.mjs`
-   - `node scripts/test_math_studio.mjs`
-   - `node scripts/test_revolution_solid.mjs`
+   - `node scripts/tests/math-studio/test-app-logic.mjs`
+   - `node scripts/tests/math-studio/test-curve-manipulator.mjs`
+   - `node scripts/tests/math-studio/test-geometry-3d.mjs`
+   - `node scripts/tests/math-studio/test-math-studio.mjs`
+   - `node scripts/tests/math-studio/test-revolution-solid.mjs`
 2. Đóng gói plugin và kiểm tra Schema v2.1:
-   - `node scripts/validate_plugins.mjs --fix`
+   - `node scripts/plugins/validate-plugin-packages.mjs --fix`
 3. Kiểm tra 12 Bất biến kiến trúc:
-   - `node scripts/run_architecture_check.mjs`
+   - `node scripts/checks/run-architecture-check.mjs`
 
 ## Success Criteria
 - 100% test suites logic PASS.

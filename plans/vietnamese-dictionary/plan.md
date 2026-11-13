@@ -19,7 +19,7 @@ Risk: normal — local dictionary assets and a permission-gated generic PDF sele
 - Selection arrives only while the declared tool is active and authorized; switching off stops automatic input replacement.
 - Selection during initial data load is retained; stale async lookups cannot replace newer results.
 - Verify offline shard lookup, normalization, source filtering, missing term and malformed input behavior.
-- Package using `node scripts/package_plugin.mjs vietnamese_dictionary`, then plugin validator, architecture gate, analyzer, focused tests and independent code review.
+- Package using `node scripts/plugins/package-plugin.mjs vietnamese_dictionary`, then plugin validator, architecture gate, analyzer, focused tests and independent code review.
 
 ## Out of scope
 
@@ -30,10 +30,10 @@ Translation, automated literary analysis, Hán-character dictionary imports, OS/
 - Branch `feat/vietnamese-dictionary`; local changes only.
 - Four source groups (three evaluated snapshots plus eight draft literature notes), 52,436 NFC/case/whitespace-normalized headwords. Normalization merges spellings that the standalone demo counted separately; source senses remain separate.
 - 128 generated definition shards; four-shard runtime cache; packaged archive synchronized.
-- `node --test scripts/tests/vietnamese_dictionary.test.cjs`: 5/5 passing, including active/inactive selection events and selection received before index initialization.
+- `node --test scripts/tests/dictionaries/vietnamese-dictionary.test.cjs`: 5/5 passing, including active/inactive selection events and selection received before index initialization.
 - `flutter test --no-pub test/architecture_test.dart test/features/plugin_engine/plugin_text_selection_test.dart`: 15/15 passing (12 architecture + 3 selection tests).
 - `flutter analyze --no-fatal-infos`: no issues.
-- `node scripts/validate_plugins.mjs`: all four plugins valid and fresh.
+- `node scripts/plugins/validate-plugin-packages.mjs`: all four plugins valid and fresh.
 - Independent review found inherited-key handling in JS lookup; fixed with own-property/array checks and regression cases.
 - Browser preview verified manual `đào thương` lookup with glossary draft label and reference. Native desktop PDF drag gesture has not been exercised end to end; rebuild/restart desktop app to test the new host capability.
 - Mixed-source dataset provenance remains a pre-publication review item; not asserted cleared.

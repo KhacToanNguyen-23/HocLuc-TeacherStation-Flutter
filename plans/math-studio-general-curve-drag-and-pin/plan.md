@@ -30,7 +30,7 @@ Risk: normal — touches Math Studio curve manipulator, graph plotter SVG genera
   - Trong `graph_plotter.js` (hàm `generateGraphSvg`), sửa lỗi thẻ `<tspan>` không đóng: thay thế bằng cặp thẻ hợp lệ `baseline-shift="super"` / XML balanced tag, đảm bảo thẻ mở bằng chính xác thẻ đóng 100%.
   - Trong `index.html`, cập nhật nút `#btnDoneDialog` thành `[📌 Ghim vào bảng]` với style nổi bật.
   - Trong `app.js`, bổ sung phím tắt `Ctrl + Enter` để ghim nhanh đồ thị lên bảng phấn.
-  - Đóng gói lại plugin: `node scripts/validate_plugins.mjs --fix`.
+  - Đóng gói lại plugin: `node scripts/plugins/validate-plugin-packages.mjs --fix`.
   - Chạy toàn bộ test suites (`test_math_studio.mjs`, `test_app_logic.mjs`, `architecture_test.dart` PASS 100%).
 
 ## Session Notes
@@ -51,6 +51,6 @@ Risk: normal — touches Math Studio curve manipulator, graph plotter SVG genera
 - `plugins/math_studio/ui/index.html`
 - `plugins/math_studio/ui/app.js`
 - `plugins/math_studio.hlep`
-- `scripts/test_math_studio.mjs`
-- `scripts/test_app_logic.mjs`
+- `scripts/tests/math-studio/test-math-studio.mjs`
+- `scripts/tests/math-studio/test-app-logic.mjs`
 

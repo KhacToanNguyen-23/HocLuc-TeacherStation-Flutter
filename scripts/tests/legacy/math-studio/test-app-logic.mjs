@@ -1,8 +1,9 @@
-import { parseAndAnalyze } from '../plugins/math_studio/ui/core/expression_parser.js';
-import { solveIntegral } from '../plugins/math_studio/ui/core/integral_solver.js';
-import { generateGraphSvg } from '../plugins/math_studio/ui/render/graph_plotter.js';
-import { generateBbtSvg } from '../plugins/math_studio/ui/render/bbt_generator.js';
-import { computeFormulaFromDrag } from '../plugins/math_studio/ui/core/curve_manipulator.js';
+// Legacy test tham chiếu API Math Studio đã bị thay thế; giữ làm tư liệu, không thuộc CI hiện hành. Kiểm thử logic app Math Studio, công thức, đồ thị, tích phân và store.
+import { parseAndAnalyze } from '../../../../plugins/math_studio/ui/core/expression_parser.js';
+import { solveIntegral } from '../../../../plugins/math_studio/ui/core/integral_solver.js';
+import { generateGraphSvg } from '../../../../plugins/math_studio/ui/render/graph_plotter.js';
+import { generateBbtSvg } from '../../../../plugins/math_studio/ui/render/bbt_generator.js';
+import { computeFormulaFromDrag } from '../../../../plugins/math_studio/ui/core/curve_manipulator.js';
 
 console.log('🧪 Running App Logic Simulation...');
 
@@ -26,7 +27,7 @@ const dragged = computeFormulaFromDrag(analysis, { type: 'extremum', idx: 0 }, -
 console.log('5. Drag calculation successful:', dragged);
 
 // 6. Test Store Dispatcher
-const { MathStudioStore } = await import('../plugins/math_studio/ui/core/store.js');
+const { MathStudioStore } = await import('../../../../plugins/math_studio/ui/core/store.js');
 const testStore = new MathStudioStore({ formula: 'x^2 - 2' });
 let notified = false;
 testStore.subscribe((state) => { notified = true; });

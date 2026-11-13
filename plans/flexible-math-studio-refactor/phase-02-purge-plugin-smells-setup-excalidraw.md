@@ -56,9 +56,9 @@ Dọn sạch toàn bộ thư mục `logic/` thừa, các file CAS và Exporter t
      ]
    }
    ```
-4. Kiểm tra hợp lệ manifest bằng `node scripts/validate_plugins.mjs`.
+4. Kiểm tra hợp lệ manifest bằng `node scripts/plugins/validate-plugin-packages.mjs`.
 
 ## Tiêu chí hoàn thành (Verification)
-- `node scripts/validate_plugins.mjs` kiểm tra `math_studio` hợp lệ 100% Schema v2.1.
+- `node scripts/plugins/validate-plugin-packages.mjs` kiểm tra `math_studio` hợp lệ 100% Schema v2.1.
 - Không còn file rác hoặc trùng lặp trong `plugins/math_studio/`.
 

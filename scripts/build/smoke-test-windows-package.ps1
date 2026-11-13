@@ -1,7 +1,10 @@
+# .SYNOPSIS
+# Chạy smoke test cho bundle Windows đã build và di chuyển sang thư mục khác.
+#
 [CmdletBinding()]
 param([Parameter(Mandatory=$true)][string]$Bundle)
 $ErrorActionPreference = 'Stop'
-$taskRoot = Split-Path -Parent $PSScriptRoot
+$taskRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $taskBundle = (Resolve-Path -LiteralPath $Bundle).Path
 $taskTestRoot = Join-Path $taskRoot ('.packaging\package-check-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 New-Item -ItemType Directory -Force $taskTestRoot | Out-Null

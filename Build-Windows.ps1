@@ -54,12 +54,12 @@ if (!$SkipFrontendBuild) {
     } finally { Pop-Location }
 }
 if (!(Test-Path -LiteralPath (Join-Path $taskRoot 'frontend\build\web\canvaskit\canvaskit.wasm'))) { throw 'Build the offline Flutter web bundle first.' }
-& (Join-Path $taskRoot 'scripts\check-flutter-fonts.ps1') -WebRoot (Join-Path $taskRoot 'frontend\build\web')
+& (Join-Path $taskRoot 'scripts\build\verify-flutter-web-fonts.ps1') -WebRoot (Join-Path $taskRoot 'frontend\build\web')
 New-Item -ItemType Directory -Force $taskOutput | Out-Null
 $taskResources = Join-Path $taskOutput 'resources'
 New-Item -ItemType Directory -Force (Join-Path $taskResources 'app\build'), (Join-Path $taskResources 'whiteboard-host'), (Join-Path $taskResources 'service') | Out-Null
 Copy-Item -LiteralPath (Join-Path $taskRoot 'frontend\build\web') -Destination (Join-Path $taskResources 'app\build') -Recurse
-& (Join-Path $taskRoot 'scripts\check-flutter-fonts.ps1') -WebRoot (Join-Path $taskResources 'app\build\web')
+& (Join-Path $taskRoot 'scripts\build\verify-flutter-web-fonts.ps1') -WebRoot (Join-Path $taskResources 'app\build\web')
 Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\whiteboard-host\dist') -Destination (Join-Path $taskResources 'whiteboard-host') -Recurse
 Copy-Item -LiteralPath (Join-Path $taskRoot 'backend\api\target\companion-service-0.1.0.jar') -Destination (Join-Path $taskResources 'service\companion-service.jar')
 Copy-Item -LiteralPath $taskBrowser -Destination (Join-Path $taskOutput 'webview2-runtime') -Recurse

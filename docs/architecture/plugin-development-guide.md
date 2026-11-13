@@ -220,7 +220,7 @@ inside the plugin so taps cannot race a group migration.
 
 1. **Đóng gói và kiểm tra Schema v2.1:**
    ```powershell
-   node scripts/package_plugin.mjs <ten_thu_muc_plugin>
+   node scripts/plugins/package-plugin.mjs <ten_thu_muc_plugin>
    ```
    Lệnh này kiểm tra tính hợp lệ của `manifest.json`, nén toàn bộ thư mục thành `plugins/<ten_thu_muc_plugin>.hlep` và in mã băm `SHA-256`.
 2. **Thử nghiệm nhanh (Dev Sideload):**
@@ -236,15 +236,15 @@ Hệ thống sử dụng cơ chế bảo vệ 2 lớp để đảm bảo 100% pl
 
 ### Bước 1: Kích hoạt Git Hook (Chỉ cần chạy 1 lần sau khi clone repo)
 ```powershell
-node scripts/setup_hooks.mjs
+node scripts/git/setup-hooks.mjs
 ```
 *(Nếu mở repo bằng VS Code, hook sẽ được kích hoạt hoàn toàn tự động trong nền).*
 
 ### Bước 2: Kiểm tra nhanh trước khi commit (Fast-Path Validator < 150ms)
 ```powershell
-node scripts/validate_plugins.mjs
+node scripts/plugins/validate-plugin-packages.mjs
 ```
-*(Nếu phát hiện gói `.hlep` bị out-of-sync do bạn sửa file code mà chưa đóng gói lại, có thể dùng `node scripts/validate_plugins.mjs --fix` để tự động đóng gói).*
+*(Nếu phát hiện gói `.hlep` bị out-of-sync do bạn sửa file code mà chưa đóng gói lại, có thể dùng `node scripts/plugins/validate-plugin-packages.mjs --fix` để tự động đóng gói).*
 
 ### Bước 3: Chạy bài kiểm thử kiến trúc sâu (Deep-Path Gate CI)
 ```powershell
@@ -263,7 +263,7 @@ flutter test test/architecture_test.dart
 3. Tích chọn các mục sau:
    - ✅ **Require a pull request before merging**
    - ✅ **Require status checks to pass before merging**
-   - Trong danh sách status checks, tìm và chọn: **`Flutter Lint & Tests`** (chính là job chạy `validate_plugins.mjs` và `architecture_test.dart`).
+   - Trong danh sách status checks, tìm và chọn: **`Flutter Lint, Browser & Unit Tests`** (job chạy plugin validator và `architecture_test.dart`).
    - ✅ **Require branches to be up to date before merging**
    - ✅ **Do not allow bypassing the above settings** (Áp dụng cho cả Repository Administrators).
 

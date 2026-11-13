@@ -11,13 +11,13 @@ Harmonize the plugin manifest with the new 820px × 540px footprint, verify the 
    - Verify integer pixel snapping on dialog dimensions: `dialogW = 820.0`, `dialogH = 540.0`.
    - Ensure modal center coordinates keep ample chalkboard margin visible (> 200px on all sides).
 3. Packaging & CI:
-   - Run `node scripts/package_plugin.mjs math_studio`.
-   - Run `node scripts/validate_plugins.mjs`.
+   - Run `node scripts/plugins/package-plugin.mjs math_studio`.
+   - Run `node scripts/plugins/validate-plugin-packages.mjs`.
    - Run `flutter test test/architecture_test.dart`.
    - Run `flutter analyze --no-fatal-infos`.
 
 ## Verification
-- `node scripts/validate_plugins.mjs` passes 100% with 0 errors.
+- `node scripts/plugins/validate-plugin-packages.mjs` passes 100% with 0 errors.
 - `flutter test test/architecture_test.dart` passes 12/12 invariants.
 - `flutter analyze --no-fatal-infos` outputs "No issues found!".
 

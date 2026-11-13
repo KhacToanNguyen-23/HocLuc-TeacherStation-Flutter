@@ -42,7 +42,7 @@ Risk: normal — touches Math Studio core architecture, CAS engine, and state ma
   - Tích hợp với `math_cas.js`:
     - Tìm nghiệm của $f'(x) = 0$ và nghiệm $f(x) = 0$.
     - Phân loại CĐ, CT, tiệm cận đứng, ngang, và diện tích tích phân.
-  - Viết bộ kiểm thử: `scripts/test_symbolic_cas.mjs` (5/5 PASS).
+  - Viết bộ kiểm thử: `scripts/tests/math-studio/test-symbolic-cas.mjs` (5/5 PASS).
 
 - [x] **Phase 2: State-Driven Central Store (`store.js`) & Rút Gọn `app.js`**
   - Xây dựng `plugins/math_studio/ui/core/store.js`:
@@ -50,14 +50,14 @@ Risk: normal — touches Math Studio core architecture, CAS engine, and state ma
     - Reducer xử lý actions: `SET_FORMULA`, `SET_VIEW`, `SET_BOUNDS`, `UPDATE_DRAG_EXTREMUM`, `SET_INTEGRAL_BOUNDS`, `LOAD_STICKER`.
     - Cơ chế `subscribe(listener)` phát tín hiệu khi State thay đổi.
   - Tái cấu trúc `app.js`: Xóa sổ toàn bộ 15 biến toàn cục, chuyển sang gọi `store.dispatch(action)`. Giảm file từ 979 dòng xuống 291 dòng.
-  - Viết bộ kiểm thử: `scripts/test_app_logic.mjs` (PASS 100%).
+  - Viết bộ kiểm thử: `scripts/tests/math-studio/test-app-logic.mjs` (PASS 100%).
 
 - [x] **Phase 3: JSXGraph View3D Integration Cho Hình Học 3D (`view_3d_board.js`)**
   - Xây dựng `plugins/math_studio/ui/board/view_3d_board.js` tận dụng module `View3D` sẵn có của `jsxgraphcore.js`.
   - Hỗ trợ đầy đủ các khối SGK cơ bản (chóp tam giác, chóp tứ giác đều, lăng trụ đứng, hình nón, hình trụ, hình cầu).
   - Tương tác xoay chuột trực quan mượt mà trong không gian 3 chiều.
   - Xóa bỏ module tự chế `geometry_3d_engine.js`.
-  - Kiểm thử: `scripts/test_math_studio.mjs` (8/8 PASS).
+  - Kiểm thử: `scripts/tests/math-studio/test-math-studio.mjs` (8/8 PASS).
 
 - [x] **Phase 4: Dọn Dẹp Code Thừa, Hoàn Thiện UI & WYSIWYG Export**
   - Xóa bỏ các file legacy: `fraction.js`, `calculus_solver.js`, `geometry_3d_engine.js`.
@@ -67,13 +67,13 @@ Risk: normal — touches Math Studio core architecture, CAS engine, and state ma
 
 - [x] **Phase 5: Kiểm Thử Toàn Diện & Cổng Kiểm Soát Kiến Trúc (CI Gate)**
   - Chạy toàn bộ các test suite tự động:
-    - `node scripts/test_symbolic_cas.mjs` (PASS 5/5)
-    - `node scripts/test_math_cas.mjs` (PASS 5/5)
-    - `node scripts/test_curve_manipulator.mjs` (PASS 4/4)
-    - `node scripts/test_app_logic.mjs` (PASS 6/6)
-    - `node scripts/test_math_studio.mjs` (PASS 8/8)
-  - Đóng gói lại `.hlep`: `node scripts/validate_plugins.mjs --fix` (PASS).
-  - Kiểm tra 12 Bất biến kiến trúc: `node scripts/run_architecture_check.mjs` (12/12 PASS 100%).
+    - `node scripts/tests/math-studio/test-symbolic-cas.mjs` (PASS 5/5)
+    - `node scripts/tests/math-studio/test-math-cas.mjs` (PASS 5/5)
+    - `node scripts/tests/math-studio/test-curve-manipulator.mjs` (PASS 4/4)
+    - `node scripts/tests/math-studio/test-app-logic.mjs` (PASS 6/6)
+    - `node scripts/tests/math-studio/test-math-studio.mjs` (PASS 8/8)
+  - Đóng gói lại `.hlep`: `node scripts/plugins/validate-plugin-packages.mjs --fix` (PASS).
+  - Kiểm tra 12 Bất biến kiến trúc: `node scripts/checks/run-architecture-check.mjs` (12/12 PASS 100%).
 
 ---
 

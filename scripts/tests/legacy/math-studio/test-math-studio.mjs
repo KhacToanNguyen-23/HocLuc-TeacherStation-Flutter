@@ -1,11 +1,12 @@
+// Legacy test tham chiếu API Math Studio đã bị thay thế; giữ làm tư liệu, không thuộc CI hiện hành. Kiểm thử tích hợp các chức năng chính của Math Studio.
 /**
  * Unit Test Suite for Math Studio Core Modules
  */
 
-import { parseAndAnalyze } from '../plugins/math_studio/ui/core/expression_parser.js';
-import { solveIntegral } from '../plugins/math_studio/ui/core/integral_solver.js';
-import { generateBbtSvg } from '../plugins/math_studio/ui/render/bbt_generator.js';
-import { generateGraphSvg } from '../plugins/math_studio/ui/render/graph_plotter.js';
+import { parseAndAnalyze } from '../../../../plugins/math_studio/ui/core/expression_parser.js';
+import { solveIntegral } from '../../../../plugins/math_studio/ui/core/integral_solver.js';
+import { generateBbtSvg } from '../../../../plugins/math_studio/ui/render/bbt_generator.js';
+import { generateGraphSvg } from '../../../../plugins/math_studio/ui/render/graph_plotter.js';
 
 console.log('🧪 Bắt đầu kiểm thử Math Studio Engine...');
 

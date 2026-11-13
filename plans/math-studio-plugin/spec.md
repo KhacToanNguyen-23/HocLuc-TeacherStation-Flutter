@@ -90,7 +90,7 @@ Giáo viên dạy Toán THPT khi giảng bài Giải tích 12 (đồ thị hàm 
 - [ ] Bấm nút **[ ⟳ Phát quay ]** tạo ngay lập tức mô hình chiếc bình/khối tròn xoay 3D với các đường elip chiều sâu mượt mà trong $< 50$ ms.
 - [ ] Bấm vào nhãn công thức toán học ở góc trên bên trái cho phép gõ sửa hàm số và đồ thị cập nhật ngay.
 - [ ] `flutter test test/architecture_test.dart` tiếp tục đạt **12/12 Invariants PASS 100%**.
-- [ ] `node scripts/validate_plugins.mjs` đạt **0 lỗi, 100% in sync**.
+- [ ] `node scripts/plugins/validate-plugin-packages.mjs` đạt **0 lỗi, 100% in sync**.
 - [ ] `flutter analyze --no-fatal-infos` đạt **0 errors, 0 warnings**.
 
 ---

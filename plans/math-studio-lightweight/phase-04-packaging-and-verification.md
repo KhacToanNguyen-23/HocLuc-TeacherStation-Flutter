@@ -10,10 +10,10 @@ Bundle the ultra-lightweight plugin, purge unused dependencies, package into `.h
 2. Build script:
    - `build.mjs`: bundle `main.jsx` into `ui/dist/app.js`.
 3. Packaging:
-   - Package via `node scripts/package_plugin.mjs math_studio`.
+   - Package via `node scripts/plugins/package-plugin.mjs math_studio`.
    - Verify archive size is < 200 KB.
 4. Verification:
-   - Plugin validator: `node scripts/validate_plugins.mjs` (0 errors).
+   - Plugin validator: `node scripts/plugins/validate-plugin-packages.mjs` (0 errors).
    - Architecture test: `flutter test test/architecture_test.dart` (12/12 passing).
 
 ## Acceptance Criteria

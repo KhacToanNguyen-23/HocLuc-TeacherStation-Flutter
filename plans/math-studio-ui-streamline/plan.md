@@ -41,8 +41,8 @@
   - File: `plugins/math_studio/ui/app.js`
   - Bắt sự kiện click vào `#btnToggleAdvanced` để toggle class `open` / `hidden`.
   - Kiểm tra trạng thái quay quanh Ox của mô hình 2.5D khi toggle bên trong accordion.
-  - Chạy validator: `node scripts/validate_plugins.mjs --fix`.
-  - Chạy kiến trúc: `node scripts/run_architecture_check.mjs` (đảm bảo 12/12 Invariants PASS).
+  - Chạy validator: `node scripts/plugins/validate-plugin-packages.mjs --fix`.
+  - Chạy kiến trúc: `node scripts/checks/run-architecture-check.mjs` (đảm bảo 12/12 Invariants PASS).
 
 ## Session Notes
 <!-- Updated by cook automatically — do not edit manually -->

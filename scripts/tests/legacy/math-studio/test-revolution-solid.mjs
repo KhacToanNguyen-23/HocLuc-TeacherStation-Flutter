@@ -1,5 +1,6 @@
-import { parseAndAnalyze } from '../plugins/math_studio/ui/core/expression_parser.js';
-import { generateGraphSvg } from '../plugins/math_studio/ui/render/graph_plotter.js';
+// Legacy test tham chiếu API Math Studio đã bị thay thế; giữ làm tư liệu, không thuộc CI hiện hành. Kiểm thử hình học và SVG của khối tròn xoay.
+import { parseAndAnalyze } from '../../../../plugins/math_studio/ui/core/expression_parser.js';
+import { generateGraphSvg } from '../../../../plugins/math_studio/ui/render/graph_plotter.js';
 import assert from 'assert';
 
 console.log('🧪 Testing NoteRenderer 2.5D Solid of Revolution Engine...');

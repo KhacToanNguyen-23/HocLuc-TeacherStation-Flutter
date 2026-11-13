@@ -7,7 +7,7 @@ Khôi phục và tích hợp hoàn chỉnh tính năng kéo nắn trực tiếp 
 - `plugins/math_studio/ui/app.js`
 - `plugins/math_studio/ui/core/curve_manipulator.js`
 - `plugins/math_studio/ui/render/graph_plotter.js`
-- `scripts/test_curve_manipulator.mjs`
+- `scripts/tests/math-studio/test-curve-manipulator.mjs`
 
 ## Detailed Implementation Steps
 1. **Kiểm tra và chuẩn hóa cấu trúc handle trên SVG trong graph_plotter.js:**
@@ -24,5 +24,5 @@ Khôi phục và tích hợp hoàn chỉnh tính năng kéo nắn trực tiếp 
 ## Acceptance Criteria
 - [ ] Kéo điểm cực đại/cực tiểu bằng chuột hoặc chạm làm đồ thị biến dạng uốn lượn mượt mà 60 FPS.
 - [ ] Công thức hàm số trong ô input tự động nhảy số theo vị trí mới của điểm cực trị.
-- [ ] Kiểm thử `scripts/test_curve_manipulator.mjs` đạt 100% PASS.
+- [ ] Kiểm thử `scripts/tests/math-studio/test-curve-manipulator.mjs` đạt 100% PASS.
 

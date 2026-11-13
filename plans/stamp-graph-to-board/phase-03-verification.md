@@ -24,7 +24,7 @@
    *Yêu cầu: Tất cả các bài test vượt qua.*
 4. Xác thực đồng bộ plugin:
    ```powershell
-   node scripts/validate_plugins.mjs
+   node scripts/plugins/validate-plugin-packages.mjs
    ```
    *Yêu cầu: 0 errors.*
 

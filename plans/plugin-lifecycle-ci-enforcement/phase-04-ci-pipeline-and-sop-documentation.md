@@ -16,10 +16,10 @@
 
 ### Tiêu chí nghiệm thu:
 1. **GitHub Actions Early Exit Step:**
-   - Trong file `.github/workflows/ci-frontend.yml`, bổ sung bước chạy `node scripts/validate_plugins.mjs` trước khi chạy `flutter pub get` hoặc `flutter test`.
+   - Trong file `.github/workflows/ci-frontend.yml`, bổ sung bước chạy `node scripts/plugins/validate-plugin-packages.mjs` trước khi chạy `flutter pub get` hoặc `flutter test`.
    - Nếu phát hiện vi phạm plugin hoặc lệch `.hlep`, CI sẽ báo fail chỉ sau 5 giây thay vì phải đợi 2 phút.
 2. **Cập nhật `AGENTS.md` & `.agents/rules/plugin_development_rules.md`:**
-   - Bổ sung quy định bắt buộc chạy `node scripts/setup_hooks.mjs` khi bắt đầu làm việc.
+   - Bổ sung quy định bắt buộc chạy `node scripts/git/setup-hooks.mjs` khi bắt đầu làm việc.
    - Thêm quy chuẩn chi tiết cho 3 thao tác: THÊM mới, CHỈNH SỬA, và XÓA plugin.
    - Bổ sung mẫu Checklist PR bắt buộc (Pull Request Checklist).
 3. **Cập nhật `docs/architecture/plugin-development-guide.md`:**

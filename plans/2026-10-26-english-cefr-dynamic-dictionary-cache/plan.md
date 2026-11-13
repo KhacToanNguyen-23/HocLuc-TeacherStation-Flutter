@@ -49,7 +49,7 @@ The existing `TextProfilerService.profile` / `CefrProfiler.profileTokens` remain
 
 - Run targeted tests after each phase using the phase-specific commands.
 - Final frontend verification: `flutter test test/features/studio_board` and `flutter test test/architecture_test.dart` from `frontend/`; `flutter analyze --no-fatal-infos` from `frontend/`.
-- Final repository verification: `node scripts/validate_plugins.mjs` from the repository root. No plugin packages are expected to change.
+- Final repository verification: `node scripts/plugins/validate-plugin-packages.mjs` from the repository root. No plugin packages are expected to change.
 
 ## Handoff
 

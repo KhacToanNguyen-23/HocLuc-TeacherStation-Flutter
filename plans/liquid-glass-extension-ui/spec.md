@@ -66,7 +66,7 @@ Khi giảng dạy trực tiếp trên bảng thông minh hoặc slide PDF bằng
 - **SC-03 (Đồng bộ Host-Webview tức thì):** Khi đổi mức kính trên thanh dock nổi Flutter, sự kiện `GLASS_PRESET_CHANGE` được gửi qua `HostBridge` và Webview cập nhật CSS Custom Properties trong vòng $< 50\text{ms}$.
 - **SC-04 (Độ tương phản khả đọc WCAG AA):** Ở mọi mức độ kính (kể cả `clear`), văn bản hiển thị (chữ tiếng Anh, nhãn nút bấm, thẻ ngữ pháp) đạt tỷ lệ tương phản (Contrast Ratio) $\ge 4.5:1$ so với nền bài giảng bên dưới nhờ bóng đổ quang học (*ambient drop shadow*) và viền chữ vi mô.
 - **SC-05 (Kiến trúc sạch 100% PASS):** Lệnh kiểm thử cổng kiến trúc `flutter test test/architecture_test.dart` đạt **7/7 PASS**, không chứa chuỗi hardcode ID plugin trong `frontend/lib/`.
-- **SC-06 (Tính nguyên vẹn của gói Plugin):** Chạy `node scripts/package_plugin.mjs english_assistant` tạo file `.hlep` hợp lệ, script `node scripts/validate_plugins.mjs` báo 0 lỗi.
+- **SC-06 (Tính nguyên vẹn của gói Plugin):** Chạy `node scripts/plugins/package-plugin.mjs english_assistant` tạo file `.hlep` hợp lệ, script `node scripts/plugins/validate-plugin-packages.mjs` báo 0 lỗi.
 
 ---
 

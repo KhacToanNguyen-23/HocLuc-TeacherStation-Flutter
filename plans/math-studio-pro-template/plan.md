@@ -43,9 +43,9 @@ Nâng cấp toàn diện bộ máy render SVG tại `plugins/math_studio/ui/rend
   - Xử lý render số mũ superscript cho thẻ công thức $y = x^2 - 2$.
 
 - [x] **Phase 4: Đóng Gói .hlep, Chạy Test Suite & Kiểm Thử Kiến Trúc**
-  - Đóng gói: `node scripts/validate_plugins.mjs --fix`.
-  - Kiểm tra 12 Bất biến kiến trúc: `node scripts/run_architecture_check.mjs`.
-  - Chạy mô phỏng đồ thị và tính toán: `node scripts/test_app_logic.mjs`.
+  - Đóng gói: `node scripts/plugins/validate-plugin-packages.mjs --fix`.
+  - Kiểm tra 12 Bất biến kiến trúc: `node scripts/checks/run-architecture-check.mjs`.
+  - Chạy mô phỏng đồ thị và tính toán: `node scripts/tests/math-studio/test-app-logic.mjs`.
 
 ## Session Notes
 <!-- Updated by cook automatically — do not edit manually -->

@@ -22,7 +22,7 @@ Nâng cấp bài kiểm thử kiến trúc `architecture_test.dart` để biến
    - Kiểm tra:
      - Mọi file trên đĩa đều phải có mặt trong file `.hlep`.
      - Kích thước byte (`content.length`) giữa file trong zip và file trên đĩa phải khớp nhau.
-     - Nếu có file bị lệch hoặc thiếu -> Báo lỗi rõ ràng: `"Gói <name>.hlep KHÔNG ĐỒNG BỘ với thư mục nguồn! Hãy chạy: node scripts/package_plugin.mjs <name>"`.
+     - Nếu có file bị lệch hoặc thiếu -> Báo lỗi rõ ràng: `"Gói <name>.hlep KHÔNG ĐỒNG BỘ với thư mục nguồn! Hãy chạy: node scripts/plugins/package-plugin.mjs <name>"`.
 3. **Giữ vững 100% các bất biến hiện tại:**
    - Bất biến 1: Cấm hardcode tên plugin trong `lib/`.
    - Bất biến 2: Cấm cổng tĩnh 18888.

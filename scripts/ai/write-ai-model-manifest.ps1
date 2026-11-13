@@ -1,7 +1,10 @@
+# .SYNOPSIS
+# Tạo manifest cục bộ gồm nguồn, kích thước và SHA-256 của các model AI.
+#
 [CmdletBinding()]
 param([string]$ModelRoot='D:\AI-Training\models', [string]$OutputPath)
 $ErrorActionPreference='Stop'
-$taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 if (!$OutputPath) {$OutputPath=Join-Path $taskRoot '.run\ai-model-manifest.json'}
 $taskModels=@(
     @{folder='PhoWhisper-small';weights='pytorch_model.bin';source='https://huggingface.co/vinai/PhoWhisper-small';license='BSD-3-Clause'},

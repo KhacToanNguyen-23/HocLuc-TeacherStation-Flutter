@@ -5,13 +5,13 @@ Xác nhận toàn bộ hệ thống hoạt động chính xác, pass 100% các b
 
 ## 2. Tasks
 1. Chạy bài kiểm thử logic ứng dụng:
-   - `node scripts/test_app_logic.mjs`
-   - `node scripts/test_math_studio.mjs`
-   - `node scripts/test_curve_manipulator.mjs`
-   - `node scripts/test_geometry_3d.mjs`
-   - `node scripts/test_revolution_solid.mjs`
+   - `node scripts/tests/math-studio/test-app-logic.mjs`
+   - `node scripts/tests/math-studio/test-math-studio.mjs`
+   - `node scripts/tests/math-studio/test-curve-manipulator.mjs`
+   - `node scripts/tests/math-studio/test-geometry-3d.mjs`
+   - `node scripts/tests/math-studio/test-revolution-solid.mjs`
 2. Chạy đóng gói và kiểm tra plugin:
-   - `node scripts/validate_plugins.mjs --fix` (xác nhận 3/3 plugins valid, archive `plugins/math_studio.hlep` cập nhật mới nhất).
+   - `node scripts/plugins/validate-plugin-packages.mjs --fix` (xác nhận 3/3 plugins valid, archive `plugins/math_studio.hlep` cập nhật mới nhất).
 3. Chạy kiểm tra bất biến kiến trúc:
-   - `node scripts/run_architecture_check.mjs` (xác nhận 12/12 Invariants PASS, 0 errors).
+   - `node scripts/checks/run-architecture-check.mjs` (xác nhận 12/12 Invariants PASS, 0 errors).
 

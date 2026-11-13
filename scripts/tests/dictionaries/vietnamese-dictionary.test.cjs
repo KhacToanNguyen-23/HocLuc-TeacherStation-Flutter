@@ -1,9 +1,10 @@
+// Kiểm thử tra cứu, chuẩn hóa, cache và giao diện dictionary plugin.
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');
 const path=require('node:path');
-const {Dictionary,normalize,cleanTerm}=require('../../plugins/vietnamese_dictionary/ui/engine.js');
-const ui=path.resolve(__dirname,'../../plugins/vietnamese_dictionary/ui');
+const {Dictionary,normalize,cleanTerm}=require('../../../plugins/vietnamese_dictionary/ui/engine.js');
+const ui=path.resolve(__dirname,'../../../plugins/vietnamese_dictionary/ui');
 const load=async file=>JSON.parse(await fs.readFile(path.join(ui,file),'utf8'));
 const vm=require('node:vm');
 
@@ -64,7 +65,7 @@ test('UI accepts active PDF selection, ignores inactive events, and handles acti
   const events={};let releaseIndex;
   const indexGate=new Promise(resolve=>releaseIndex=resolve);
   const sdk={onHostEvent:(event,fn)=>events[event]=fn,getContext:async()=>({activeTool:null}),board:{setTool:async(target,active)=>{events['board:tool_state']({active_tool:active?target:null});}}};
-  const context={document:{querySelector:id=>nodes[id],createElement:()=>new Element()},window:{HocLuc:sdk},DictionaryEngine:require('../../plugins/vietnamese_dictionary/ui/engine.js'),setTimeout,clearTimeout,
+  const context={document:{querySelector:id=>nodes[id],createElement:()=>new Element()},window:{HocLuc:sdk},DictionaryEngine:require('../../../plugins/vietnamese_dictionary/ui/engine.js'),setTimeout,clearTimeout,
     fetch:async file=>{if(file==='data/index.json')await indexGate;return {ok:true,json:()=>load(file)};}};
   vm.runInNewContext(await fs.readFile(path.join(ui,'app.js'),'utf8'),context);
   events['board:text_selected']({target:'dictionary_selection',text:'ignored'});assert.equal(nodes['#query'].value,'');

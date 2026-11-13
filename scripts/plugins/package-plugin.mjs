@@ -1,12 +1,13 @@
+// Kiểm tra và đóng gói thư mục plugin thành archive .hlep.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ensureHooksConfigured } from './setup_hooks.mjs';
+import { ensureHooksConfigured } from '../git/setup-hooks.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '..');
+const rootDir = path.resolve(__dirname, '..', '..');
 
 // Tự động đảm bảo Git hook được cấu hình ngầm khi dev chạy lệnh đóng gói
 ensureHooksConfigured(true);

@@ -1,4 +1,5 @@
-import { parseAndAnalyze } from '../plugins/math_studio/ui/core/expression_parser.js';
+// Legacy test tham chiếu API Math Studio đã bị thay thế; giữ làm tư liệu, không thuộc CI hiện hành. Kiểm thử parser và phân tích biểu thức toán học.
+import { parseAndAnalyze } from '../../../../plugins/math_studio/ui/core/expression_parser.js';
 
 console.log('🧪 Testing Expression Parser...');
 
